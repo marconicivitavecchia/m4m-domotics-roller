@@ -1,0 +1,6 @@
+Contact up1 "Up1" <light> {mqtt=">[mosquitto:sonoff17/in:command:*:JS(jsonbup1.js)], <[mosquitto:sonoff17/out:state:JS(jsonpup1.js)]",autoupdate="true"}
+Contact down1 "Down1"  <light> {mqtt=">[mosquitto:sonoff17/in:command:*:JS(jsonbdown1.js)], <[mosquitto:sonoff17/out:state:JS(jsonpdown1.js)]",autoupdate="true"}
+Contact up2 "Up2"  <light> {mqtt=">[mosquitto:sonoff17/in:command:*:JS(jsonbup2.js)], <[mosquitto:sonoff17/out:state:JS(jsonpup2.js)]",autoupdate="true"}
+Contact down2 "Down2"  <light> {mqtt=">[mosquitto:sonoff17/in:command:*:JS(jsonbdown2.js)], <[mosquitto:sonoff17/out:state:JS(jsonpdown2.js)]",autoupdate="true"}
+Contact ledstat "Status LED" <light> {mqtt=">[mosquitto:sonoff17/in:command:*:JS(jsonbled.js)], <[mosquitto:sonoff17/out:state:JS(jsonpled.js)]",autoupdate="true"}
+

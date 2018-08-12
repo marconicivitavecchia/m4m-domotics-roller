@@ -1,0 +1,9 @@
+sitemap sonoffch4 label="Prova con MQTT e Sonoffch4" {
+    Frame label="Tapparella" {
+        Default item=up1 
+        Default item=down1 
+	Default item=up2
+	Default item=down2
+	Default item=ledstat
+    }
+}
