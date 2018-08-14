@@ -25,8 +25,8 @@
 extern RemoteDebug telnet;
 
 //Definizione modello
-#define SONOFF_4CH		1
-#define ROLLERSHUTTER 	0
+#define SONOFF_4CH		0
+#define ROLLERSHUTTER 	1
 
 #if (ROLLERSHUTTER)
   #define SCR    1  
