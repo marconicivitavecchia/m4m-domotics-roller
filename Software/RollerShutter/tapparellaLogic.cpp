@@ -11,6 +11,7 @@ unsigned long engdelay[2]={0,0};
 unsigned long btndelay[2]={0,0};
 byte lastCmd[4];
 short upmap[2]={1,-1};
+byte calibr=0;
 
 bool inline switchdfn(byte val, byte n){
 	//n: numero di pulsanti
@@ -61,7 +62,7 @@ byte tapparellaLogic(byte n){
 				if(s==0)
 				{ 	
 					setCronoDir(UP,n);
-					if(btndelay[n]>0){
+					if(btndelay[n]>0 && inp[BTN1IN+poffset] != 201){
 						//se il motore è fermo
 						lastCmd[BTN1IN + poffset] = inp[BTN1IN+poffset];
 						DEBUG_PRINTLN(F("tapparellaLogic: stato 1: il motore va in attesa da stato 0 (fermo)"));
@@ -97,7 +98,7 @@ byte tapparellaLogic(byte n){
 					DEBUG_PRINT(F("tapparellaLogic: Stato 0: il motore va in stato 0 (fermo) da stato "));
 					DEBUG_PRINTLN(getGroupState(n));
 					secondPress(n);
-					setGroupState(0,n);												//stato 0: il motore va in stato fermo
+					//setGroupState(0,n);												//stato 0: il motore va in stato fermo
 					changed=1;
 					/*if(getGroupState(n)==4){ 
 						resetTimer(CNTIMER1+n);
@@ -159,7 +160,7 @@ byte tapparellaLogic(byte n){
 			    if(s==0)
 				{ //se il motore è fermo
 					setCronoDir(DOWN,n);
-					if(btndelay[n]>0){
+					if(btndelay[n]>0 && inp[BTN1IN+poffset] != 201){
 						lastCmd[BTN2IN + poffset] = inp[BTN2IN+poffset];
 						DEBUG_PRINTLN(F("stato 1: il motore va in attesa "));
 						setGroupState(1,n);												//stato 1: il motore va in attesa
@@ -193,7 +194,6 @@ byte tapparellaLogic(byte n){
 				{
 					DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo "));
 					secondPress(n);
-					setGroupState(0,n);												//stato 0: il motore va in stato fermo
 					changed=1;
 				}
 				
@@ -269,15 +269,21 @@ void setGroupState(byte tstate, byte n){
 }
 
 void startEndOfRunTimer(byte n){
-	startTimer((target[n]-getCronoCount(n))*getCronoDir(n),TMRHALT+n*TIMERDIM);
+	if(calibr == 1 || calibr == 2){
+		target[n] = THALTMAX;
+		DEBUG_PRINTLN(F("Start Timer calibrazione "));
+	}
+		
+	startTimer(target[n],TMRHALT+n*TIMERDIM);
 	startCrono(n); 		//comincia a cronometrare la corsa
 	setGroupState(3,n);	//														stato 3: il motore va in moto cronometrato
-	DEBUG_PRINTLN(F("stato 3: il motore va in moto cronometrato "));
+	DEBUG_PRINT(F("stato 3: il motore va in moto cronometrato verso "));
+	DEBUG_PRINTLN(target[n]);	
 }
 
 bool startEngineDelayTimer(byte n){
 		setGroupState(2,n);												//stato 2: il motore va in moto a vuoto
-		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;
+		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index
 		DEBUG_PRINTLN(F("startEngineDelayTimer: igetGroupState(n), btn, inp[btn]"));
 		DEBUG_PRINTLN(getGroupState(n));
 		DEBUG_PRINTLN(btn);
@@ -297,37 +303,85 @@ bool startEngineDelayTimer(byte n){
 void secondPress(byte n){
 	int offset=n*STATUSDIM;
 	int toffset=n*TIMERDIM;
+	int poffset=n*BTNDIM;
 	
-	//either UP or DOWN
-	//da effettuare solo se il motore è inp moto
-	//effettuata seconda pressione
-	DEBUG_PRINT(F("\nSeconda pressione: motore "));
-	DEBUG_PRINT(n+1);
-	DEBUG_PRINT(F(" fermo al tempo "));
-	DEBUG_PRINTLN(getCronoCount(n));
-	
-	//LIST OF STOP ACTIONS
-	resetTimer(TMRHALT+toffset);//blocca timer di fine corsa
-	DEBUG_PRINTLN(F("\nsecondPress: outlogicp[DIRS+offset]=LOW "));					
-	//blocca il motore
-	//inizio sezione critica
-	//noInterrupts ();
-	outlogicp[ENABLES+offset]=LOW;
-	outlogicp[DIRS+offset]=LOW;
-	DEBUG_PRINT(F("\nsecondPress: addCronoCount dir "));	
-	DEBUG_PRINTLN(getCronoDir(n));
-	//interrupts ();
-	//fine sezione critica
-	setGroupState(0,n);												//stato 0: il motore va in stato fermo
-	//blocca il cronometro di DOWN
-	//stopCrono(BTNDOWN+poffset);  //crono pulsante
-	
-	addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
-	DEBUG_PRINT(F("\nsecondPress: onTapStop crono count "));	
-	DEBUG_PRINT(getCronoCount(n));
-	DEBUG_PRINT(F("\nsecondPress: onTapStop crono value "));	
-	DEBUG_PRINTLN(getCronoValue(n));
-	onTapStop(n);
+	if(calibr == 0){
+		//either UP or DOWN
+		//da effettuare solo se il motore è inp moto
+		//effettuata seconda pressione
+		DEBUG_PRINT(F("\nSecondPress: seconda pressione: motore "));
+		DEBUG_PRINT(n+1);
+		DEBUG_PRINT(F(" fermo al tempo "));
+		DEBUG_PRINTLN(getCronoCount(n));
+		
+		//LIST OF STOP ACTIONS
+		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
+		//blocca il motore
+		//inizio sezione critica
+		//noInterrupts ();
+		outlogicp[ENABLES+offset]=LOW;
+		outlogicp[DIRS+offset]=LOW;
+		//fine sezione critica
+		setGroupState(0,n);												//stato 0: il motore va in stato fermo
+		//blocca il cronometro di DOWN
+		DEBUG_PRINTLN(F("secondPress:  stopCrono calibr 0"));
+		addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
+		setGroupState(0,n);												//stato 0: il motore va in stato fermo
+	}else if(calibr == 1){
+		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
+		//blocca il motore
+		outlogicp[ENABLES+offset]=LOW;
+		outlogicp[DIRS+offset]=LOW;
+		
+		DEBUG_PRINTLN(F("2)reset del cronometro immediatamente prima della salita"));
+		startCrono(n);
+		//Tapparella completamente abbassata: imposto a zero il contatore di stato
+		resetCronoCount(n);
+		byte btn = (short) (1+getCronoDir(n))/2+ n*BTNDIM;  //reverse conversion from direction to index
+		inp[btn] = 201;
+		firstPress((getCronoDir(n)==UP), n);				//reverse direction
+		startTimer(engdelay[n],TMRHALT+n*TIMERDIM);
+		calibr = 2;
+		setGroupState(2,n);												//stato 2: il motore va in moto a vuoto
+		DEBUG_PRINTLN(btn);
+		DEBUG_PRINTLN(inp[btn]);
+		DEBUG_PRINT(F("stato 2: il motore va in moto a vuoto per calibrazione verso "));
+		DEBUG_PRINTLN(getCronoDir(n)==DOWN);
+		DEBUG_PRINT(F("FASE 2 CALIBRAZIONE MANUALE"));
+		DEBUG_PRINTLN(F("-----------------------------"));
+		DEBUG_PRINTLN(F("LA TAPPARELLA STA "));
+		DEBUG_PRINT(F("PREMERE UN PULSANTE QUALSIASI DEL GRUPPO ATTIVO"));
+		DEBUG_PRINTLN(F("-----------------------------"));
+	}else if(calibr == 2){
+		calibr = 0;
+		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
+		//blocca il motore
+		outlogicp[ENABLES+offset]=LOW;
+		outlogicp[DIRS+offset]=LOW;
+		setGroupState(0,n);												//stato 0: il motore va in stato fermo
+		//blocca il cronometro di DOWN
+		//addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
+		stopCrono(n);
+		unsigned int app = getCronoValue(n);
+		setCronoCount( app*(getCronoDir(n)==UP),n);
+		if(app < CNTIME*1000)
+			app = CNTIME*1000;
+		setGroupState(0,n);			
+		setCronoLimits(0,app,n);
+		thaltp[n] = app;
+		DEBUG_PRINT(F("getCronoValue(n): "));
+		DEBUG_PRINTLN(getCronoValue(n));
+		DEBUG_PRINT(F("getCronoCount(n): "));
+		DEBUG_PRINTLN(getCronoCount(n));
+		setGroupState(0,n);												//stato 0: il motore va in stato fermo
+		DEBUG_PRINTLN(F("-----------------------------"));
+		DEBUG_PRINT(F("FASE 3 CALIBRAZIONE MANUALE BTN "));
+		DEBUG_PRINTLN(n+1);
+		DEBUG_PRINT(F("SALVATAGGIO TEMPO DI SEC "));
+		DEBUG_PRINTLN(app);
+		onCalibrEnd(app,n);
+	}
+	//onTapStop(n);
 }
 
 void firstPress(byte sw, byte n){
@@ -348,40 +402,42 @@ void firstPress(byte sw, byte n){
 		//LIST OF UP ACTIONSalt 
 		//imposta la DIRSezione
 		outlogicp[DIRS+offset]=sw;	
-		//abilita il motore
-		outlogicp[ENABLES+offset]=HIGH;
 		//fai partire il timer di fine corsa
-		target[n] = thaltp[n]*(!sw);
 		setCronoDir(upmap[sw],n);
+		target[n] = thaltp[n]*(!sw);
+		target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
+	}else if(inp[BTN1IN+poffset+sw] == 201){
+		DEBUG_PRINT(F("Calibrazione: in moto verso "));
+		DEBUG_PRINTLN(sw);
+		//imposta la DIRSezione
+		outlogicp[DIRS+offset]=sw;	
+		setCronoDir(upmap[sw],n);
+		setCronoLimits(0,THALTMAX,n);
+		//setCronoCount(THALTMAX,n);
+		calibr = 1;
+		target[n] = THALTMAX*(!sw);
+		target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
 	}else if(inp[BTN1IN+poffset+sw] > 2){ //aperture percentuali
 		//DEBUG_PRINTLN(F(" in moto verso l'alto perc"));
 		target[n] = (unsigned long) (thaltp[n]/100)*inp[BTN1IN+poffset+sw];
-		DEBUG_PRINT(F("\nTARGET "));
+		long delta = (long) (target[n] - getCronoCount(n));
+		//target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
+		DEBUG_PRINT(F("\nDelta:  "));
 		DEBUG_PRINTLN(target[n]);
-		if((short) (target[n] - getCronoCount(n))*upmap[sw] > 0){
+		if(delta > 0){
+			target[n] = delta;
 			//LIST OF UP ACTIONS (TARGET ABOVE CURRENT POS)
 			outlogicp[DIRS+offset]=sw;
-			//abilita il motore
-			outlogicp[ENABLES+offset]=HIGH;
 			setCronoDir(upmap[sw],n);
-		}else{ //TARGET UNDER CURRENT POS
-			setGroupState(1,n);	//il motore è in attesa
-			DEBUG_PRINT(F("\nreverse "));
-			DEBUG_PRINTLN(inp[BTN1IN+poffset+sw]);
-			//LIST OF UP ACTIONS
-			DEBUG_PRINT(F("\nStop "));
-			DEBUG_PRINTLN(sw);
-			//il motore è inp inversione di marcia (stato 3)
-			DEBUG_PRINT(F("\nStart "));
-			DEBUG_PRINTLN(!sw);
-			//si trasferisce l'ingresso percentuale nell'altra direzione
-			inp[BTN1IN+poffset+!sw] = inp[BTN1IN+poffset+sw];
-			inp[BTN1IN+poffset+sw] = 0;
-			firstPress(!sw,n);
-			//tapparellaLogic(inrp,inrp,outlogicp,thaltp[n],n);
-			//il motore è in inversione di marcia (stato 3)
+		}else
+		{ 	//TARGET UNDER CURRENT POS
+			target[n] = -delta;
+			outlogicp[DIRS+offset]=!sw;
+			setCronoDir(upmap[!sw],n);
 		}
 	}
+	//abilita il motore
+	outlogicp[ENABLES+offset]=HIGH;
 }
 /*
 void firstPressDown(byte n){

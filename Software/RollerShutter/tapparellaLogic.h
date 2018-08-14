@@ -8,8 +8,9 @@ void initTapparellaLogic(byte *, byte *, byte *, unsigned long, unsigned long, u
 byte tapparellaLogic(byte *, byte *, byte*, unsigned long , byte n);
 byte tapparellaLogic(byte);
 void setTapThalt(unsigned long thalt, byte n);
-extern void onTapStop(byte);
-extern void onTapStart(byte);
+//extern void onTapStop(byte);
+//extern void onTapStart(byte);
+extern void onCalibrEnd(unsigned long, byte);
 long getTarget(byte);
 //void firstPressDown(byte);
 void firstPress(byte, byte);

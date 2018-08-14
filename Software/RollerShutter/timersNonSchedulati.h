@@ -46,7 +46,6 @@ void startCrono(byte);
 unsigned long stopCrono(byte);
 unsigned long restartCrono(byte);
 unsigned long getCronoValue(byte);
-void resetCrono(byte);
 void resetCronoCount(byte);
 void setCronoCount(long, byte);
 void setCronoDir(short, byte);

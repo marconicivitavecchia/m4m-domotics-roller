@@ -20,7 +20,6 @@ int haltPrm[2] = {THALT1,THALT2};
 int haltOfs[2] = {THALT1OFST,THALT2OFST};
 unsigned long edelay[2]={0,0};
 byte wsnconn = 0;
-
 IPAddress ip(192, 168, 43, 1);
 IPAddress gateway(192, 168, 43, 1);
 IPAddress subnet(255, 255, 255, 0);
@@ -94,7 +93,6 @@ bool configLoaded=true;
 bool mqttConnected=false;
 bool mqttAddrChanged=true;
 bool dscnct=false;
-byte calibr=0;
 String pr[3] = {"{\"pr1\":\"", "{\"pr2\":\"", "\"}"};
 //-----------------------------------------Begin of prototypes---------------------------------------------------------
 //-----------------------------------------End of prototypes---------------------------------------------------------
@@ -487,12 +485,6 @@ void loop() {
 			else{
 				DEBUG_PRINTLN(F("isConnected() dice sono connesso."));
 				mqttConnected=true;
-				DEBUG_PRINTLN(getGroupState(0));
-				DEBUG_PRINTLN(getGroupState(1));
-				DEBUG_PRINTLN(in[0]);
-				DEBUG_PRINTLN(in[1]);
-				DEBUG_PRINTLN(in[2]);
-				DEBUG_PRINTLN(in[3]);
 			}
 		}
 		else
@@ -690,14 +682,13 @@ void onElapse(byte n){
 	{   
 		int toffset=n*TIMERDIM;
 		if(getGroupState(n)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
-			secondPress(n);
 			DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo da fine corsa"));
+			secondPress(n);
 			//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
 			scriviOutDaStato();
 			//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 			readStatesAndPub();
-		}else if(getGroupState(n)==1){	//se il motore era in attesa di partire (timer di attesa scaduto) 
-			//setGroupState(2,n);	//il motore è in moto a vuoto
+		}else if(getGroupState(n)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
 			DEBUG_PRINTLN(F("onElapse:  timer di attesa scaduto"));
 			startEngineDelayTimer(n);
 			scriviOutDaStato();
@@ -772,127 +763,45 @@ void onElapse(byte n){
 	//DEBUG_PRINTLN(F("Fine timer"));
 }
 
-void onTapStop(byte n){
-	if(calibr == 1){
-		setBtnDelay(0,n);
-		//è stato chiamato un tasto reale
-		//il motore viene bloccato
-		//nel contempo viene fatto partire in UP, ma servono:
-		//-------------------------------------------------------------
-		//1)fronte di discesa simulato (rilascio simulato dei pulsanti)
-		//si usa inr per evitare interferenze con i tasti reali
-		DEBUG_PRINTLN(F("1)fronte di discesa simulato (rilascio simulato dei pulsanti)"));
-		in[BTN1IN + n*BTNDIM] = 0; 
-		in[BTN2IN + n*BTNDIM] = 0; 
-		//viene impostato il tempo massimo di durata della corsa del motore THALTMAX
-		tapparellaLogic(n);
-		//-------------------------------------------------------------
-		//2)reset del cronometro immediatamente prima della salita
-		DEBUG_PRINTLN(F("2)reset del cronometro immediatamente prima della salita"));
-		resetCrono(n);
-		//Tapparella completamente abbassata: imposto a zero il contatore di stato
-		resetCronoCount(n);
-		setCronoDir(UP,n);
-		//-------------------------------------------------------------
-		//3)fronte di salita simulato (pressione simulata dei pulsanti)
-		DEBUG_PRINTLN(F("3)fronte di salita simulato (pressione simulata dei pulsanti)"));
-		//si usa inr per evitare interferenze con i tasti reali
-		inr[BTN1IN + n*BTNDIM] = 1;
-		tapparellaLogic(n);
-		//in[BTN1IN + n*BTNDIM] = 0; 
-		//in[BTN2IN + n*BTNDIM] = 0; 
-		//Si devono mantenere gli ingressi alti per evitare transizioni (altrimenti possono simulare una pressione)
-		//in[BTN1IN + n*BTNDIM] = 1;
-		//in[BTN2IN + n*BTNDIM] = 1;
-		//-------------------------------------------------------------
-		//4)aggiornamento stato della calibrazione
-		DEBUG_PRINTLN(F("4)aggiornamento stato della calibrazione"));
-		calibr =2;
-		//il motore è attivo => non c'è chiamata a cronoStop()
-		//si ultima il fronte di sapita della chiamata reale
-		//-------------------------------------------------------------
-		//5)rilascio reale dei pulsanti al prossimo ciclo di loop()
-		DEBUG_PRINTLN(F("5)rilascio reale dei pulsanti al prossimo ciclo di loop()"));
-		DEBUG_PRINTLN(F("-----------------------------"));
-		DEBUG_PRINT(F("FASE 2 CALIBRAZIONE MANUALE"));
-		DEBUG_PRINTLN(F("-----------------------------"));
-		DEBUG_PRINTLN(F("LA TAPPARELLA STA SALENDO........."));
-		DEBUG_PRINT(F("PREMERE UN PULSANTE QUALSIASI DEL GRUPPO ATTIVO"));
-		DEBUG_PRINTLN(F("-----------------------------"));
-	}else if(calibr == 2){
-		//è stato chiamato un tasto reale
-		//il motore viene bloccato
-		//nel contempo vengono effettuati:
-		DEBUG_PRINTLN(F("-----------------------------"));
-		DEBUG_PRINT(F("FASE 3 CALIBRAZIONE MANUALE BTN "));
-		DEBUG_PRINTLN(n+1);
-		DEBUG_PRINT(F("SALVATAGGIO TEMPO DI SEC "));
-		DEBUG_PRINTLN(getCronoValue(n));
-		//------------------------------------------------------------
-		//1)aggiornamento stato della calibrazione
-		calibr = 0;
-		//------------------------------------------------------------
-		//2)lettura del cronometro e salvataggio su EEPROM della lettura
-		//il tempo non deve scendere al di sotto di un tempo minimo
-		unsigned int app = getCronoCount(n);
-		DEBUG_PRINT(F("getCronoCount(n): "));
-		DEBUG_PRINTLN(getCronoCount(n));
-		if(app < CNTIME*1000)
-			app = CNTIME*1000;
+//void onTapStop(byte n){
+//}
 		
-		//IMPORTANTE evita il rolloff in setupTimer(thalt - getCronoCount(n),TMRHALT+toffset);
-		//nella tapparellaLogic
-		setGroupState(0,n);			
-		setCronoLimits(0,app,n);
-		params[haltPrm[n]] = String(app);
-		initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
-		setGroupState(0,n);												//stato 0: il motore va in stato fermo
-		//INCREMENTO DI TEMPO DI UN SINCOLO ELEMENTO DELLA BARRA DI STATO (MISURATO IN TEMPI BASE)
-		EEPROM.begin(EEPROMPARAMSLEN);
-		EEPROMWriteInt(haltOfs[n], app);
-		EEPROM.end();
-		DEBUG_PRINT(F("Modified THALT "));
-		DEBUG_PRINTLN(haltPrm[n]);
-		DEBUG_PRINT(F(": "));
-		DEBUG_PRINTLN(params[haltPrm[n]]);
-		DEBUG_PRINTLN(F("-----------------------------"));
-	}
-	//do nothing
+void onCalibrEnd(unsigned long app, byte n){		
+	params[haltPrm[n]] = String(app);
+	initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
+	//INCREMENTO DI TEMPO DI UN SINCOLO ELEMENTO DELLA BARRA DI STATO (MISURATO IN TEMPI BASE)
+	EEPROM.begin(EEPROMPARAMSLEN);
+	EEPROMWriteInt(haltOfs[n], app);
+	EEPROM.end();
+	DEBUG_PRINT(F("Modified THALT "));
+	DEBUG_PRINTLN(haltPrm[n]);
+	DEBUG_PRINT(F(": "));
+	DEBUG_PRINTLN(params[haltPrm[n]]);
+	DEBUG_PRINTLN(F("-----------------------------"));
 }
 
-void onTapStart(byte n){
+//void onTapStart(byte n){
 	//do nothing
-}
+//}
 
 void manualCalibration(byte btn){
-	//è stato chiamata la funzione di calibrazione
-	//nel contempo viene fatto partire in DOWN, ma servono:
-	//-------------------------------------------------------------
-	//1)attivazione stato di calibrazione
-	calibr = 1;
+	setGroupState(0,btn);	
+	//setCronoLimits(0,THALTMAX,btn);
+	//setCronoCount(THALTMAX,btn);
+	params[haltPrm[btn]] = THALTMAX;
+	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione
+	
 	DEBUG_PRINTLN(F("-----------------------------"));
 	DEBUG_PRINT(F("FASE 1 CALIBRAZIONE MANUALE BTN "));
 	DEBUG_PRINTLN(btn+1);
 	DEBUG_PRINTLN(F("-----------------------------"));
 	//-------------------------------------------------------------
-	//2)attivazione simulata pulsante di DOWN
-	//scrivi l'eccitazione asincrona simulata sulla coda dei mesaggi remoti
-	//il motore è attivo => non c'è chiamata a cronoStop()
-	//initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
-	setTapThalt(THALTMAX,btn);
-	setBtnDelay(0,btn);
-	setGroupState(0,btn);												//stato 0: il motore va in stato fermo
-	setCronoLimits(0,THALTMAX,btn);
-	setCronoCount(THALTMAX,btn);
-	params[haltPrm[btn]] = THALTMAX;
-	inr[BTN2IN + btn*BTNDIM] = 1; 
 	DEBUG_PRINTLN(F("LA TAPPARELLA STA SCENDENDO......"));
 	DEBUG_PRINT(F("PREMERE UN PULSANTE QUALSIASI DEL GRUPPO "));
 	DEBUG_PRINTLN(btn+1);
 	DEBUG_PRINTLN(F("-----------------------------"));
-	//-------------------------------------------------------------
-	//3)diseccitazione (rilascio pulsanti) reale al loop() succesivo perchè i tasti non sono premuti
 }
+
 void rebootSystem(){
 	EEPROM.begin(EEPROMPARAMSLEN);
 	alterEEPROM();
