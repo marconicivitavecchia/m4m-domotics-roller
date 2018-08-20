@@ -25,8 +25,8 @@
 extern RemoteDebug telnet;
 
 //Definizione modello
-#define SONOFF_4CH		0
-#define ROLLERSHUTTER 	1
+#define SONOFF_4CH		1
+#define ROLLERSHUTTER 	0
 
 #if (ROLLERSHUTTER)
   #define SCR    1  
@@ -42,7 +42,7 @@ extern RemoteDebug telnet;
   #define BTN2U    	16    		// IN3   =  MOTOR2 UP    
   #define BTN2D    	14    		// IN4   =  MOTOR2 DOWN
 #elif (SONOFF_4CH)
-  #define SCR		0 
+  #define SCR		1 
   #define INPULLUP  1   		//enable internal pullup
   #define OUTSLED	13     
   #define OUT1EU	12  
@@ -58,6 +58,9 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
+#define AUTOCAL		1
+#define NSIGMA 		5
+#define EMA  		0.2
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
 #define	TCOUNT		6		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
@@ -204,11 +207,36 @@ extern RemoteDebug telnet;
 	 digitalWrite(OUT2DD,outLogic[DIRS+STATUSDIM])		
 #endif
 
-
 //PRIMA DEFINISCO LE COSTANTI, POI INCLUDO I FILES HEADERS (.h) CHE LE USANO
 #include "tapparellaLogic.h"
 #include "serialize.h"
 #include "logicaTasti.h"
+
+#if (AUTOCAL)  
+#include "statistics.h"
+#define sensorRead()	if((millis()-pn) > 2){		\
+	pn = millis();					\
+	x = analogRead(A0) - 494;				\
+	if (x > max) 					\
+     {    							\
+		max = x; 					\
+     }								\
+	if (x < min) 					\
+     {       						\
+		min = x;					\
+	 }								\
+	d = max - min;					\
+  }									\
+
+#define getAmpRMS()		ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;		\
+		VRMS = ACSVolt * 0.707;					\
+		AmpsRMS = (double) (VRMS * 1000) / mVperAmp;		\
+		if((AmpsRMS > -0.015) && (AmpsRMS < 0.008)){ 	\
+			AmpsRMS = 0.0;		\
+		}	 					\
+
+#endif
+
 
 void setup_AP();
 void setup_wifi();

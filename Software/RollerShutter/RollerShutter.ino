@@ -1,23 +1,48 @@
 #include "common.h"
 //End MQTT config------------------------------------------
 //inizio variabili e costanti dello schedulatore (antirimbalzo)
-#define time_base     	50        // periodo base in millisecondi
+#define time_base     	25        // periodo base in millisecondi
 #define nsteps          12000        // numero di fasi massimo di un periodo generico
+
+//stats variables
+#if (1)  
+double ACSVolt;
+unsigned int mVperAmp = 100;   // 185 for 5A, 100 for 20A and 66 for 30A Module
+double ACSVoltage = 0;
+double VRMS = 0;
+double VMCU = 0;
+double AmpsRMS = 0;
+double mcu;
+int x;
+//double ex=0;
+unsigned long n=1;
+unsigned long pn=0;
+int min = 1024;
+int max = 0;
+int d = 0;
+double calAvg[2] = {0,0};
+double weight[2] = {0,0};
+short chk[2]={0,0};
+#endif
+//end of stats variables
 unsigned long prec=0;
 //wifi config----------------------------------------------
-const char* outTopic = "T_Garage/out";
-const char* inTopic = "T_Garage/in";
-const char* ssid1 = "ZyXEL";
-const char* password1 = "1234567890";
-const char* ssid2 = "ZyXEL";
-const char* password2 = "1234567890";
+const char* outTopic = "sonoff17/out";
+const char* inTopic = "sonoff17/in";
+//const char* ssid1 = "OpenWrt";
+//const char* password1 = "dorabino.7468!";
+const char* ssid1 = "casafleri";
+const char* password1 = "fabseb050770250368120110$";
+const char* ssid2 = "AndroidAP1";
+const char* password2 = "pippo2503";
 const char* apSsid = "admin";
 const char* apPassword = "admin";
 //MQTT config----------------------------------------------
-const char* mqtt_server = "192.168.1.2";
-const char* clientID = "Tap_Garage";
+const char* mqtt_server = "iot.eclipse.org";
+const char* clientID = "NodeMCUtanzo2344378";
 int haltPrm[2] = {THALT1,THALT2};
 int haltOfs[2] = {THALT1OFST,THALT2OFST};
+byte blocked[2]={0,0};
 unsigned long edelay[2]={0,0};
 byte wsnconn = 0;
 IPAddress ip(192, 168, 43, 1);
@@ -278,8 +303,15 @@ void readStatesAndPub(){
   s+=mqttJson[4]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+F("\",\"");    //down2
   s+= (String) F("pr1\":\"")+String((long)(getCronoCount(0)*100)/getUpLimit(0))+F("\",\"");		//pr1
   s+= (String) F("pr2\":\"")+String((long)(getCronoCount(1)*100)/getUpLimit(1))+F("\",\"");		//pr2
-  s+= (String) F("sp1\":\"")+String((long)getUpLimit(0))+F("\",\"");		//pr1
-  s+= (String) F("sp2\":\"")+String((long)getUpLimit(1))+F("\"}");		//pr2
+  if(blocked[0]>0){
+	  s+= (String) F("blk1\":\"")+blocked[0]+F("\",\"");		//blk1
+  }
+  if(blocked[1]>0){
+	  s+= (String) F("blk1\":\"")+blocked[1]+F("\",\"");		//blk2
+  }
+  s+= (String) F("sp1\":\"")+String((long)getUpLimit(0))+F("\",\"");		//sp1
+  s+= (String) F("sp2\":\"")+String((long)getUpLimit(1))+F("\"}");		//sp2
+  
   //pubblica sul broker la stringa JSON
   if(mqttClient==NULL){
 	  DEBUG_PRINTLN(F("ERROR on readStatesAndPub MQTT client is not allocated."));
@@ -370,6 +402,7 @@ void setup() {
 	pinMode(BTN2U, INPUT);
 	pinMode(BTN2D, INPUT);
 #endif
+	pinMode(A0, INPUT);
   //imposta la DIRSezione delle porte dei led, imposta inizialmente i led come spenti
   pinMode(OUTSLED,OUTPUT);
   digitalWrite(OUTSLED, LOW);
@@ -380,6 +413,7 @@ void setup() {
   //------------------------------------------OTA SETUP---------------------------------------------------------------------------------------
   //------------------------------------------END OTA SETUP---------------------------------------------------------------------------------------
   //segnala  la corretta accensione della macchina con un blink dei led dei pulsanti
+  /*
   digitalWrite(OUTSLED, HIGH);
   delay(100);
   digitalWrite(OUT1EU, HIGH);
@@ -397,6 +431,7 @@ void setup() {
   digitalWrite(OUT1DD, LOW);
   delay(50);
   digitalWrite(OUT1EU, LOW);
+  */
   delay(500);
   for(int i=0;i<NBTN*STATUSDIM;i++)
 	  outLogic[i]=LOW;
@@ -452,6 +487,9 @@ void httpSetup(){
 }
 
 void loop() {
+#if (AUTOCAL)  
+  sensorRead();
+#endif
   //ArduinoOTA.handle();
   //funzioni eseguite ad ogni loop (istante di esecuione dipendente dal clock della CPU)
   aggiornaTimer(TMRHALT);
@@ -459,21 +497,96 @@ void loop() {
   webSocket.loop();
   server.handleClient();  // Listen for HTTP requests from clients
 
-  if((millis()-prec) > time_base) //schedulatore con tempo base con funzione di antirimbalzo (legge ogni 50 mSec)
-  {
-	aggiornaTimer(CNTIMER1); 
-	aggiornaTimer(CNTIMER2); 
-	
+  if((millis()-prec) > time_base) //schedulatore con tempo base 
+  {	
 	prec = millis();
 	//calcolo dei multipli interi del tempo base
 	step = (step + 1) % nsteps;
 	
+#if (AUTOCAL)  
+	//EMA calculation
+	//ex = (float) d*EMA + (1.0 - EMA)*ex;
+	//ACSVolt = (double) ex/2.0;
+	ACSVolt = (double) d/2.0;
+	//reset of peak sample value
+	min = 1024;
+	max = 0;
+	d = 0;
+	
+	if(isMoving(0)){
+		chk[0] = checkMaxVal((double) ACSVolt*(1 - weight[1]*isMoving(1)),0);
+		if(chk[0] != 0){
+			if(secondPress(0)==-1){
+				blocked[0]=2;
+			}
+			scriviOutDaStato();
+			if(chk[0] == 1){
+				blocked[0]=1;
+			}
+			readStatesAndPub();
+			DEBUG_PRINT(F("weight 2: "));
+			DEBUG_PRINTLN(weight[1]*isMoving(1));
+			DEBUG_PRINT("Auto stop! chk[0]: ");
+			DEBUG_PRINTLN(F("------------------------------------------"));
+			DEBUG_PRINT(F("x: "));
+			DEBUG_PRINTLN(x);
+			DEBUG_PRINT(F("d: "));
+			DEBUG_PRINTLN(d);
+			DEBUG_PRINT(F("ACSVolt: "));
+			DEBUG_PRINTLN(ACSVolt);
+			DEBUG_PRINT(F("Ampere: "));
+			float amp = getAmpRMS();
+			DEBUG_PRINTLN(amp);
+			DEBUG_PRINT(F("AVG 1: "));
+			DEBUG_PRINTLN(getAVG(0));
+			DEBUG_PRINT(F("ThresholdUp(0): "));
+			DEBUG_PRINTLN(getThresholdUp(0));
+			DEBUG_PRINT(F("ThresholdDown(0): "));
+			DEBUG_PRINTLN(getThresholdDown(0));
+			DEBUG_PRINT(F("chk 1: "));
+			DEBUG_PRINTLN(chk[0]);
+		}
+	}
+	
+	if(isMoving(1)){
+		chk[1] = checkMaxVal((double) ACSVolt*(1 - weight[0]*isMoving(0)),1);
+		if(chk[1] != 0){
+			if(secondPress(1)==-1){
+				blocked[1]=2;
+			}
+			scriviOutDaStato();
+			if(chk[1] == 1){
+				blocked[1]=1;
+			}
+			readStatesAndPub();
+			DEBUG_PRINT("Auto stop! chk[1]: ");
+			DEBUG_PRINTLN(F("------------------------------------------"));
+			DEBUG_PRINT(F("x: "));
+			DEBUG_PRINTLN(x);
+			DEBUG_PRINT(F("d: "));
+			DEBUG_PRINTLN(d);
+			DEBUG_PRINT(F("ACSVolt: "));
+			DEBUG_PRINTLN(ACSVolt);
+			DEBUG_PRINT(F("Ampere: "));
+			float amp = getAmpRMS();
+			DEBUG_PRINTLN(amp);
+			DEBUG_PRINT(F("AVG 2: "));
+			DEBUG_PRINTLN(getAVG(1));
+			DEBUG_PRINT(F("chk 2: "));
+			DEBUG_PRINTLN(chk[1]);
+		}
+	}
+#endif
+
 	//DEBUG_PRINT("NStep: ");  
 	//DEBUG_PRINTLN(step,DEC);
+	
+	
 	//codice eseguito ogni 100*50 msec = 5 sec
 	//riconnessione MQTT
-	
-	if(!(step % 100)){
+	if(!(step % 200)){
+		aggiornaTimer(CNTIMER1); 
+		aggiornaTimer(CNTIMER2); 
 		//aggiornaTimer(APOFFTIMER);
 		
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
@@ -598,10 +711,29 @@ void loop() {
 	
 	//codice eseguito ogni 20*50 msec = 1000 msec
 	//riconnessione WiFi
-	if(!(step % 20)){
+	if(!(step % 40)){
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
-		
+		/*
+		DEBUG_PRINTLN(F("------------------------------------------"));
+		DEBUG_PRINT(F("x: "));
+		DEBUG_PRINTLN(x);
+		DEBUG_PRINT(F("d: "));
+		DEBUG_PRINTLN(d);
+		DEBUG_PRINT(F("ACSVolt: "));
+		DEBUG_PRINTLN(ACSVolt);
+		DEBUG_PRINT(F("Ampere: "));
+		float amp = getAmpRMS();
+		DEBUG_PRINTLN(amp);
+		DEBUG_PRINT(F("AVG 1: "));
+		DEBUG_PRINTLN(getAVG(0));
+		DEBUG_PRINT(F("AVG 2: "));
+		DEBUG_PRINTLN(getAVG(1));
+		DEBUG_PRINT(F("chk 1: "));
+		DEBUG_PRINTLN(chk[1]);
+		DEBUG_PRINT(F("chk 2: "));
+		DEBUG_PRINTLN(chk[1]);
+		*/
 		/*if (telnet.read() == 'R') {
 			telnet.stop();
 			delay(100);
@@ -651,20 +783,23 @@ void loop() {
 			//httpSetup();
 		}
 	}
-	
-	//codice eseguito ogni tempo base (50ms)
-	//leggi ingressi locali e mette il loro valore sull'array val[]
-	leggiTasti();
-	leggiRemoto();
-	//se uno dei tasti delle tapparelle è stato premuto
-	if(tapparellaLogic(TAP1) == 1 ||  tapparellaLogic(TAP2)== 1){ 
-		//once any button is pressed
-		//legge lo stato finale e lo scrive sulle uscite
-		scriviOutDaStato();
-		//legge lo stato finale e lo pubblica su MQTT
-		readStatesAndPub();
-		//DEBUG_PRINTLN("Fine callback MQTT.");
-    }
+	//ogni 50ms
+	if(!(step % 2)){
+		//codice eseguito ogni tempo base (50ms)
+		//leggi ingressi locali e mette il loro valore sull'array val[]
+		leggiTasti();
+		leggiRemoto();
+		//se uno dei tasti delle tapparelle è stato premuto
+		if(tapparellaLogic(TAP1) == 1 ||  tapparellaLogic(TAP2)== 1){ 
+			//once any button is pressed
+			//legge lo stato finale e lo scrive sulle uscite
+			scriviOutDaStato();
+			//legge lo stato finale e lo pubblica su MQTT
+			readStatesAndPub();
+			//DEBUG_PRINTLN("Fine callback MQTT.");
+			blocked[0]=blocked[1]=false;
+		}
+	}
 	//FINE Time base
   }
   
@@ -778,6 +913,9 @@ void onCalibrEnd(unsigned long app, byte n){
 	DEBUG_PRINT(F(": "));
 	DEBUG_PRINTLN(params[haltPrm[n]]);
 	DEBUG_PRINTLN(F("-----------------------------"));
+	calAvg[n] = getAVG(n);
+	weight[0] = (double) calAvg[0] / (calAvg[0] +  calAvg[1]);
+	weight[1] = (double) calAvg[1] / (calAvg[0] +  calAvg[1]);
 }
 
 //void onTapStart(byte n){
@@ -788,6 +926,7 @@ void manualCalibration(byte btn){
 	setGroupState(0,btn);	
 	//setCronoLimits(0,THALTMAX,btn);
 	//setCronoCount(THALTMAX,btn);
+	resetAVGStats(btn);
 	params[haltPrm[btn]] = THALTMAX;
 	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione
 	

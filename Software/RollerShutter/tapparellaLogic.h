@@ -15,7 +15,7 @@ long getTarget(byte);
 //void firstPressDown(byte);
 void firstPress(byte, byte);
 //void firstPressUp(byte);
-void secondPress(byte);
+short secondPress(byte);
 byte getGroupState(byte);
 void setGroupState(byte, byte);
 byte getDelayedCmd(byte);
@@ -23,6 +23,9 @@ void setDelayedCmd(byte, byte);
 void setBtnDelay(byte dly, byte i);
 void startEndOfRunTimer(byte);
 bool startEngineDelayTimer(byte);
+bool isRunning(byte);
+bool isMoving(byte);
+byte nRunning();
 
 //bool inline initdfn(byte,  byte);
 //extern void onBtnPress(n)
