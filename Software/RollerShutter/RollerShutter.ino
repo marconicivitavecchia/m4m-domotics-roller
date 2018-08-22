@@ -31,8 +31,8 @@ const char* outTopic = "sonoff17/out";
 const char* inTopic = "sonoff17/in";
 //const char* ssid1 = "OpenWrt";
 //const char* password1 = "dorabino.7468!";
-const char* ssid1 = "casafleri";
-const char* password1 = "fabseb050770250368120110$";
+const char* ssid1 = "Telecom-11007801";
+const char* password1 = "fabseb050770250368120110";
 const char* ssid2 = "AndroidAP1";
 const char* password2 = "pippo2503";
 const char* apSsid = "admin";
@@ -82,7 +82,7 @@ String mqttJson[5]={"outsled","up1","down1","up2","down2"};
 unsigned int thalt1=5000;
 unsigned int thalt2=2500;
 
-String params[PARAMSDIM]={webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID,mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),"400","400","ip","false","false","false","false","false","false"};
+String params[PARAMSDIM]={webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID,mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),"400","400","1024","1024","0.5","ip","false","false","false","false","false","false"};
 ESP8266WebServer server(80);    	// Create a webserver object that listens for HTTP request on port 80
 WebSocketsServer webSocket(81);	    // create a websocket server on port 81
 ESP8266HTTPUpdateServer httpUpdater;
@@ -374,6 +374,10 @@ void setup() {
   setupTimer(APOFFT*1000,APOFFTIMER);						//special timer btn1
   setCronoLimits(0,(params[THALT1]).toInt(),TAP1);
   setCronoLimits(0,(params[THALT2]).toInt(),TAP2);
+  weight[0] =  (params[VALWEIGHT]).toFloat();
+  weight[1] = 1 - weight[0];
+  setThresholdUp((params[TRSHOLD1]).toFloat(), 0);
+  setThresholdUp((params[TRSHOLD2]).toFloat(), 1);
   //DEBUG_PRINTLN("Inizializzo i timers a zero.");
   //initTimers();
   //DEBUG_PRINTLN("Avvio il client MQTT.");
@@ -904,18 +908,37 @@ void onElapse(byte n){
 void onCalibrEnd(unsigned long app, byte n){		
 	params[haltPrm[n]] = String(app);
 	initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
-	//INCREMENTO DI TEMPO DI UN SINCOLO ELEMENTO DELLA BARRA DI STATO (MISURATO IN TEMPI BASE)
-	EEPROM.begin(EEPROMPARAMSLEN);
-	EEPROMWriteInt(haltOfs[n], app);
-	EEPROM.end();
-	DEBUG_PRINT(F("Modified THALT "));
-	DEBUG_PRINTLN(haltPrm[n]);
-	DEBUG_PRINT(F(": "));
-	DEBUG_PRINTLN(params[haltPrm[n]]);
+	
 	DEBUG_PRINTLN(F("-----------------------------"));
 	calAvg[n] = getAVG(n);
 	weight[0] = (double) calAvg[0] / (calAvg[0] +  calAvg[1]);
 	weight[1] = (double) calAvg[1] / (calAvg[0] +  calAvg[1]);
+	
+	params[VALWEIGHT] = String(weight[0]);
+	params[TRSHOLD1 + n] = String(getThresholdUp(n));
+	setThresholdUp((params[TRSHOLD1 + n]).toFloat(), n);
+
+	EEPROM.begin(EEPROMPARAMSLEN);
+	
+	EEPROMWriteStr(VALWEIGHTOFST,(params[VALWEIGHT]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified current weight "));
+	DEBUG_PRINTLN(params[VALWEIGHT]);
+	
+	EEPROMWriteInt(haltOfs[n], app);
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified THALT "));
+	DEBUG_PRINTLN(haltPrm[n]);
+	DEBUG_PRINT(F(": "));
+	DEBUG_PRINTLN(params[haltPrm[n]]);
+	
+	EEPROMWriteStr(TRSHOLD1OFST + n*32,(params[TRSHOLD1 + n]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified current variance "));
+	DEBUG_PRINTLN(params[TRSHOLD1 + n]);
+	
+	EEPROM.end();
+	
 	//deactivate the learning of the running statistics
 	clrStatsLearnMode();
 }

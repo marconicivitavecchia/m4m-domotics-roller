@@ -15,6 +15,7 @@ double getThresholdDown(byte);
 void setStatsLearnMode();
 void clrStatsLearnMode();
 bool isStatsLearnMode();
+void setThresholdUp(double, byte);
 //double gethreshold();
 
 #endif

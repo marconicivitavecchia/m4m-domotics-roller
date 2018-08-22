@@ -2,7 +2,7 @@
 
 double avg[2] = {0.0, 0.0};
 double stdDev[2] = {0.0, 0.0};
-unsigned int count[2] = {0, 0};
+unsigned int count[2] = {1, 1};
 double thresholdUp[2] = {1024,1024};
 double thresholdDown[2] = {-1024,-1024};
 bool learn = false;
@@ -30,6 +30,10 @@ double getAVG(byte n) {
 
 double getThresholdUp(byte n) {
   return thresholdUp[n];
+}
+
+void setThresholdUp(double trsh, byte n){
+	thresholdUp[n] = trsh;
 }
 
 double getThresholdDown(byte n) {
@@ -66,6 +70,8 @@ short checkRange(double val, byte n) {
 	stdDev[n] += (double) delta * (val - avg[n]);
 	if (count[n] > 1) {
 		thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
+		DEBUG_PRINT(F("thresholdUp[n]: "));
+		DEBUG_PRINTLN(thresholdUp[n]);
 	}
   }
   else if(val > thresholdUp[n]) {
@@ -94,6 +100,6 @@ short checkRange(double val, byte n) {
 void resetAVGStats(byte n) {
   avg[n] = 0.0;
   stdDev[n] = 0.0;
-  count[n] = 0.0;
+  count[n] = 1;
 }
 

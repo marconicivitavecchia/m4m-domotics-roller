@@ -130,7 +130,10 @@ extern RemoteDebug telnet;
 #define MQTTPSWOFST				584
 #define STDEL1OFST				616
 #define STDEL2OFST				648
-#define EEPROMPARAMSLEN			680
+#define TRSHOLD1OFST			680
+#define TRSHOLD2OFST			712
+#define VALWEIGHTOFST			744
+#define EEPROMPARAMSLEN			776
 //--------------------------Fine EEPROM offsets-------------------------------------------
 //--------------------------Inizio params array indexes-----------------------------------
 #define WEBUSR					0
@@ -151,14 +154,17 @@ extern RemoteDebug telnet;
 #define THALT2					15
 #define STDEL1					16
 #define STDEL2					17
-#define LOCALIP					18
-#define WIFICHANGED				19
-#define CONFLOADED				20
-#define MQTTADDRMODFIED			21
-#define TOPICCHANGED			22
-#define MQTTCONNCHANGED			23
-#define	TIMINGCHANGED			24
-#define PARAMSDIM				25
+#define TRSHOLD1				18
+#define TRSHOLD2				19
+#define VALWEIGHT				20
+#define LOCALIP					21
+#define WIFICHANGED				22
+#define CONFLOADED				23
+#define MQTTADDRMODFIED			24
+#define TOPICCHANGED			25
+#define MQTTCONNCHANGED			26
+#define	TIMINGCHANGED			27
+#define PARAMSDIM				28
 
 //--------------------------Inizio mqttJson array indexes-----------------------------------
 #define MQTTJSON1				1
