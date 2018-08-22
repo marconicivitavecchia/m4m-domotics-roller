@@ -68,12 +68,12 @@ short checkRange(double val, byte n) {
 		thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
 	}
   }
-  if (count[n] > 1) {
-	thresholdDown[n] = (double) avg[n]/3;
+  else if(val > thresholdUp[n]) {
+		res = 1;
   }
   
-  if(val > thresholdUp[n]) {
-   res = 1;
+  if (count[n] > 1) {
+	thresholdDown[n] = (double) avg[n]/3;
   }
   
   if(val < thresholdDown[n]) {
