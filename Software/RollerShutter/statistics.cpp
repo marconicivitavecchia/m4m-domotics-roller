@@ -1,15 +1,23 @@
 #include "statistics.h"
 
-double avg[2] = {0,0};
-double stdDev[2] = {0,0};
-unsigned int count[2] = {0,0};
+double avg[2] = {0.0, 0.0};
+double stdDev[2] = {0.0, 0.0};
+unsigned int count[2] = {0, 0};
 double thresholdUp[2] = {1024,1024};
 double thresholdDown[2] = {-1024,-1024};
 bool learn = false;
 //double sigma = NSIGMA;
 
-void setStatsLearnMode(bool yes){
-	learn = yes;
+void setStatsLearnMode(){
+	learn = true;
+	thresholdUp[0] = 1024;
+	thresholdUp[1] = 1024;
+	avg[0] = 0.0;
+	avg[1] = 0.0;
+}
+
+void clrStatsLearnMode(){
+	learn = false;
 }
 
 bool isStatsLearnMode(){
@@ -49,26 +57,28 @@ short checkRange(double val, byte n) {
   DEBUG_PRINT(F("val: "));
   DEBUG_PRINTLN(val);
   
-  if(learn){  
-	  count[n]++;
-	  double delta = (double) val - avg[n];
-	  avg[n] += (double) delta / count[n];
-	  stdDev[n] += (double) delta * (val - avg[n]);
-	  if (count[n] > 1) {
+   
+  count[n]++;
+  double delta = (double) val - avg[n];
+  avg[n] += (double) delta / count[n];
+  
+  if(learn){
+	stdDev[n] += (double) delta * (val - avg[n]);
+	if (count[n] > 1) {
 		thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
-		thresholdDown[n] = (double) avg[n]/3;
-	  }
+	}
   }
-  else
-  {
-	  if(val > thresholdUp[n]) {
-	   res = 1;
-	  }
-	  
-	  if(val < thresholdDown[n]) {
-		res = -1;
-	  }	
+  if (count[n] > 1) {
+	thresholdDown[n] = (double) avg[n]/3;
   }
+  
+  if(val > thresholdUp[n]) {
+   res = 1;
+  }
+  
+  if(val < thresholdDown[n]) {
+	res = -1;
+  }	
   
   return res;
 }

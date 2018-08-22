@@ -917,7 +917,7 @@ void onCalibrEnd(unsigned long app, byte n){
 	weight[0] = (double) calAvg[0] / (calAvg[0] +  calAvg[1]);
 	weight[1] = (double) calAvg[1] / (calAvg[0] +  calAvg[1]);
 	//deactivate the learning of the running statistics
-	setStatsLearnMode(false);
+	clrStatsLearnMode();
 }
 
 //void onTapStart(byte n){
@@ -929,7 +929,7 @@ void manualCalibration(byte btn){
 	//setCronoLimits(0,THALTMAX,btn);
 	//setCronoCount(THALTMAX,btn);
 	//activate the learning of the running statistics
-	setStatsLearnMode(true);
+	setStatsLearnMode();
 	resetAVGStats(btn);
 	params[haltPrm[btn]] = THALTMAX;
 	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione

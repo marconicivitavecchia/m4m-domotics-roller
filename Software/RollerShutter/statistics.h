@@ -12,7 +12,8 @@ double getSTDDEV(byte);
 short checkRange(double, byte);
 double getThresholdUp(byte);
 double getThresholdDown(byte);
-void setStatsLearnMode(bool);
+void setStatsLearnMode();
+void clrStatsLearnMode();
 bool isStatsLearnMode();
 //double gethreshold();
 
