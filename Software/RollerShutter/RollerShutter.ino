@@ -514,7 +514,7 @@ void loop() {
 	d = 0;
 	
 	if(isMoving(0)){
-		chk[0] = checkMaxVal((double) ACSVolt*(1 - weight[1]*isMoving(1)),0);
+		chk[0] = checkRange((double) ACSVolt*(1 - weight[1]*isMoving(1)),0);
 		if(chk[0] != 0){
 			if(secondPress(0)==-1){
 				blocked[0]=2;
@@ -549,7 +549,7 @@ void loop() {
 	}
 	
 	if(isMoving(1)){
-		chk[1] = checkMaxVal((double) ACSVolt*(1 - weight[0]*isMoving(0)),1);
+		chk[1] = checkRange((double) ACSVolt*(1 - weight[0]*isMoving(0)),1);
 		if(chk[1] != 0){
 			if(secondPress(1)==-1){
 				blocked[1]=2;
@@ -916,6 +916,8 @@ void onCalibrEnd(unsigned long app, byte n){
 	calAvg[n] = getAVG(n);
 	weight[0] = (double) calAvg[0] / (calAvg[0] +  calAvg[1]);
 	weight[1] = (double) calAvg[1] / (calAvg[0] +  calAvg[1]);
+	//deactivate the learning of the running statistics
+	setStatsLearnMode(false);
 }
 
 //void onTapStart(byte n){
@@ -926,6 +928,8 @@ void manualCalibration(byte btn){
 	setGroupState(0,btn);	
 	//setCronoLimits(0,THALTMAX,btn);
 	//setCronoCount(THALTMAX,btn);
+	//activate the learning of the running statistics
+	setStatsLearnMode(true);
 	resetAVGStats(btn);
 	params[haltPrm[btn]] = THALTMAX;
 	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione

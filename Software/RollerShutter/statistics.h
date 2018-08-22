@@ -9,9 +9,11 @@ double getAVG(byte);
 //double getSigma();
 void resetAVGStats(byte);
 double getSTDDEV(byte);
-short checkMaxVal(double, byte);
+short checkRange(double, byte);
 double getThresholdUp(byte);
 double getThresholdDown(byte);
+void setStatsLearnMode(bool);
+bool isStatsLearnMode();
 //double gethreshold();
 
 #endif
