@@ -327,23 +327,20 @@ short secondPress(byte n){
 		outlogicp[DIRS+offset]=LOW;
 		setGroupState(0,n);												//stato 0: il motore va in stato fermo
 #if (AUTOCAL)  
+		addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
 		if(getCronoDir(n)==UP){
-			addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
-			if(getCronoCount(n) > thaltp[n]*1.1){
+			if(getCronoCount(n) > thaltp[n]){
 				thaltp[n] = getCronoCount(n);
 				rslt = 1;
 				DEBUG_PRINTLN(F("tapparella impiega più tempo della stima per apertura totale: correzione..."));
-			}else if((getCronoCount(n) < thaltp[n]*0.9) && (getCronoCount(n) > thaltp[n]*0.6)){
-				thaltp[n] = getCronoCount(n);
-				DEBUG_PRINTLN(F("tapparella impiega meno tempo della stima per l'apertura totale: correzione..."));
-				rslt = -1;
-			}else if(getCronoCount(n) < thaltp[n]*0.6){
-				DEBUG_PRINTLN(F("tapparella impiega molto meno tempo della stima per l'apertura totale: probabile forzatura della tapparella!"));
-				rslt = -2;
-			}		
+			}
 		}else{
-			stopCrono(n);
-			resetCronoCount(n);
+			if(getCronoCount(n) < 0){
+				stopCrono(n);
+				resetCronoCount(n);
+				rslt = 1;
+				DEBUG_PRINTLN(F("tapparella impiega più tempo della stima per la chiusura totale: correzione..."));
+			}
 		}
 #else	
 		//somma (o sottrai) il valore cronometrato al vecchio valore del contatore di posizione (ultima posizione registrata)

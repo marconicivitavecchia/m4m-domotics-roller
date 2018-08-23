@@ -931,16 +931,16 @@ void onCalibrEnd(unsigned long app, byte n){
 	DEBUG_PRINTLN(haltPrm[n]);
 	DEBUG_PRINT(F(": "));
 	DEBUG_PRINTLN(params[haltPrm[n]]);
-	
+	/*
 	EEPROMWriteStr(TRSHOLD1OFST + n*32,(params[TRSHOLD1 + n]).c_str());
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified current variance "));
 	DEBUG_PRINTLN(params[TRSHOLD1 + n]);
-	
+	*/
 	EEPROM.end();
 	
 	//deactivate the learning of the running statistics
-	clrStatsLearnMode();
+	//clrStatsLearnMode();
 }
 
 //void onTapStart(byte n){
@@ -952,7 +952,7 @@ void manualCalibration(byte btn){
 	//setCronoLimits(0,THALTMAX,btn);
 	//setCronoCount(THALTMAX,btn);
 	//activate the learning of the running statistics
-	setStatsLearnMode();
+	//setStatsLearnMode();
 	resetAVGStats(btn);
 	params[haltPrm[btn]] = THALTMAX;
 	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione

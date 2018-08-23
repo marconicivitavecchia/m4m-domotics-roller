@@ -59,7 +59,7 @@ extern RemoteDebug telnet;
 #endif
 
 #define AUTOCAL		1
-#define NSIGMA 		5
+#define NSIGMA 		6
 #define EMA  		0.2
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
@@ -130,10 +130,10 @@ extern RemoteDebug telnet;
 #define MQTTPSWOFST				584
 #define STDEL1OFST				616
 #define STDEL2OFST				648
-#define TRSHOLD1OFST			680
-#define TRSHOLD2OFST			712
-#define VALWEIGHTOFST			744
-#define EEPROMPARAMSLEN			776
+#define VALWEIGHTOFST			680
+//#define TRSHOLD1OFST			680
+//#define TRSHOLD2OFST			712
+#define EEPROMPARAMSLEN			712
 //--------------------------Fine EEPROM offsets-------------------------------------------
 //--------------------------Inizio params array indexes-----------------------------------
 #define WEBUSR					0

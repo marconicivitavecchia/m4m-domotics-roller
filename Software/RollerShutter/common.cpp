@@ -1141,6 +1141,12 @@ void loadConfig() {
 		DEBUG_PRINTLN(F("motor start delay2: "));
 		DEBUG_PRINTLN(paramsp[STDEL2]);
 		
+		EEPROMReadStr(VALWEIGHTOFST,buf);
+		paramsp[VALWEIGHT] = buf;
+		DEBUG_PRINTLN(F("current variance 2: "));
+		DEBUG_PRINTLN(paramsp[VALWEIGHT]);
+		
+		/*
 		EEPROMReadStr(TRSHOLD1OFST,buf);
 		paramsp[TRSHOLD1] = buf;
 		DEBUG_PRINTLN(F("current variance 1: "));
@@ -1150,11 +1156,7 @@ void loadConfig() {
 		paramsp[TRSHOLD2] = buf;
 		DEBUG_PRINTLN(F("current variance 2: "));
 		DEBUG_PRINTLN(paramsp[TRSHOLD2]);
-		
-		EEPROMReadStr(VALWEIGHTOFST,buf);
-		paramsp[VALWEIGHT] = buf;
-		DEBUG_PRINTLN(F("current variance 2: "));
-		DEBUG_PRINTLN(paramsp[VALWEIGHT]);
+		*/
 		
 		paramsp[CONFLOADED]="true";
 		EEPROM.end();
@@ -1329,6 +1331,12 @@ void saveOnEEPROM(){
 	DEBUG_PRINT(F("Modified start delay 2 "));
 	DEBUG_PRINTLN(paramsp[STDEL2]);
 	
+	EEPROMWriteStr(VALWEIGHTOFST,(paramsp[VALWEIGHT]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified current variance 2 "));
+	DEBUG_PRINTLN(paramsp[VALWEIGHT]);
+	
+	/*
 	EEPROMWriteStr(TRSHOLD1OFST,(paramsp[TRSHOLD1]).c_str());
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified current variance 1 "));
@@ -1338,11 +1346,7 @@ void saveOnEEPROM(){
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified current variance 2 "));
 	DEBUG_PRINTLN(paramsp[TRSHOLD2]);
-	
-	EEPROMWriteStr(VALWEIGHTOFST,(paramsp[VALWEIGHT]).c_str());
-	EEPROM.commit();
-	DEBUG_PRINT(F("Modified current variance 2 "));
-	DEBUG_PRINTLN(paramsp[VALWEIGHT]);
+	*/
 
     EEPROM.end();
 }
