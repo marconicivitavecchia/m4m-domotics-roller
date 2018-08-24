@@ -58,7 +58,7 @@ short checkRange(double val, byte n) {
   byte res = 0;
   
   
-   DEBUG_PRINT(F("val: "));
+  DEBUG_PRINT(F("val: "));
   DEBUG_PRINTLN(val);
   DEBUG_PRINT(F("avg[n]: "));
   DEBUG_PRINTLN(avg[n]);
@@ -88,6 +88,7 @@ short checkRange(double val, byte n) {
 }
 
 /*
+// https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
  count = count + 1 
     delta = newValue - mean
     mean = mean + delta / count
