@@ -520,12 +520,12 @@ void loop() {
 	if(isMoving(0)){
 		chk[0] = checkRange((double) ACSVolt*(1 - weight[1]*isMoving(1)),0);
 		if(chk[0] != 0){
-			if(secondPress(0)==-1){
-				blocked[0]=2;
+			if(secondPress(0) == 2){
+				blocked[0] = 2;
 			}
 			scriviOutDaStato();
 			if(chk[0] == 1){
-				blocked[0]=1;
+				blocked[0] = 1;
 			}
 			readStatesAndPub();
 			DEBUG_PRINT(F("weight 2: "));
@@ -555,12 +555,12 @@ void loop() {
 	if(isMoving(1)){
 		chk[1] = checkRange((double) ACSVolt*(1 - weight[0]*isMoving(0)),1);
 		if(chk[1] != 0){
-			if(secondPress(1)==-1){
-				blocked[1]=2;
+			if(secondPress(1) == 2){
+				blocked[1] = 2;
 			}
 			scriviOutDaStato();
 			if(chk[1] == 1){
-				blocked[1]=1;
+				blocked[1] = 1;
 			}
 			readStatesAndPub();
 			DEBUG_PRINT("Auto stop! chk[1]: ");

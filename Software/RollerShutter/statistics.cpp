@@ -2,7 +2,7 @@
 
 double avg[2] = {0.0, 0.0};
 double stdDev[2] = {0.0, 0.0};
-unsigned int count[2] = {1, 1};
+unsigned long count[2] = {1, 1};
 double thresholdUp[2] = {1024,1024};
 double thresholdDown[2] = {-1024,-1024};
 bool learn = false;
@@ -58,13 +58,16 @@ short checkRange(double val, byte n) {
   byte res = 0;
   
   
-  DEBUG_PRINT(F("val: "));
+   DEBUG_PRINT(F("val: "));
   DEBUG_PRINTLN(val);
+  DEBUG_PRINT(F("avg[n]: "));
+  DEBUG_PRINTLN(avg[n]);
   
    
   count[n]++;
+  //count[n] = (count[n] +1) % 256;
   double delta = (double) val - avg[n];
-  avg[n] += (double) delta / count[n];
+  count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
   stdDev[n] += (double) delta * (val - avg[n]);
   if (count[n] > 1) {
 	thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
