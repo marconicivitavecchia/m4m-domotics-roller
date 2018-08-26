@@ -222,16 +222,16 @@ extern RemoteDebug telnet;
 #include "statistics.h"
 #define sensorRead()	if((millis()-pn) > 2){		\
 	pn = millis();					\
-	x = analogRead(A0) - 494;				\
-	if (x > max) 					\
+	x = analogRead(A0) - 494;		\
+	if (x > maxx) 					\
      {    							\
-		max = x; 					\
+		maxx = x; 					\
      }								\
-	if (x < min) 					\
+	if (x < minx) 					\
      {       						\
-		min = x;					\
+		minx = x;					\
 	 }								\
-	d = max - min;					\
+	d = maxx - minx;					\
   }									\
 
 #define getAmpRMS()		ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;		\

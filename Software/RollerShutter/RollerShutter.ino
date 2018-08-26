@@ -17,8 +17,8 @@ int x;
 //double ex=0;
 unsigned long n=1;
 unsigned long pn=0;
-int min = 1024;
-int max = 0;
+int minx = 1024;
+int maxx = 0;
 int d = 0;
 double calAvg[2] = {0,0};
 double weight[2] = {0,0};
@@ -513,8 +513,8 @@ void loop() {
 	//ACSVolt = (double) ex/2.0;
 	ACSVolt = (double) d/2.0;
 	//reset of peak sample value
-	min = 1024;
-	max = 0;
+	minx = 1024;
+	maxx = 0;
 	d = 0;
 	
 	if(isMoving(0)){
