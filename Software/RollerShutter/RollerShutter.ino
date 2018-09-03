@@ -5,7 +5,7 @@
 #define nsteps          12000        // numero di fasi massimo di un periodo generico
 
 //stats variables
-#if (1)  
+#if (AUTOCAL)
 double ACSVolt;
 unsigned int mVperAmp = 100;   // 185 for 5A, 100 for 20A and 66 for 30A Module
 double ACSVoltage = 0;
@@ -331,13 +331,21 @@ void readStatesAndPub(){
 
 }
 
-void initIiming(){
+void initIiming(bool first){
   edelay[0]=(params[STDEL1]).toInt();
   edelay[1]=(params[STDEL2]).toInt();
   //initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL);
-  initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
+  initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2,first);
+  setCronoCount((params[THALT1]).toInt(),0);
+  setCronoCount((params[THALT2]).toInt(),1);
+  //setCronoLimits(0,(params[THALT1]).toInt(),TAP1);
+  //setCronoLimits(0,(params[THALT2]).toInt(),TAP2);
+  setCronoLimits(-THALTMAX,THALTMAX,TAP1);
+  setCronoLimits(-THALTMAX,THALTMAX,TAP2);
+  //initTapparellaLogic(in,inr,outLogic,(THALTMAX,THALTMAX,(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
   //cthalt[0]=(params[THALT1]).toInt();
   //cthalt[1]=(params[THALT2]).toInt();
+  
 }
 
 void setup() {
@@ -372,12 +380,12 @@ void setup() {
   setupTimer(CNTIME*1000,CNTIMER1);							//special timer btn1 
   setupTimer(CNTIME*1000,CNTIMER2);							//special timer btn2 
   setupTimer(APOFFT*1000,APOFFTIMER);						//special timer btn1
-  setCronoLimits(0,(params[THALT1]).toInt(),TAP1);
-  setCronoLimits(0,(params[THALT2]).toInt(),TAP2);
+#if (AUTOCAL)
   weight[0] =  (params[VALWEIGHT]).toFloat();
   weight[1] = 1 - weight[0];
   setThresholdUp((params[TRSHOLD1]).toFloat(), 0);
   setThresholdUp((params[TRSHOLD2]).toFloat(), 1);
+#endif
   //DEBUG_PRINTLN("Inizializzo i timers a zero.");
   //initTimers();
   //DEBUG_PRINTLN("Avvio il client MQTT.");
@@ -441,7 +449,7 @@ void setup() {
 	  outLogic[i]=LOW;
   for(int i=0;i<4;i++)
 		inr[i]=LOW;
-  initIiming();
+  initIiming(true);
   // Register event handlers.
   // Callback functions will be called as long as these handler objects exist.
   // Call "onStationConnected" each time a station connects
@@ -516,7 +524,8 @@ void loop() {
 	minx = 1024;
 	maxx = 0;
 	d = 0;
-	
+	//DEBUG_PRINT(F("x: "));
+	//DEBUG_PRINTLN(x);
 	if(isMoving(0)){
 		chk[0] = checkRange((double) ACSVolt*(1 - weight[1]*isMoving(1)),0);
 		if(chk[0] != 0){
@@ -903,17 +912,17 @@ void onElapse(byte n){
 		
 void onCalibrEnd(unsigned long app, byte n){		
 	params[haltPrm[n]] = String(app);
-	initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
-	
+	//initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
+	setTapThalt((params[THALT1 + n]).toInt(), n);
 	DEBUG_PRINTLN(F("-----------------------------"));
+#if (AUTOCAL)
 	calAvg[n] = getAVG(n);
 	weight[0] = (double) calAvg[0] / (calAvg[0] +  calAvg[1]);
 	weight[1] = (double) calAvg[1] / (calAvg[0] +  calAvg[1]);
-	
 	params[VALWEIGHT] = String(weight[0]);
 	params[TRSHOLD1 + n] = String(getThresholdUp(n));
 	setThresholdUp((params[TRSHOLD1 + n]).toFloat(), n);
-
+#endif
 	EEPROM.begin(EEPROMPARAMSLEN);
 	
 	EEPROMWriteStr(VALWEIGHTOFST,(params[VALWEIGHT]).c_str());
@@ -949,8 +958,9 @@ void manualCalibration(byte btn){
 	//setCronoCount(THALTMAX,btn);
 	//activate the learning of the running statistics
 	//setStatsLearnMode();
+#if (AUTOCAL)
 	resetAVGStats(btn);
-	params[haltPrm[btn]] = THALTMAX;
+#endif
 	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione
 	
 	DEBUG_PRINTLN(F("-----------------------------"));

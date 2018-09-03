@@ -996,7 +996,7 @@ void handleModify(){
 		
   if(paramsp[TIMINGCHANGED]=="true"){
 	paramsp[TIMINGCHANGED]=="false";
-	initIiming();
+	initIiming(false);
   }
   
   if( serverp.hasArg("rebootd") && String("y") == serverp.arg("rebootd") ){

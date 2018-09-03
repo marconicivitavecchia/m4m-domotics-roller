@@ -58,7 +58,7 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
-#define AUTOCAL		1
+#define AUTOCAL		0
 #define NSIGMA 		6
 #define EMA  		0.2
 #define THALTMAX   	90000 
@@ -222,7 +222,7 @@ extern RemoteDebug telnet;
 #include "statistics.h"
 #define sensorRead()	if((millis()-pn) > 2){		\
 	pn = millis();					\
-	x = analogRead(A0) - 494;		\
+	x = analogRead(A0) - 493;		\
 	if (x > maxx) 					\
      {    							\
 		maxx = x; 					\
@@ -231,7 +231,7 @@ extern RemoteDebug telnet;
      {       						\
 		minx = x;					\
 	 }								\
-	d = maxx - minx;					\
+	d = maxx - minx;				\
   }									\
 
 #define getAmpRMS()		ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;		\
@@ -259,7 +259,7 @@ void rebootSystem();
 void onStationConnected(const WiFiEventSoftAPModeStationConnected&);
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected&);
 void testFlash();
-void initIiming();
+void initIiming(bool);
 /*
 //http server callback function prototypes
 void handleRoot(ESP8266WebServer (&), String const (&)[PARAMSDIM]);        // function prototypes for HTTP handlers

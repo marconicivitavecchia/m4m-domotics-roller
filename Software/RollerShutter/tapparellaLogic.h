@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "common.h"
 
-void initTapparellaLogic(byte *, byte *, byte *, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
+void initTapparellaLogic(byte *, byte *, byte *, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,bool);
 byte tapparellaLogic(byte *, byte *, byte*, unsigned long , byte n);
 byte tapparellaLogic(byte);
 void setTapThalt(unsigned long thalt, byte n);
@@ -26,6 +26,8 @@ bool startEngineDelayTimer(byte);
 bool isRunning(byte);
 bool isMoving(byte);
 byte nRunning();
+void enableShortRun(byte i);
+void disableShortRun(byte i);
 
 //bool inline initdfn(byte,  byte);
 //extern void onBtnPress(n)
