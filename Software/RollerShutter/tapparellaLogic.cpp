@@ -269,6 +269,10 @@ void setTapThalt(unsigned long thalt,byte n){
 	thaltp[n]=thalt;
 }
 
+unsigned long getTapThalt(byte n){
+	return thaltp[n];
+}
+
 long getTarget(byte n){
 	return target[n];
 }
@@ -363,7 +367,10 @@ short secondPress(byte n){
 #else	
 		//somma (o sottrai) il valore cronometrato al vecchio valore del contatore di posizione (ultima posizione registrata)
 		addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
+		DEBUG_PRINT(F("thaltp[n]: "));
+		DEBUG_PRINTLN(thaltp[n]);
 		if(thaltp[n] == halfThaltMax){
+			DEBUG_PRINT(F("dentro if: "));
 			if(getCronoCount(n) >= THALTMAX){
 				thaltp[n] = thaltp2[n];
 				setCronoCount(thaltp[n], n);

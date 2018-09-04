@@ -7,7 +7,8 @@
 void initTapparellaLogic(byte *, byte *, byte *, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,bool);
 byte tapparellaLogic(byte *, byte *, byte*, unsigned long , byte n);
 byte tapparellaLogic(byte);
-void setTapThalt(unsigned long thalt, byte n);
+void setTapThalt(unsigned long, byte);
+unsigned long getTapThalt(byte);
 //extern void onTapStop(byte);
 //extern void onTapStart(byte);
 extern void onCalibrEnd(unsigned long, byte);
@@ -20,14 +21,14 @@ byte getGroupState(byte);
 void setGroupState(byte, byte);
 byte getDelayedCmd(byte);
 void setDelayedCmd(byte, byte);
-void setBtnDelay(byte dly, byte i);
+void setBtnDelay(byte, byte);
 void startEndOfRunTimer(byte);
 bool startEngineDelayTimer(byte);
 bool isRunning(byte);
 bool isMoving(byte);
 byte nRunning();
-void enableShortRun(byte i);
-void disableShortRun(byte i);
+void enableShortRun(byte);
+void disableShortRun(byte);
 
 //bool inline initdfn(byte,  byte);
 //extern void onBtnPress(n)

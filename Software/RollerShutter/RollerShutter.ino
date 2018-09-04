@@ -301,16 +301,16 @@ void readStatesAndPub(){
   s+=mqttJson[2]+F("\":\"")+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+F("\",\"");    //down1  DIRS=LOW
   s+=mqttJson[3]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+F("\",\"");	//up2 
   s+=mqttJson[4]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+F("\",\"");    //down2
-  s+= (String) F("pr1\":\"")+String((long)(getCronoCount(0)*100)/getUpLimit(0))+F("\",\"");		//pr1
-  s+= (String) F("pr2\":\"")+String((long)(getCronoCount(1)*100)/getUpLimit(1))+F("\",\"");		//pr2
+  s+= (String) F("pr1\":\"")+String((long)(getCronoCount(0)*100)/getTapThalt(0))+F("\",\"");		//pr1
+  s+= (String) F("pr2\":\"")+String((long)(getCronoCount(1)*100)/getTapThalt(1))+F("\",\"");		//pr2
   if(blocked[0]>0){
 	  s+= (String) F("blk1\":\"")+blocked[0]+F("\",\"");		//blk1
   }
   if(blocked[1]>0){
 	  s+= (String) F("blk1\":\"")+blocked[1]+F("\",\"");		//blk2
   }
-  s+= (String) F("sp1\":\"")+String((long)getUpLimit(0))+F("\",\"");		//sp1
-  s+= (String) F("sp2\":\"")+String((long)getUpLimit(1))+F("\"}");		//sp2
+  s+= (String) F("sp1\":\"")+String((long)getTapThalt(0))+F("\",\"");		//sp1
+  s+= (String) F("sp2\":\"")+String((long)getTapThalt(1))+F("\"}");		//sp2
   
   //pubblica sul broker la stringa JSON
   if(mqttClient==NULL){
