@@ -459,7 +459,7 @@ void firstPress(byte sw, byte n){
 		target[n] = (thaltp[n]) * (!sw);
 		target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
 #endif
-	}else if(inp[BTN1IN+poffset+sw] != 201){
+	}else if(inp[BTN1IN+poffset+sw] == 201){
 		DEBUG_PRINT(F("Calibrazione: in moto verso "));
 		DEBUG_PRINTLN(sw);
 		//thaltp[n] = THALTMAX;

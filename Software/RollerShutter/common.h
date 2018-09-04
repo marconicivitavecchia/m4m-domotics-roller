@@ -59,7 +59,7 @@ extern RemoteDebug telnet;
 #endif
 
 #define AUTOCAL		0
-#define NSIGMA 		6
+#define NSIGMA 		3
 #define EMA  		0.2
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE

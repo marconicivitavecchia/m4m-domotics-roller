@@ -528,6 +528,9 @@ void loop() {
 	//DEBUG_PRINTLN(x);
 	if(isMoving(0)){
 		chk[0] = checkRange((double) ACSVolt*(1 - weight[1]*isMoving(1)),0);
+		DEBUG_PRINT(F("Ampere: "));
+		float amp = getAmpRMS();
+		DEBUG_PRINTLN(amp);
 		if(chk[0] != 0){
 			blocked[0] = secondPress(0);
 			scriviOutDaStato();
