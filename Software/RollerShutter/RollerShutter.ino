@@ -223,7 +223,7 @@ void mqttReconnect() {
 	{
 		mqttClient->onData(mqttCallback);
 		mqttClient->onConnected([]() {
-		DEBUG_PRINTLN(F("onConnected([]() dice sono connesso."));
+		DEBUG_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
 			
 			//Altrimenti dice che è connesso ma non comunica
 			mqttClient->subscribe(params[MQTTINTOPIC]);
@@ -232,7 +232,7 @@ void mqttReconnect() {
 		});
 		mqttClient->onDisconnected([]() {
 			//DEBUG_PRINTLN("MQTT disconnected.");
-		DEBUG_PRINTLN(F("onDisconnected([]() dice non sono connesso."));
+		DEBUG_PRINTLN(F("MQTT: onDisconnected([]() dice mi sono disconnesso."));
 			//mqttConnected=false;
 		});
 		
