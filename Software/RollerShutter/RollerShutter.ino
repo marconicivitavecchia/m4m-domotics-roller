@@ -604,11 +604,11 @@ void loop() {
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
         if(mqttClient!=NULL){
 			if(!(mqttClient->isConnected())){
-				DEBUG_PRINTLN(F("isConnected() dice non sono connesso."));
+				DEBUG_PRINTLN(F("MQTT: isConnected() dice non sono connesso."));
 				mqttConnected=false;
 			}	
 			else{
-				DEBUG_PRINTLN(F("isConnected() dice sono connesso."));
+				DEBUG_PRINTLN(F("MQTT: isConnected() dice sono connesso."));
 				mqttConnected=true;
 			}
 		}
@@ -630,7 +630,7 @@ void loop() {
 				//non si può fare perchè dopo pochi loop crasha
 				if(dscnct){
 					dscnct=false;
-					DEBUG_PRINTLN(F("eseguo la connect()..."));
+					DEBUG_PRINTLN(F("eseguo la MQTT connect()..."));
 					noInterrupts ();
 					mqttClient->connect();
 					interrupts ();
@@ -638,7 +638,7 @@ void loop() {
 				else
 				{
 					dscnct=true;
-					DEBUG_PRINTLN(F("eseguo la disconnect()..."));
+					DEBUG_PRINTLN(F("eseguo la MQTT disconnect()..."));
 					noInterrupts ();
 					mqttClient->disconnect();
 					interrupts ();
