@@ -1,7 +1,7 @@
 #include "common.h"
 //End MQTT config------------------------------------------
 //inizio variabili e costanti dello schedulatore (antirimbalzo)
-#define time_base     	25        // periodo base in millisecondi
+#define time_base     	20           // periodo base in millisecondi
 #define nsteps          12000        // numero di fasi massimo di un periodo generico
 
 //stats variables
@@ -596,7 +596,7 @@ void loop() {
 	
 	//codice eseguito ogni 100*50 msec = 5 sec
 	//riconnessione MQTT
-	if(!(step % 200)){
+	if(!(step % 250)){
 		aggiornaTimer(CNTIMER1); 
 		aggiornaTimer(CNTIMER2); 
 		//aggiornaTimer(APOFFTIMER);
@@ -723,7 +723,7 @@ void loop() {
 	
 	//codice eseguito ogni 20*50 msec = 1000 msec
 	//riconnessione WiFi
-	if(!(step % 40)){
+	if(!(step % 50)){
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
 		/*
@@ -796,7 +796,7 @@ void loop() {
 		}
 	}
 	//ogni 50ms
-	if(!(step % 2)){
+	if(!(step % 3)){
 		//codice eseguito ogni tempo base (50ms)
 		//leggi ingressi locali e mette il loro valore sull'array val[]
 		leggiTasti();
