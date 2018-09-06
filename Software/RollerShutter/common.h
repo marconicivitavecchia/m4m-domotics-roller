@@ -58,7 +58,7 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
-#define AUTOCAL		0
+#define AUTOCAL		1
 #define NSIGMA 		3
 #define EMA  		0.2
 #define THALTMAX   	90000 
@@ -222,7 +222,7 @@ extern RemoteDebug telnet;
 #include "statistics.h"
 #define sensorRead()	if((millis()-pn) > 2){		\
 	pn = millis();					\
-	x = analogRead(A0) - 493;		\
+	x = analogRead(A0) - 494;		\
 	if (x > maxx) 					\
      {    							\
 		maxx = x; 					\

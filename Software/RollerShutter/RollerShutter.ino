@@ -874,7 +874,7 @@ void onElapse(byte n){
 				setGroupState(0,n%2);
 			}else if(testCntEvnt(4,CNTSERV1)){
 				DEBUG_PRINTLN(F("-----------------------------"));
-				DEBUG_PRINTLN(F("Rebooting ESP"));
+				DEBUG_PRINTLN(F("Rebooting ESP without reset of configuration"));
 				DEBUG_PRINTLN(F("-----------------------------"));
 				ESP.restart();
 			}else if(testCntEvnt(5,CNTSERV1)){
@@ -882,6 +882,11 @@ void onElapse(byte n){
 				DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
 				DEBUG_PRINTLN(F("-----------------------------"));
 				manualCalibration(0); //BTN1
+			}else if(testCntEvnt(8,CNTSERV1)){
+				DEBUG_PRINTLN(F("-----------------------------"));
+				DEBUG_PRINTLN(F("Reboot ESP with reset of configuration"));
+				DEBUG_PRINTLN(F("-----------------------------"));
+				rebootSystem();
 			}else{
 				setGroupState(0,n%2);
 			}
