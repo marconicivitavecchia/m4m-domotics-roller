@@ -797,7 +797,7 @@ void loop() {
 	}
 	//ogni 50ms
 	if(!(step % 3)){
-		//codice eseguito ogni tempo base (50ms)
+		//codice eseguito ogni tempo base (60ms)
 		//leggi ingressi locali e mette il loro valore sull'array val[]
 		leggiTasti();
 		leggiRemoto();
