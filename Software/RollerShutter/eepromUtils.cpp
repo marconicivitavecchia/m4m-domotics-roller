@@ -5,7 +5,7 @@
 #include <Arduino.h>
 
 void alterEEPROM() {
-  EEPROM.write(5, 'E');
+  EEPROM.write(5, 'U');
 }
 
 void initEEPROM(int len) {
