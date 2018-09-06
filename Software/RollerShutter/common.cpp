@@ -1350,3 +1350,76 @@ void saveOnEEPROM(){
 
     EEPROM.end();
 }
+
+void printConfig(){
+		DEBUG_PRINTLN(F("Printing EEPROM configuration...."));
+		
+		DEBUG_PRINT(F("THALT1: "));
+		DEBUG_PRINTLN(paramsp[THALT1]);
+		
+		DEBUG_PRINT(F("THALT2: "));
+		DEBUG_PRINTLN(paramsp[THALT2]);
+		
+		DEBUG_PRINT(F("mqttAddr: "));
+		DEBUG_PRINTLN(paramsp[MQTTADDR]);
+		
+		DEBUG_PRINT(F("mqttID: "));
+		DEBUG_PRINTLN(paramsp[MQTTID]);
+		
+		DEBUG_PRINT(F("mqttOutTopic: "));
+		DEBUG_PRINTLN(paramsp[MQTTOUTTOPIC]);
+		
+		DEBUG_PRINT(F("mqttInTopic: "));
+		DEBUG_PRINTLN(paramsp[MQTTINTOPIC]);
+		
+		DEBUG_PRINT(F("mqttJsonp[1]: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSON1]);
+		
+		DEBUG_PRINT(F("mqttJsonp[2]: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSON2]);
+		
+		DEBUG_PRINT(F("mqttJsonp[3]: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSON3]);
+		
+		DEBUG_PRINT(F("mqttJsonp[4]: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSON4]);
+		
+		DEBUG_PRINT(F("clntSsid1: "));
+		DEBUG_PRINTLN(paramsp[CLNTSSID1]);
+		
+		DEBUG_PRINT(F("clntPsw1: "));
+		DEBUG_PRINTLN(paramsp[CLNTPSW1]);
+		
+		DEBUG_PRINT(F("clntSsid2: "));
+		DEBUG_PRINTLN(paramsp[CLNTSSID2]);
+		
+		DEBUG_PRINT(F("clntPsw2: "));
+		DEBUG_PRINTLN(paramsp[CLNTPSW2]);
+		
+		DEBUG_PRINT(F("APSsid: "));
+		DEBUG_PRINTLN(paramsp[APPSSID]);
+		
+		DEBUG_PRINT(F("APPPSW: "));
+		DEBUG_PRINTLN(paramsp[APPPSW]);
+		
+		DEBUG_PRINT(F("webUsr: "));
+		DEBUG_PRINTLN(paramsp[WEBUSR]);
+		
+		DEBUG_PRINT(F("webPsw: "));
+		DEBUG_PRINTLN(paramsp[WEBPSW]);
+		
+		DEBUG_PRINT(F("mqtt user name: "));
+		DEBUG_PRINTLN(paramsp[MQTTUSR]);
+		
+		DEBUG_PRINTLN(F("mqtt user password: "));
+		DEBUG_PRINTLN(paramsp[MQTTPSW]);
+		
+		DEBUG_PRINTLN(F("motor start delay1: "));
+		DEBUG_PRINTLN(paramsp[STDEL1]);
+		
+		DEBUG_PRINTLN(F("motor start delay2: "));
+		DEBUG_PRINTLN(paramsp[STDEL2]);
+		
+		DEBUG_PRINTLN(F("current variance 2: "));
+		DEBUG_PRINTLN(paramsp[VALWEIGHT]);
+}

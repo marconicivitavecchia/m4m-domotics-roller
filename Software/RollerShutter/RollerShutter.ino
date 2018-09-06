@@ -365,6 +365,7 @@ void setup() {
   //telnet.begin();
   telnet.begin((params[MQTTID]).c_str()); // Initiaze the telnet server
   telnet.setResetCmdEnabled(true); // Enable the reset command
+  telnet.setCallBackProjectCmds(&processCmdRemoteDebug);
   DEBUG_PRINTLN(F("Activated remote debug"));
   DEBUG_PRINTLN(F("Inizializzo i pulsanti."));
   initdfn(LOW, 0);  //pull DOWN init (in realtà è un pull up, c'è un not in ogni ingresso sui pulsanti)
@@ -500,7 +501,8 @@ void httpSetup(){
 
 void loop() {
 #if (AUTOCAL)  
-  sensorRead();
+	//if(nRunning()) //starts when at least one motor is running
+		sensorRead();
 #endif
   //ArduinoOTA.handle();
   //funzioni eseguite ad ogni loop (istante di esecuione dipendente dal clock della CPU)
@@ -1025,6 +1027,37 @@ String macToString(const unsigned char* mac) {
   snprintf(buf, sizeof(buf), "%02x:%02x:%02x:%02x:%02x:%02x",
            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   return String(buf);
+}
+
+void processCmdRemoteDebug() {
+
+	String lastCmd = telnet.getLastCommand();
+
+	if (lastCmd == "showconf") {
+		// overall config print
+		printConfig();
+	}else if (lastCmd == "reboot") {
+		// Rebooting ESP without reset of configuration
+		DEBUG_PRINTLN(F("Rebooting ESP without reset of configuration"));
+		ESP.restart();
+	}else if (lastCmd == "reset") {
+		//Reboot ESP with reset of configuration
+		DEBUG_PRINTLN(F("Reboot ESP with reset of configuration"));
+		rebootSystem();
+	}else if (lastCmd == "calibrate1") {
+		//ATTIVATA CALIBRAZIONE MANUALE BTN 1
+		manualCalibration(0);
+	}else if (lastCmd == "calibrate2") {
+		//ATTIVATA CALIBRAZIONE MANUALE BTN 1
+		manualCalibration(1);
+	}else if (lastCmd == "apmodeon") {
+		DEBUG_PRINTLN(F("Atttivato AP mode"));
+		startTimer(APOFFTIMER);
+		//WiFi.enableSTA(false);
+		WiFi.setAutoConnect(false);
+		WiFi.setAutoReconnect(false);
+		setGroupState(0,n%2);
+	}
 }
 
 #if (DEBUG)	

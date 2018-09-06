@@ -260,6 +260,8 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected&);
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected&);
 void testFlash();
 void initIiming(bool);
+void printConfig();
+void processCmdRemoteDebug();
 /*
 //http server callback function prototypes
 void handleRoot(ESP8266WebServer (&), String const (&)[PARAMSDIM]);        // function prototypes for HTTP handlers
