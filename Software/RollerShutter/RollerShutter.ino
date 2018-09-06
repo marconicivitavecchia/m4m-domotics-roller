@@ -848,20 +848,20 @@ void onElapse(byte n){
 			//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 			readStatesAndPub();
 		}
-	}else if(n == CNTIMER1 || n == CNTIMER2)   //  (2,3) --> state n%2
-	{	DEBUG_PRINTLN(F("\nNon è il timer THALT: "));
-		if(n == RESETTIMER)
+	}else if(n == RESETTIMER)
 		{
 			rebootSystem();
-		}else if(n == APOFFTIMER){
-			if(WiFi.softAPgetStationNum() == 0){
-				WiFi.enableAP(false);
-				WiFi.enableSTA(true);
-				DEBUG_PRINTLN(F("-----------------------------"));
-				DEBUG_PRINTLN(F("Nussun client si è ancora connesso, disatttivato AP mode"));
-				DEBUG_PRINTLN(F("-----------------------------"));
-			}
-		}else if(n == CNTIMER1)
+	}else if(n == APOFFTIMER){
+		if(WiFi.softAPgetStationNum() == 0){
+			WiFi.enableAP(false);
+			WiFi.enableSTA(true);
+			DEBUG_PRINTLN(F("-----------------------------"));
+			DEBUG_PRINTLN(F("Nussun client si è ancora connesso, disatttivato AP mode"));
+			DEBUG_PRINTLN(F("-----------------------------"));
+		}
+	}else if(n == CNTIMER1 || n == CNTIMER2)   //  (2,3) --> state n%2
+	{	DEBUG_PRINTLN(F("\nNon è il timer THALT: "));
+		if(n == CNTIMER1)
 		{
 			DEBUG_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
 			if(testCntEvnt(3,CNTSERV1)){
