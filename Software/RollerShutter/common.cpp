@@ -959,7 +959,7 @@ void handleModify(){
 	DEBUG_PRINTLN(paramsp[STDEL1]);
 	paramsp[TIMINGCHANGED]="true";
   } 
-  if(serverp.hasArg("startdelay2") && paramsp[STDEL1] != serverp.arg("startdelay2") ){
+  if(serverp.hasArg("startdelay2") && paramsp[STDEL2] != serverp.arg("startdelay2") ){
 	paramsp[STDEL2]=serverp.arg("startdelay2");
 	EEPROMWriteStr(STDEL2OFST,(paramsp[STDEL2]).c_str());
 	EEPROM.commit();

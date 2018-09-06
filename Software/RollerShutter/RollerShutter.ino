@@ -592,11 +592,6 @@ void loop() {
 		}
 	}
 #endif
-
-	//DEBUG_PRINT("NStep: ");  
-	//DEBUG_PRINTLN(step,DEC);
-	
-	
 	//codice eseguito ogni 100*50 msec = 5 sec
 	//riconnessione MQTT
 	if(!(step % 250)){
@@ -1057,7 +1052,6 @@ void processCmdRemoteDebug() {
 		//WiFi.enableSTA(false);
 		WiFi.setAutoConnect(false);
 		WiFi.setAutoReconnect(false);
-		setGroupState(0,n%2);
 	}
 }
 

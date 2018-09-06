@@ -54,7 +54,7 @@ byte tapparellaLogic(byte n){
 			//DEBUG_PRINTLN(F("Partito il timer di reset"));
 			//DEBUG_PRINT(F("fronte di salita SW1ONS: "));
 			//DEBUG_PRINTLN(outlogicp[SW1ONS+offset]);			
-			//eseguo il lock del pulsante di DOWN
+			//eseguo il lock del pulsante di DOWN	
 			//inizio sezione critica
 			//noInterrupts ();
 			outlogicp[SW1ONS+offset]=true;
@@ -83,8 +83,11 @@ byte tapparellaLogic(byte n){
 					}
 				}else if(s==1)
 				{//se il motore è in attesa
-					setGroupState(4,n);												//stato 1: il motore va in modo configurazione
+					setGroupState(4,n);												//stato 4: il motore va in modo configurazione
 					//pressioni di configurazione del sistema, riavvio lo stato di attesa
+					//se la seconda pressione di una sequenza di configurazione è fatta entro 0.4 sec
+					//da li in poi vai in stato di configurazione che dura per 4 sec, 
+					//entro il quale si possono completare le pressioni della sequenza.
 					resetTimer(TMRHALT+toffset);
 					resetCnt(n);
 					setCntValue(2, n);
