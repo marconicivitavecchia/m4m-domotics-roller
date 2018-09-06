@@ -31,8 +31,8 @@ const char* outTopic = "sonoff17/out";
 const char* inTopic = "sonoff17/in";
 //const char* ssid1 = "OpenWrt";
 //const char* password1 = "dorabino.7468!";
-const char* ssid1 = "Telecom-11007801";
-const char* password1 = "fabseb050770250368120110";
+const char* ssid1 = "OpenWrt";
+const char* password1 = "dorabino.7468!";
 const char* ssid2 = "AndroidAP1";
 const char* password2 = "pippo2503";
 const char* apSsid = "admin";
@@ -379,8 +379,6 @@ void setup() {
   setupTimer((params[THALT1]).toInt(),TMRHALT);				//function timer switch1
   setupTimer((params[THALT2]).toInt(),TMRHALT+TIMERDIM);	//function timer switch2 
   setupTimer(RSTTIME*1000,RESETTIMER);						//special timer btn1 
-  setupTimer(CNTIME*1000,CNTIMER1);							//special timer btn1 
-  setupTimer(CNTIME*1000,CNTIMER2);							//special timer btn2 
   setupTimer(APOFFT*1000,APOFFTIMER);						//special timer btn1
 #if (AUTOCAL)
   weight[0] =  (params[VALWEIGHT]).toFloat();
@@ -722,8 +720,6 @@ void loop() {
 	if(!(step % 50)){
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
-		aggiornaTimer(CNTIMER1); 
-		aggiornaTimer(CNTIMER2); 
 		/*
 		DEBUG_PRINTLN(F("------------------------------------------"));
 		DEBUG_PRINT(F("x: "));
@@ -825,24 +821,74 @@ void onElapse(byte n){
 	DEBUG_PRINTLN(getGroupState(n));
 	if(n == TMRHALT || n == TMRHALT+TIMERDIM) //se è scaduto il timer di attesa o di blocco  (0,1) --> state n
 	{   
-		int toffset=n*TIMERDIM;
-		if(getGroupState(n)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
-			DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo da fine corsa"));
-			secondPress(n);
-			//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
-			scriviOutDaStato();
-			//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
-			readStatesAndPub();
-		}else if(getGroupState(n)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
-			DEBUG_PRINTLN(F("onElapse:  timer di attesa scaduto"));
-			startEngineDelayTimer(n);
-			scriviOutDaStato();
-		}else if(getGroupState(n)==2){//se il motore è in moto a vuoto
-			DEBUG_PRINTLN(F("onElapse:  timer di corsa a vuoto scaduto"));
-			///setGroupState(3,n);	//il motore va in moto cronometrato
-			startEndOfRunTimer(n);
-			//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
-			readStatesAndPub();
+		DEBUG_PRINT(F("\nCount value: "));
+		DEBUG_PRINT(getCntValue(n));
+		if(getCntValue(n) == 1){
+			int toffset=n*TIMERDIM;
+			if(getGroupState(n)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
+				DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo da fine corsa"));
+				secondPress(n);
+				//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
+				scriviOutDaStato();
+				//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
+				readStatesAndPub();
+			}else if(getGroupState(n)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
+				DEBUG_PRINTLN(F("onElapse:  timer di attesa scaduto"));
+				startEngineDelayTimer(n);
+				scriviOutDaStato();
+			}else if(getGroupState(n)==2){//se il motore è in moto a vuoto
+				DEBUG_PRINTLN(F("onElapse:  timer di corsa a vuoto scaduto"));
+				///setGroupState(3,n);	//il motore va in moto cronometrato
+				startEndOfRunTimer(n);
+				//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
+				readStatesAndPub();
+			}
+		}else if(getCntValue(n) > 1){
+			if(n == 0){
+				DEBUG_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
+				if(testCntEvnt(3,CNTSERV1)){
+					WiFi.enableAP(true);
+					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG_PRINTLN(F("Atttivato AP mode"));
+					DEBUG_PRINTLN(F("-----------------------------"));
+					startTimer(APOFFTIMER);
+					//WiFi.enableSTA(false);
+					WiFi.setAutoConnect(false);
+					WiFi.setAutoReconnect(false);
+					setGroupState(0,n%2);
+				}else if(testCntEvnt(4,CNTSERV1)){
+					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG_PRINTLN(F("Rebooting ESP without reset of configuration"));
+					DEBUG_PRINTLN(F("-----------------------------"));
+					ESP.restart();
+				}else if(testCntEvnt(5,CNTSERV1)){
+					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
+					DEBUG_PRINTLN(F("-----------------------------"));
+					manualCalibration(0); //BTN1
+				}else if(testCntEvnt(8,CNTSERV1)){
+					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG_PRINTLN(F("Reboot ESP with reset of configuration"));
+					DEBUG_PRINTLN(F("-----------------------------"));
+					rebootSystem();
+				}else{
+					setGroupState(0,n%2);
+				}
+				//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
+				resetCnt(CNTSERV1);
+			}else{
+				DEBUG_PRINTLN(F("onElapse:  timer 2 dei servizi a conteggio scaduto"));
+				if(testCntEvnt(5,CNTSERV2)){
+					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 2"));
+					DEBUG_PRINTLN(F("-----------------------------"));
+					manualCalibration(1); //BTN2
+				}else{
+					setGroupState(0,n%2);
+				}
+				//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
+				resetCnt(CNTSERV2);
+			}
 		}
 	}else if(n == RESETTIMER)
 		{
@@ -854,57 +900,6 @@ void onElapse(byte n){
 			DEBUG_PRINTLN(F("-----------------------------"));
 			DEBUG_PRINTLN(F("Nussun client si è ancora connesso, disatttivato AP mode"));
 			DEBUG_PRINTLN(F("-----------------------------"));
-		}
-	}else if(n == CNTIMER1 || n == CNTIMER2)   //  (2,3) --> state n%2
-	{	DEBUG_PRINTLN(F("\nNon è il timer THALT: "));
-		if(n == CNTIMER1)
-		{
-			DEBUG_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
-			if(testCntEvnt(3,CNTSERV1)){
-				WiFi.enableAP(true);
-				DEBUG_PRINTLN(F("-----------------------------"));
-				DEBUG_PRINTLN(F("Atttivato AP mode"));
-				DEBUG_PRINTLN(F("-----------------------------"));
-				startTimer(APOFFTIMER);
-				//WiFi.enableSTA(false);
-				WiFi.setAutoConnect(false);
-				WiFi.setAutoReconnect(false);
-				setGroupState(0,n%2);
-			}else if(testCntEvnt(4,CNTSERV1)){
-				DEBUG_PRINTLN(F("-----------------------------"));
-				DEBUG_PRINTLN(F("Rebooting ESP without reset of configuration"));
-				DEBUG_PRINTLN(F("-----------------------------"));
-				ESP.restart();
-			}else if(testCntEvnt(5,CNTSERV1)){
-				DEBUG_PRINTLN(F("-----------------------------"));
-				DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
-				DEBUG_PRINTLN(F("-----------------------------"));
-				manualCalibration(0); //BTN1
-			}else if(testCntEvnt(8,CNTSERV1)){
-				DEBUG_PRINTLN(F("-----------------------------"));
-				DEBUG_PRINTLN(F("Reboot ESP with reset of configuration"));
-				DEBUG_PRINTLN(F("-----------------------------"));
-				rebootSystem();
-			}else{
-				setGroupState(0,n%2);
-			}
-			//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
-			resetCnt(CNTSERV1);
-		}else if(n == CNTIMER2)
-		{
-			DEBUG_PRINTLN(F("onElapse:  timer 2 dei servizi a conteggio scaduto"));
-			if(testCntEvnt(5,CNTSERV2)){
-				DEBUG_PRINTLN(F("-----------------------------"));
-				DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 2"));
-				DEBUG_PRINTLN(F("-----------------------------"));
-				manualCalibration(1); //BTN2
-			}else{
-				setGroupState(0,n%2);
-			}
-			//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
-			resetCnt(CNTSERV2);
-		}else{
-			setGroupState(0,n%2);		
 		}
 		//setGroupState(0,n%2);				 								//stato 0: il motore va in stato fermo
 		DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo da stato configurazione"));

@@ -73,7 +73,9 @@ byte tapparellaLogic(byte n){
 						lastCmd[BTN1IN + poffset] = inp[BTN1IN+poffset];
 						DEBUG_PRINTLN(F("tapparellaLogic: stato 1: il motore va in attesa da stato 0 (fermo)"));
 						startTimer(btndelay[n],TMRHALT+toffset);	
-						setGroupState(1,n);												//stato 1: il motore va in attesa
+						setGroupState(1,n);	
+						//stato 1: il motore va in attesa
+						updateCnt(n);
 					}else{
 						setGroupState(2,n);	//il motore è in moto a vuoto
 						firstPress(0,n);
@@ -83,37 +85,16 @@ byte tapparellaLogic(byte n){
 					}
 				}else if(s==1)
 				{//se il motore è in attesa
-					setGroupState(4,n);												//stato 4: il motore va in modo configurazione
-					//pressioni di configurazione del sistema, riavvio lo stato di attesa
-					//se la seconda pressione di una sequenza di configurazione è fatta entro 0.4 sec
-					//da li in poi vai in stato di configurazione che dura per 4 sec, 
-					//entro il quale si possono completare le pressioni della sequenza.
+					//sono pressioni di configurazione
 					resetTimer(TMRHALT+toffset);
-					resetCnt(n);
-					setCntValue(2, n);
-					startTimer(CNTIMER1+n);
-					DEBUG_PRINTLN(F("stato 4: il motore va in modo configurazione da stato 1 (attesa)"));
-					DEBUG_PRINT(F("Partito il timer di attivazione servizi a conteggio gruppo "));
-					DEBUG_PRINTLN(n+1);
-				}else if(s==4)
-				{//se il motore è in configurazione
+					startTimer(btndelay[n],TMRHALT+toffset);	
 					updateCnt(n);
-					DEBUG_PRINT(F("Count value: "));
-					DEBUG_PRINTLN(getCntValue(n));
-					DEBUG_PRINT(F("stato dopo update count:  "));
-					DEBUG_PRINTLN(getGroupState(n));
 				}else  if(s==2 || s==3)//se il motore è in moto a vuoto o in moto cronometrato
 				{
-					DEBUG_PRINT(F("tapparellaLogic: Stato 0: il motore va in stato 0 (fermo) da stato "));
-					DEBUG_PRINTLN(getGroupState(n));
+					resetCnt(n);
 					secondPress(n);
-					//setGroupState(0,n);												//stato 0: il motore va in stato fermo
 					changed=1;
-					/*if(getGroupState(n)==4){ 
-						resetTimer(CNTIMER1+n);
-						resetCnt(CNTSERV1);
-						setGroupState(0,n);	//il motore è fermo
-					}*/
+					DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo "));
 				}
 				
 				//onUpPressed(n);
@@ -174,6 +155,7 @@ byte tapparellaLogic(byte n){
 						DEBUG_PRINTLN(F("stato 1: il motore va in attesa "));
 						setGroupState(1,n);												//stato 1: il motore va in attesa
 						startTimer(btndelay[n],TMRHALT+toffset);	
+						updateCnt(n);
 					}else{
 						setGroupState(2,n);												//stato 2: il motore va in moto a vuoto
 						firstPress(1,n);
@@ -184,26 +166,16 @@ byte tapparellaLogic(byte n){
 					//firstPressDown(n);
 				}else if(s==1)
 				{//se il motore è in attesa
-					setGroupState(4,n);												//stato 4: il motore va in modo configurazione
 					//pressioni di configurazione del sistema, riavvio lo stato di attesa
-					resetTimer(TMRHALT+toffset);	
-					resetCnt(n);
-					setCntValue(2, n);
-					startTimer(CNTIMER1+n);
-					DEBUG_PRINTLN(F("stato 4: il motore va in configurazione "));
-					DEBUG_PRINT(F("Partito il timer di attivazione servizi a conteggio gruppo "));
-					DEBUG_PRINTLN(n+1);
-					//è il motore è in moto
-				}else if(s==4)
-				{//se il motore è in configurazione
+					resetTimer(TMRHALT+toffset);
+					startTimer(btndelay[n],TMRHALT+toffset);						
 					updateCnt(n);
-					DEBUG_PRINT(F("Count value: "));
-					DEBUG_PRINTLN(getCntValue(n));
 				}else if(s==2 || s==3)//se il motore è in moto a vuoto o in moto cronometrato
 				{
-					DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo "));
+					resetCnt(n);
 					secondPress(n);
 					changed=1;
+					DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo "));
 				}
 				
 				//onDownPressed(n);
@@ -515,107 +487,3 @@ bool isMoving(byte n){
 byte nRunning(){
 	return nrun;
 }
-
-/*
-void firstPressDown(byte n){
-	int offset=n*STATUSDIM;
-	int toffset=n*TIMERDIM;
-	int poffset=n*BTNDIM;
-	
-	//da effettuare solo se il motore è fermo
-	//DEBUG_PRINT(F("\nPrima pressione DOWN: motore "));
-	//DEBUG_PRINT(n+1);
-	//DEBUG_PRINT(F(" in moto verso il basso al tempo "));
-	//DEBUG_PRINTLN(getCronoCount(n));
-	
-	//resetTimer(TMRHALT+toffset);
-	if(inp[BTN2IN+poffset] == 1 || inp[BTN2IN+poffset] == 2){
-		DEBUG_PRINT(F(" in moto verso il basso noper "));
-		//LIST OF DOWN ACTIONS
-		//imposta la DIRSezione
-		outlogicp[DIRS+offset]=HIGH;	
-		//abilita il motore
-		outlogicp[ENABLES+offset]=HIGH;	
-		target[n] = 0;
-		setCronoDir(DOWN,n);
-	}else if(inp[BTN2IN+poffset] > 2){ //aperture percentuali
-		target[n] = (unsigned long) (thaltp[n]/100)*inp[BTN2IN+poffset];
-		DEBUG_PRINT(F("\BTN2IN "));
-		DEBUG_PRINTLN(inp[BTN2IN+poffset]);
-		DEBUG_PRINT(F("\nTARGET "));
-		DEBUG_PRINTLN(target[n]);
-		DEBUG_PRINT(F("\getCronoCount(n) "));
-		DEBUG_PRINTLN(getCronoCount(n));
-		if(getCronoCount(n)> target[n]){
-			//LIST OF STOP ACTIONS  (TARGET ABOVE CURRENT POS)
-			//imposta la DIRSezione
-			outlogicp[DIRS+offset]=HIGH;	
-			//abilita il motore
-			outlogicp[ENABLES+offset]=HIGH;
-			setCronoDir(DOWN,n);
-		}else{ //TARGET UNDER CURRENT POS
-			setGroupState(1,n);	//il motore è in attesa
-			//LIST OF DOWN ACTIONS
-			DEBUG_PRINT(F("\nrev "));		
-			DEBUG_PRINTLN(inp[BTN1IN+poffset]);
-			DEBUG_PRINT(F("\nStop DOWN"));
-			//il motore è inp inversione di marcia (stato 3)
-			inp[BTN1IN+poffset] = inp[BTN2IN+poffset];
-			inp[BTN2IN+poffset] = 0;
-			firstPressUp(n);
-			//tapparellaLogic(inrp,inrp,outlogicp,thaltp[n],n);
-		}
-	}						
-}
-
-void firstPressUp(byte n){
-	int offset=n*STATUSDIM;
-	int toffset=n*TIMERDIM;
-	int poffset=n*BTNDIM;
-	
-	//da effettuare solo se il motore è fermo
-	//DEBUG_PRINT(F("\nPrima pressione UP: motore "));
-	//DEBUG_PRINT(n+1);
-	//DEBUG_PRINT(F("\ninp[BTN1IN+poffset] "));
-	//DEBUG_PRINTLN(inp[BTN1IN+poffset]);
-		
-	//resetTimer(TMRHALT+toffset);			
-	if(inp[BTN1IN+poffset] == 1 || inp[BTN1IN+poffset] == 2){
-		DEBUG_PRINTLN(F(" in moto verso l'alto noperc"));
-		//LIST OF UP ACTIONSalt 
-		//imposta la DIRSezione
-		outlogicp[DIRS+offset]=LOW;	
-		//abilita il motore
-		outlogicp[ENABLES+offset]=HIGH;
-		//fai partire il timer di fine corsa
-		target[n] = thaltp[n];
-		setCronoDir(UP,n);
-	}else if(inp[BTN1IN+poffset] > 2){ //aperture percentuali
-		DEBUG_PRINTLN(F(" in moto verso l'alto perc"));
-		target[n] = (unsigned long) (thaltp[n]/100)*inp[BTN1IN+poffset];
-		DEBUG_PRINT(F("\nTARGET "));
-		DEBUG_PRINTLN(target[n]);
-		if(target[n] > getCronoCount(n)){
-			//LIST OF UP ACTIONS (TARGET ABOVE CURRENT POS)
-			outlogicp[DIRS+offset]=LOW;	
-			//abilita il motore
-			outlogicp[ENABLES+offset]=HIGH;
-			setCronoDir(UP,n);
-		}else{ //TARGET UNDER CURRENT POS
-			setGroupState(1,n);	//il motore è in attesa
-			DEBUG_PRINT(F("\nrev "));
-			DEBUG_PRINTLN(inp[BTN1IN+poffset]);
-			//LIST OF UP ACTIONS
-			DEBUG_PRINT(F("\nStop UP"));
-			//il motore è inp inversione di marcia (stato 3)
-			DEBUG_PRINT(F("\nStart DOWN"));
-			//si trasferisce l'ingresso percentuale nell'altra direzione
-			inp[BTN2IN+poffset] = inp[BTN1IN+poffset];
-			inp[BTN1IN+poffset] = 0;
-			firstPressDown(n);
-			//tapparellaLogic(inrp,inrp,outlogicp,thaltp[n],n);
-			//il motore è in inversione di marcia (stato 3)
-		}
-	}
-}
-*/
