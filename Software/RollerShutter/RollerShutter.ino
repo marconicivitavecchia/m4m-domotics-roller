@@ -355,6 +355,7 @@ void setup() {
   //carica la configurazione dalla EEPROM
   //DEBUG_PRINTLN(F("Carico configurazione."));
   initCommon(&server,params,mqttJson);
+  delay(7000);
   loadConfig();
   //inizializza il client wifi
   //setup_wifi(wifindx);
@@ -599,8 +600,6 @@ void loop() {
 	//codice eseguito ogni 100*50 msec = 5 sec
 	//riconnessione MQTT
 	if(!(step % 250)){
-		aggiornaTimer(CNTIMER1); 
-		aggiornaTimer(CNTIMER2); 
 		//aggiornaTimer(APOFFTIMER);
 		
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
@@ -728,6 +727,8 @@ void loop() {
 	if(!(step % 50)){
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
+		aggiornaTimer(CNTIMER1); 
+		aggiornaTimer(CNTIMER2); 
 		/*
 		DEBUG_PRINTLN(F("------------------------------------------"));
 		DEBUG_PRINT(F("x: "));
