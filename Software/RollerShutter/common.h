@@ -58,14 +58,14 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
-#define AUTOCAL		1
+#define AUTOCAL		0
 #define NSIGMA 		3
 #define EMA  		0.2
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
 #define	TCOUNT		6		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
 #define RSTTIME		20		//DEFINE HOW MANY SECONDS BUTTON1 MUST BE PRESSED UNTIL A RESET OCCUR 
-#define CNTIME		4		//DEFINE HOW MANY SECONDS the user have for complete a sequence of configuration clicks after the second click
+#define CNTIME		4		//DEFINE HOW MANY SECONDS HAVE TO LAST THALT PARAMETER AT LEAST
 //#define CONFTIME	4		//DEFINE HOW MANY SECONDS 
 #define APOFFT		120		//DEFINE HOW MANY SECONDS   
 #define MAINBTN		3		//BUTTON WITH PROGRAMMING AND RESET FUNCTIONS
@@ -211,6 +211,8 @@ extern RemoteDebug telnet;
 	 digitalWrite(OUT2DD,outLogic[DIRS+STATUSDIM])		
 #endif
 
+//#define tapLogic(n)	(switchLogic(0,n) + switchLogic(1,n))
+
 //PRIMA DEFINISCO LE COSTANTI, POI INCLUDO I FILES HEADERS (.h) CHE LE USANO
 #include "tapparellaLogic.h"
 #include "serialize.h"
@@ -248,7 +250,7 @@ void setup_mDNS();
 void mqttReconnect();
 //void mqttCallback(String (&)[PARAMSDIM], String (&)[MQTTJSONDIM]);
 void mqttCallback(String &, String &);
-void readStatesAndPub();
+//void readStatesAndPub();
 //void leggiTasti();
 //void scriviOutDaStato();
 void saveOnEEPROM();

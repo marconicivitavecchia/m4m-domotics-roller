@@ -121,7 +121,7 @@ bool dscnct=false;
 String pr[3] = {"{\"pr1\":\"", "{\"pr2\":\"", "\"}"};
 //-----------------------------------------Begin of prototypes---------------------------------------------------------
 //-----------------------------------------End of prototypes---------------------------------------------------------
-bool inline switchdfn(byte val, byte n){
+inline bool switchdfn(byte val, byte n){
 	//n: numero di pulsanti
 	val = (val>0);								//SEMPLICE!!!!
 	bool changed = (val != dprecval2[n]);
@@ -129,9 +129,13 @@ bool inline switchdfn(byte val, byte n){
 	return changed;
 }
 
-void setup_AP() {
+inline byte tapLogic(byte n){
+	return (switchLogic(0,n) + switchLogic(1,n));
+}
+
+ void setup_AP() {
   DEBUG_PRINTLN(F("Configuring access point..."));
-  /* You can remove the password parameter if you want the AP to be open. */
+  // You can remove the password parameter if you want the AP to be open. 
   //WiFi.softAP(APSsid.c_str(), APPsw.c_str());
   
   // Disable the WiFi persistence.  The ESP8266 will not load and save WiFi settings in the flash memory.
@@ -328,7 +332,6 @@ void readStatesAndPub(){
   //{
 	  webSocket.broadcastTXT(s);
   //}
-
 }
 
 void initIiming(bool first){
@@ -796,7 +799,7 @@ void loop() {
 		leggiTasti();
 		leggiRemoto();
 		//se uno dei tasti delle tapparelle è stato premuto
-		if(tapparellaLogic(TAP1) == 1 ||  tapparellaLogic(TAP2)== 1){ 
+		if(tapLogic(TAP1) == 1 ||  tapLogic(TAP2) == 1){ 
 			//once any button is pressed
 			//legge lo stato finale e lo scrive sulle uscite
 			scriviOutDaStato();
@@ -822,7 +825,7 @@ void onElapse(byte n){
 	if(n == TMRHALT || n == TMRHALT+TIMERDIM) //se è scaduto il timer di attesa o di blocco  (0,1) --> state n
 	{   
 		DEBUG_PRINT(F("\nCount value: "));
-		DEBUG_PRINT(getCntValue(n));
+		DEBUG_PRINTLN(getCntValue(n));
 		if(getCntValue(n) == 1){
 			int toffset=n*TIMERDIM;
 			if(getGroupState(n)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
@@ -835,6 +838,7 @@ void onElapse(byte n){
 			}else if(getGroupState(n)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
 				DEBUG_PRINTLN(F("onElapse:  timer di attesa scaduto"));
 				startEngineDelayTimer(n);
+				//adesso parte...
 				scriviOutDaStato();
 			}else if(getGroupState(n)==2){//se il motore è in moto a vuoto
 				DEBUG_PRINTLN(F("onElapse:  timer di corsa a vuoto scaduto"));
