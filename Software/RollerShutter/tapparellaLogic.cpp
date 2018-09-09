@@ -250,12 +250,14 @@ short secondPress(byte n){
 			if(getCronoCount(n) < 0 && getCronoCount(n) > -thaltp[n]*1.2){
 				rslt = 0;
 				DEBUG_PRINTLN(F("tapparella impiega più tempo della stima per la chiusura totale: correzione..."));
+				stopCrono(n);
+			resetCronoCount(n);
 			}else if(getCronoCount(n) < -thaltp[n]*1.2){
 				rslt = 3;
 				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa basso, ricalibrare"));
+				stopCrono(n);
+				resetCronoCount(n);
 			}
-			stopCrono(n);
-			resetCronoCount(n);
 		}
 #else	
 		//somma (o sottrai) il valore cronometrato al vecchio valore del contatore di posizione (ultima posizione registrata)
