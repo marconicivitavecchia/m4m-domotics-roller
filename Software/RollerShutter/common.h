@@ -31,7 +31,7 @@ extern RemoteDebug telnet;
 #if (ROLLERSHUTTER)
   #define SCR    1  
   #define INPULLUP  0  			//disable internal pullup
-  #define OUTSLED  	1.52     
+  #define OUTSLED  	2     
   #define OUT1EU  	12      	// OUT1 =  MOTOR1 UP   
   #define OUT1DD  	4 //5    	// OUT2 =  MOTOR1 DOWN     
   #define OUT2EU  	5 //4     	// OUT3 =  MOTOR2 UP  
@@ -59,7 +59,7 @@ extern RemoteDebug telnet;
 #endif
 
 #define AUTOCAL		1
-#define NSIGMA 		2
+#define NSIGMA 		1.6
 #define EMA  		0.2
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
