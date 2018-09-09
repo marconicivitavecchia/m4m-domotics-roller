@@ -375,7 +375,7 @@ void firstPress(byte sw, byte n){
 		DEBUG_PRINTLN(target[n]);
 #endif
 	}else if(inp[BTN1IN+poffset+sw] == 201){
-		resetAVGStats(0,0);
+		resetStatDelayCounter(n);
 		moving[n]=true;
 		DEBUG_PRINT(F("Calibrazione: in moto verso "));
 		DEBUG_PRINTLN(sw);

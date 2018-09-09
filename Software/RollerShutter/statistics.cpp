@@ -3,11 +3,13 @@
 double avg[2] = {0.0, 0.0};
 double stdDev[2] = {0.0, 0.0};
 unsigned long count[2] = {1, 1};
+short count2[2] = {0, 0};
 double thresholdUp[2] = {1024,1024};
 double thresholdDown[2] = {-1024,-1024};
-bool learn = false;
-//double sigma = NSIGMA;
+//bool learn = false;
 
+//double sigma = NSIGMA;
+/*
 void setStatsLearnMode(){
 	learn = true;
 	thresholdUp[0] = 1024;
@@ -23,6 +25,7 @@ void clrStatsLearnMode(){
 bool isStatsLearnMode(){
 	return learn;
 }
+*/
 
 double getAVG(byte n) {
   return avg[n];
@@ -63,6 +66,7 @@ short checkRange(double val, byte n) {
   DEBUG_PRINT(F("avg[n]: "));
   DEBUG_PRINTLN(avg[n]);
   
+  count2[n] += (count2[n] < 6);
    
   count[n]++;
   //count[n] = (count[n] +1) % 256;
@@ -76,12 +80,12 @@ short checkRange(double val, byte n) {
 	DEBUG_PRINTLN(thresholdUp[n]);
   }
 
-  if(val > thresholdUp[n] && count[n] > 10) {
+  if(val > thresholdUp[n] && count2[n] > 5) {
 		res = 1;
   }
   
-  if(val < thresholdDown[n] && count[n] > 50) {
-	res = -1;
+  if(val < thresholdDown[n] && count2[n] > 5) {
+		res = -1;
   }	
   
   return res;
@@ -102,5 +106,11 @@ void resetAVGStats(double val, byte n) {
   avg[n] = val;
   stdDev[n] = 0.0;
   count[n] = 1;
+  count2[n] = 0;
 }
+
+void resetStatDelayCounter(byte n) {
+  count2[n] = 0;
+}
+
 

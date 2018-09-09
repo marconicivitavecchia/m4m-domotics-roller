@@ -8,13 +8,14 @@ double getAVG(byte);
 //void setSigma(byte);
 //double getSigma();
 void resetAVGStats(double, byte);
+void resetStatDelayCounter(byte);
 double getSTDDEV(byte);
 short checkRange(double, byte);
 double getThresholdUp(byte);
 double getThresholdDown(byte);
 //void setStatsLearnMode();
 //void clrStatsLearnMode();
-bool isStatsLearnMode();
+//bool isStatsLearnMode();
 void setThresholdUp(double, byte);
 //double gethreshold();
 
