@@ -235,24 +235,24 @@ short secondPress(byte n){
 #if (AUTOCAL)  
 		addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
 		if(getCronoDir(n)==UP){
-			if(getCronoCount(n) > thaltp[n] && getCronoCount(n) < thaltp[n]*1.2){
+			if(getCronoCount(n) > (long) thaltp[n] && getCronoCount(n) < (long) thaltp[n]*1.2){
 				rslt = 0;
 				setCronoCount(thaltp[n], n);
 				//thaltp[n] = getCronoCount(n);
 				DEBUG_PRINTLN(F("tapparella impiega più tempo della stima per apertura totale: correzione..."));
-			}else if(getCronoCount(n) > thaltp[n]*1.2){
+			}else if(getCronoCount(n) > (long) thaltp[n]*1.2){
 				setCronoCount(thaltp[n], n);
 				rslt = 2;
 				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa alto, possibile forzatura"));
 				setCronoCount(thaltp[n], n);
 			}
 		}else{
-			if(getCronoCount(n) < 0 && getCronoCount(n) > -thaltp[n]*1.2){
+			if(getCronoCount(n) < (long) 0 && getCronoCount(n) > (long) -thaltp[n]*1.2){
 				rslt = 0;
 				DEBUG_PRINTLN(F("tapparella impiega più tempo della stima per la chiusura totale: correzione..."));
 				stopCrono(n);
-			resetCronoCount(n);
-			}else if(getCronoCount(n) < -thaltp[n]*1.2){
+				resetCronoCount(n);
+			}else if(getCronoCount(n) < (long) -thaltp[n]*1.2){
 				rslt = 3;
 				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa basso, ricalibrare"));
 				stopCrono(n);
