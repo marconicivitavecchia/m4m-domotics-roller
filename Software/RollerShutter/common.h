@@ -31,7 +31,7 @@ extern RemoteDebug telnet;
 #if (ROLLERSHUTTER)
   #define SCR    1  
   #define INPULLUP  0  			//disable internal pullup
-  #define OUTSLED  	2     
+  #define OUTSLED  	1.52     
   #define OUT1EU  	12      	// OUT1 =  MOTOR1 UP   
   #define OUT1DD  	4 //5    	// OUT2 =  MOTOR1 DOWN     
   #define OUT2EU  	5 //4     	// OUT3 =  MOTOR2 UP  
@@ -58,8 +58,8 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
-#define AUTOCAL		0
-#define NSIGMA 		3
+#define AUTOCAL		1
+#define NSIGMA 		2
 #define EMA  		0.2
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
@@ -222,7 +222,7 @@ extern RemoteDebug telnet;
 #include "statistics.h"
 #define sensorRead()	if((millis()-pn) > 2){		\
 	pn = millis();					\
-	x = analogRead(A0) - 494;		\
+	x = analogRead(A0) - 495;		\
 	if (x > maxx) 					\
      {    							\
 		maxx = x; 					\
@@ -231,7 +231,7 @@ extern RemoteDebug telnet;
      {       						\
 		minx = x;					\
 	 }								\
-	d = maxx - minx;				\
+	d = maxx - minx -1.5;				\
   }									\
 
 #define getAmpRMS()		ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;		\

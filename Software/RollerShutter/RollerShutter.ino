@@ -9,6 +9,7 @@
 double ACSVolt;
 unsigned int mVperAmp = 100;   // 185 for 5A, 100 for 20A and 66 for 30A Module
 double ACSVoltage = 0;
+double peak = 0;
 double VRMS = 0;
 double VMCU = 0;
 double AmpsRMS = 0;
@@ -23,6 +24,7 @@ int d = 0;
 double calAvg[2] = {0,0};
 double weight[2] = {0,0};
 short chk[2]={0,0};
+bool isrun = false;
 #endif
 //end of stats variables
 unsigned long prec=0;
@@ -339,12 +341,12 @@ void initIiming(bool first){
   edelay[1]=(params[STDEL2]).toInt();
   //initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL);
   initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2,first);
-  setCronoCount((params[THALT1]).toInt(),0);
-  setCronoCount((params[THALT2]).toInt(),1);
+  resetAVGStats(0,0);
+  resetAVGStats(0,1);
+  //setCronoCount((params[THALT1]).toInt(),0);
+  //setCronoCount((params[THALT2]).toInt(),1);
   //setCronoLimits(0,(params[THALT1]).toInt(),TAP1);
   //setCronoLimits(0,(params[THALT2]).toInt(),TAP2);
-  setCronoLimits(-THALTMAX,THALTMAX,TAP1);
-  setCronoLimits(-THALTMAX,THALTMAX,TAP2);
   //initTapparellaLogic(in,inr,outLogic,(THALTMAX,THALTMAX,(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
   //cthalt[0]=(params[THALT1]).toInt();
   //cthalt[1]=(params[THALT2]).toInt();
@@ -523,15 +525,18 @@ void loop() {
 	//EMA calculation
 	//ex = (float) d*EMA + (1.0 - EMA)*ex;
 	//ACSVolt = (double) ex/2.0;
-	ACSVolt = (double) d/2.0;
+	peak = (double) d/2.0;
 	//reset of peak sample value
 	minx = 1024;
 	maxx = 0;
 	d = 0;
+	//DEBUG_PRINT(F("-ACSVolt: "));
+	//DEBUG_PRINTLN(peak);
 	//DEBUG_PRINT(F("x: "));
 	//DEBUG_PRINTLN(x);
+	
 	if(isMoving(0)){
-		chk[0] = checkRange((double) ACSVolt*(1 - weight[1]*isMoving(1)),0);
+		chk[0] = checkRange((double) peak*(1 - weight[1]*isMoving(1)),0);
 		DEBUG_PRINT(F("Ampere: "));
 		float amp = getAmpRMS();
 		DEBUG_PRINTLN(amp);
@@ -564,10 +569,12 @@ void loop() {
 			DEBUG_PRINT(F("chk 1: "));
 			DEBUG_PRINTLN(chk[0]);
 		}
+	}else{
+		resetAVGStats(0,0);
 	}
 	
 	if(isMoving(1)){
-		chk[1] = checkRange((double) ACSVolt*(1 - weight[0]*isMoving(0)),1);
+		chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
 		if(chk[1] != 0){
 			blocked[1] = secondPress(1);
 			scriviOutDaStato();
@@ -591,6 +598,8 @@ void loop() {
 			DEBUG_PRINT(F("chk 2: "));
 			DEBUG_PRINTLN(chk[1]);
 		}
+	}else{
+		resetAVGStats(0,1);
 	}
 #endif
 	//codice eseguito ogni 100*50 msec = 5 sec
@@ -844,7 +853,7 @@ void onElapse(byte n){
 				DEBUG_PRINTLN(F("onElapse:  timer di corsa a vuoto scaduto"));
 				///setGroupState(3,n);	//il motore va in moto cronometrato
 				startEndOfRunTimer(n);
-				//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
+				//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
 				readStatesAndPub();
 			}
 		}else if(getCntValue(n) > 1){
@@ -959,12 +968,10 @@ void onCalibrEnd(unsigned long app, byte n){
 
 void manualCalibration(byte btn){
 	setGroupState(0,btn);	
-	//setCronoLimits(0,THALTMAX,btn);
-	//setCronoCount(THALTMAX,btn);
 	//activate the learning of the running statistics
 	//setStatsLearnMode();
 #if (AUTOCAL)
-	resetAVGStats(btn);
+	resetAVGStats(0,btn);
 #endif
 	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione
 	

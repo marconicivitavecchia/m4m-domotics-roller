@@ -6,10 +6,8 @@ byte groupState[2];
 byte *inp;
 byte *inrp;
 byte *outlogicp;
-unsigned long halfThaltMax = THALTMAX/2;
 unsigned long thaltp[2]={THALTMAX/2,THALTMAX/2};
 #if (!AUTOCAL) 
-unsigned long thaltp2[2]={THALTMAX,THALTMAX};
 #endif
 unsigned long engdelay[2]={0,0};
 unsigned long btndelay[2]={0,0};
@@ -18,6 +16,7 @@ short upmap[2]={1,-1};
 byte calibr=0;
 byte nrun=0;
 byte moving[2]={false,false};
+bool first[2]={true,true};
 
 inline bool switchdfn(byte val, byte n){
 	//n: numero di pulsanti
@@ -129,7 +128,7 @@ byte tapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt, b
 	tapparellaLogic(n);
 }
 */
-void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt1, unsigned long thalt2, unsigned long engdelay1, unsigned long engdelay2, unsigned long bdelay1, unsigned long bdelay2, bool first=false){
+void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt1, unsigned long thalt2, unsigned long engdelay1, unsigned long engdelay2, unsigned long bdelay1, unsigned long bdelay2, bool firstTime=false){
 	inp=in;
 	inrp=inr;
 	outlogicp=outlogic;
@@ -139,12 +138,14 @@ void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thal
 	engdelay[1]=engdelay2;
 	btndelay[0]=bdelay1;
 	btndelay[1]=bdelay2;
+	resetCronoCount(0);
+	resetCronoCount(1);
+	setCronoLimits(-THALTMAX,THALTMAX,0);
+	setCronoLimits(-THALTMAX,THALTMAX,1);
 #if (!AUTOCAL) 
-	thaltp2[0]=thalt1;
-	thaltp2[1]=thalt2;
-	if(first){
-		thaltp[0]=thaltp[1]=THALTMAX/2;
-	}
+	thaltp[0]=thalt1;
+	thaltp[1]=thalt2;
+	first[0] = first[1] = firstTime;
 #endif	
 }
 
@@ -169,14 +170,17 @@ void setGroupState(byte tstate, byte n){
 }
 
 void startEndOfRunTimer(byte n){
+	//il motore è in moto libero
 	moving[n]=true;
 	if(calibr == 1 || calibr == 2){
 		target[n] = THALTMAX;
 		DEBUG_PRINTLN(F("Start Timer calibrazione "));
 	}
 		
+	//decide il tempo di corsa ovvero la posizione di arrivo	
 	startTimer(target[n],TMRHALT+n*TIMERDIM);
-	startCrono(n); 		//comincia a cronometrare la corsa
+	//comincia a cronometrare la corsa
+	startCrono(n); 
 	setGroupState(3,n);	//														stato 3: il motore va in moto cronometrato
 	DEBUG_PRINT(F("stato 3: il motore " ));
 	DEBUG_PRINT(n);
@@ -207,8 +211,9 @@ short secondPress(byte n){
 	int poffset=n*BTNDIM;
 	short rslt = 0;
 	
-	resetCnt(n);
 	moving[n] = false;
+	//reset service count
+	resetCnt(n);
 	if(calibr == 0){
 		//either UP or DOWN
 		//da effettuare solo se il motore è inp moto
@@ -217,6 +222,8 @@ short secondPress(byte n){
 		DEBUG_PRINT(n+1);
 		DEBUG_PRINT(F(" fermo al tempo "));
 		DEBUG_PRINTLN(getCronoCount(n));
+		DEBUG_PRINT(F("Target: "));
+		DEBUG_PRINTLN(target[n]);
 		
 		//LIST OF STOP ACTIONS
 		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
@@ -231,6 +238,7 @@ short secondPress(byte n){
 			if(getCronoCount(n) > thaltp[n] && getCronoCount(n) < thaltp[n]*1.2){
 				rslt = 0;
 				thaltp[n] = getCronoCount(n);
+				setCronoCount(thaltp[n], n);
 				DEBUG_PRINTLN(F("tapparella impiega più tempo della stima per apertura totale: correzione..."));
 			}else if(getCronoCount(n) > thaltp[n]*1.2){
 				rslt = 2;
@@ -251,16 +259,21 @@ short secondPress(byte n){
 #else	
 		//somma (o sottrai) il valore cronometrato al vecchio valore del contatore di posizione (ultima posizione registrata)
 		addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
-		DEBUG_PRINT(F("thaltp[n]: "));
+		DEBUG_PRINT(F("thaltp: "));
 		DEBUG_PRINTLN(thaltp[n]);
-		if(thaltp[n] == halfThaltMax){
-			DEBUG_PRINT(F("dentro if: "));
-			if(getCronoCount(n) >= THALTMAX){
-				thaltp[n] = thaltp2[n];
+		DEBUG_PRINT(F("CronoCount: "));
+		DEBUG_PRINTLN(getCronoCount(n));
+		if(first[n] == true){
+			if(getCronoCount(n) >= (long) thaltp[n]){
+				first[n] = false;
 				setCronoCount(thaltp[n], n);
-			}else if(getCronoCount(n) <= 0){
-				thaltp[n] = thaltp2[n];
+				DEBUG_PRINT(F("max rilevato: "));
+				DEBUG_PRINTLN(first[n]);
+			}else if(getCronoCount(n) <= (long) -thaltp[n]){
+				first[n] = false;
 				setCronoCount(0, n);
+				DEBUG_PRINT(F("min rilevato: "));
+				DEBUG_PRINTLN(first[n]);
 			}
 		}
 #endif
@@ -286,7 +299,7 @@ short secondPress(byte n){
 		DEBUG_PRINTLN(getCronoDir(n)==DOWN);
 		DEBUG_PRINT(F("FASE 2 CALIBRAZIONE MANUALE"));
 		DEBUG_PRINTLN(F("-----------------------------"));
-		DEBUG_PRINTLN(F("LA TAPPARELLA STA "));
+		DEBUG_PRINTLN(F("LA TAPPARELLA STA salendo"));
 		DEBUG_PRINT(F("PREMERE UN PULSANTE QUALSIASI DEL GRUPPO ATTIVO"));
 		DEBUG_PRINTLN(F("-----------------------------"));
 	}else if(calibr == 2){
@@ -305,7 +318,7 @@ short secondPress(byte n){
 		setCronoCount( app*(getCronoDir(n)==UP),n);
 		if(app < CNTIME*1000)
 			app = CNTIME*1000;
-		setCronoLimits(0,app,n);
+		//setCronoLimits(0,app,n);
 		thaltp[n] = app;
 		DEBUG_PRINT(F("getCronoValue(n): "));
 		DEBUG_PRINTLN(getCronoValue(n));
@@ -345,19 +358,29 @@ void firstPress(byte sw, byte n){
 		//fai partire il timer di fine corsa
 		setCronoDir(upmap[sw],n);
 #if (AUTOCAL)  
-		target[n] = THALTMAX;
+		target[n] = 1.5*thaltp[n];;
 #else
-		target[n] = (thaltp[n]) * (!sw);
-		target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
+		if(first[n] == true){
+			target[n] = 1.5*thaltp[n];
+		}else{
+			target[n] = (thaltp[n]) * (!sw);
+			target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
+		}
+		DEBUG_PRINT(F("first: "));
+		DEBUG_PRINTLN(first[n]);
+		DEBUG_PRINT(F("Target: in moto verso "));
+		DEBUG_PRINTLN(target[n]);
 #endif
 	}else if(inp[BTN1IN+poffset+sw] == 201){
+		resetAVGStats(0,0);
+		moving[n]=true;
 		DEBUG_PRINT(F("Calibrazione: in moto verso "));
 		DEBUG_PRINTLN(sw);
 		//thaltp[n] = THALTMAX;
 		//imposta la DIRSezione
 		outlogicp[DIRS+offset]=sw;	
 		setCronoDir(upmap[sw],n);
-		setCronoLimits(0,THALTMAX,n);
+		//setCronoLimits(0,THALTMAX,n);
 		calibr = 1;
 		target[n] = THALTMAX*(!sw);
 		target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);

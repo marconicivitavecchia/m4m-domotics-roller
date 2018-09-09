@@ -7,7 +7,7 @@
 double getAVG(byte);
 //void setSigma(byte);
 //double getSigma();
-void resetAVGStats(byte);
+void resetAVGStats(double, byte);
 double getSTDDEV(byte);
 short checkRange(double, byte);
 double getThresholdUp(byte);

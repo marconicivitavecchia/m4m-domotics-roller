@@ -71,16 +71,16 @@ short checkRange(double val, byte n) {
   stdDev[n] += (double) delta * (val - avg[n]);
   if (count[n] > 1) {
 	thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
-	thresholdDown[n] = (double) avg[n]/3;
+	thresholdDown[n] = (double) avg[n]/2;
 	DEBUG_PRINT(F("thresholdUp[n]: "));
 	DEBUG_PRINTLN(thresholdUp[n]);
   }
 
-  if(val > thresholdUp[n]) {
+  if(val > thresholdUp[n] && count[n] > 10) {
 		res = 1;
   }
   
-  if(val < thresholdDown[n]) {
+  if(val < thresholdDown[n] && count[n] > 50) {
 	res = -1;
   }	
   
@@ -96,8 +96,10 @@ short checkRange(double val, byte n) {
     M2 = M2 + delta * delta2
 */
 
-void resetAVGStats(byte n) {
-  avg[n] = 0.0;
+
+
+void resetAVGStats(double val, byte n) {
+  avg[n] = val;
   stdDev[n] = 0.0;
   count[n] = 1;
 }
