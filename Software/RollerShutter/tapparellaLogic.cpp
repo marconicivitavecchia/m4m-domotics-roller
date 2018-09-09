@@ -237,10 +237,11 @@ short secondPress(byte n){
 		if(getCronoDir(n)==UP){
 			if(getCronoCount(n) > thaltp[n] && getCronoCount(n) < thaltp[n]*1.2){
 				rslt = 0;
-				thaltp[n] = getCronoCount(n);
 				setCronoCount(thaltp[n], n);
+				//thaltp[n] = getCronoCount(n);
 				DEBUG_PRINTLN(F("tapparella impiega più tempo della stima per apertura totale: correzione..."));
 			}else if(getCronoCount(n) > thaltp[n]*1.2){
+				setCronoCount(thaltp[n], n);
 				rslt = 2;
 				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa alto, possibile forzatura"));
 				setCronoCount(thaltp[n], n);
