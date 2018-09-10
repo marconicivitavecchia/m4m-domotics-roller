@@ -80,11 +80,11 @@ short checkRange(double val, byte n) {
 	DEBUG_PRINTLN(thresholdUp[n]);
   }
 
-  if(val > thresholdUp[n] && count2[n] > 1) {
+  if(val > thresholdUp[n]) {
 		res = 1;
   }
   
-  if(val < thresholdDown[n] && count2[n] > 1) {
+  if(val > 0.01 && val < thresholdDown[n] && count2[n] > 4) {
 		res = -1;
   }	
   

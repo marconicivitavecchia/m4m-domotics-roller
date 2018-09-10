@@ -971,7 +971,7 @@ void manualCalibration(byte btn){
 	//activate the learning of the running statistics
 	//setStatsLearnMode();
 #if (AUTOCAL)
-	resetStatDelayCounter(btn);
+	//resetStatDelayCounter(btn);
 #endif
 	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione
 	
