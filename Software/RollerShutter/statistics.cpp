@@ -6,6 +6,7 @@ unsigned long count[2] = {1, 1};
 short count2[2] = {0, 0};
 double thresholdUp[2] = {1024,1024};
 double thresholdDown[2] = {-1024,-1024};
+bool passed=false;
 //bool learn = false;
 
 //double sigma = NSIGMA;
@@ -60,35 +61,42 @@ double getSigma() {
 short checkRange(double val, byte n) {
   byte res = 0;
   
-  
-  DEBUG_PRINT(F("val: "));
-  DEBUG_PRINTLN(val);
-  DEBUG_PRINT(F("avg[n]: "));
-  DEBUG_PRINTLN(avg[n]);
-  
-  count2[n] += (count2[n] < 6);
-   
-  count[n]++;
-  //count[n] = (count[n] +1) % 256;
-  double delta = (double) val - avg[n];
-  count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
-  stdDev[n] += (double) delta * (val - avg[n]);
-  if (count[n] > 1) {
-	thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
-	thresholdDown[n] = (double) avg[n]/2.8;
-	DEBUG_PRINT(F("thresholdUp[n]: "));
-	DEBUG_PRINTLN(thresholdUp[n]);
-  }
+	if(val > 0)
+		passed=true;	
 
-  if(val > thresholdUp[n]) {
-		res = 1;
-  }
-  
-  if(val > 0.01 && val < thresholdDown[n] && count2[n] > 4) {
-		res = -1;
-  }	
-  
-  return res;
+	if(passed){
+		DEBUG_PRINT(F("val: "));
+		DEBUG_PRINTLN(val);
+		DEBUG_PRINT(F("avg[n]: "));
+		DEBUG_PRINTLN(avg[n]);
+
+		count2[n] += (count2[n] < 6);
+
+		count[n]++;
+		//count[n] = (count[n] +1) % 256;
+		double delta = (double) val - avg[n];
+		count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
+		stdDev[n] += (double) delta * (val - avg[n]);
+		if (count[n] > 1) {
+			thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
+			thresholdDown[n] = (double) avg[n]/2.8;
+			DEBUG_PRINT(F("thresholdUp[n]: "));
+			DEBUG_PRINTLN(thresholdUp[n]);
+		}
+
+		if(val > thresholdUp[n]) {
+			res = 1;
+		}
+		  
+		if(count2[n] > 3 && val < thresholdDown[n]) {
+			res = -1;
+			passed = false;
+		}
+		  
+		return res;
+	}else{
+		return 0;
+	}	
 }
 
 /*

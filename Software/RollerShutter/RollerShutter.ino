@@ -13,7 +13,7 @@ double peak = 0;
 double VRMS = 0;
 double VMCU = 0;
 double AmpsRMS = 0;
-double mcu;
+double ex;
 int x;
 //double ex=0;
 unsigned long n=1;
@@ -523,9 +523,9 @@ void loop() {
 	
 #if (AUTOCAL)  
 	//EMA calculation
-	//ex = (float) d*EMA + (1.0 - EMA)*ex;
+	ex = (float) d*EMA + (1.0 - EMA)*ex;
 	//ACSVolt = (double) ex/2.0;
-	peak = (double) d/2.0;
+	peak = (double) ex/2.0;
 	//reset of peak sample value
 	minx = 1024;
 	maxx = 0;
