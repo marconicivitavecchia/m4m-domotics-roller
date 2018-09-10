@@ -158,12 +158,7 @@ void setGroupState(byte tstate, byte n){
 
 void startEndOfRunTimer(byte n){
 	//il motore è in moto libero
-	moving[n]=true;
-	if(calibr == 1 || calibr == 2){
-		target[n] = 2*THALTMAX;
-		DEBUG_PRINTLN(F("Start Timer calibrazione "));
-	}
-		
+	moving[n]=true;	
 	//decide il tempo di corsa ovvero la posizione di arrivo	
 	startTimer(target[n],TMRHALT+n*TIMERDIM);
 	//comincia a cronometrare la corsa
@@ -372,6 +367,9 @@ void firstPress(byte sw, byte n){
 		//setCronoLimits(0,THALTMAX,n);
 		if(calibr==0){
 			calibr = 1;
+		}
+		if(calibr == 1 || calibr == 2){
+			target[n] = 2*THALTMAX;
 		}
 		//target[n] = (long) THALTMAX;
 	}else if(inp[BTN1IN+poffset+sw] > 2){ //aperture percentuali

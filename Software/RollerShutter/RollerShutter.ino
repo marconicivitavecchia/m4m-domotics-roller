@@ -535,7 +535,7 @@ void loop() {
 	//DEBUG_PRINT(F("x: "));
 	//DEBUG_PRINTLN(x);
 	
-	if(isMoving(0)){
+	if(isMoving(0) && outLogic[ENABLES]){
 		chk[0] = checkRange((double) peak*(1 - weight[1]*isMoving(1)),0);
 		DEBUG_PRINT(F("Ampere: "));
 		float amp = getAmpRMS();
@@ -570,10 +570,10 @@ void loop() {
 			DEBUG_PRINTLN(chk[0]);
 		}
 	}else{
-		resetAVGStats(0,0);
+		resetStatDelayCounter(0);
 	}
 	
-	if(isMoving(1)){
+	if(isMoving(1) && outLogic[ENABLES+STATUSDIM]){
 		chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
 		if(chk[1] != 0){
 			blocked[1] = secondPress(1);
@@ -599,7 +599,7 @@ void loop() {
 			DEBUG_PRINTLN(chk[1]);
 		}
 	}else{
-		resetAVGStats(0,1);
+		resetStatDelayCounter(1);
 	}
 #endif
 	//codice eseguito ogni 100*50 msec = 5 sec
@@ -971,7 +971,7 @@ void manualCalibration(byte btn){
 	//activate the learning of the running statistics
 	//setStatsLearnMode();
 #if (AUTOCAL)
-	resetAVGStats(0,btn);
+	resetStatDelayCounter(btn);
 #endif
 	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione
 	
