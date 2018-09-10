@@ -203,12 +203,16 @@ extern RemoteDebug telnet;
 #define scriviOutDaStato()  digitalWrite(OUT1DD,(outLogic[ENABLES] && (outLogic[DIRS]==HIGH)));	\
 	 digitalWrite(OUT1EU,(outLogic[ENABLES] && (outLogic[DIRS]==LOW)));		\
 	 digitalWrite(OUT2DD,(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH)));	\
-	 digitalWrite(OUT2EU,(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW)))	
+	 digitalWrite(OUT2EU,(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW)));		\
+	 isrun[0] = (outLogic[ENABLES]==HIGH);					\
+	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH)		
 #else		
 #define scriviOutDaStato()	digitalWrite(OUT1EU,outLogic[ENABLES]);	\
 	 digitalWrite(OUT1DD,outLogic[DIRS]);		\
 	 digitalWrite(OUT2EU,outLogic[ENABLES+STATUSDIM]);		\
-	 digitalWrite(OUT2DD,outLogic[DIRS+STATUSDIM])		
+	 digitalWrite(OUT2DD,outLogic[DIRS+STATUSDIM]);			\
+	 isrun[0] = (outLogic[ENABLES]==HIGH);					\
+	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH)			 
 #endif
 
 //#define tapLogic(n)	(switchLogic(0,n) + switchLogic(1,n))

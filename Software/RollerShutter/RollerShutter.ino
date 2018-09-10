@@ -24,8 +24,8 @@ int d = 0;
 double calAvg[2] = {0,0};
 double weight[2] = {0,0};
 short chk[2]={0,0};
-bool isrun = false;
 #endif
+bool isrun[2]={false,false};;
 //end of stats variables
 unsigned long prec=0;
 //wifi config----------------------------------------------
@@ -535,7 +535,7 @@ void loop() {
 	//DEBUG_PRINT(F("x: "));
 	//DEBUG_PRINTLN(x);
 	
-	if(isMoving(0) && outLogic[ENABLES]){
+	if(isrun[0] && isMoving(0)){
 		chk[0] = checkRange((double) peak*(1 - weight[1]*isMoving(1)),0);
 		DEBUG_PRINT(F("Ampere: "));
 		float amp = getAmpRMS();
@@ -573,7 +573,7 @@ void loop() {
 		resetStatDelayCounter(0);
 	}
 	
-	if(isMoving(1) && outLogic[ENABLES+STATUSDIM]){
+	if(isrun[1] && isMoving(1)){
 		chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
 		if(chk[1] != 0){
 			blocked[1] = secondPress(1);

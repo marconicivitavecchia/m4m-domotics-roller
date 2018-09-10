@@ -171,6 +171,7 @@ void startEndOfRunTimer(byte n){
 }
 
 bool startEngineDelayTimer(byte n){
+		moving[n]=false;	
 		setGroupState(2,n);												//stato 2: il motore va in moto a vuoto (o libero)
 		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index
 		//DEBUG_PRINTLN(F("startEngineDelayTimer: getGroupState(n), btn, inp[btn]"));
