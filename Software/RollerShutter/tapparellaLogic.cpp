@@ -51,29 +51,17 @@ byte switchLogic(byte sw, byte n){
 			if(!outlogicp[SW1ONS+offset+!sw]){  //evita attivazioni con pressione contemporanea di due tasti (interblocco)
 				DEBUG_PRINTLN(F("dopo interblocco "));
 				//effettuata prima pressione
-				
 				if(s==0)
 				{ 	
 					//se il motore è fermo
 					setCronoDir(upmap[sw],n);  //in base a questo viene decisa la direzione della partenza differita
-					if(btndelay[n]>0 && inp[BTN1IN+poffset+sw] < 201){
-						//normalmente la partenza è differita
-						lastCmd[BTN1IN + poffset+sw] = inp[BTN1IN+poffset+sw];
-						DEBUG_PRINTLN(F("tapparellaLogic: stato 1: il motore va in attesa da stato 0 (fermo)"));
-						startTimer(btndelay[n],TMRHALT+toffset);	
-						setGroupState(1,n);	
-						//stato 1: il motore va in attesa
-						updateCnt(n);
-						changed = 0;
-					}else{
-						//la partenza è istantanea solo in caso di calibrazione
-						setGroupState(2,n);	//il motore è in moto a vuoto
-						firstPress(sw,n);
-						startTimer(engdelay[n],TMRHALT+n*TIMERDIM);
-						DEBUG_PRINT(F("stato 2: il motore va in moto a vuoto verso "));
-						DEBUG_PRINTLN(sw);
-						changed = 1;
-					}
+					lastCmd[BTN1IN + poffset+sw] = inp[BTN1IN+poffset+sw];
+					DEBUG_PRINTLN(F("tapparellaLogic: stato 1: il motore va in attesa da stato 0 (fermo)"));
+					startTimer(btndelay[n],TMRHALT+toffset);	
+					setGroupState(1,n);	
+					//stato 1: il motore va in attesa
+					updateCnt(n);
+					changed = 0;
 				}else if(s==1)
 				{//se il motore è in attesa
 					//sono pressioni di configurazione
@@ -83,7 +71,6 @@ byte switchLogic(byte sw, byte n){
 					changed = 0;
 				}else  if(s==2 || s==3)//se il motore è in moto a vuoto o in moto cronometrato
 				{
-					//resetCnt(n);
 					secondPress(n);
 					changed = 1;
 					DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo "));
@@ -173,7 +160,7 @@ void startEndOfRunTimer(byte n){
 	//il motore è in moto libero
 	moving[n]=true;
 	if(calibr == 1 || calibr == 2){
-		target[n] = THALTMAX;
+		target[n] = 2*THALTMAX;
 		DEBUG_PRINTLN(F("Start Timer calibrazione "));
 	}
 		
@@ -189,7 +176,7 @@ void startEndOfRunTimer(byte n){
 }
 
 bool startEngineDelayTimer(byte n){
-		setGroupState(2,n);												//stato 2: il motore va in moto a vuoto
+		setGroupState(2,n);												//stato 2: il motore va in moto a vuoto (o libero)
 		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index
 		//DEBUG_PRINTLN(F("startEngineDelayTimer: getGroupState(n), btn, inp[btn]"));
 		//DEBUG_PRINTLN(getGroupState(n));
@@ -198,6 +185,7 @@ bool startEngineDelayTimer(byte n){
 		inp[btn] = lastCmd[btn];
 		firstPress((getCronoDir(n)==DOWN), n);
 		startTimer(engdelay[n],TMRHALT+n*TIMERDIM);
+		
 		DEBUG_PRINTLN(F("stato 2: il motore va in moto a vuoto"));
 		return true;
 		//}else{
@@ -286,25 +274,26 @@ short secondPress(byte n){
 		outlogicp[ENABLES+offset]=LOW;
 		nrun--;
 		outlogicp[DIRS+offset]=LOW;
-		startCrono(n);
 		DEBUG_PRINTLN(F("2)reset del cronometro immediatamente prima della salita"));
 		//Tapparella completamente abbassata: imposto a zero il contatore di stato
 		resetCronoCount(n);
-		byte btn = (short) (1+getCronoDir(n))/2+ n*BTNDIM;  //reverse conversion from direction to index
-		inp[btn] = 201;
-		firstPress((getCronoDir(n)==UP), n);				//reverse direction
-		startTimer(engdelay[n],TMRHALT+n*TIMERDIM);
+		updateCnt(n);
+		setCronoDir((short)-getCronoDir(n),n);  //reverse direction
+		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index 
+		lastCmd[btn] = 201;
+		setGroupState(1,n);			//stato 1: il sitema va in stato di attesa		
+		startTimer(1500,TMRHALT+toffset);	
 		calibr = 2;
-		setGroupState(2,n);												//stato 2: il motore va in moto a vuoto
 		DEBUG_PRINTLN(btn);
-		DEBUG_PRINTLN(inp[btn]);
+		DEBUG_PRINTLN(lastCmd[btn]);
 		DEBUG_PRINT(F("stato 2: il motore va in moto a vuoto per calibrazione verso "));
-		DEBUG_PRINTLN(getCronoDir(n)==DOWN);
+		DEBUG_PRINTLN(getCronoDir(n));
 		DEBUG_PRINT(F("FASE 2 CALIBRAZIONE MANUALE"));
 		DEBUG_PRINTLN(F("-----------------------------"));
 		DEBUG_PRINTLN(F("LA TAPPARELLA STA salendo"));
 		DEBUG_PRINT(F("PREMERE UN PULSANTE QUALSIASI DEL GRUPPO ATTIVO"));
 		DEBUG_PRINTLN(F("-----------------------------"));
+		//resetStatDelayCounter(n);
 	}else if(calibr == 2){
 		calibr = 0;
 		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
@@ -375,18 +364,16 @@ void firstPress(byte sw, byte n){
 		DEBUG_PRINTLN(target[n]);
 #endif
 	}else if(inp[BTN1IN+poffset+sw] == 201){
-		resetStatDelayCounter(n);
-		moving[n]=true;
 		DEBUG_PRINT(F("Calibrazione: in moto verso "));
 		DEBUG_PRINTLN(sw);
-		//thaltp[n] = THALTMAX;
 		//imposta la DIRSezione
 		outlogicp[DIRS+offset]=sw;	
 		setCronoDir(upmap[sw],n);
 		//setCronoLimits(0,THALTMAX,n);
-		calibr = 1;
-		target[n] = THALTMAX*(!sw);
-		target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
+		if(calibr==0){
+			calibr = 1;
+		}
+		//target[n] = (long) THALTMAX;
 	}else if(inp[BTN1IN+poffset+sw] > 2){ //aperture percentuali
 		//DEBUG_PRINTLN(F(" in moto verso l'alto perc"));
 		target[n] = (unsigned long) (thaltp[n]/100)*inp[BTN1IN+poffset+sw];
