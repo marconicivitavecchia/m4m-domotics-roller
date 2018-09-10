@@ -341,8 +341,10 @@ void initIiming(bool first){
   edelay[1]=(params[STDEL2]).toInt();
   //initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL);
   initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2,first);
+#if (AUTOCAL)  
   resetAVGStats(0,0);
   resetAVGStats(0,1);
+#endif
   //setCronoCount((params[THALT1]).toInt(),0);
   //setCronoCount((params[THALT2]).toInt(),1);
   //setCronoLimits(0,(params[THALT1]).toInt(),TAP1);

@@ -157,6 +157,8 @@ void setGroupState(byte tstate, byte n){
 }
 
 void startEndOfRunTimer(byte n){
+	if(calibr==1)
+		resetCronoCount(n);
 	//il motore è in moto libero
 	moving[n]=true;	
 	//decide il tempo di corsa ovvero la posizione di arrivo	
@@ -346,7 +348,7 @@ void firstPress(byte sw, byte n){
 		//fai partire il timer di fine corsa
 		setCronoDir(upmap[sw],n);
 #if (AUTOCAL)  
-		target[n] = 1.5*thaltp[n];;
+		target[n] = 1.5*thaltp[n];
 #else
 		if(first[n] == true){
 			target[n] = 1.5*thaltp[n];
