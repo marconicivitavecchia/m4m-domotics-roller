@@ -82,9 +82,9 @@ int ncifre=3;
 String mqttJson[5]={"outsled","up1","down1","up2","down2"};
 //Valore iniziale: il suo contenuto viene poi caricato da EEPROM
 unsigned int thalt1=5000;
-unsigned int thalt2=2500;
+unsigned int thalt2=5000;
 
-String params[PARAMSDIM]={webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID,mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),"400","400","1024","1024","0.5","ip","false","false","false","false","false","false"};
+String params[PARAMSDIM]={webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID,mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),"400","400","0.5","53","3.37","1.5","ip","false","false","false","false","false","false"};
 ESP8266WebServer server(80);    	// Create a webserver object that listens for HTTP request on port 80
 WebSocketsServer webSocket(81);	    // create a websocket server on port 81
 ESP8266HTTPUpdateServer httpUpdater;
@@ -339,8 +339,7 @@ void readStatesAndPub(){
 void initIiming(bool first){
   edelay[0]=(params[STDEL1]).toInt();
   edelay[1]=(params[STDEL2]).toInt();
-  //initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL);
-  initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt(),BTNDEL1,BTNDEL2,first);
+  initTapparellaLogic(in,inr,outLogic,params,first);
 #if (AUTOCAL)  
   resetAVGStats(0,0);
   resetAVGStats(0,1);

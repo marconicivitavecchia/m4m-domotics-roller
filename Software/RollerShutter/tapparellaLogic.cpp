@@ -6,6 +6,10 @@ byte groupState[2];
 byte *inp;
 byte *inrp;
 byte *outlogicp;
+String  *paramsl;
+float taplen;
+float barrad;
+float tapthick; 
 unsigned long thaltp[2]={THALTMAX/2,THALTMAX/2};
 #if (!AUTOCAL) 
 #endif
@@ -17,6 +21,7 @@ byte calibr=0;
 byte nrun=0;
 byte moving[2]={false,false};
 bool first[2]={true,true};
+double nmax;
 
 inline bool switchdfn(byte val, byte n){
 	//n: numero di pulsanti
@@ -115,25 +120,30 @@ byte tapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt, b
 	tapparellaLogic(n);
 }
 */
-void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt1, unsigned long thalt2, unsigned long engdelay1, unsigned long engdelay2, unsigned long bdelay1, unsigned long bdelay2, bool firstTime=false){
+void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, String  *paramsi, bool firstTime=false){
+	paramsl=paramsi;
 	inp=in;
 	inrp=inr;
 	outlogicp=outlogic;
-	thaltp[0]=thalt1;
-	thaltp[1]=thalt2;
-	engdelay[0]=engdelay1;
-	engdelay[1]=engdelay2;
-	btndelay[0]=bdelay1;
-	btndelay[1]=bdelay2;
+	thaltp[0]=(paramsl[THALT1]).toInt();
+	thaltp[1]=(paramsl[THALT2]).toInt();
+	engdelay[0]=(paramsl[STDEL1]).toInt();
+	engdelay[1]=(paramsl[STDEL2]).toInt();
+	btndelay[0]=BTNDEL1;
+	btndelay[1]=BTNDEL2;
+	taplen=(paramsl[TLENGTH]).toFloat();
+	barrad=(paramsl[BARRELRAD]).toFloat();
+	tapthick=(paramsl[THICKNESS]).toFloat();
 	resetCronoCount(0);
 	resetCronoCount(1);
 	setCronoLimits(-THALTMAX,THALTMAX,0);
 	setCronoLimits(-THALTMAX,THALTMAX,1);
 #if (!AUTOCAL) 
-	thaltp[0]=thalt1;
-	thaltp[1]=thalt2;
+	//thaltp[0]=(paramsl[THALT1]).toInt();
+	//thaltp[1]=(paramsl[THALT2]).toInt();
 	first[0] = first[1] = firstTime;
 #endif	
+	nmax = ( (double) sqrt((double) (taplen*tapthick)/TWO_PI + barrad*barrad) - barrad) / tapthick /2;
 }
 
 void setTapThalt(unsigned long thalt,byte n){
@@ -280,7 +290,11 @@ short secondPress(byte n){
 		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index 
 		lastCmd[btn] = 201;
 		setGroupState(1,n);			//stato 1: il sitema va in stato di attesa		
-		startTimer(1500,TMRHALT+toffset);	
+#if(AUTOCAL)		
+		startTimer(1500,TMRHALT+toffset);
+#else
+		startTimer(500,TMRHALT+toffset);
+#endif	
 		calibr = 2;
 		DEBUG_PRINTLN(btn);
 		DEBUG_PRINTLN(lastCmd[btn]);
@@ -377,7 +391,11 @@ void firstPress(byte sw, byte n){
 		//target[n] = (long) THALTMAX;
 	}else if(inp[BTN1IN+poffset+sw] > 2){ //aperture percentuali
 		//DEBUG_PRINTLN(F(" in moto verso l'alto perc"));
-		target[n] = (unsigned long) (thaltp[n]/100)*inp[BTN1IN+poffset+sw];
+		if(inp[BTN1IN+poffset+sw] > 100){
+			inp[BTN1IN+poffset+sw] = 100;
+		}
+		inp[BTN1IN+poffset+sw] = calcTiming(inp[BTN1IN+poffset+sw]);
+		target[n] = (unsigned long) (thaltp[n]*inp[BTN1IN+poffset+sw])/100;
 		long delta = (long) (target[n] - getCronoCount(n));
 		//target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
 		DEBUG_PRINT(F("\nDelta:  "));
@@ -409,6 +427,12 @@ bool isMoving(byte n){
 
 byte nRunning(){
 	return nrun;
+}
+
+inline byte calcTiming(byte v){
+	double nv = ((double) sqrt((double) (v*taplen*tapthick)/TWO_PI/100 + barrad*barrad) - barrad) / tapthick /2;
+	nv =  ((double) nv / nmax * 100);
+	return (byte) nv;
 }
 
 /*

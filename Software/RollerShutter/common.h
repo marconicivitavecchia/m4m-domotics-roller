@@ -58,7 +58,7 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
-#define AUTOCAL		1
+#define AUTOCAL		0
 #define NSIGMA 		2
 #define EMA  		0.6
 #define THALTMAX   	90000 
@@ -129,9 +129,12 @@ extern RemoteDebug telnet;
 #define STDEL1OFST				616
 #define STDEL2OFST				648
 #define VALWEIGHTOFST			680
+#define	TLENGTHOFST				712
+#define	BARRELRADOFST			744
+#define	THICKNESSOFST			776
 //#define TRSHOLD1OFST			680
 //#define TRSHOLD2OFST			712
-#define EEPROMPARAMSLEN			712
+#define EEPROMPARAMSLEN			808
 //--------------------------Fine EEPROM offsets-------------------------------------------
 //--------------------------Inizio params array indexes-----------------------------------
 #define WEBUSR					0
@@ -152,17 +155,18 @@ extern RemoteDebug telnet;
 #define THALT2					15
 #define STDEL1					16
 #define STDEL2					17
-#define TRSHOLD1				18
-#define TRSHOLD2				19
-#define VALWEIGHT				20
-#define LOCALIP					21
-#define WIFICHANGED				22
-#define CONFLOADED				23
-#define MQTTADDRMODFIED			24
-#define TOPICCHANGED			25
-#define MQTTCONNCHANGED			26
-#define	TIMINGCHANGED			27
-#define PARAMSDIM				28
+#define VALWEIGHT				18
+#define	TLENGTH					19
+#define	BARRELRAD				20
+#define	THICKNESS				21
+#define LOCALIP					22
+#define WIFICHANGED				23
+#define CONFLOADED				24
+#define MQTTADDRMODFIED			25
+#define TOPICCHANGED			26
+#define MQTTCONNCHANGED			27
+#define	TIMINGCHANGED			28
+#define PARAMSDIM				29
 
 //--------------------------Inizio mqttJson array indexes-----------------------------------
 #define MQTTJSON1				1

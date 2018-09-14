@@ -142,6 +142,15 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
             "<div class=\"col-1-2\"><label for=\"thalt2\">End-of-stroke time switch 2:</label>"
                  "<input type=\"text\" name=\"thalt2\" value=\"{TD}\">"
             "</div>"
+			"<div class=\"col-1-2\"><label for=\"taplength\">Rollershutter excursion:</label>"
+                 "<input type=\"text\" name=\"taplength\" value=\"{TL}\">"
+            "</div>"
+            "<div class=\"col-1-2\"><label for=\"barrelrad\">Barrel radius:</label>"
+                 "<input type=\"text\" name=\"barrelrad\" value=\"{BR}\">"
+            "</div>"
+			"<div class=\"col-1-2\"><label for=\"thickness\">Roller shutter thickness</label>"
+                 "<input type=\"text\" name=\"thickness\" value=\"{TN}\">"
+            "</div>"
             "<input type=\"submit\" value=\"Save\" formaction=\"/modify\" formmethod=\"post\">"
 			"<input type=\"submit\" value=\"Back\">"
         "</form>"
@@ -751,6 +760,9 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 		//Body placeholders
 		page.replace(F("{TU}"), paramsp[THALT1] );
 		page.replace(F("{TD}"), paramsp[THALT2] );
+		page.replace(F("{TL}"), paramsp[TLENGTH] );
+		page.replace(F("{BR}"), paramsp[BARRELRAD] );
+		page.replace(F("{TN}"), paramsp[THICKNESS] );
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -986,6 +998,30 @@ void handleModify(){
     DEBUG_PRINTLN(paramsp[THALT2]);
     paramsp[TIMINGCHANGED]="true";
   }
+  if(serverp.hasArg("taplength") && (paramsp[TLENGTH] != String(serverp.arg("taplength"))) ){
+	paramsp[TLENGTH] = serverp.arg("taplength");
+	EEPROMWriteInt(TLENGTHOFST,(paramsp[TLENGTH]).toInt());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified TLENGTH "));
+	DEBUG_PRINTLN(paramsp[TLENGTH]);
+	paramsp[TIMINGCHANGED]="true";
+  }
+  if(serverp.hasArg("barrelrad") && (paramsp[BARRELRAD] != String(serverp.arg("barrelrad"))) ){
+	paramsp[BARRELRAD] = serverp.arg("barrelrad");
+	EEPROMWriteInt(BARRELRADOFST,(paramsp[BARRELRAD]).toInt());
+	EEPROM.commit();
+    DEBUG_PRINT(F("Modified BARRELRAD "));
+    DEBUG_PRINTLN(paramsp[BARRELRAD]);
+    paramsp[TIMINGCHANGED]="true";
+  }
+  if(serverp.hasArg("thickness") && (paramsp[THICKNESS] != String(serverp.arg("thickness"))) ){
+	paramsp[THICKNESS] = serverp.arg("thickness");
+	EEPROMWriteInt(THICKNESSOFST,(paramsp[THICKNESS]).toInt());
+	EEPROM.commit();
+    DEBUG_PRINT(F("Modified THICKNESS "));
+    DEBUG_PRINTLN(paramsp[THICKNESS]);
+    paramsp[TIMINGCHANGED]="true";
+  }
   EEPROM.end();
    
   DEBUG_PRINTLN(F("Disconnection"));
@@ -1148,6 +1184,21 @@ void loadConfig() {
 		paramsp[VALWEIGHT] = buf;
 		DEBUG_PRINTLN(F("current variance 2: "));
 		DEBUG_PRINTLN(paramsp[VALWEIGHT]);
+		
+		EEPROMReadStr(TLENGTHOFST,buf);
+		paramsp[TLENGTH] = buf;
+		DEBUG_PRINTLN(F("current TLENGTH: "));
+		DEBUG_PRINTLN(paramsp[TLENGTH]);
+		
+		EEPROMReadStr(BARRELRADOFST,buf);
+		paramsp[BARRELRAD] = buf;
+		DEBUG_PRINTLN(F("current BARRELRAD: "));
+		DEBUG_PRINTLN(paramsp[BARRELRAD]);
+		
+		EEPROMReadStr(THICKNESSOFST,buf);
+		paramsp[THICKNESS] = buf;
+		DEBUG_PRINTLN(F("current THICKNESS: "));
+		DEBUG_PRINTLN(paramsp[THICKNESS]);
 		
 		/*
 		EEPROMReadStr(TRSHOLD1OFST,buf);
@@ -1339,6 +1390,21 @@ void saveOnEEPROM(){
 	DEBUG_PRINT(F("Modified current variance 2 "));
 	DEBUG_PRINTLN(paramsp[VALWEIGHT]);
 	
+	EEPROMWriteStr(TLENGTHOFST,(paramsp[TLENGTH]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified current TLENGTH "));
+	DEBUG_PRINTLN(paramsp[TLENGTH]);
+	
+	EEPROMWriteStr(BARRELRADOFST,(paramsp[BARRELRAD]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified current BARRELRAD "));
+	DEBUG_PRINTLN(paramsp[BARRELRAD]);
+	
+	EEPROMWriteStr(THICKNESSOFST,(paramsp[THICKNESS]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified current THICKNESS "));
+	DEBUG_PRINTLN(paramsp[THICKNESS]);
+	
 	/*
 	EEPROMWriteStr(TRSHOLD1OFST,(paramsp[TRSHOLD1]).c_str());
 	EEPROM.commit();
@@ -1425,4 +1491,13 @@ void printConfig(){
 		
 		DEBUG_PRINTLN(F("current variance 2: "));
 		DEBUG_PRINTLN(paramsp[VALWEIGHT]);
+		
+		DEBUG_PRINTLN(F("current TLENGTH: "));
+		DEBUG_PRINTLN(paramsp[TLENGTH]);
+		
+		DEBUG_PRINTLN(F("current BARRELRAD: "));
+		DEBUG_PRINTLN(paramsp[BARRELRAD]);
+		
+		DEBUG_PRINTLN(F("current THICKNESS: "));
+		DEBUG_PRINTLN(paramsp[THICKNESS]);
 }
