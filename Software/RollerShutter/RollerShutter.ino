@@ -389,8 +389,8 @@ void setup() {
 #if (AUTOCAL)
   weight[0] =  (params[VALWEIGHT]).toFloat();
   weight[1] = 1 - weight[0];
-  setThresholdUp((params[TRSHOLD1]).toFloat(), 0);
-  setThresholdUp((params[TRSHOLD2]).toFloat(), 1);
+  //setThresholdUp((params[TRSHOLD1]).toFloat(), 0);
+  //setThresholdUp((params[TRSHOLD2]).toFloat(), 1);
 #endif
   //DEBUG_PRINTLN("Inizializzo i timers a zero.");
   //initTimers();
@@ -935,8 +935,8 @@ void onCalibrEnd(unsigned long app, byte n){
 	weight[0] = (double) calAvg[0] / (calAvg[0] +  calAvg[1]);
 	weight[1] = (double) calAvg[1] / (calAvg[0] +  calAvg[1]);
 	params[VALWEIGHT] = String(weight[0]);
-	params[TRSHOLD1 + n] = String(getThresholdUp(n));
-	setThresholdUp((params[TRSHOLD1 + n]).toFloat(), n);
+	//params[TRSHOLD1 + n] = String(getThresholdUp(n));
+	//setThresholdUp((params[TRSHOLD1 + n]).toFloat(), n);
 #endif
 	EEPROM.begin(EEPROMPARAMSLEN);
 	
