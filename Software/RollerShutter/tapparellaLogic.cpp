@@ -394,8 +394,7 @@ void firstPress(byte sw, byte n){
 		if(inp[BTN1IN+poffset+sw] > 100){
 			inp[BTN1IN+poffset+sw] = 100;
 		}
-		inp[BTN1IN+poffset+sw] = calcTiming(inp[BTN1IN+poffset+sw]);
-		target[n] = (unsigned long) (thaltp[n]*inp[BTN1IN+poffset+sw])/100;
+		target[n] = (unsigned long) (thaltp[n]*calcTiming(inp[BTN1IN+poffset+sw]))/100;
 		long delta = (long) (target[n] - getCronoCount(n));
 		//target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
 		DEBUG_PRINT(F("\nDelta:  "));
