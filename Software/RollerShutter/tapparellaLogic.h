@@ -30,7 +30,7 @@ byte nRunning();
 void enableShortRun(byte);
 void disableShortRun(byte);
 byte switchLogic(byte, byte);
-byte calcTiming(byte);
+double calcTiming(byte);
 //bool inline initdfn(byte,  byte);
 //extern void onBtnPress(n)
 //extern void onDownPressed(byte);

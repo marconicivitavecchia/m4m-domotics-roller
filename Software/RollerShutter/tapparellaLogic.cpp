@@ -429,10 +429,10 @@ byte nRunning(){
 	return nrun;
 }
 
-inline byte calcTiming(byte v){
+inline double calcTiming(byte v){
 	double nv = ((double) sqrt((double) (v*taplen*tapthick)/TWO_PI/100 + barrad*barrad) - barrad) / tapthick /2;
 	nv =  ((double) nv / nmax * 100);
-	return (byte) nv;
+	return  nv;
 }
 
 /*
