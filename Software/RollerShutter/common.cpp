@@ -1182,22 +1182,22 @@ void loadConfig() {
 		
 		EEPROMReadStr(VALWEIGHTOFST,buf);
 		paramsp[VALWEIGHT] = buf;
-		DEBUG_PRINTLN(F("current variance 2: "));
+		DEBUG_PRINTLN(F("sensor weight: "));
 		DEBUG_PRINTLN(paramsp[VALWEIGHT]);
 		
 		EEPROMReadStr(TLENGTHOFST,buf);
 		paramsp[TLENGTH] = buf;
-		DEBUG_PRINTLN(F("current TLENGTH: "));
+		DEBUG_PRINTLN(F("barrel LENGTH: "));
 		DEBUG_PRINTLN(paramsp[TLENGTH]);
 		
 		EEPROMReadStr(BARRELRADOFST,buf);
 		paramsp[BARRELRAD] = buf;
-		DEBUG_PRINTLN(F("current BARRELRAD: "));
+		DEBUG_PRINTLN(F("barrel radius: "));
 		DEBUG_PRINTLN(paramsp[BARRELRAD]);
 		
 		EEPROMReadStr(THICKNESSOFST,buf);
 		paramsp[THICKNESS] = buf;
-		DEBUG_PRINTLN(F("current THICKNESS: "));
+		DEBUG_PRINTLN(F("barrel THICKNESS: "));
 		DEBUG_PRINTLN(paramsp[THICKNESS]);
 		
 		/*
@@ -1387,22 +1387,22 @@ void saveOnEEPROM(){
 	
 	EEPROMWriteStr(VALWEIGHTOFST,(paramsp[VALWEIGHT]).c_str());
 	EEPROM.commit();
-	DEBUG_PRINT(F("Modified current variance 2 "));
+	DEBUG_PRINT(F("Modified sensor weight "));
 	DEBUG_PRINTLN(paramsp[VALWEIGHT]);
 	
 	EEPROMWriteStr(TLENGTHOFST,(paramsp[TLENGTH]).c_str());
 	EEPROM.commit();
-	DEBUG_PRINT(F("Modified current TLENGTH "));
+	DEBUG_PRINT(F("Modified barrel length "));
 	DEBUG_PRINTLN(paramsp[TLENGTH]);
 	
 	EEPROMWriteStr(BARRELRADOFST,(paramsp[BARRELRAD]).c_str());
 	EEPROM.commit();
-	DEBUG_PRINT(F("Modified current BARRELRAD "));
+	DEBUG_PRINT(F("Modified barrel radius "));
 	DEBUG_PRINTLN(paramsp[BARRELRAD]);
 	
 	EEPROMWriteStr(THICKNESSOFST,(paramsp[THICKNESS]).c_str());
 	EEPROM.commit();
-	DEBUG_PRINT(F("Modified current THICKNESS "));
+	DEBUG_PRINT(F("Modified barrel THICKNESS "));
 	DEBUG_PRINTLN(paramsp[THICKNESS]);
 	
 	/*
@@ -1489,15 +1489,15 @@ void printConfig(){
 		DEBUG_PRINTLN(F("motor start delay2: "));
 		DEBUG_PRINTLN(paramsp[STDEL2]);
 		
-		DEBUG_PRINTLN(F("current variance 2: "));
+		DEBUG_PRINTLN(F("sensor weight: "));
 		DEBUG_PRINTLN(paramsp[VALWEIGHT]);
 		
-		DEBUG_PRINTLN(F("current TLENGTH: "));
+		DEBUG_PRINTLN(F("barrel length: "));
 		DEBUG_PRINTLN(paramsp[TLENGTH]);
 		
-		DEBUG_PRINTLN(F("current BARRELRAD: "));
+		DEBUG_PRINTLN(F("barrel  radius: "));
 		DEBUG_PRINTLN(paramsp[BARRELRAD]);
 		
-		DEBUG_PRINTLN(F("current THICKNESS: "));
+		DEBUG_PRINTLN(F("barrel THICKNESS: "));
 		DEBUG_PRINTLN(paramsp[THICKNESS]);
 }

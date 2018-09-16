@@ -58,6 +58,7 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
+#define DELTAL		4
 #define AUTOCAL		1
 #define NSIGMA 		2
 #define EMA  		0.6

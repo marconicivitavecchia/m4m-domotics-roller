@@ -7,7 +7,7 @@ byte *inp;
 byte *inrp;
 byte *outlogicp;
 String  *paramsl;
-float taplen;
+float taplen, deltal;
 float barrad;
 float tapthick; 
 unsigned long thaltp[2]={THALTMAX/2,THALTMAX/2};
@@ -143,7 +143,9 @@ void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, String  *paramsi, 
 	//thaltp[1]=(paramsl[THALT2]).toInt();
 	first[0] = first[1] = firstTime;
 #endif	
-	nmax = ( (double) sqrt((double) (taplen*tapthick)/TWO_PI + barrad*barrad) - barrad) / tapthick /2;
+	deltal=DELTAL;
+	nmax = ( (double) sqrt((double) (taplen*tapthick)/TWO_PI + barrad*barrad) - barrad) / tapthick /2;		//100% of excursion
+	//nmax = ((double) sqrt((double) ((taplen-deltal)*tapthick)/TWO_PI + barrad*barrad) - barrad) / tapthick /2 + deltal/TWO_PI/barrad;		//100% of excursion
 }
 
 void setTapThalt(unsigned long thalt,byte n){
@@ -216,8 +218,6 @@ short secondPress(byte n){
 		//effettuata seconda pressione
 		DEBUG_PRINT(F("\nSecondPress: seconda pressione: motore "));
 		DEBUG_PRINT(n+1);
-		DEBUG_PRINT(F(" fermo al tempo "));
-		DEBUG_PRINTLN(getCronoCount(n));
 		DEBUG_PRINT(F("Target: "));
 		DEBUG_PRINTLN(target[n]);
 		
@@ -230,25 +230,27 @@ short secondPress(byte n){
 		setGroupState(0,n);												//stato 0: il motore va in stato fermo
 #if (AUTOCAL)  
 		addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
+		DEBUG_PRINT(F(" fermo al tempo "));
+		DEBUG_PRINTLN(getCronoCount(n));
 		if(getCronoDir(n)==UP){
-			if(getCronoCount(n) > (long) thaltp[n] && getCronoCount(n) < (long) thaltp[n]*1.2){
+			if(getCronoCount(n) > (long) thaltp[n]*0.9 && getCronoCount(n) < (long) thaltp[n]*1.1){
 				rslt = 0;
 				setCronoCount(thaltp[n], n);
 				//thaltp[n] = getCronoCount(n);
-				DEBUG_PRINTLN(F("tapparella impiega più tempo della stima per apertura totale: correzione..."));
-			}else if(getCronoCount(n) > (long) thaltp[n]*1.2){
+				DEBUG_PRINTLN(F("tapparella impiega un tempo diverso dalla stima per apertura totale: correzione..."));
+			}else if(getCronoCount(n) > (long) thaltp[n]*1.1){
 				setCronoCount(thaltp[n], n);
 				rslt = 2;
 				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa alto, possibile forzatura"));
 				setCronoCount(thaltp[n], n);
 			}
 		}else{
-			if(getCronoCount(n) < (long) 0 && getCronoCount(n) > (long) -thaltp[n]*1.2){
+			if(getCronoCount(n) < (long) thaltp[n]*0.1 && getCronoCount(n) > (long) -thaltp[n]*0.1){
 				rslt = 0;
-				DEBUG_PRINTLN(F("tapparella impiega più tempo della stima per la chiusura totale: correzione..."));
+				DEBUG_PRINTLN(F("tapparella impiega un tempo diverso dalla stima per la chiusura totale: correzione..."));
 				stopCrono(n);
 				resetCronoCount(n);
-			}else if(getCronoCount(n) < (long) -thaltp[n]*1.2){
+			}else if(getCronoCount(n) < (long) -thaltp[n]*0.1){
 				rslt = 3;
 				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa basso, ricalibrare"));
 				stopCrono(n);
@@ -260,7 +262,7 @@ short secondPress(byte n){
 		addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
 		DEBUG_PRINT(F("thaltp: "));
 		DEBUG_PRINTLN(thaltp[n]);
-		DEBUG_PRINT(F("CronoCount: "));
+		DEBUG_PRINT(F(" fermo al tempo "));
 		DEBUG_PRINTLN(getCronoCount(n));
 		if(first[n] == true){
 			if(getCronoCount(n) >= (long) thaltp[n]){
@@ -396,9 +398,9 @@ void firstPress(byte sw, byte n){
 		}
 		target[n] = (unsigned long) (thaltp[n]*calcTiming(inp[BTN1IN+poffset+sw]))/100;
 		long delta = (long) (target[n] - getCronoCount(n));
-		//target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
-		DEBUG_PRINT(F("\nDelta:  "));
+		DEBUG_PRINT(F("\ntarget[n]:  "));
 		DEBUG_PRINTLN(target[n]);
+		//target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
 		if(delta > 0){
 			target[n] = delta;
 			//LIST OF UP ACTIONS (TARGET ABOVE CURRENT POS)
@@ -429,7 +431,14 @@ byte nRunning(){
 }
 
 inline double calcTiming(byte v){
-	double nv = ((double) sqrt((double) (v*taplen*tapthick)/TWO_PI/100 + barrad*barrad) - barrad) / tapthick /2;
+	double nv;
+	nv = ((double) sqrt((double) (v*taplen*tapthick)/TWO_PI/100 + barrad*barrad) - barrad) / tapthick /2;	
+	/*if(v*taplen < deltal){
+		nv = v*deltal/TWO_PI/barrad;
+	}else{
+		nv = ((double) sqrt((double) ((v*taplen -deltal)*tapthick)/TWO_PI/100 + barrad*barrad) - barrad) / tapthick /2 + deltal/TWO_PI/barrad;
+	}*/
+	
 	nv =  ((double) nv / nmax * 100);
 	return  nv;
 }
