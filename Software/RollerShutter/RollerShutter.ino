@@ -505,14 +505,14 @@ void httpSetup(){
 }
 
 void loop() {
-#if (AUTOCAL)  
-	//if(nRunning()) //starts when at least one motor is running
-		sensorRead();
-#endif
   //ArduinoOTA.handle();
   //funzioni eseguite ad ogni loop (istante di esecuione dipendente dal clock della CPU)
   aggiornaTimer(TMRHALT);
   aggiornaTimer(TMRHALT+TIMERDIM); 
+#if (AUTOCAL)  
+	//if(nRunning()) //starts when at least one motor is running
+		sensorRead();
+#endif
   webSocket.loop();
   server.handleClient();  // Listen for HTTP requests from clients
 
