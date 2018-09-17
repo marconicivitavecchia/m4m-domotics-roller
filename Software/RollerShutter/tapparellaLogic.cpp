@@ -230,14 +230,13 @@ short secondPress(byte n){
 		setGroupState(0,n);												//stato 0: il motore va in stato fermo
 #if (AUTOCAL)  
 		addCronoCount(stopCrono(n)-2, (short) getCronoDir(n),n);  //-2: correzione!
-		DEBUG_PRINT(F(" fermo al tempo "));
-		DEBUG_PRINTLN(getCronoCount(n));
+		long app = getCronoCount(n);
 		
 		if(getCronoDir(n)==UP){
 			//versione con correzzione continua in base alla lettura del sensore
 			if(getCronoCount(n) > (long) thaltp[n]*0.9 && getCronoCount(n) < (long) thaltp[n]*1.1){
-				rslt = 0;
 				setCronoCount(thaltp[n], n);
+				rslt = 0;
 				//thaltp[n] = getCronoCount(n);
 				DEBUG_PRINTLN(F("tapparella impiega un tempo diverso dalla stima per apertura totale: correzione..."));
 			}else if(getCronoCount(n) > (long) thaltp[n]*1.1){
@@ -247,15 +246,13 @@ short secondPress(byte n){
 			}
 		}else{
 			if(getCronoCount(n) < (long) thaltp[n]*0.1 && getCronoCount(n) > (long) -thaltp[n]*0.1){
+				resetCronoCount(n);
 				rslt = 0;
 				DEBUG_PRINTLN(F("tapparella impiega un tempo diverso dalla stima per la chiusura totale: correzione..."));
-				stopCrono(n);
-				resetCronoCount(n);
 			}else if(getCronoCount(n) < (long) -thaltp[n]*0.1){
+				resetCronoCount(n);
 				rslt = 3;
 				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa basso, ricalibrare"));
-				stopCrono(n);
-				resetCronoCount(n);
 			}
 		}//*/
 		
@@ -293,6 +290,8 @@ short secondPress(byte n){
 #else	
 		//somma (o sottrai) il valore cronometrato al vecchio valore del contatore di posizione (ultima posizione registrata)
 		addCronoCount(stopCrono(n)-2, (short) getCronoDir(n),n);	//-2: correzione!
+		long app = getCronoCount(n);
+		
 		DEBUG_PRINT(F("thaltp: "));
 		DEBUG_PRINTLN(thaltp[n]);
 		DEBUG_PRINT(F(" fermo al tempo "));
@@ -311,6 +310,8 @@ short secondPress(byte n){
 			}
 		}
 #endif
+		DEBUG_PRINT(F(" fermo al tempo "));
+		DEBUG_PRINTLN(app);
 	}else if(calibr == 1){
 		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
 		//blocca il motore
