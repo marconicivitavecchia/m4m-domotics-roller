@@ -232,7 +232,9 @@ short secondPress(byte n){
 		addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
 		DEBUG_PRINT(F(" fermo al tempo "));
 		DEBUG_PRINTLN(getCronoCount(n));
+		
 		if(getCronoDir(n)==UP){
+			//versione con correzzione continua in base alla lettura del sensore
 			if(getCronoCount(n) > (long) thaltp[n]*0.9 && getCronoCount(n) < (long) thaltp[n]*1.1){
 				rslt = 0;
 				setCronoCount(thaltp[n], n);
@@ -257,6 +259,39 @@ short secondPress(byte n){
 				resetCronoCount(n);
 			}
 		}
+		
+		/*
+		if(getCronoDir(n)==UP){		
+			//versione con correzzione in base alla lettura del sensore solo se 
+			//la differenza tra il valore misurato e quello stimato supera una certa soglia
+			if(getCronoCount(n) > (long) thaltp[n]*0.95 && getCronoCount(n) < (long) thaltp[n]*1.05){
+				rslt = 0;
+				//do nothing
+			}else if(getCronoCount(n) > (long) thaltp[n]*1.05 && getCronoCount(n) < (long) thaltp[n]*1.2){
+				setCronoCount(thaltp[n], n);
+				rslt = 0;
+				DEBUG_PRINTLN(F("tapparella impiega un tempo diverso dalla stima per apertura totale: correzione..."));
+			}if(getCronoCount(n) > (long) thaltp[n]*1.2){
+				setCronoCount(thaltp[n], n);
+				rslt = 2;
+				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa alto, possibile forzatura"));
+				setCronoCount(thaltp[n], n);
+			}
+		}else{
+			if(getCronoCount(n) < (long) thaltp[n]*0.05 && getCronoCount(n) > (long) -thaltp[n]*0.05){
+				rslt = 0;
+				//do nothing
+			}else if(getCronoCount(n) < (long) -thaltp[n]*0.05 && getCronoCount(n) > (long)  -thaltp[n]*0.2){
+				resetCronoCount(n);
+				rslt = 3;
+				DEBUG_PRINTLN(F("tapparella impiega un tempo diverso dalla stima per apertura totale: correzione..."));
+			}if(getCronoCount(n) < (long) -thaltp[n]*0.2){
+				rslt = 3;
+				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa basso, ricalibrare"));
+				stopCrono(n);
+				resetCronoCount(n);
+			}
+		}*/
 #else	
 		//somma (o sottrai) il valore cronometrato al vecchio valore del contatore di posizione (ultima posizione registrata)
 		addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
