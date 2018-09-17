@@ -215,12 +215,6 @@ short secondPress(byte n){
 	if(calibr == 0){
 		//either UP or DOWN
 		//da effettuare solo se il motore è inp moto
-		//effettuata seconda pressione
-		DEBUG_PRINT(F("\nSecondPress: seconda pressione: motore "));
-		DEBUG_PRINT(n+1);
-		DEBUG_PRINT(F("Target: "));
-		DEBUG_PRINTLN(target[n]);
-		
 		//LIST OF STOP ACTIONS
 		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
 		//blocca il motore
@@ -228,10 +222,9 @@ short secondPress(byte n){
 		nrun--;
 		outlogicp[DIRS+offset]=LOW;
 		setGroupState(0,n);												//stato 0: il motore va in stato fermo
-#if (AUTOCAL)  
-		addCronoCount(stopCrono(n)-2, (short) getCronoDir(n),n);  //-2: correzione!
+		addCronoCount(stopCrono(n), (short) getCronoDir(n),n); 
 		long app = getCronoCount(n);
-		
+#if (AUTOCAL)  
 		if(getCronoDir(n)==UP){
 			//versione con correzzione continua in base alla lettura del sensore
 			if(getCronoCount(n) > (long) thaltp[n]*0.9 && getCronoCount(n) < (long) thaltp[n]*1.1){
@@ -287,15 +280,7 @@ short secondPress(byte n){
 				resetCronoCount(n);
 			}
 		}//*/
-#else	
-		//somma (o sottrai) il valore cronometrato al vecchio valore del contatore di posizione (ultima posizione registrata)
-		addCronoCount(stopCrono(n)-2, (short) getCronoDir(n),n);	//-2: correzione!
-		long app = getCronoCount(n);
-		
-		DEBUG_PRINT(F("thaltp: "));
-		DEBUG_PRINTLN(thaltp[n]);
-		DEBUG_PRINT(F(" fermo al tempo "));
-		DEBUG_PRINTLN(getCronoCount(n));
+#else		
 		if(first[n] == true){
 			if(getCronoCount(n) >= (long) thaltp[n]){
 				first[n] = false;
@@ -310,7 +295,7 @@ short secondPress(byte n){
 			}
 		}
 #endif
-		DEBUG_PRINT(F(" fermo al tempo "));
+		DEBUG_PRINT(F("\nSecond press: motore fermo al tempo "));
 		DEBUG_PRINTLN(app);
 	}else if(calibr == 1){
 		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
@@ -390,8 +375,8 @@ void firstPress(byte sw, byte n){
 		
 	//resetTimer(TMRHALT+toffset);			
 	if(inp[BTN1IN+poffset+sw] == 1 || inp[BTN1IN+poffset+sw] == 2){
-		DEBUG_PRINT(F(" in moto verso "));
-		DEBUG_PRINTLN(sw);
+		//DEBUG_PRINT(F(" in moto verso "));
+		//DEBUG_PRINTLN(sw);
 		//LIST OF UP ACTIONSalt 
 		//imposta la DIRSezione
 		outlogicp[DIRS+offset]=sw;	
@@ -406,10 +391,10 @@ void firstPress(byte sw, byte n){
 			target[n] = (thaltp[n]) * (!sw);
 			target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
 		}
-		DEBUG_PRINT(F("first: "));
-		DEBUG_PRINTLN(first[n]);
-		DEBUG_PRINT(F("Target: in moto verso "));
-		DEBUG_PRINTLN(target[n]);
+		//DEBUG_PRINT(F("first: "));
+		//DEBUG_PRINTLN(first[n]);
+		//DEBUG_PRINT(F("Target: in moto verso "));
+		//DEBUG_PRINTLN(target[n]);
 #endif
 	}else if(inp[BTN1IN+poffset+sw] == 201){
 		DEBUG_PRINT(F("Calibrazione: in moto verso "));
@@ -432,9 +417,6 @@ void firstPress(byte sw, byte n){
 		}
 		target[n] = (unsigned long) (thaltp[n]*calcTiming(inp[BTN1IN+poffset+sw]))/100;
 		long delta = (long) (target[n] - getCronoCount(n));
-		DEBUG_PRINT(F("\ntarget[n]:  "));
-		DEBUG_PRINTLN(target[n]);
-		//target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
 		if(delta > 0){
 			target[n] = delta;
 			//LIST OF UP ACTIONS (TARGET ABOVE CURRENT POS)
