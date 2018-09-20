@@ -307,8 +307,8 @@ void readStatesAndPub(){
   s+=mqttJson[2]+F("\":\"")+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+F("\",\"");    //down1  DIRS=LOW
   s+=mqttJson[3]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+F("\",\"");	//up2 
   s+=mqttJson[4]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+F("\",\"");    //down2
-  s+= (String) F("pr1\":\"")+String((long)(getCronoCount(0)*100)/getTapThalt(0))+F("\",\"");		//pr1
-  s+= (String) F("pr2\":\"")+String((long)(getCronoCount(1)*100)/getTapThalt(1))+F("\",\"");		//pr2
+  s+= (String) F("pr1\":\"")+String(round(calcLen(0)))+F("\",\"");		//pr1
+  s+= (String) F("pr2\":\"")+String(round(calcLen(1)))+F("\",\"");		//pr2
   if(blocked[0]>0){
 	  s+= (String) F("blk1\":\"")+blocked[0]+F("\",\"");		//blk1
   }

@@ -144,7 +144,7 @@ void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, String  *paramsi, 
 	first[0] = first[1] = firstTime;
 #endif	
 	deltal=DELTAL;
-	nmax = ( (double) sqrt((double) (taplen*tapthick)/TWO_PI + barrad*barrad) - barrad) / tapthick /2;		//100% of excursion
+	nmax = (double) ((double) sqrt((double) taplen*tapthick/PI + barrad*barrad) - barrad) / tapthick;		//100% of excursion
 	//nmax = ((double) sqrt((double) ((taplen-deltal)*tapthick)/TWO_PI + barrad*barrad) - barrad) / tapthick /2 + deltal/TWO_PI/barrad;		//100% of excursion
 }
 
@@ -448,7 +448,7 @@ byte nRunning(){
 
 inline double calcTiming(byte v){
 	double nv;
-	nv = ((double) sqrt((double) (v*taplen*tapthick)/TWO_PI/100 + barrad*barrad) - barrad) / tapthick /2;	
+	nv = ((double) sqrt((double) (v*taplen*tapthick)/PI/100 + barrad*barrad) - barrad) / tapthick;	
 	/*if(v*taplen < deltal){
 		nv = v*deltal/TWO_PI/barrad;
 	}else{
@@ -457,6 +457,19 @@ inline double calcTiming(byte v){
 	
 	nv =  ((double) nv / nmax * 100);
 	return  nv;
+}
+
+double calcLen(byte n){
+	double app = (double) getCronoCount(n)/thaltp[n]*nmax;
+	DEBUG_PRINT(F("getCronoCount(n): "));
+	DEBUG_PRINTLN(getCronoCount(n));
+	DEBUG_PRINT(F("thaltp[n]: "));
+	DEBUG_PRINTLN(thaltp[n]);
+	DEBUG_PRINT(F("nmax: "));
+	DEBUG_PRINTLN(nmax);
+	DEBUG_PRINT(F("calcLen: "));
+	DEBUG_PRINTLN((double) PI*app*((double) app*tapthick + 2*barrad));
+	return  (double) PI*app*((double) app*tapthick + 2*barrad)*100/taplen;
 }
 
 /*
