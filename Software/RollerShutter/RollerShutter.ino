@@ -611,7 +611,8 @@ void loop() {
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
         if(mqttClient!=NULL){
 			if(!(mqttClient->isConnected())){
-				DEBUG_PRINTLN(F("MQTT: isConnected() dice non sono connesso."));
+				DEBUG_PRINT(F("MQTT: isConnected() dice non sono connesso. IP locale: "));
+				DEBUG_PRINTLN(WiFi.localIP());
 				mqttConnected=false;
 			}	
 			else{
