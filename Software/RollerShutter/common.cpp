@@ -76,7 +76,7 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 			"<div class=\"col-1-2\"><label for=\"reboot\">Reboot the system</label>"
                  "<input type=\"checkbox\" name=\"reboot\" value=\"y\">"
             "</div>"
-#if (!AUTOCAL))  
+#if (!AUTOCAL)  
 			"<div class=\"col-1-2\">"
                 "<label for=\startdelay\">Start delay on click of group 1:</label>"
                  "<input type=\"text\" name=\"startdelay1\" value=\"{S1}\">"
@@ -676,7 +676,7 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		//Body placeholders
 		page.replace(F("{WU}"), paramsp[WEBUSR] ) ;
 		page.replace(F("{WP}"), paramsp[WEBPSW] );
-#if (!AUTOCAL)) 
+#if (!AUTOCAL) 
 		page.replace(F("{S1}"), paramsp[STDEL1] );
 		page.replace(F("{S2}"), paramsp[STDEL2] );
 #endif
@@ -970,7 +970,7 @@ void handleModify(){
 	DEBUG_PRINTLN(paramsp[MQTTPSW]);
 	paramsp[MQTTCONNCHANGED]="true";
   } 
-#if (!AUTOCAL)) 
+#if (!AUTOCAL) 
   if(serverp.hasArg("startdelay1") && paramsp[STDEL1] != serverp.arg("startdelay1") ){
 	paramsp[STDEL1]=serverp.arg("startdelay1");
 	EEPROMWriteStr(STDEL1OFST,(paramsp[STDEL1]).c_str());
@@ -1175,7 +1175,7 @@ void loadConfig() {
 		paramsp[MQTTPSW] = buf;
 		DEBUG_PRINTLN(F("mqtt user password: "));
 		DEBUG_PRINTLN(paramsp[MQTTPSW]);
-#if (!AUTOCAL)) 		
+#if (!AUTOCAL)		
 		EEPROMReadStr(STDEL1OFST,buf);
 		paramsp[STDEL1] = buf;
 		DEBUG_PRINTLN(F("motor start delay1: "));
@@ -1380,7 +1380,7 @@ void saveOnEEPROM(){
 	DEBUG_PRINT(F("Modified MQTT password "));
 	DEBUG_PRINTLN(paramsp[MQTTPSW]);
 	//paramsp[MQTTCONNCHANGED]="true"
-#if (!AUTOCAL)) 	
+#if (!AUTOCAL) 	
 	EEPROMWriteStr(STDEL1OFST,(paramsp[STDEL1]).c_str());
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified start delay 1 "));
