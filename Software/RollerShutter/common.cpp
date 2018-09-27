@@ -76,6 +76,7 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 			"<div class=\"col-1-2\"><label for=\"reboot\">Reboot the system</label>"
                  "<input type=\"checkbox\" name=\"reboot\" value=\"y\">"
             "</div>"
+#if (!AUTOCAL))  
 			"<div class=\"col-1-2\">"
                 "<label for=\startdelay\">Start delay on click of group 1:</label>"
                  "<input type=\"text\" name=\"startdelay1\" value=\"{S1}\">"
@@ -84,6 +85,7 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
                 "<label for=\startdelay\">Start delay on click of group 2:</label>"
                  "<input type=\"text\" name=\"startdelay2\" value=\"{S2}\">"
             "</div>"
+#endif
             "<input type=\"submit\" value=\"Save\" formaction=\"/modify\" formmethod=\"post\">"
 			"<input type=\"submit\" value=\"Back\">"
         "</form>"
@@ -674,8 +676,10 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		//Body placeholders
 		page.replace(F("{WU}"), paramsp[WEBUSR] ) ;
 		page.replace(F("{WP}"), paramsp[WEBPSW] );
+#if (!AUTOCAL)) 
 		page.replace(F("{S1}"), paramsp[STDEL1] );
 		page.replace(F("{S2}"), paramsp[STDEL2] );
+#endif
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -966,6 +970,7 @@ void handleModify(){
 	DEBUG_PRINTLN(paramsp[MQTTPSW]);
 	paramsp[MQTTCONNCHANGED]="true";
   } 
+#if (!AUTOCAL)) 
   if(serverp.hasArg("startdelay1") && paramsp[STDEL1] != serverp.arg("startdelay1") ){
 	paramsp[STDEL1]=serverp.arg("startdelay1");
 	EEPROMWriteStr(STDEL1OFST,(paramsp[STDEL1]).c_str());
@@ -982,6 +987,7 @@ void handleModify(){
 	DEBUG_PRINTLN(paramsp[STDEL2]);
 	paramsp[TIMINGCHANGED]="true";
   } 
+#endif
   if(serverp.hasArg("thalt1") && (paramsp[THALT1] != String(serverp.arg("thalt1"))) ){
 	paramsp[THALT1] = serverp.arg("thalt1");
 	EEPROMWriteInt(THALT1OFST,(paramsp[THALT1]).toInt());
@@ -1169,7 +1175,7 @@ void loadConfig() {
 		paramsp[MQTTPSW] = buf;
 		DEBUG_PRINTLN(F("mqtt user password: "));
 		DEBUG_PRINTLN(paramsp[MQTTPSW]);
-		
+#if (!AUTOCAL)) 		
 		EEPROMReadStr(STDEL1OFST,buf);
 		paramsp[STDEL1] = buf;
 		DEBUG_PRINTLN(F("motor start delay1: "));
@@ -1179,7 +1185,7 @@ void loadConfig() {
 		paramsp[STDEL2] = buf;
 		DEBUG_PRINTLN(F("motor start delay2: "));
 		DEBUG_PRINTLN(paramsp[STDEL2]);
-		
+#endif		
 		EEPROMReadStr(VALWEIGHTOFST,buf);
 		paramsp[VALWEIGHT] = buf;
 		DEBUG_PRINTLN(F("sensor weight: "));
@@ -1374,7 +1380,7 @@ void saveOnEEPROM(){
 	DEBUG_PRINT(F("Modified MQTT password "));
 	DEBUG_PRINTLN(paramsp[MQTTPSW]);
 	//paramsp[MQTTCONNCHANGED]="true"
-	
+#if (!AUTOCAL)) 	
 	EEPROMWriteStr(STDEL1OFST,(paramsp[STDEL1]).c_str());
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified start delay 1 "));
@@ -1384,7 +1390,7 @@ void saveOnEEPROM(){
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified start delay 2 "));
 	DEBUG_PRINTLN(paramsp[STDEL2]);
-	
+#endif	
 	EEPROMWriteStr(VALWEIGHTOFST,(paramsp[VALWEIGHT]).c_str());
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified sensor weight "));

@@ -615,11 +615,11 @@ void loop() {
         if(mqttClient!=NULL){
 			if(!(mqttClient->isConnected())){
 				DEBUG_PRINT(F("MQTT: isConnected() dice non sono connesso. IP locale: "));
-				DEBUG_PRINTLN(WiFi.localIP());
 				mqttConnected=false;
 			}	
 			else{
 				DEBUG_PRINTLN(F("MQTT: isConnected() dice sono connesso."));
+				DEBUG_PRINTLN(WiFi.localIP());
 				mqttConnected=true;
 			}
 		}
