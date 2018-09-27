@@ -564,8 +564,8 @@ void loop() {
 			DEBUG_PRINTLN(x);
 			DEBUG_PRINT(F("d: "));
 			DEBUG_PRINTLN(d);
-			DEBUG_PRINT(F("ACSVolt: "));
-			DEBUG_PRINTLN(ACSVolt);
+			DEBUG_PRINT(F("peak: "));
+			DEBUG_PRINTLN(peak);
 			DEBUG_PRINT(F("AVG 1: "));
 			DEBUG_PRINTLN(getAVG(0));
 			DEBUG_PRINT(F("ThresholdUp(0): "));
@@ -614,11 +614,11 @@ void loop() {
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
         if(mqttClient!=NULL){
 			if(!(mqttClient->isConnected())){
-				DEBUG_PRINT(F("MQTT: isConnected() dice non sono connesso. IP locale: "));
+				DEBUG_PRINT(F("MQTT: isConnected() dice non sono connesso."));
 				mqttConnected=false;
 			}	
 			else{
-				DEBUG_PRINTLN(F("MQTT: isConnected() dice sono connesso."));
+				DEBUG_PRINT(F("MQTT: isConnected() dice sono connesso. Local IP: "));
 				DEBUG_PRINTLN(WiFi.localIP());
 				mqttConnected=true;
 			}

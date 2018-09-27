@@ -461,14 +461,6 @@ inline double calcTiming(byte v){
 
 double calcLen(byte n){
 	double app = (double) getCronoCount(n)/thaltp[n]*nmax;
-	DEBUG_PRINT(F("getCronoCount(n): "));
-	DEBUG_PRINTLN(getCronoCount(n));
-	DEBUG_PRINT(F("thaltp[n]: "));
-	DEBUG_PRINTLN(thaltp[n]);
-	DEBUG_PRINT(F("nmax: "));
-	DEBUG_PRINTLN(nmax);
-	DEBUG_PRINT(F("calcLen: "));
-	DEBUG_PRINTLN((double) PI*app*((double) app*tapthick + 2*barrad));
 	return  (double) PI*app*((double) app*tapthick + 2*barrad)*100/taplen;
 }
 
