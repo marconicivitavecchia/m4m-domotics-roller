@@ -536,16 +536,24 @@ void loop() {
 	//DEBUG_PRINT(F("x: "));
 	//DEBUG_PRINTLN(x);
 	
-	if(isrun[0] && isMoving(0)){
+	if(isrun[0]){
 		chk[0] = checkRange((double) peak*(1 - weight[1]*isMoving(1)),0);
-		DEBUG_PRINT(F("Ampere: "));
-		float amp = getAmpRMS();
-		DEBUG_PRINTLN(amp);
+		//DEBUG_PRINT(F("Ampere: "));
+		//float amp = getAmpRMS();
+		//DEBUG_PRINTLN(amp);
 		if(chk[0] != 0){
-			blocked[0] = secondPress(0);
-			scriviOutDaStato();
-			if(chk[0] == 1){
+			if(chk[0] == -1){
+				blocked[0] = secondPress(0);
+				scriviOutDaStato();
+				DEBUG_PRINTLN(F("\nStop: sottosoglia"));
+			}else if(chk[0] == 2){
+				blocked[0] = secondPress(0);
+				scriviOutDaStato();
 				blocked[0] = 1;
+				DEBUG_PRINTLN(F("\nStop: soprasoglia"));
+			}else if(chk[0] == 1){
+				startEndOfRunTimer(0);
+				DEBUG_PRINTLN(F("\nStart: fronte di salita"));
 			}
 			readStatesAndPub();
 			DEBUG_PRINT(F("weight 2: "));
@@ -558,29 +566,29 @@ void loop() {
 			DEBUG_PRINTLN(d);
 			DEBUG_PRINT(F("ACSVolt: "));
 			DEBUG_PRINTLN(ACSVolt);
-			DEBUG_PRINT(F("Ampere: "));
-			float amp = getAmpRMS();
-			DEBUG_PRINTLN(amp);
 			DEBUG_PRINT(F("AVG 1: "));
 			DEBUG_PRINTLN(getAVG(0));
 			DEBUG_PRINT(F("ThresholdUp(0): "));
 			DEBUG_PRINTLN(getThresholdUp(0));
 			DEBUG_PRINT(F("ThresholdDown(0): "));
 			DEBUG_PRINTLN(getThresholdDown(0));
-			DEBUG_PRINT(F("chk 1: "));
-			DEBUG_PRINTLN(chk[0]);
 		}
 	}else{
 		resetStatDelayCounter(0);
 	}
 	
-	if(isrun[1] && isMoving(1)){
+	if(isrun[1]){
 		chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
 		if(chk[1] != 0){
-			blocked[1] = secondPress(1);
-			scriviOutDaStato();
-			if(chk[1] == 1){
+			if(chk[1] == -1){
+				blocked[1] = secondPress(1);
+				scriviOutDaStato();
+			}else if(chk[1] == 2){
+				blocked[1] = secondPress(1);
+				scriviOutDaStato();
 				blocked[1] = 1;
+			}else if(chk[1] == 1){
+				startEndOfRunTimer(1);
 			}
 			readStatesAndPub();
 			DEBUG_PRINT("Auto stop! chk[1]: ");
@@ -591,13 +599,8 @@ void loop() {
 			DEBUG_PRINTLN(d);
 			DEBUG_PRINT(F("ACSVolt: "));
 			DEBUG_PRINTLN(ACSVolt);
-			DEBUG_PRINT(F("Ampere: "));
-			float amp = getAmpRMS();
-			DEBUG_PRINTLN(amp);
 			DEBUG_PRINT(F("AVG 2: "));
 			DEBUG_PRINTLN(getAVG(1));
-			DEBUG_PRINT(F("chk 2: "));
-			DEBUG_PRINTLN(chk[1]);
 		}
 	}else{
 		resetStatDelayCounter(1);
@@ -851,13 +854,16 @@ void onElapse(byte n){
 				startEngineDelayTimer(n);
 				//adesso parte...
 				scriviOutDaStato();
-			}else if(getGroupState(n)==2){//se il motore è in moto a vuoto
+			}
+#if (!AUTOCAL)	
+			else if(getGroupState(n)==2){//se il motore è in moto a vuoto
 				DEBUG_PRINTLN(F("onElapse:  timer di corsa a vuoto scaduto"));
 				///setGroupState(3,n);	//il motore va in moto cronometrato
 				startEndOfRunTimer(n);
 				//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
 				readStatesAndPub();
 			}
+#endif
 		}else if(getCntValue(n) > 1){
 			if(n == 0){
 				DEBUG_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
