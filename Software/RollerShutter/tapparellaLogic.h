@@ -9,7 +9,7 @@ byte tapparellaLogic(byte *, byte *, byte*, unsigned long , byte n);
 //byte tapparellaLogic(byte);
 void setTapThalt(unsigned long, byte);
 unsigned long getTapThalt(byte);
-//extern void onTapStop(byte);
+extern void onTapStop(byte);
 //extern void onTapStart(byte);
 extern void onCalibrEnd(unsigned long, byte);
 long getTarget(byte);

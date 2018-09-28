@@ -358,7 +358,7 @@ short secondPress(byte n){
 	}else{
 		calibr = 0;
 	}
-	//onTapStop(n);
+	onTapStop(n);
 	return rslt;
 }
 

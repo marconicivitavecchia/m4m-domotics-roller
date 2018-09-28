@@ -573,8 +573,6 @@ void loop() {
 			DEBUG_PRINT(F("ThresholdDown(0): "));
 			DEBUG_PRINTLN(getThresholdDown(0));
 		}
-	}else{
-		resetStatDelayCounter(0);
 	}
 	
 	if(isrun[1]){
@@ -602,8 +600,6 @@ void loop() {
 			DEBUG_PRINT(F("AVG 2: "));
 			DEBUG_PRINTLN(getAVG(1));
 		}
-	}else{
-		resetStatDelayCounter(1);
 	}
 #endif
 	//codice eseguito ogni 100*50 msec = 5 sec
@@ -929,8 +925,9 @@ void onElapse(byte n){
 	//DEBUG_PRINTLN(F("Fine timer"));
 }
 
-//void onTapStop(byte n){
-//}
+void onTapStop(byte n){
+	resetStatDelayCounter(n);
+}
 		
 void onCalibrEnd(unsigned long app, byte n){		
 	params[haltPrm[n]] = String(app);
