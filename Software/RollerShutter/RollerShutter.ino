@@ -28,6 +28,9 @@ short chk[2]={0,0};
 bool isrun[2]={false,false};;
 //end of stats variables
 unsigned long prec=0;
+wl_status_t wfs;
+byte wifiState;
+bool wifiConn;
 //wifi config----------------------------------------------
 const char* outTopic = "sonoff17/out";
 const char* inTopic = "sonoff17/in";
@@ -54,6 +57,7 @@ IPAddress subnet(255, 255, 255, 0);
 RemoteDebug telnet;
 WiFiEventHandler stationConnectedHandler;
 WiFiEventHandler stationDisconnectedHandler;
+WiFiEventHandler gotIpEventHandler, disconnectedEventHandler;
     
 //User config
 //--------------------------------------------------------------------------------------
@@ -140,10 +144,6 @@ inline byte tapLogic(byte n){
   // You can remove the password parameter if you want the AP to be open. 
   //WiFi.softAP(APSsid.c_str(), APPsw.c_str());
   
-  // Disable the WiFi persistence.  The ESP8266 will not load and save WiFi settings in the flash memory.
-  WiFi.persistent(false);
-  //WiFi.setOutputPower (12);
- 
   //WiFi.softAPConfig(ip, gateway, subnet);
   DEBUG_PRINT(F("Setting soft-AP configuration ... "));
   DEBUG_PRINTLN(WiFi.softAPConfig(ip, gateway, subnet) ? F("Ready") : F("Failed!"));
@@ -155,38 +155,94 @@ inline byte tapLogic(byte n){
   //ArduinoOTA.begin();
   DEBUG_PRINT(F("Soft-AP IP address = "));
   DEBUG_PRINTLN(WiFi.softAPIP());
-  
-  WiFi.mode(WIFI_STA);
+  //wifi_softap_dhcps_stop();
+}
+
+void scan_wifi() {
+int numberOfNetworks = WiFi.scanNetworks();
+ 
+  for(int i =0; i<numberOfNetworks; i++){
+ 
+      Serial.print("Network name: ");
+      Serial.println(WiFi.SSID(i));
+      Serial.print("Signal strength: ");
+      Serial.println(WiFi.RSSI(i));
+      Serial.println("-----------------------");
+ 
+  }
 }
 
 //wifi setup function
 void setup_wifi(int wifindx) {
-  //if(WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
+	//scan_wifi();
+	
+	//if(WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
 	wifindx = wifindx*2;  //client1 e client2 hanno indici contigui nell'array params
   
 	// We start by connecting to a WiFi network
-	DEBUG_PRINTLN(F("Connecting to "));
-	DEBUG_PRINTLN(params[CLNTSSID1+wifindx]);
+	Serial.println(F("Connecting to "));
+	Serial.println(params[CLNTSSID1+wifindx]);
+    Serial.println(F(" as wifi client..."));
+	//Serial.println ("** hit WIFI **");
+    //Serial.println(WiFi.macAddress());
   
-	//WiFi.disconnect();
-	WiFi.persistent(false);
-	//WiFi.mode(WIFI_OFF);   // this is a temporary line, to be removed after SDK update to 1.5.4
-	WiFi.mode(WIFI_AP_STA);
-
-	WiFi.begin((params[CLNTSSID1+wifindx]).c_str(), (params[CLNTPSW1+wifindx]).c_str());
+    //Serial.println ("** before **");
+    //WiFi.printDiag(Serial);
 	
-	WiFi.printDiag(Serial);
+    WiFi.persistent(false);
+	WiFi.setAutoConnect(false);
+	WiFi.setAutoReconnect(false);	//inibisce la riconnessione automatica
+	WiFi.disconnect();				//alla sucessiva riconnessione manuale
+	WiFi.mode(WIFI_OFF);   // this is a temporary line, to be removed after SDK update to 1.5.4
+	
+	Serial.println ("going to STA mode");
+    //WiFi.mode(WIFI_STA);
+    WiFi.mode(WIFI_STA);
+	
+	wifiState = WIFISTA;
+	
+    Serial.println ("** after **");
+    WiFi.printDiag(Serial);
+	
+	//WiFi.mode(WIFI_STA);
+	//wifi_station_dhcpc_start();
+	
+	//WiFi.begin((params[CLNTSSID1+wifindx]).c_str(), (params[CLNTPSW1+wifindx]).c_str());
+	
+	//WiFi.begin("OpenWrt", "dorabino.7468!");
+	//fix for auto connect racing issue
+	if (WiFi.status() == WL_CONNECTED) {
+		Serial.println(F("Already connected. Bailing out."));
+	}else{
+		//check if we have ssid and pass and force those, if not, try with last saved values
+		if ((params[CLNTSSID1+wifindx]).c_str() != "") {
+			WiFi.begin((params[CLNTSSID1+wifindx]).c_str(), (params[CLNTPSW1+wifindx]).c_str());
+		} else {
+			if (WiFi.SSID()) {
+			 Serial.println(F("Using last saved values, should be faster"));
+			  //trying to fix connection in progress hanging
+			  ETS_UART_INTR_DISABLE();
+			  wifi_station_disconnect();
+			  ETS_UART_INTR_ENABLE();
+
+			  WiFi.begin();
+			} else {
+			  Serial.println(F("No saved credentials"));
+			}
+		}
+	}
 	
 	if(WiFi.status() == WL_CONNECTED) {
 		//ArduinoOTA.begin();
 		//ho ottenuto una connessione
-		DEBUG_PRINTLN(F(""));
-		DEBUG_PRINTLN(F("WiFi connected"));
+		Serial.println(F(""));
+		Serial.println(F("WiFi connected"));
 		digitalWrite(OUTSLED, LOW);
-		DEBUG_PRINTLN(F("IP address: "));
-		DEBUG_PRINTLN(WiFi.localIP());
+		Serial.println(F("IP address: "));
+		Serial.println(WiFi.localIP());
 		params[LOCALIP] = WiFi.localIP().toString();
 	}
+	//WiFi.enableAP(true);
   //}
 }
 
@@ -357,18 +413,23 @@ void initIiming(bool first){
 void setup() {
   //inizializza la seriale
   Serial.begin(115200);
+  Serial.setDebugOutput(true);
   //Serial.setdebugOutput(true);ù
   //carica la configurazione dalla EEPROM
   //DEBUG_PRINTLN(F("Carico configurazione."));
   initCommon(&server,params,mqttJson);
-  delay(7000);
+  //delay(7000);
   loadConfig();
   //inizializza il client wifi
   //setup_wifi(wifindx);
   //inizializza l'AP wifi
-  setup_AP();
-  setup_wifi(wifindx);
-  delay(TCOUNT*1000);
+  //setup_AP();
+  //setup_wifi(wifindx);
+  //delay(TCOUNT*1000);
+  //delay(1000);
+  wfs = WiFi.status();
+  wifiConn = false;
+  //setTimerState(wfs, CONNSTATSW);
   //telnet.begin();
   telnet.begin((params[MQTTID]).c_str()); // Initiaze the telnet server
   telnet.setResetCmdEnabled(true); // Enable the reset command
@@ -380,7 +441,7 @@ void setup() {
   initdfn(LOW, 2);
   initdfn(LOW, 3);
   initdfn(LOW, 4);
-  initdfn((byte) WL_DISCONNECTED, CONNSTATSW);
+  //initdfn((byte) WL_DISCONNECTED, CONNSTATSW);
   //Timing init
   setupTimer((params[THALT1]).toInt(),TMRHALT);				//function timer switch1
   setupTimer((params[THALT2]).toInt(),TMRHALT+TIMERDIM);	//function timer switch2 
@@ -462,6 +523,19 @@ void setup() {
   stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
   // Call "onStationDisconnected" each time a station disconnects
   stationDisconnectedHandler = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
+  
+  gotIpEventHandler = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP& event)
+  {
+	Serial.print("Station connected, IP: ");
+	Serial.println(WiFi.localIP());
+	wifiConn = true;
+  });
+  disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event)
+  {
+    Serial.println("Station disconnected");
+	wifiConn = false;
+  });
+
   //initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt());
   //esp_log_set_vprintf(_log_vprintf);
 #if (DEBUG)  
@@ -608,9 +682,9 @@ void loop() {
 		//aggiornaTimer(APOFFTIMER);
 		
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
-        if(mqttClient!=NULL){
+        if(mqttClient!=NULL && WiFi.status() == WL_CONNECTED){
 			if(!(mqttClient->isConnected())){
-				DEBUG_PRINT(F("MQTT: isConnected() dice non sono connesso."));
+				DEBUG_PRINTLN(F("MQTT: isConnected() dice non sono connesso."));
 				mqttConnected=false;
 			}	
 			else{
@@ -733,57 +807,45 @@ void loop() {
 	if(!(step % 50)){
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
-		/*
-		DEBUG_PRINTLN(F("------------------------------------------"));
-		DEBUG_PRINT(F("x: "));
-		DEBUG_PRINTLN(x);
-		DEBUG_PRINT(F("d: "));
-		DEBUG_PRINTLN(d);
-		DEBUG_PRINT(F("ACSVolt: "));
-		DEBUG_PRINTLN(ACSVolt);
-		DEBUG_PRINT(F("Ampere: "));
-		float amp = getAmpRMS();
-		DEBUG_PRINTLN(amp);
-		DEBUG_PRINT(F("AVG 1: "));
-		DEBUG_PRINTLN(getAVG(0));
-		DEBUG_PRINT(F("AVG 2: "));
-		DEBUG_PRINTLN(getAVG(1));
-		DEBUG_PRINT(F("chk 1: "));
-		DEBUG_PRINTLN(chk[1]);
-		DEBUG_PRINT(F("chk 2: "));
-		DEBUG_PRINTLN(chk[1]);
-		*/
 		/*if (telnet.read() == 'R') {
 			telnet.stop();
 			delay(100);
 			ESP.reset();
 		}*/
 		
-		noInterrupts ();
-		wl_status_t wfs = WiFi.status();
-		interrupts ();
+		//noInterrupts ();
+		wfs = WiFi.status();
+		//interrupts ();
 		
 		//DEBUG_PRINTLN(wl_status_to_string(wfs));
 		
-		if(wfs != WL_CONNECTED){
+		if(wfs != WL_CONNECTED || wifiConn == false){
+		//if(WiFi.isConnected()){
 				//lampeggia led di connessione
 				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
-				if(WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
+				if(wifiState == WIFISTA){
 					swcount++;
 					DEBUG_PRINT(F("swcount roll: "));
 					DEBUG_PRINTLN(swcount);
-					if((swcount >= TCOUNT) ){
+					if(swcount >= TCOUNT){
+						//DEBUG_PRINTLN(F("Setup WiFi func"));
 						swcount = 0;
+						noInterrupts ();  //avoid partial completition of nested WIFI.begin() function
 						setup_wifi(wifindx);
-						wifindx = (wifindx +1) % 2;
+						interrupts ();
+						//delay(3000);
+						//select SSID client
+						wifindx = (wifindx +1) % 2; //0 o 1 are the index of the two alternative SSID
 					}
 				}
+		}else{
+			digitalWrite(OUTSLED, LOW);
 		}
+		/*
 		if(switchdfn(wfs, CONNSTATSW)){
-			if(wfs == WL_CONNECTED){
+			if(wfs == WL_CONNECTED || wifiConn == true){
 				//WiFi.reconnect();
-				WiFi.enableAP(false);
-				WiFi.mode(WIFI_STA);
+				//WiFi.enableAP(false);
 				//ho ottenuto una connessione
 				DEBUG_PRINTLN(F(""));
 				DEBUG_PRINTLN(F("WiFi connected"));
@@ -795,12 +857,15 @@ void loop() {
 			else
 			{
 				DEBUG_PRINTLN(F("AP mode on"));
-				//setup_AP();
+				noInterrupts ();  //avoid partial completition of nested WIFI.begin() function
+				setup_AP();
+				interrupts ();
 				WiFi.enableAP(true);
 				params[LOCALIP] = WiFi.softAPIP().toString();
+				wifi_softap_dhcps_start();
 			}
 			//httpSetup();
-		}
+		}*/
 	}
 	//ogni 50ms
 	if(!(step % 3)){
@@ -864,19 +929,31 @@ void onElapse(byte n){
 			if(n == 0){
 				DEBUG_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
 				if(testCntEvnt(3,CNTSERV1)){
-					WiFi.enableAP(true);
+					wifiState = WIFIAP;
+					//wifi_station_dhcpc_stop();
+					//WiFi.enableAP(true);
+					//wifi_softap_dhcps_start();
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("Atttivato AP mode"));
 					DEBUG_PRINTLN(F("-----------------------------"));
 					startTimer(APOFFTIMER);
 					//WiFi.enableSTA(false);
+					DEBUG_PRINTLN(F("AP mode on"));
+					noInterrupts ();  //avoid partial completition of nested WIFI.begin() function
+					setup_AP();
 					WiFi.setAutoConnect(false);
 					WiFi.setAutoReconnect(false);
+					interrupts ();
+					WiFi.enableAP(true); //is STA + AP
+					params[LOCALIP] = WiFi.softAPIP().toString();
+					wifi_softap_dhcps_start();
+					//WiFi.setAutoReconnect(false);
 					setGroupState(0,n%2);
 				}else if(testCntEvnt(4,CNTSERV1)){
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("Rebooting ESP without reset of configuration"));
 					DEBUG_PRINTLN(F("-----------------------------"));
+					ESP.eraseConfig(); //do the erasing of wifi credentials
 					ESP.restart();
 				}else if(testCntEvnt(5,CNTSERV1)){
 					DEBUG_PRINTLN(F("-----------------------------"));
@@ -912,8 +989,11 @@ void onElapse(byte n){
 			rebootSystem();
 	}else if(n == APOFFTIMER){
 		if(WiFi.softAPgetStationNum() == 0){
+			//wifi_softap_dhcps_stop();
 			WiFi.enableAP(false);
 			WiFi.enableSTA(true);
+			wifiState = WIFISTA;
+			//wifi_station_dhcpc_start();
 			DEBUG_PRINTLN(F("-----------------------------"));
 			DEBUG_PRINTLN(F("Nussun client si è ancora connesso, disatttivato AP mode"));
 			DEBUG_PRINTLN(F("-----------------------------"));
@@ -926,7 +1006,9 @@ void onElapse(byte n){
 }
 
 void onTapStop(byte n){
+#if (AUTOCAL)
 	resetStatDelayCounter(n);
+#endif
 }
 		
 void onCalibrEnd(unsigned long app, byte n){		
@@ -1013,7 +1095,8 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 		WiFi.setAutoConnect(false);
 		WiFi.setAutoReconnect(false);
 		WiFi.enableSTA(false);
-		//WiFi.mode(WIFI_AP);
+		WiFi.mode(WIFI_AP);
+		wifiState = WIFIAP;
 	}
 }
 
@@ -1023,9 +1106,13 @@ void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
 	if(WiFi.softAPgetStationNum() == 0){
 		DEBUG_PRINTLN(F("WIFI: reconnecting to AP"));
 		swcount = TCOUNT;  //importante!
+		WiFi.enableAP(false);
 		WiFi.enableSTA(true);
+		//WiFi.reconnect() ;
+		//WiFi.enableSTA(true);
 		WiFi.setAutoConnect(true);
 		WiFi.setAutoReconnect(true);
+		wifiState = WIFISTA;
 	}
 }
 
