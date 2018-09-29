@@ -31,6 +31,7 @@ unsigned long prec=0;
 wl_status_t wfs;
 byte wifiState;
 bool wifiConn;
+unsigned long _connectTimeout  = 10*1000;
 //wifi config----------------------------------------------
 const char* outTopic = "sonoff17/out";
 const char* inTopic = "sonoff17/in";
@@ -171,6 +172,29 @@ int numberOfNetworks = WiFi.scanNetworks();
  
   }
 }
+//come WIFI.waitForConnectResult() ma con un timeout
+uint8_t waitForConnectResult() {
+  if (_connectTimeout == 0) {
+    return WiFi.waitForConnectResult();
+  } else {
+    Serial.println(F("Waiting for connection result with time out"));
+    unsigned long start = millis();
+    boolean keepConnecting = true;
+    uint8_t status;
+    while (keepConnecting) {
+      status = WiFi.status();
+      if (millis() > start + _connectTimeout) {
+        keepConnecting = false;
+        Serial.println(F("Connection timed out"));
+      }
+      if (status == WL_CONNECTED || status == WL_CONNECT_FAILED) {
+        keepConnecting = false;
+      }
+      delay(100);
+    }
+    return status;
+  }
+}
 
 //wifi setup function
 void setup_wifi(int wifindx) {
@@ -189,21 +213,6 @@ void setup_wifi(int wifindx) {
     //Serial.println ("** before **");
     //WiFi.printDiag(Serial);
 	
-    WiFi.persistent(false);
-	WiFi.setAutoConnect(false);
-	WiFi.setAutoReconnect(false);	//inibisce la riconnessione automatica
-	WiFi.disconnect();				//alla sucessiva riconnessione manuale
-	WiFi.mode(WIFI_OFF);   // this is a temporary line, to be removed after SDK update to 1.5.4
-	
-	Serial.println ("going to STA mode");
-    //WiFi.mode(WIFI_STA);
-    WiFi.mode(WIFI_STA);
-	
-	wifiState = WIFISTA;
-	
-    Serial.println ("** after **");
-    WiFi.printDiag(Serial);
-	
 	//WiFi.mode(WIFI_STA);
 	//wifi_station_dhcpc_start();
 	
@@ -214,6 +223,17 @@ void setup_wifi(int wifindx) {
 	if (WiFi.status() == WL_CONNECTED) {
 		Serial.println(F("Already connected. Bailing out."));
 	}else{
+		WiFi.persistent(false);
+		WiFi.setAutoConnect(false);
+		WiFi.setAutoReconnect(false);	//inibisce la riconnessione automatica
+		//WiFi.disconnect();				//alla sucessiva riconnessione manuale
+		//WiFi.mode(WIFI_OFF);   // this is a temporary line, to be removed after SDK update to 1.5.4
+	
+		Serial.println ("going to STA mode");
+		//WiFi.mode(WIFI_STA);
+		WiFi.mode(WIFI_STA);
+	
+		wifiState = WIFISTA;
 		//check if we have ssid and pass and force those, if not, try with last saved values
 		if ((params[CLNTSSID1+wifindx]).c_str() != "") {
 			WiFi.begin((params[CLNTSSID1+wifindx]).c_str(), (params[CLNTPSW1+wifindx]).c_str());
@@ -231,7 +251,7 @@ void setup_wifi(int wifindx) {
 			}
 		}
 	}
-	
+		
 	if(WiFi.status() == WL_CONNECTED) {
 		//ArduinoOTA.begin();
 		//ho ottenuto una connessione
@@ -242,6 +262,10 @@ void setup_wifi(int wifindx) {
 		Serial.println(WiFi.localIP());
 		params[LOCALIP] = WiFi.localIP().toString();
 	}
+	
+	Serial.println (F("\n******************* begin ***********"));
+    WiFi.printDiag(Serial);
+	Serial.println (F("\n******************* end ***********"));
 	//WiFi.enableAP(true);
   //}
 }
@@ -413,15 +437,16 @@ void initIiming(bool first){
 void setup() {
   //inizializza la seriale
   Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  //Serial.setdebugOutput(true);ù
+  //importante per il debug del WIFI!
+  //Serial.setDebugOutput(true);
+
   //carica la configurazione dalla EEPROM
   //DEBUG_PRINTLN(F("Carico configurazione."));
   initCommon(&server,params,mqttJson);
-  //delay(7000);
+  delay(1000);
   loadConfig();
   //inizializza il client wifi
-  //setup_wifi(wifindx);
+  setup_wifi(wifindx);
   //inizializza l'AP wifi
   //setup_AP();
   //setup_wifi(wifindx);
@@ -698,7 +723,7 @@ void loop() {
 			mqttConnected=false;
 		}
 		
-		if((!mqttConnected) && WiFi.status()==WL_CONNECTED && WiFi.getMode()==WIFI_STA) {
+		if((wifiConn == true)&&(!mqttConnected) && WiFi.status()==WL_CONNECTED && WiFi.getMode()==WIFI_STA) {
 			DEBUG_PRINT(F("MQTT client loop: provo a riconnettermi..."));
 			if(mqttClient==NULL){
 				DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
@@ -833,6 +858,10 @@ void loop() {
 						noInterrupts ();  //avoid partial completition of nested WIFI.begin() function
 						setup_wifi(wifindx);
 						interrupts ();
+						//WiFi.waitForConnectResult();
+						if( waitForConnectResult()){
+							wifiConn = true;
+						}
 						//delay(3000);
 						//select SSID client
 						wifindx = (wifindx +1) % 2; //0 o 1 are the index of the two alternative SSID
