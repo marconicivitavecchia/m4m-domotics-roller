@@ -869,6 +869,7 @@ void loop() {
 				}
 		}else{
 			digitalWrite(OUTSLED, LOW);
+			params[LOCALIP] = WiFi.localIP().toString();
 		}
 		/*
 		if(switchdfn(wfs, CONNSTATSW)){
@@ -963,7 +964,7 @@ void onElapse(byte n){
 					//WiFi.enableAP(true);
 					//wifi_softap_dhcps_start();
 					DEBUG_PRINTLN(F("-----------------------------"));
-					DEBUG_PRINTLN(F("Atttivato AP mode"));
+					DEBUG_PRINTLN(F("Attivato AP mode"));
 					DEBUG_PRINTLN(F("-----------------------------"));
 					startTimer(APOFFTIMER);
 					//WiFi.enableSTA(false);
@@ -1120,6 +1121,7 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 	DEBUG_PRINTLN(F("Station connected: "));
 	DEBUG_PRINTLN(macToString(evt.mac));
 	if(WiFi.softAPgetStationNum() == 1){
+		params[LOCALIP] = WiFi.softAPIP().toString();
 		DEBUG_PRINTLN(F("WIFI: disconnecting from AP"));
 		WiFi.setAutoConnect(false);
 		WiFi.setAutoReconnect(false);

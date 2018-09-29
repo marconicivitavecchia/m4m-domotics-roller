@@ -76,7 +76,6 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 			"<div class=\"col-1-2\"><label for=\"reboot\">Reboot the system</label>"
                  "<input type=\"checkbox\" name=\"reboot\" value=\"y\">"
             "</div>"
-#if (!AUTOCAL)  
 			"<div class=\"col-1-2\">"
                 "<label for=\startdelay\">Start delay on click of group 1:</label>"
                  "<input type=\"text\" name=\"startdelay1\" value=\"{S1}\">"
@@ -85,7 +84,6 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
                 "<label for=\startdelay\">Start delay on click of group 2:</label>"
                  "<input type=\"text\" name=\"startdelay2\" value=\"{S2}\">"
             "</div>"
-#endif
             "<input type=\"submit\" value=\"Save\" formaction=\"/modify\" formmethod=\"post\">"
 			"<input type=\"submit\" value=\"Back\">"
         "</form>"
