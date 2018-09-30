@@ -255,7 +255,7 @@ extern RemoteDebug telnet;
 #endif
 
 
-void setup_AP();
+void setup_AP(bool);
 void setup_wifi();
 void setup_mDNS();
 void mqttReconnect();

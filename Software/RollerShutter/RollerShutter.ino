@@ -140,24 +140,40 @@ inline byte tapLogic(byte n){
 	return (switchLogic(0,n) + switchLogic(1,n));
 }
 
- void setup_AP() {
+ void setup_AP(bool apmode) {
   DEBUG_PRINTLN(F("Configuring access point..."));
   // You can remove the password parameter if you want the AP to be open. 
   //WiFi.softAP(APSsid.c_str(), APPsw.c_str());
   
-  //WiFi.softAPConfig(ip, gateway, subnet);
-  DEBUG_PRINT(F("Setting soft-AP configuration ... "));
-  DEBUG_PRINTLN(WiFi.softAPConfig(ip, gateway, subnet) ? F("Ready") : F("Failed!"));
-  
-  noInterrupts ();
-  WiFi.softAP((params[APPSSID]).c_str());
-  interrupts();
-  //DEBUG_PRINT(F("Setting soft-AP ... "));
-  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
-  
-  DEBUG_PRINT(F("Soft-AP IP address = "));
-  DEBUG_PRINTLN(WiFi.softAPIP());
-  //wifi_softap_dhcps_stop();
+  if(apmode){
+	  //WiFi.softAPConfig(ip, gateway, subnet);
+	  DEBUG_PRINT(F("Setting soft-AP configuration ... "));
+	  DEBUG_PRINTLN(WiFi.softAPConfig(ip, gateway, subnet) ? F("Ready") : F("Failed!"));
+	  
+	  noInterrupts ();
+	  WiFi.softAP((params[APPSSID]).c_str());
+	  interrupts();
+	  //DEBUG_PRINT(F("Setting soft-AP ... "));
+	  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
+	  
+	  delay(500);
+	  params[LOCALIP] = WiFi.softAPIP().toString();
+	  DEBUG_PRINT(F("Soft-AP IP address = "));
+	  DEBUG_PRINTLN(params[LOCALIP]);
+	  //wifi_softap_dhcps_stop();
+  }else{
+	  noInterrupts ();
+	  WiFi.softAP((params[APPSSID]).c_str());
+	  interrupts();
+	  //DEBUG_PRINT(F("Setting soft-AP ... "));
+	  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
+	  
+	  delay(500);
+	  params[LOCALIP] = WiFi.softAPIP().toString();
+	  DEBUG_PRINT(F("Soft-AP IP address = "));
+	  DEBUG_PRINTLN(params[LOCALIP]);
+	  //wifi_softap_dhcps_stop();
+  }
 }
 
 void scan_wifi() {
@@ -428,11 +444,12 @@ void setup() {
   initCommon(&server,params,mqttJson);
   delay(6000);
   loadConfig();
+  //setup_AP(true);
   //inizializza il client wifi
   setup_wifi(wifindx);
   wfs = WiFi.status();
   wifiConn = false;
-  delay(2000);
+  //delay(4000); setup_wifi(wifindx); non ama ritardi dopo....
   //inizializza l'AP wifi
   //setup_AP();
   //setup_wifi(wifindx);
@@ -552,6 +569,9 @@ void setup() {
 #if (DEBUG)  
   testFlash();
 #endif
+  DEBUG_PRINTLN(F(" OK"));
+  DEBUG_PRINTLN(F("Last reset reason: "));
+  DEBUG_PRINTLN(ESP.getResetReason());
 }
 
 void httpSetup(){
@@ -826,7 +846,8 @@ void loop() {
 		
 		//DEBUG_PRINTLN(wl_status_to_string(wfs));
 		
-		if(wifiConn == false){
+		if(wifiConn == false && (wifiState == WIFISTA)){
+			DEBUG_PRINT(F("blink: "));
 			//lampeggia led di connessione
 			digitalWrite(OUTSLED, !digitalRead(OUTSLED));
 			if(wifiState == WIFISTA){
@@ -955,25 +976,29 @@ void onElapse(byte n){
 					if(!WiFi.isConnected()){
 						WiFi.persistent(false);
 						// disconnect sta, start ap
-						WiFi.disconnect(); //  this alone is not enough to stop the autoconnecter
-						setup_AP();
+						WiFi.disconnect(true); //  this alone is not enough to stop the autoconnecter
 						WiFi.mode(WIFI_AP);
+						wifi_softap_dhcps_stop();
 						WiFi.persistent(true);
+						delay(100);
+						setup_AP(true);
+						wifi_softap_dhcps_start();
 					}else{
-						//setup AP
-						setup_AP();
 						WiFi.mode(WIFI_AP_STA);
 						DEBUG_PRINTLN(F("SET AP STA"));
+						delay(100);
+						setup_AP(true);
 					}
 					WiFi.printDiag(Serial);
 					//wifi_station_dhcpc_stop();
 					//interrupts ();
 					//WiFi.enableAP(true); //is STA + AP
 					//setup_AP();
-					params[LOCALIP] = WiFi.softAPIP().toString();
+					//params[LOCALIP] = WiFi.softAPIP().toString();
 					//MDNS.notifyAPChange()();
 					//wifi_softap_dhcps_start();
 					MDNS.update();
+					delay(200);
 					setGroupState(0,n%2);
 				}else if(testCntEvnt(4,CNTSERV1)){
 					DEBUG_PRINTLN(F("-----------------------------"));
@@ -1118,7 +1143,7 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 	DEBUG_PRINTLN(F("Station connected: "));
 	DEBUG_PRINTLN(macToString(evt.mac));
 	if(WiFi.softAPgetStationNum() == 1){
-		DEBUG_PRINTLN(F("WIFI: disconnecting from AP"));
+		//DEBUG_PRINTLN(F("WIFI: disconnecting from AP"));
 		//WiFi.printDiag(Serial);
 		//WiFi.setAutoConnect(false);
 		//WiFi.setAutoReconnect(false);
