@@ -162,9 +162,9 @@ inline byte tapLogic(byte n){
 	  DEBUG_PRINTLN(params[LOCALIP]);
 	  //wifi_softap_dhcps_stop();
   }else{
-	  noInterrupts ();
+	  //noInterrupts ();
 	  WiFi.softAP((params[APPSSID]).c_str());
-	  interrupts();
+	  //interrupts();
 	  //DEBUG_PRINT(F("Setting soft-AP ... "));
 	  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
 	  
@@ -860,6 +860,7 @@ void loop() {
 					swcount = 0;
 					keepConn = true;
 					WiFi.waitForConnectResult();	//necessaria, se no non funziona! Motivo ignoto...
+					Serial.println(F("Do new connection"));
 					//noInterrupts ();  
 					setup_wifi(wifindx);	//tetativo di connessione
 					//interrupts ();
