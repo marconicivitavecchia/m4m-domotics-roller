@@ -150,9 +150,9 @@ inline byte tapLogic(byte n){
 	  DEBUG_PRINT(F("Setting soft-AP configuration ... "));
 	  DEBUG_PRINTLN(WiFi.softAPConfig(ip, gateway, subnet) ? F("Ready") : F("Failed!"));
 	  
-	  noInterrupts ();
+	  //noInterrupts ();
 	  WiFi.softAP((params[APPSSID]).c_str());
-	  interrupts();
+	  //interrupts();
 	  //DEBUG_PRINT(F("Setting soft-AP ... "));
 	  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
 	  
@@ -978,11 +978,9 @@ void onElapse(byte n){
 						// disconnect sta, start ap
 						WiFi.disconnect(true); //  this alone is not enough to stop the autoconnecter
 						WiFi.mode(WIFI_AP);
-						wifi_softap_dhcps_stop();
 						WiFi.persistent(true);
 						delay(100);
 						setup_AP(true);
-						wifi_softap_dhcps_start();
 					}else{
 						WiFi.mode(WIFI_AP_STA);
 						DEBUG_PRINTLN(F("SET AP STA"));
