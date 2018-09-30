@@ -422,8 +422,8 @@ void setup() {
   //carica la configurazione dalla EEPROM
   //DEBUG_PRINTLN(F("Carico configurazione."));
   initCommon(&server,params,mqttJson);
-  loadConfig();
   delay(6000);
+  loadConfig();
   //inizializza il client wifi
   setup_wifi(wifindx);
   wfs = WiFi.status();
