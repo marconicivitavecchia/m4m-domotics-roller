@@ -237,11 +237,11 @@ void setup_wifi(int wifindx) {
 	if(wifiConn) {
 		//ArduinoOTA.begin();
 		//ho ottenuto una connessione
-		Serial.println(F(""));
-		Serial.println(F("WiFi connected"));
+		//Serial.println(F(""));
+		//Serial.println(F("WiFi connected"));
 		//digitalWrite(OUTSLED, LOW);
-		Serial.println(F("IP address: "));
-		Serial.println(WiFi.localIP());
+		//Serial.println(F("IP address: "));
+		//Serial.println(WiFi.localIP());
 		params[LOCALIP] = WiFi.localIP().toString();
 	}
 /*	
@@ -1104,6 +1104,7 @@ void rebootSystem(){
 	alterEEPROM();
 	EEPROM.end();
 	DEBUG_PRINTLN(F("Resetting ESP"));
+	ESP.eraseConfig(); //do the erasing of wifi credentials
 	ESP.restart();
 }
 //----------------------------------------------------FINE TIMER----------------------------------------------------------------------
