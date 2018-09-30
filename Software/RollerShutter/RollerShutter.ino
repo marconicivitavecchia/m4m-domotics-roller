@@ -153,7 +153,6 @@ inline byte tapLogic(byte n){
   DEBUG_PRINT(F("Setting soft-AP ... "));
   DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
   
-  //ArduinoOTA.begin();
   DEBUG_PRINT(F("Soft-AP IP address = "));
   DEBUG_PRINTLN(WiFi.softAPIP());
   //wifi_softap_dhcps_stop();
@@ -199,6 +198,7 @@ void setup_wifi(int wifindx) {
 	//fix for auto connect racing issue
 	//if (WiFi.status() == WL_CONNECTED) {
 	if (wifiConn) {
+		//importante! Altrimenti tentativi potrebbero collidere con una connessione appena instaurata
 		Serial.println(F("Already connected. Bailing out."));
 	}else{
 		WiFi.persistent(false);
@@ -417,22 +417,24 @@ void setup() {
   //inizializza la seriale
   Serial.begin(115200);
   //importante per il debug del WIFI!
-  //Serial.setDebugOutput(true);
+  Serial.setDebugOutput(true);
 
   //carica la configurazione dalla EEPROM
   //DEBUG_PRINTLN(F("Carico configurazione."));
   initCommon(&server,params,mqttJson);
-  delay(1000);
   loadConfig();
+  delay(3000);
   //inizializza il client wifi
   setup_wifi(wifindx);
+  wfs = WiFi.status();
+  wifiConn = false;
+  delay(3000);
   //inizializza l'AP wifi
   //setup_AP();
   //setup_wifi(wifindx);
   //delay(TCOUNT*1000);
   //delay(1000);
-  wfs = WiFi.status();
-  wifiConn = false;
+  
   //setTimerState(wfs, CONNSTATSW);
   //telnet.begin();
   telnet.begin((params[MQTTID]).c_str()); // Initiaze the telnet server
@@ -818,10 +820,6 @@ void loop() {
 			ESP.reset();
 		}*/
 		
-		//noInterrupts ();
-		wfs = WiFi.status();
-		//interrupts ();
-		
 		//DEBUG_PRINTLN(wl_status_to_string(wfs));
 		
 		if(wifiConn == false){
@@ -832,13 +830,13 @@ void loop() {
 				DEBUG_PRINT(F("swcount roll: "));
 				DEBUG_PRINTLN(swcount);
 				if((swcount >= TCOUNT) || (keepConn == false)){
-					wifindx = (wifindx +1) % 2; //0 o 1 are the index of the two alternative SSID
+					wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
 					Serial.println(F("Connection timed out"));
 					swcount = 0;
 					keepConn = true;
-					WiFi.waitForConnectResult();	//necessaria, se no non funziona!
-					//noInterrupts ();  //avoid partial completition of nested WIFI.begin() function
-					setup_wifi(wifindx);
+					WiFi.waitForConnectResult();	//necessaria, se no non funziona! Motivo ignoto...
+					//noInterrupts ();  
+					setup_wifi(wifindx);	//tetativo di connessione
 					//interrupts ();
 				}
 			}
@@ -948,17 +946,34 @@ void onElapse(byte n){
 					startTimer(APOFFTIMER);
 					//WiFi.enableSTA(false);
 					DEBUG_PRINTLN(F("AP mode on"));
-					noInterrupts ();  //avoid partial completition of nested WIFI.begin() function
-					setup_AP();
 					WiFi.setAutoConnect(false);
-					WiFi.setAutoReconnect(false);
-					interrupts ();
-					WiFi.mode(WIFI_AP_STA);
-					WiFi.enableAP(true); //is STA + AP
+					WiFi.setAutoReconnect(false);					
+					if(!WiFi.isConnected()){
+						WiFi.persistent(false);
+						// disconnect sta, start ap
+						WiFi.disconnect(); //  this alone is not enough to stop the autoconnecter
+						noInterrupts();
+						setup_AP();
+						interrupts();
+						WiFi.mode(WIFI_AP);
+						WiFi.persistent(true);
+					}else{
+						//setup AP
+						noInterrupts();
+						setup_AP();
+						interrupts();
+						WiFi.mode(WIFI_AP_STA);
+						DEBUG_PRINTLN(F("SET AP STA"));
+					}
+					WiFi.printDiag(Serial);
+					//wifi_station_dhcpc_stop();
+					//interrupts ();
+					//WiFi.enableAP(true); //is STA + AP
+					//setup_AP();
 					params[LOCALIP] = WiFi.softAPIP().toString();
-					wifi_softap_dhcps_start();
-					setup_mDNS();
-					//WiFi.setAutoReconnect(false);
+					//MDNS.notifyAPChange()();
+					//wifi_softap_dhcps_start();
+					MDNS.update();
 					setGroupState(0,n%2);
 				}else if(testCntEvnt(4,CNTSERV1)){
 					DEBUG_PRINTLN(F("-----------------------------"));
@@ -1103,13 +1118,40 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 	DEBUG_PRINTLN(macToString(evt.mac));
 	if(WiFi.softAPgetStationNum() == 1){
 		DEBUG_PRINTLN(F("WIFI: disconnecting from AP"));
-		WiFi.setAutoConnect(false);
-		WiFi.setAutoReconnect(false);
-		WiFi.enableSTA(false);
-		wifi_softap_dhcps_start();
+		WiFi.enableAP(true);
+		//WiFi.printDiag(Serial);
+		//WiFi.setAutoConnect(false);
+		//WiFi.setAutoReconnect(false);
+		//wifi_station_dhcpc_stop();
+		//WiFi.mode(WIFI_OFF);
+		//WiFi.mode(WIFI_AP);
+		//WiFi.enableSTA(false);
+		//WiFi.enableAP(true);
+		//wifi_softap_dhcps_start();
 		wifiState = WIFIAP;
 	}
 }
+
+/*
+void dhcps_lease_test(void)
+{
+   struct dhcps_lease dhcp_lease;
+   IP4_ADDR(&dhcp_lease.start_ip, 192, 168, 5, 100);
+   IP4_ADDR(&dhcp_lease.end_ip, 192, 168, 5, 105);
+   wifi_softap_set_dhcps_lease(&dhcp_lease);
+}
+void user_init(void)
+{
+   struct ip_info info;
+   wifi_set_opmode(STATIONAP_MODE); //Set softAP + station mode
+   wifi_softap_dhcps_stop();
+   IP4_ADDR(&info.ip, 192, 168, 5, 1);
+   IP4_ADDR(&info.gw, 192, 168, 5, 1);
+   IP4_ADDR(&info.netmask, 255, 255, 255, 0);
+  wifi_set_ip_info(SOFTAP_IF, &info);
+   dhcps_lease_test();
+   wifi_softap_dhcps_start();
+}*/
 
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
 	DEBUG_PRINTLN(F("Station disconnected: "));
