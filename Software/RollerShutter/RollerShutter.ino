@@ -141,17 +141,19 @@ inline byte tapLogic(byte n){
 }
 
  void setup_AP() {
-   Serial.println(F("Configuring access point..."));
+  DEBUG_PRINTLN(F("Configuring access point..."));
   // You can remove the password parameter if you want the AP to be open. 
   //WiFi.softAP(APSsid.c_str(), APPsw.c_str());
   
   //WiFi.softAPConfig(ip, gateway, subnet);
-   Serial.print(F("Setting soft-AP configuration ... "));
-   Serial.println(WiFi.softAPConfig(ip, gateway, subnet) ? F("Ready") : F("Failed!"));
+  DEBUG_PRINT(F("Setting soft-AP configuration ... "));
+  DEBUG_PRINTLN(WiFi.softAPConfig(ip, gateway, subnet) ? F("Ready") : F("Failed!"));
   
-  //WiFi.softAP(APSsid.c_str());
-   Serial.println(F("Setting soft-AP ... "));
-  DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
+  noInterrupts ();
+  WiFi.softAP((params[APPSSID]).c_str());
+  interrupts();
+  //DEBUG_PRINT(F("Setting soft-AP ... "));
+  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
   
   DEBUG_PRINT(F("Soft-AP IP address = "));
   DEBUG_PRINTLN(WiFi.softAPIP());
@@ -214,7 +216,9 @@ void setup_wifi(int wifindx) {
 		wifiState = WIFISTA;
 		//check if we have ssid and pass and force those, if not, try with last saved values
 		if ((params[CLNTSSID1+wifindx]).c_str() != "") {
+			noInterrupts();
 			WiFi.begin((params[CLNTSSID1+wifindx]).c_str(), (params[CLNTPSW1+wifindx]).c_str());
+			interrupts();
 		} else {
 			if (WiFi.SSID()) {
 			 Serial.println(F("Using last saved values, should be faster"));
@@ -235,7 +239,7 @@ void setup_wifi(int wifindx) {
 		//ho ottenuto una connessione
 		Serial.println(F(""));
 		Serial.println(F("WiFi connected"));
-		digitalWrite(OUTSLED, LOW);
+		//digitalWrite(OUTSLED, LOW);
 		Serial.println(F("IP address: "));
 		Serial.println(WiFi.localIP());
 		params[LOCALIP] = WiFi.localIP().toString();
@@ -952,16 +956,12 @@ void onElapse(byte n){
 						WiFi.persistent(false);
 						// disconnect sta, start ap
 						WiFi.disconnect(); //  this alone is not enough to stop the autoconnecter
-						noInterrupts();
 						setup_AP();
-						interrupts();
 						WiFi.mode(WIFI_AP);
 						WiFi.persistent(true);
 					}else{
 						//setup AP
-						noInterrupts();
 						setup_AP();
-						interrupts();
 						WiFi.mode(WIFI_AP_STA);
 						DEBUG_PRINTLN(F("SET AP STA"));
 					}
@@ -1118,7 +1118,6 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 	DEBUG_PRINTLN(macToString(evt.mac));
 	if(WiFi.softAPgetStationNum() == 1){
 		DEBUG_PRINTLN(F("WIFI: disconnecting from AP"));
-		WiFi.enableAP(true);
 		//WiFi.printDiag(Serial);
 		//WiFi.setAutoConnect(false);
 		//WiFi.setAutoReconnect(false);
@@ -1132,7 +1131,7 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 	}
 }
 
-/*
+/*Fatal exception 29(StoreProhibitedCause):
 void dhcps_lease_test(void)
 {
    struct dhcps_lease dhcp_lease;
@@ -1164,8 +1163,8 @@ void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
 		//WiFi.mode(WIFI_AP_STA);
 		//WiFi.reconnect() ;
 		//WiFi.enableSTA(true);
-		WiFi.setAutoConnect(true);
-		WiFi.setAutoReconnect(true);
+		//WiFi.setAutoConnect(true);
+		//WiFi.setAutoReconnect(true);
 		wifiState = WIFISTA;
 	}
 }
