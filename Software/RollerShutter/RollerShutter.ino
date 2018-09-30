@@ -141,16 +141,16 @@ inline byte tapLogic(byte n){
 }
 
  void setup_AP() {
-  DEBUG_PRINTLN(F("Configuring access point..."));
+   Serial.println(F("Configuring access point..."));
   // You can remove the password parameter if you want the AP to be open. 
   //WiFi.softAP(APSsid.c_str(), APPsw.c_str());
   
   //WiFi.softAPConfig(ip, gateway, subnet);
-  DEBUG_PRINT(F("Setting soft-AP configuration ... "));
-  DEBUG_PRINTLN(WiFi.softAPConfig(ip, gateway, subnet) ? F("Ready") : F("Failed!"));
+   Serial.print(F("Setting soft-AP configuration ... "));
+   Serial.println(WiFi.softAPConfig(ip, gateway, subnet) ? F("Ready") : F("Failed!"));
   
   //WiFi.softAP(APSsid.c_str());
-  DEBUG_PRINT(F("Setting soft-AP ... "));
+   Serial.println(F("Setting soft-AP ... "));
   DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
   
   DEBUG_PRINT(F("Soft-AP IP address = "));
@@ -423,12 +423,12 @@ void setup() {
   //DEBUG_PRINTLN(F("Carico configurazione."));
   initCommon(&server,params,mqttJson);
   loadConfig();
-  delay(3000);
+  delay(6000);
   //inizializza il client wifi
   setup_wifi(wifindx);
   wfs = WiFi.status();
   wifiConn = false;
-  delay(3000);
+  delay(2000);
   //inizializza l'AP wifi
   //setup_AP();
   //setup_wifi(wifindx);
