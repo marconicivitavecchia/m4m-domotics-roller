@@ -30,7 +30,7 @@ bool isrun[2]={false,false};;
 unsigned long prec=0;
 wl_status_t wfs;
 byte wifiState = WIFISTA;
-bool wifiConn, keepConn;
+volatile bool wifiConn, keepConn, startWait, endWait;
 unsigned long _connectTimeout  = 10*1000;
 //wifi config----------------------------------------------
 const char* outTopic = "sonoff17/out";
@@ -58,8 +58,8 @@ IPAddress subnet(255, 255, 255, 0);
 RemoteDebug telnet;
 WiFiEventHandler stationConnectedHandler;
 WiFiEventHandler stationDisconnectedHandler;
-WiFiEventHandler gotIpEventHandler, disconnectedEventHandler;
-    
+WiFiEventHandler gotIpEventHandler, disconnectedEventHandler, connectedEventHandler;
+
 //User config
 //--------------------------------------------------------------------------------------
 String APSsid(apSsid);
@@ -140,15 +140,15 @@ inline byte tapLogic(byte n){
 	return (switchLogic(0,n) + switchLogic(1,n));
 }
 
- void setup_AP(bool apmode) {
-  DEBUG_PRINTLN(F("Configuring access point..."));
+void setup_AP(bool apmode) {
+  Serial.println(F("Configuring access point..."));
   // You can remove the password parameter if you want the AP to be open. 
   //WiFi.softAP(APSsid.c_str(), APPsw.c_str());
   
   if(apmode){
 	  //WiFi.softAPConfig(ip, gateway, subnet);
-	  DEBUG_PRINT(F("Setting soft-AP configuration ... "));
-	  DEBUG_PRINTLN(WiFi.softAPConfig(ip, gateway, subnet) ? F("Ready") : F("Failed!"));
+	  Serial.print(F("Setting soft-AP configuration ... "));
+	  Serial.println(WiFi.softAPConfig(ip, gateway, subnet) ? F("Ready") : F("Failed!"));
 	  
 	  //noInterrupts ();
 	  WiFi.softAP((params[APPSSID]).c_str());
@@ -156,10 +156,9 @@ inline byte tapLogic(byte n){
 	  //DEBUG_PRINT(F("Setting soft-AP ... "));
 	  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
 	  
-	  delay(500);
 	  params[LOCALIP] = WiFi.softAPIP().toString();
-	  DEBUG_PRINT(F("Soft-AP IP address = "));
-	  DEBUG_PRINTLN(params[LOCALIP]);
+	  Serial.print(F("Soft-AP IP address = "));
+	  Serial.println(params[LOCALIP]);
 	  //wifi_softap_dhcps_stop();
   }else{
 	  //noInterrupts ();
@@ -168,10 +167,9 @@ inline byte tapLogic(byte n){
 	  //DEBUG_PRINT(F("Setting soft-AP ... "));
 	  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
 	  
-	  delay(500);
 	  params[LOCALIP] = WiFi.softAPIP().toString();
-	  DEBUG_PRINT(F("Soft-AP IP address = "));
-	  DEBUG_PRINTLN(params[LOCALIP]);
+	  Serial.print(F("Soft-AP IP address = "));
+	  Serial.println(params[LOCALIP]);
 	  //wifi_softap_dhcps_stop();
   }
 }
@@ -192,52 +190,32 @@ int numberOfNetworks = WiFi.scanNetworks();
 
 //wifi setup function
 void setup_wifi(int wifindx) {
-	//scan_wifi();
-	
-	//if(WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
 	wifindx = wifindx*2;  //client1 e client2 hanno indici contigui nell'array params
-  
 	// We start by connecting to a WiFi network
 	Serial.println(F("Connecting to "));
 	Serial.println(params[CLNTSSID1+wifindx]);
     Serial.println(F(" as wifi client..."));
-	//Serial.println ("** hit WIFI **");
-    //Serial.println(WiFi.macAddress());
-  
-    //Serial.println ("** before **");
-    //WiFi.printDiag(Serial);
-	
-	//WiFi.mode(WIFI_STA);
-	//wifi_station_dhcpc_start();
-	
-	//WiFi.begin((params[CLNTSSID1+wifindx]).c_str(), (params[CLNTPSW1+wifindx]).c_str());
-	
-	//WiFi.begin("OpenWrt", "dorabino.7468!");
-	//fix for auto connect racing issue
-	//if (WiFi.status() == WL_CONNECTED) {
 	if (wifiConn) {
 		//importante! Altrimenti tentativi potrebbero collidere con una connessione appena instaurata
 		Serial.println(F("Already connected. Bailing out."));
 	}else{
-		WiFi.persistent(false);
-		WiFi.setAutoConnect(false);
-		WiFi.setAutoReconnect(false);	//inibisce la riconnessione automatica
-		//WiFi.disconnect();				//alla sucessiva riconnessione manuale
-		//WiFi.mode(WIFI_OFF);   // this is a temporary line, to be removed after SDK update to 1.5.4
-	
-		Serial.println ("going to STA mode");
-		//WiFi.mode(WIFI_STA);
-		WiFi.mode(WIFI_STA);
-	
+		
+		//WiFi.setAutoConnect(true);		//inibisce la connessione automatica al boot
+		//WiFi.setAutoReconnect(true);	//inibisce la riconnessione automatica dopo una disconnesione accidentale
+		//wifi_set_sleep_type(NONE_SLEEP_T);
+		//WiFi.persistent(false);			//inibisce la memorizzazione dei parametri della connessione
+		WiFi.mode(WIFI_OFF);    //otherwise the module will not reconnect
+		WiFi.mode(WIFI_STA);	
 		wifiState = WIFISTA;
 		//check if we have ssid and pass and force those, if not, try with last saved values
 		if ((params[CLNTSSID1+wifindx]).c_str() != "") {
-			noInterrupts();
-			WiFi.begin((params[CLNTSSID1+wifindx]).c_str(), (params[CLNTPSW1+wifindx]).c_str());
-			interrupts();
+			//noInterrupts();
+			Serial.print(F("Begin status: "));
+			Serial.println(WiFi.begin((params[CLNTSSID1+wifindx]).c_str(), (params[CLNTPSW1+wifindx]).c_str()));
+			//interrupts();
 		} else {
 			if (WiFi.SSID()) {
-			 Serial.println(F("Using last saved values, should be faster"));
+			  Serial.println(F("Using last saved values, should be faster"));
 			  //trying to fix connection in progress hanging
 			  ETS_UART_INTR_DISABLE();
 			  wifi_station_disconnect();
@@ -248,26 +226,48 @@ void setup_wifi(int wifindx) {
 			  Serial.println(F("No saved credentials"));
 			}
 		}
-	}
-		
+	}		
 	if(wifiConn) {
-		//ArduinoOTA.begin();
-		//ho ottenuto una connessione
-		//Serial.println(F(""));
-		//Serial.println(F("WiFi connected"));
-		//digitalWrite(OUTSLED, LOW);
-		//Serial.println(F("IP address: "));
-		//Serial.println(WiFi.localIP());
 		params[LOCALIP] = WiFi.localIP().toString();
 	}
-/*	
+
 	Serial.println (F("\n******************* begin ***********"));
     WiFi.printDiag(Serial);
 	Serial.println (F("\n******************* end ***********"));
-*/
+
 	//WiFi.enableAP(true);
   //}
 }
+/*
+void setup_wifi(int wifindx) {
+  //if(WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
+	wifindx = wifindx*2;  //client1 e client2 hanno indici contigui nell'array params
+  
+	// We start by connecting to a WiFi network
+	DEBUG_PRINTLN(F("Connecting to "));
+	DEBUG_PRINTLN(params[CLNTSSID1+wifindx]);
+  
+	//WiFi.disconnect();
+	WiFi.persistent(false);
+	//WiFi.mode(WIFI_OFF);   // this is a temporary line, to be removed after SDK update to 1.5.4
+	WiFi.mode(WIFI_AP_STA);
+
+	WiFi.begin((params[CLNTSSID1+wifindx]).c_str(), (params[CLNTPSW1+wifindx]).c_str());
+	
+	WiFi.printDiag(Serial);
+	
+	if(WiFi.status() == WL_CONNECTED) {
+		//ArduinoOTA.begin();
+		//ho ottenuto una connessione
+		DEBUG_PRINTLN(F(""));
+		DEBUG_PRINTLN(F("WiFi connected"));
+		digitalWrite(OUTSLED, LOW);
+		DEBUG_PRINTLN(F("IP address: "));
+		DEBUG_PRINTLN(WiFi.localIP());
+		params[LOCALIP] = WiFi.localIP().toString();
+	}
+  //}
+}*/
 
 void setup_mDNS() {
 	if (MDNS.begin((params[MQTTID]).c_str())) {              // Start the mDNS responder for esp8266.local
@@ -437,7 +437,7 @@ void setup() {
   //inizializza la seriale
   Serial.begin(115200);
   //importante per il debug del WIFI!
-  Serial.setDebugOutput(true);
+  //Serial.setDebugOutput(true);
 
   //carica la configurazione dalla EEPROM
   //DEBUG_PRINTLN(F("Carico configurazione."));
@@ -446,9 +446,13 @@ void setup() {
   loadConfig();
   //setup_AP(true);
   //inizializza il client wifi
+  WiFi.persistent(false);		
+  WiFi.setAutoConnect(true);		
+  WiFi.setAutoReconnect(true);		
   setup_wifi(wifindx);
-  wfs = WiFi.status();
   wifiConn = false;
+  startWait=false;
+  endWait=true;
   //delay(4000); setup_wifi(wifindx); non ama ritardi dopo....
   //inizializza l'AP wifi
   //setup_AP();
@@ -553,15 +557,21 @@ void setup() {
   
   gotIpEventHandler = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP& event)
   {
-	Serial.print("Station connected, IP: ");
+	Serial.print("DHCP got an IP. Station connected, IP: ");
 	Serial.println(WiFi.localIP());
-	wifiConn = true;
+	//wifiConn = true;
   });
+  
   disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event)
   {
     //Serial.println("Station disconnected");
-	wifiConn = false;
+	//wifiConn = false;
 	//keepConn = false; //rallenta il loop()
+  });
+  
+  connectedEventHandler =  WiFi.onStationModeConnected([](const WiFiEventStationModeConnected& event){
+    //Serial.print("Station connected");
+	//wifiConn = true;
   });
 
   //initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt());
@@ -569,6 +579,18 @@ void setup() {
 #if (DEBUG)  
   testFlash();
 #endif
+/*
+ byte cont=0;
+ while (WiFi.status() != WL_CONNECTED && cont<30000/500) {
+    delay(500);
+	cont++;
+    Serial.print(".");
+  }
+   Serial.print(":");
+  Serial.print(500*cont);
+  Serial.print("\nStation connected, IP: ");
+  Serial.println(WiFi.localIP());
+  */
   DEBUG_PRINTLN(F(" OK"));
   DEBUG_PRINTLN(F("Last reset reason: "));
   DEBUG_PRINTLN(ESP.getResetReason());
@@ -835,40 +857,53 @@ void loop() {
 	
 	//codice eseguito ogni 20*50 msec = 1000 msec
 	//riconnessione WiFi
-	if(!(step % 50)){
+	if(!(step % 60)){
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
-		/*if (telnet.read() == 'R') {
-			telnet.stop();
-			delay(100);
-			ESP.reset();
-		}*/
-		
+
+		/*
+		byte stat = WiFi.status();
+		if(stat == WL_CONNECTED){
+			wifiConn = true;		
+		}
 		//DEBUG_PRINTLN(wl_status_to_string(wfs));
-		
-		if(wifiConn == false && (wifiState == WIFISTA)){
-			DEBUG_PRINT(F("blink: "));
-			//lampeggia led di connessione
-			digitalWrite(OUTSLED, !digitalRead(OUTSLED));
-			if(wifiState == WIFISTA){
-				swcount++;
-				DEBUG_PRINT(F("swcount roll: "));
-				DEBUG_PRINTLN(swcount);
-				if((swcount >= TCOUNT) || (keepConn == false)){
-					wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
-					Serial.println(F("Connection timed out"));
+		if(wifiState == WIFISTA){
+			if(wifiConn == false){
+				Serial.print(F("blink: "));
+				//lampeggia led di connessione
+				yield();
+				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
+				yield();
+				Serial.print(F("swcount roll: "));
+				Serial.println(swcount);
+					
+				if((swcount >= TCOUNT)){
 					swcount = 0;
-					keepConn = true;
-					WiFi.waitForConnectResult();	//necessaria, se no non funziona! Motivo ignoto...
-					Serial.println(F("Do new connection"));
-					//noInterrupts ();  
-					setup_wifi(wifindx);	//tetativo di connessione
+					endWait=true;
+					Serial.println(F("Connection timed out"));
+					if(endWait){
+						WiFi.disconnect(false);
+						Serial.println(F("Do new connection"));
+						setup_wifi(wifindx);	//tetativo di connessione
+						//WiFi.waitForConnectResult();	
+						stat = WiFi.status();
+						if(!((stat == WL_CONNECTED) || (stat == WL_CONNECT_FAILED)))
+							startWait = true;
+							endWait=false;
+						}else{
+							startWait = false;
+							endWait=true;
+						}							
+						yield();	
 					//interrupts ();
+					//ETS_UART_INTR_ENABLE();
+					wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
 				}
+				swcount++;
+			}else{
+				digitalWrite(OUTSLED, LOW);
+				params[LOCALIP] = WiFi.localIP().toString();
 			}
-		}else{
-			digitalWrite(OUTSLED, LOW);
-			params[LOCALIP] = WiFi.localIP().toString();
 		}
 		/*
 		if(switchdfn(wfs, CONNSTATSW)){
@@ -895,14 +930,31 @@ void loop() {
 			}
 			//httpSetup();
 		}*/
-	}
-	//ogni 50ms
-	if(!(step % 3)){
-		//codice eseguito ogni 60ms
-		//byte status = WiFi.status();
-		//keepConn = !((status == WL_CONNECTED) || (status == WL_CONNECT_FAILED));
-		//wifiConn = (status == WL_CONNECTED);
 		
+
+		
+
+	}
+	/*
+	//ogni 100ms
+	if(!(step % 5)){
+		//byte status = (WiFi.localIP().toString() == "0.0.0.0");
+		if(startWait){
+			startWait=false;
+			endWait=false;
+		}
+		if(!endWait){
+			byte status = WiFi.status();	
+			keepConn = !((status == WL_CONNECTED) || (status == WL_CONNECT_FAILED)); //vero se mai connesso oppure se mai disconnesso
+			wifiConn = (status == WL_CONNECTED);
+			if(!keepConn){
+				endWait=true;
+			}
+		}	
+	}*/
+	
+	//ogni 50ms
+	if(!(step % 3)){		
 		//leggi ingressi locali e mette il loro valore sull'array val[]
 		leggiTasti();
 		leggiRemoto();
@@ -919,6 +971,69 @@ void loop() {
 	}
 	//FINE Time base
   }
+  /*
+  uint8_t ESP8266WiFiSTAClass::waitForConnectResult() {
+
+    //1 and 3 have STA enabled
+
+    if((wifi_get_opmode() & 1) == 0) {
+
+        return WL_DISCONNECTED;
+
+    }
+
+    while(status() == WL_DISCONNECTED) {
+
+        delay(100);
+
+    }
+
+    return status();
+
+	}
+	wl_status_t ESP8266WiFiSTAClass::status() {
+
+    station_status_t status = wifi_station_get_connect_status();
+
+
+
+    switch(status) {
+
+        case STATION_GOT_IP:
+
+            return WL_CONNECTED;
+
+        case STATION_NO_AP_FOUND:
+
+            return WL_NO_SSID_AVAIL;
+
+        case STATION_CONNECT_FAIL:
+
+        case STATION_WRONG_PASSWORD:
+
+            return WL_CONNECT_FAILED;
+
+        case STATION_IDLE:
+
+            return WL_IDLE_STATUS;
+
+        default:
+
+            return WL_DISCONNECTED;
+
+    }
+
+}
+
+typedef enum { WL_NO_SHIELD = 255, 
+// for compatibility with WiFi Shield library WL_IDLE_STATUS = 0, 
+WL_NO_SSID_AVAIL = 1, 
+WL_SCAN_COMPLETED = 2, 
+WL_CONNECTED = 3, 
+WL_CONNECT_FAILED = 4,
+ WL_CONNECTION_LOST = 5, 
+ WL_DISCONNECTED = 6 } wl_status_t;
+*/
   
   telnet.handle();
   yield();	// Give a time for ESP8266
@@ -1139,7 +1254,7 @@ void rebootSystem(){
 }*/
 
 void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
-	DEBUG_PRINTLN(F("Station connected: "));
+	DEBUG_PRINTLN(F("AP mode: Station connected: "));
 	DEBUG_PRINTLN(macToString(evt.mac));
 	if(WiFi.softAPgetStationNum() == 1){
 		//DEBUG_PRINTLN(F("WIFI: disconnecting from AP"));
@@ -1182,7 +1297,7 @@ void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
 	DEBUG_PRINTLN(macToString(evt.mac));
 	if(WiFi.softAPgetStationNum() == 0){
 		DEBUG_PRINTLN(F("WIFI: reconnecting to AP"));
-		swcount = TCOUNT;  //importante!
+		//swcount = TCOUNT;  //importante!
 		WiFi.enableAP(false);
 		WiFi.enableSTA(true);
 		//WiFi.mode(WIFI_AP_STA);

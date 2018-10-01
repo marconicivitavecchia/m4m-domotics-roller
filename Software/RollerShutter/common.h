@@ -1,5 +1,8 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
+//#if ARDUINO_VERSION <= 106
+//-#pragma "test is true"
+//-#endif
 //--------------------------DEBUG SWITCH-------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------------------
 //  FILE DI DEFINIZIONI COMUNI VISIBILI A TUTTE  LE LIBRERIE INCLUSE CON LA DIRETTIVA #include
@@ -8,6 +11,7 @@
 //libreria col codice del client wifi
 #include <Arduino.h>
 #include <EEPROM.h>
+//#include <sched.h>
 #include <ESP8266WiFi.h>
 #include <RemoteDebug.h> 
 //#include <telnet.h>
@@ -64,7 +68,7 @@ extern RemoteDebug telnet;
 #define EMA  		0.6
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
-#define	TCOUNT		6		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
+#define	TCOUNT		12		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
 #define RSTTIME		20		//DEFINE HOW MANY SECONDS BUTTON1 MUST BE PRESSED UNTIL A RESET OCCUR 
 #define CNTIME		4		//DEFINE HOW MANY SECONDS HAVE TO LAST THALT PARAMETER AT LEAST
 //#define CONFTIME	4		//DEFINE HOW MANY SECONDS 
@@ -254,7 +258,28 @@ extern RemoteDebug telnet;
 
 #endif
 
+#define setup_wifi2(x) 	x = x*2; \
+	if(wifiConn == false) {	\
+		WiFi.mode(WIFI_STA);	\
+		wifiState = WIFISTA;	\
+		if ((params[CLNTSSID1+x]).c_str() != "") {	\
+			WiFi.begin((params[CLNTSSID1+x]).c_str(), (params[CLNTPSW1+x]).c_str());	\
+		} else {	\
+			if (WiFi.SSID()) {	\
+			  ETS_UART_INTR_DISABLE();	\
+			  wifi_station_disconnect();	\
+			  ETS_UART_INTR_ENABLE();	\
+			  WiFi.begin();	\
+			} else {	\
+			  Serial.println(F("No saved credentials"));	\
+			}	\
+		}	\
+	}		\
+	if(wifiConn) {	\
+		params[LOCALIP] = WiFi.localIP().toString();	\
+	}	\
 
+	
 void setup_AP(bool);
 void setup_wifi();
 void setup_mDNS();
