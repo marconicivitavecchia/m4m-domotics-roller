@@ -25,7 +25,8 @@ double calAvg[2] = {0,0};
 double weight[2] = {0,0};
 short chk[2]={0,0};
 #endif
-bool isrun[2]={false,false};;
+bool isrun[2]={false,false};
+byte cont=0;
 //end of stats variables
 unsigned long prec=0;
 wl_status_t wfs;
@@ -579,18 +580,19 @@ void setup() {
 #if (DEBUG)  
   testFlash();
 #endif
-/*
- byte cont=0;
+
+ cont=0;
  while (WiFi.status() != WL_CONNECTED && cont<30000/500) {
     delay(500);
 	cont++;
     Serial.print(".");
   }
-   Serial.print(":");
+  Serial.print(":");
   Serial.print(500*cont);
   Serial.print("\nStation connected, IP: ");
   Serial.println(WiFi.localIP());
-  */
+
+  swcount = TCOUNT + 2*cont;
   DEBUG_PRINTLN(F(" OK"));
   DEBUG_PRINTLN(F("Last reset reason: "));
   DEBUG_PRINTLN(ESP.getResetReason());
@@ -861,7 +863,7 @@ void loop() {
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
 
-		/*
+		
 		byte stat = WiFi.status();
 		if(stat == WL_CONNECTED){
 			wifiConn = true;		
@@ -877,8 +879,8 @@ void loop() {
 				Serial.print(F("swcount roll: "));
 				Serial.println(swcount);
 					
-				if((swcount >= TCOUNT)){
-					swcount = 0;
+				if((swcount <= 0)){
+					swcount = TCOUNT;
 					endWait=true;
 					Serial.println(F("Connection timed out"));
 					if(endWait){
@@ -899,7 +901,7 @@ void loop() {
 					//ETS_UART_INTR_ENABLE();
 					wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
 				}
-				swcount++;
+				swcount--;
 			}else{
 				digitalWrite(OUTSLED, LOW);
 				params[LOCALIP] = WiFi.localIP().toString();
@@ -935,11 +937,12 @@ void loop() {
 		
 
 	}
-	/*
+	
 	//ogni 100ms
 	if(!(step % 5)){
 		//byte status = (WiFi.localIP().toString() == "0.0.0.0");
 		if(startWait){
+			Serial.println(F("Comincia attesa..."));
 			startWait=false;
 			endWait=false;
 		}
@@ -948,10 +951,11 @@ void loop() {
 			keepConn = !((status == WL_CONNECTED) || (status == WL_CONNECT_FAILED)); //vero se mai connesso oppure se mai disconnesso
 			wifiConn = (status == WL_CONNECTED);
 			if(!keepConn){
+				Serial.println(F("Finisce attesa."));
 				endWait=true;
 			}
 		}	
-	}*/
+	}
 	
 	//ogni 50ms
 	if(!(step % 3)){		
