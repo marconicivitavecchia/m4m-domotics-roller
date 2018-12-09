@@ -671,7 +671,7 @@ void loop() {
 		//all motors are stopped
 		//running mean calculation
 		smplcnt++;
-		smplcnt && (m += (double) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
+		smplcnt && (m += (double) x / smplcnt);  //protected against overflow by a logic short circuit
 	}
 	//EMA calculation
 	ex = (float) d*EMA + (1.0 - EMA)*ex;
