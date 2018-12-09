@@ -5,8 +5,8 @@ double stdDev[2] = {0.0, 0.0};
 unsigned long count[2] = {1, 1};
 short count2[2] = {0, 0};
 double thresholdUp[2] = {1024, 1024};
-double thresholdDown[2] = {-1024, -1024};
-bool highLevel=false;
+double thresholdDown[2] = {0, 0};
+//bool highLevel[2]={false, false};
 byte precdval[2]={false, false};
 //bool learn = false;
 
@@ -72,28 +72,32 @@ double getSigma() {
 }
 */
 short checkRange(double mval, byte n) {
-	short res = 0;
-	//res first init to 1 or 0	
-	bool chg = switchd(mval > thresholdDown[n],2,n);
-	DEBUG_PRINTLN(chg);
+	short res = 0; //res init!!
 	
-	if(chg && (mval > thresholdDown[n])){
-		//Fronte di salita
-		DEBUG_PRINTLN(F("Fronte di salita sensore"));
-		res = 1;
-		//highLevel = true;
-	}
 	DEBUG_PRINT(F("mval: "));
 	DEBUG_PRINTLN(mval);
-	//global variable highLevel evaluation
+	
+	if(switchd(mval > thresholdDown[n],1,n)){
+		//sono su un fronte
+		if (mval > thresholdDown[n]){
+			//Fronte di salita
+			DEBUG_PRINTLN(F("Fronte di salita sensore"));
+			res = 1;
+		}else{
+			//Fronte di discesa
+			DEBUG_PRINTLN(F("Fronte di discesa sensore "));
+			DEBUG_PRINT(F("Sotto minimo"));
+			res = -1;
+		}
+	}
+	
+	//level evaluation
 	if(mval > thresholdDown[n]){
-		//high level		
-		DEBUG_PRINT(F("mval: "));
-		DEBUG_PRINTLN(mval);
+		//sono sul livello alto
+		//calcolo statistiche solo con motore in movimento		
 		DEBUG_PRINT(F("avg[n]: "));
 		DEBUG_PRINTLN(avg[n]);
 		
-		//count2[n] += (count2[n] < 6);
 		count[n]++;		
 		double delta = (double) mval - avg[n];
 		count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
@@ -103,24 +107,16 @@ short checkRange(double mval, byte n) {
 			thresholdDown[n] = (double) avg[n]/2;
 			DEBUG_PRINT(F("thresholdUp[n]: "));
 			DEBUG_PRINTLN(thresholdUp[n]);
+			DEBUG_PRINT(F("thresholddown[n]: "));
+			DEBUG_PRINTLN(thresholdDown[n]);
 		}
-
-		if((mval > thresholdUp[n]) && count2[n] >= 2) {
-			res = 2;
+		
+		if(mval > thresholdUp[n]) {
 			DEBUG_PRINT(F("Sopra massimo"));
+			res = 2;
 		}
-		
-		if(chg && (mval < thresholdDown[n])){
-			//Fronte di discesa
-			DEBUG_PRINTLN(F("Fronte di discesa sensore "));
-			res = -1;
-			DEBUG_PRINT(F("Sotto minimo"));
-		}
-		
-	}else{
-		res = 0;
-	}	
-	
+	}
+
 	return res;
 }
 
