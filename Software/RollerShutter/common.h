@@ -237,7 +237,8 @@ extern RemoteDebug telnet;
 #include "statistics.h"
 #define sensorRead()	if((millis()-pn) > 2){		\
 	pn = millis();					\
-	x = analogRead(A0) - m;		\
+	v =analogRead(A0);			\
+	x = v - m;		\
 	if (x > maxx) 					\
      {    							\
 		maxx = x; 					\

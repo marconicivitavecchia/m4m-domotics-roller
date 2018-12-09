@@ -13,7 +13,7 @@ double peak = 0;
 double VRMS = 0;
 double VMCU = 0;
 double AmpsRMS = 0;
-double ex, m;
+double ex, m, v;
 int x;
 int zero, l=0, h=1024;
 unsigned long smplcnt;
@@ -40,10 +40,10 @@ const char* outTopic = "sonoff17/out";
 const char* inTopic = "sonoff17/in";
 //const char* ssid1 = "OpenWrt";
 //const char* password1 = "dorabino.7468!";
-//const char* ssid1 = "OpenWrt";
-//const char* password1 = "dorabino.7468!";
-const char* ssid1 = "workshop-t3h";
-const char* password1 = "bocconotti";
+const char* ssid1 = "OpenWrt";
+const char* password1 = "dorabino.7468!";
+//const char* ssid1 = "workshop-t3h";
+//const char* password1 = "bocconotti";
 const char* ssid2 = "AndroidAP1";
 const char* password2 = "pippo2503";
 const char* apSsid = "admin";
@@ -885,8 +885,10 @@ void loop() {
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
 		
-		DEBUG_PRINT(F("Sensor idle threshold: "));
-		DEBUG_PRINTLN(m);
+		DEBUG_PRINT(F("Mean sensor: "));
+		DEBUG_PRINT(m);
+		DEBUG_PRINT(F(" - peak sensor: "));
+		DEBUG_PRINTLN(v);
 		
 		byte stat = WiFi.status();
 		if(stat == WL_CONNECTED){
