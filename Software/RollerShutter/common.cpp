@@ -504,6 +504,8 @@ const char HTTP_WEBSOCKET[] PROGMEM =
 		"};"
 		"conn.onerror = function (error) {"
 			"console.log('WebSocket Error ', error);"
+			"conn.close();"
+			"conn = new WebSocket('ws://{WS}:81/', ['arduino']);"
 		"};"
 		"conn.onmessage = function (e) {"
 			"console.log('Server: ', e.data);"
@@ -511,6 +513,7 @@ const char HTTP_WEBSOCKET[] PROGMEM =
 		"};"
 		"conn.onclose = function () {"
 			"console.log('WebSocket connection closed');"
+			"conn = new WebSocket('ws://{WS}:81/', ['arduino']);"
 		"};";
 
 	//-------------------------------------------------------------------

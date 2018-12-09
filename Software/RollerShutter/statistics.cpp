@@ -6,7 +6,7 @@ unsigned long count[2] = {1, 1};
 short count2[2] = {0, 0};
 double thresholdUp[2] = {1024, 1024};
 double thresholdDown[2] = {-1024, -1024};
-bool passed=false;
+bool highLevel=false;
 byte precdval[2]={false, false};
 //bool learn = false;
 
@@ -50,6 +50,7 @@ double inline getSTDDEV(byte n) {
 }
 
 inline bool switchd(byte dval, byte d, byte n){
+	//passo di campionamento
 	count2[n] ++;
 	bool changed = false;
 	if(count2[n] >= d){
@@ -77,13 +78,16 @@ short checkRange(double mval, byte n) {
 	DEBUG_PRINTLN(chg);
 	
 	if(chg && (mval > thresholdDown[n])){
+		//Fronte di salita
 		DEBUG_PRINTLN(F("Fronte di salita sensore"));
-		passed = true;
 		res = 1;
+		//highLevel = true;
 	}
-	
-	//global variable passed evaluation
-	if(passed){	
+	DEBUG_PRINT(F("mval: "));
+	DEBUG_PRINTLN(mval);
+	//global variable highLevel evaluation
+	if(mval > thresholdDown[n]){
+		//high level		
 		DEBUG_PRINT(F("mval: "));
 		DEBUG_PRINTLN(mval);
 		DEBUG_PRINT(F("avg[n]: "));
@@ -104,15 +108,12 @@ short checkRange(double mval, byte n) {
 		if((mval > thresholdUp[n]) && count2[n] >= 2) {
 			res = 2;
 			DEBUG_PRINT(F("Sopra massimo"));
-			//count2[n]=0;
-			//passed = false;
 		}
 		
 		if(chg && (mval < thresholdDown[n])){
+			//Fronte di discesa
 			DEBUG_PRINTLN(F("Fronte di discesa sensore "));
 			res = -1;
-			passed = false;
-			//count2[n]=0;
 			DEBUG_PRINT(F("Sotto minimo"));
 		}
 		

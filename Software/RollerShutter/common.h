@@ -29,8 +29,8 @@
 extern RemoteDebug telnet;
 
 //Definizione modello
-#define SONOFF_4CH		1
-#define ROLLERSHUTTER 	0
+#define SONOFF_4CH		0
+#define ROLLERSHUTTER 	1
 
 #if (ROLLERSHUTTER)
   #define SCR    1  
@@ -64,7 +64,7 @@ extern RemoteDebug telnet;
 
 #define DELTAL		4
 #define AUTOCAL		1
-#define NSIGMA 		2
+#define NSIGMA 		10
 #define EMA  		0.6
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
@@ -237,7 +237,7 @@ extern RemoteDebug telnet;
 #include "statistics.h"
 #define sensorRead()	if((millis()-pn) > 2){		\
 	pn = millis();					\
-	x = analogRead(A0) - 495;		\
+	x = analogRead(A0) - m;		\
 	if (x > maxx) 					\
      {    							\
 		maxx = x; 					\
@@ -360,4 +360,43 @@ void handleModify();
      0, 0
 
   },
+  
+  
+
+int Sensor_Value=0;
+float voltage;
+float ARDUINO_ANALOG_SCALING = 0.00488758;
+float Actual_voltage;
+float Current_Sensor_Value;
+void setup()
+{
+  Serial.begin(9600);
+  pinMode(A0, INPUT) ;
+
+}
+
+void loop()
+{
+
+  CS_Output();
+  Serial.println("........................");
+  delay(1000);
+}
+
+
+void CS_Output()
+{
+  float average = 0;
+  for(int i = 0; i < 1000; i++) {
+    average = average + (.0264 * analogRead(A0) -13.51) / 1000;
+    delay(1);
+  }
+  Serial.print("before calibration:");
+  Serial.println(average);
+  average=average+0.15;
+  Serial.print("after calibration:");
+  Serial.println(average);  
+}
+
+
  */

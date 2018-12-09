@@ -13,8 +13,10 @@ double peak = 0;
 double VRMS = 0;
 double VMCU = 0;
 double AmpsRMS = 0;
-double ex;
+double ex, m;
 int x;
+int zero, l=0, h=1024;
+unsigned long smplcnt;
 //double ex=0;
 unsigned long n=1;
 unsigned long pn=0;
@@ -38,8 +40,10 @@ const char* outTopic = "sonoff17/out";
 const char* inTopic = "sonoff17/in";
 //const char* ssid1 = "OpenWrt";
 //const char* password1 = "dorabino.7468!";
-const char* ssid1 = "OpenWrt";
-const char* password1 = "dorabino.7468!";
+//const char* ssid1 = "OpenWrt";
+//const char* password1 = "dorabino.7468!";
+const char* ssid1 = "workshop-t3h";
+const char* password1 = "bocconotti";
 const char* ssid2 = "AndroidAP1";
 const char* password2 = "pippo2503";
 const char* apSsid = "admin";
@@ -156,7 +160,7 @@ void setup_AP(bool apmode) {
 	  //interrupts();
 	  //DEBUG_PRINT(F("Setting soft-AP ... "));
 	  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
-	  
+	  //delay(500); // Without delay I've seen the IP address blank
 	  params[LOCALIP] = WiFi.softAPIP().toString();
 	  Serial.print(F("Soft-AP IP address = "));
 	  Serial.println(params[LOCALIP]);
@@ -581,6 +585,8 @@ void setup() {
   testFlash();
 #endif
 
+ zeroDetect();
+ 
  cont=0;
  while (WiFi.status() != WL_CONNECTED && cont<30000/500) {
     delay(500);
@@ -592,7 +598,7 @@ void setup() {
   Serial.print("\nStation connected, IP: ");
   Serial.println(WiFi.localIP());
 
-  swcount = TCOUNT + 2*cont;
+  swcount = TCOUNT;
   DEBUG_PRINTLN(F(" OK"));
   DEBUG_PRINTLN(F("Last reset reason: "));
   DEBUG_PRINTLN(ESP.getResetReason());
@@ -633,6 +639,15 @@ void httpSetup(){
   DEBUG_PRINTLN(".local/update in your browser");
 }
 
+void zeroDetect(){
+	for(int i = 0, m = 0; i < 1000; i++) {
+		m = m + analogRead(A0);
+		delay(1);
+	}
+	m/=1000;
+	smplcnt = 0;
+}
+
 void loop() {
   //ArduinoOTA.handle();
   //funzioni eseguite ad ogni loop (istante di esecuione dipendente dal clock della CPU)
@@ -640,7 +655,7 @@ void loop() {
   aggiornaTimer(TMRHALT+TIMERDIM); 
 #if (AUTOCAL)  
 	//if(nRunning()) //starts when at least one motor is running
-		sensorRead();
+  sensorRead();
 #endif
   webSocket.loop();
   server.handleClient();  // Listen for HTTP requests from clients
@@ -652,6 +667,12 @@ void loop() {
 	step = (step + 1) % nsteps;
 	
 #if (AUTOCAL)  
+	if(!(isrun[0] || isrun[1])){
+		//all motors are stopped
+		//running mean calculation
+		smplcnt++;
+		smplcnt && (m += (double) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
+	}
 	//EMA calculation
 	ex = (float) d*EMA + (1.0 - EMA)*ex;
 	//ACSVolt = (double) ex/2.0;
@@ -660,6 +681,7 @@ void loop() {
 	minx = 1024;
 	maxx = 0;
 	d = 0;
+	//peak=x;
 	//DEBUG_PRINT(F("-ACSVolt: "));
 	//DEBUG_PRINTLN(peak);
 	//DEBUG_PRINT(F("x: "));
@@ -862,7 +884,9 @@ void loop() {
 	if(!(step % 60)){
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
-
+		
+		DEBUG_PRINT(F("Sensor idle threshold: "));
+		DEBUG_PRINTLN(m);
 		
 		byte stat = WiFi.status();
 		if(stat == WL_CONNECTED){
@@ -932,10 +956,6 @@ void loop() {
 			}
 			//httpSetup();
 		}*/
-		
-
-		
-
 	}
 	
 	//ogni 100ms
@@ -1096,17 +1116,14 @@ void onElapse(byte n){
 					if(!WiFi.isConnected()){
 						WiFi.persistent(false);
 						// disconnect sta, start ap
-						WiFi.disconnect(true); //  this alone is not enough to stop the autoconnecter
+						WiFi.disconnect(true); //  disconnect and disable STA mode
 						WiFi.mode(WIFI_AP);
-						WiFi.persistent(true);
-						delay(100);
-						setup_AP(true);
+						//WiFi.persistent(true);
 					}else{
 						WiFi.mode(WIFI_AP_STA);
 						DEBUG_PRINTLN(F("SET AP STA"));
-						delay(100);
-						setup_AP(true);
 					}
+					setup_AP(true);
 					WiFi.printDiag(Serial);
 					//wifi_station_dhcpc_stop();
 					//interrupts ();
@@ -1116,7 +1133,6 @@ void onElapse(byte n){
 					//MDNS.notifyAPChange()();
 					//wifi_softap_dhcps_start();
 					MDNS.update();
-					delay(200);
 					setGroupState(0,n%2);
 				}else if(testCntEvnt(4,CNTSERV1)){
 					DEBUG_PRINTLN(F("-----------------------------"));
