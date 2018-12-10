@@ -82,7 +82,7 @@ short checkRange(double mval, byte n) {
 	DEBUG_PRINT(F("thresholddown[n]: "));
 	DEBUG_PRINTLN(thresholdDown[n]);
 
-	if(switchd(mval > thresholdDown[n],1,n)){
+	if(switchd(mval > thresholdDown[n],2,n)){
 		//sono su un fronte
 		if (mval > thresholdDown[n]){
 			//Fronte di salita
@@ -91,7 +91,7 @@ short checkRange(double mval, byte n) {
 		}else{
 			//Fronte di discesa
 			DEBUG_PRINTLN(F("Fronte di discesa sensore "));
-			DEBUG_PRINT(F("Sotto minimo"));
+			DEBUG_PRINTLN(F("Sotto minimo"));
 			res = -1;
 		}
 	}
@@ -105,9 +105,9 @@ short checkRange(double mval, byte n) {
 			
 		if(mval > thresholdUp[n]) {
 			countd[n]++;
-			DEBUG_PRINT(F("Sopra massimo"));
+			DEBUG_PRINTLN(F("Sopra massimo"));
 			//res = 2;
-			res = (countd[n] >= 2) + 1;
+			//res = (countd[n] >= 2) + 1;
 		}else{
 			countd[n]=0;
 		}
