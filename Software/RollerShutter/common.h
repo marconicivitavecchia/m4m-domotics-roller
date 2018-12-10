@@ -247,7 +247,7 @@ extern RemoteDebug telnet;
      {       						\
 		minx = x;					\
 	 }								\
-	d = maxx - minx -1.5;				\
+	d = maxx - minx -1.5;			\
   }									\
 
 #define getAmpRMS()		ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;		\

@@ -118,7 +118,7 @@ short checkRange(double mval, byte n) {
 		stdDev[n] += (double) delta * (mval - avg[n]);
 		if (count[n] > 1) {
 			thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
-			thresholdDown[n] = (double) avg[n]/2;
+			thresholdDown[n] = (double) avg[n]/3;
 		}
 	}
 
