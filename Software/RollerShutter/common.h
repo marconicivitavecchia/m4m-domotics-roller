@@ -29,8 +29,8 @@
 extern RemoteDebug telnet;
 
 //Definizione modello
-#define SONOFF_4CH		0
-#define ROLLERSHUTTER 	1
+#define SONOFF_4CH		1
+#define ROLLERSHUTTER 	0
 
 #if (ROLLERSHUTTER)
   #define SCR    1  
@@ -299,6 +299,7 @@ void testFlash();
 void initIiming(bool);
 void printConfig();
 void processCmdRemoteDebug();
+void webSocketEvent(uint8_t, WStype_t, uint8_t *, size_t);
 /*
 //http server callback function prototypes
 void handleRoot(ESP8266WebServer (&), String const (&)[PARAMSDIM]);        // function prototypes for HTTP handlers

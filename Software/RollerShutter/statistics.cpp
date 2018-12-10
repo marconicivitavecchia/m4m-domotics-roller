@@ -4,6 +4,7 @@ double avg[2] = {0.0, 0.0};
 double stdDev[2] = {0.0, 0.0};
 unsigned long count[2] = {1, 1};
 short count2[2] = {0, 0};
+short countd[2] = {0, 0};
 double thresholdUp[2] = {1024, 1024};
 double thresholdDown[2] = {0, 0};
 //bool highLevel[2]={false, false};
@@ -76,7 +77,11 @@ short checkRange(double mval, byte n) {
 	
 	DEBUG_PRINT(F("mval: "));
 	DEBUG_PRINTLN(mval);
-	
+	DEBUG_PRINT(F("thresholdUp[n]: "));
+	DEBUG_PRINTLN(thresholdUp[n]);
+	DEBUG_PRINT(F("thresholddown[n]: "));
+	DEBUG_PRINTLN(thresholdDown[n]);
+
 	if(switchd(mval > thresholdDown[n],1,n)){
 		//sono su un fronte
 		if (mval > thresholdDown[n]){
@@ -97,6 +102,15 @@ short checkRange(double mval, byte n) {
 		//calcolo statistiche solo con motore in movimento		
 		DEBUG_PRINT(F("avg[n]: "));
 		DEBUG_PRINTLN(avg[n]);
+			
+		if(mval > thresholdUp[n]) {
+			countd[n]++;
+			DEBUG_PRINT(F("Sopra massimo"));
+			//res = 2;
+			res = (countd[n] >= 2) + 1;
+		}else{
+			countd[n]=0;
+		}
 		
 		count[n]++;		
 		double delta = (double) mval - avg[n];
@@ -105,15 +119,6 @@ short checkRange(double mval, byte n) {
 		if (count[n] > 1) {
 			thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
 			thresholdDown[n] = (double) avg[n]/2;
-			DEBUG_PRINT(F("thresholdUp[n]: "));
-			DEBUG_PRINTLN(thresholdUp[n]);
-			DEBUG_PRINT(F("thresholddown[n]: "));
-			DEBUG_PRINTLN(thresholdDown[n]);
-		}
-		
-		if(mval > thresholdUp[n]) {
-			DEBUG_PRINT(F("Sopra massimo"));
-			res = 2;
 		}
 	}
 
