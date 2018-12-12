@@ -11,6 +11,7 @@ void resetAVGStats(double, byte);
 void resetStatDelayCounter(byte);
 double getSTDDEV(byte);
 short checkRange(double, byte);
+short checkRange2(double, byte);
 double getThresholdUp(byte);
 double getThresholdDown(byte);
 //void setStatsLearnMode();

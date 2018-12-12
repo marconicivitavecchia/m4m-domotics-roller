@@ -1,12 +1,16 @@
 #include "statistics.h"
-
+#define MAXDELAY 4
 double avg[2] = {0.0, 0.0};
 double stdDev[2] = {0.0, 0.0};
 unsigned long count[2] = {1, 1};
 short count2[2] = {0, 0};
 short countd[2] = {0, 0};
+unsigned short swdelay[2] = {2, 2};
+unsigned short nup[2] = {0, 0};
 double thresholdUp[2] = {1024, 1024};
 double thresholdDown[2] = {0, 0};
+unsigned fixedThreshld = 12;
+//bool started[2] = {false, false};
 //bool highLevel[2]={false, false};
 byte precdval[2]={false, false};
 //bool learn = false;
@@ -50,11 +54,11 @@ double inline getSTDDEV(byte n) {
   return sqrt(stdDev[n] / (count[n] - 1));
 }
 
-inline bool switchd(byte dval, byte d, byte n){
+inline bool switchd(byte dval, unsigned short d[], byte n){
 	//passo di campionamento
 	count2[n] ++;
 	bool changed = false;
-	if(count2[n] >= d){
+	if(count2[n] >= d[n]){
 		count2[n] = 0;
 		changed = (dval != precdval[n]);
 		precdval[n] = dval;            // valore di val campionato al loop precedente 
@@ -72,6 +76,66 @@ double getSigma() {
   return sigma;
 }
 */
+short checkRange2(double mval, byte n) {
+	short res = 0; //res init!!
+	
+	DEBUG_PRINT(F("mval: "));
+	DEBUG_PRINTLN(mval);
+	DEBUG_PRINT(F("thresholdUp[n]: "));
+	DEBUG_PRINTLN(thresholdUp[n]);
+	DEBUG_PRINT(F("thresholddown[n]: "));
+	DEBUG_PRINTLN(thresholdDown[n]);
+	
+	//level evaluation
+	//started[n] = started[n] && (mval > thresholdUp[n]); mval > thresholdUp[n]
+	//if(started[n]){
+	if(mval > thresholdDown[n]){
+		//sono sul livello alto
+		//calcolo statistiche solo con motore in movimento		
+		DEBUG_PRINT(F("avg[n]: "));
+		DEBUG_PRINTLN(avg[n]);
+		
+		count[n]++;		
+		double delta = (double) mval - avg[n];
+		count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
+		stdDev[n] += (double) delta * (mval - avg[n]);
+		if (count[n] > 1) {
+			thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
+			thresholdDown[n] = (double) avg[n]/3;
+		}
+		
+		if(mval > thresholdUp[n] && mval > fixedThreshld) {
+			//filtro picco di avvio
+			DEBUG_PRINTLN(F("Sopra massimo"));
+			nup[n]++;
+			if(nup[n] > 0){
+				res = 2;
+			}else{
+				//first rising is allowed
+				avg[n] = mval;
+			}
+		}
+	}
+	
+	if(switchd(mval > thresholdDown[n],swdelay,n)){
+		//sono su un fronte
+		if (mval > thresholdDown[n]){
+			//Fronte di salita
+			DEBUG_PRINTLN(F("Fronte di salita sensore"));
+			res = 1;
+		}else{
+			//Fronte di discesa
+			DEBUG_PRINTLN(F("Fronte di discesa sensore "));
+			DEBUG_PRINTLN(F("Sotto minimo"));
+			res = -1;   
+			thresholdUp[n] = 1024;
+			nup[n] = 0;
+		}
+	}
+	
+	return res;
+}
+
 short checkRange(double mval, byte n) {
 	short res = 0; //res init!!
 	
@@ -82,7 +146,7 @@ short checkRange(double mval, byte n) {
 	DEBUG_PRINT(F("thresholddown[n]: "));
 	DEBUG_PRINTLN(thresholdDown[n]);
 
-	if(switchd(mval > thresholdDown[n],2,n)){
+	if(switchd(mval > thresholdDown[n],swdelay,n)){
 		//sono su un fronte
 		if (mval > thresholdDown[n]){
 			//Fronte di salita
@@ -93,23 +157,29 @@ short checkRange(double mval, byte n) {
 			DEBUG_PRINTLN(F("Fronte di discesa sensore "));
 			DEBUG_PRINTLN(F("Sotto minimo"));
 			res = -1;
+			thresholdUp[n] = 1024;
+			nup[n] = 0;
 		}
 	}
 	
 	//level evaluation
+	//if(started[n]){
 	if(mval > thresholdDown[n]){
 		//sono sul livello alto
 		//calcolo statistiche solo con motore in movimento		
 		DEBUG_PRINT(F("avg[n]: "));
 		DEBUG_PRINTLN(avg[n]);
 			
-		if(mval > thresholdUp[n]) {
-			countd[n]++;
+		if(mval > thresholdUp[n] && mval > fixedThreshld) {
+			//filtro picco di avvio
 			DEBUG_PRINTLN(F("Sopra massimo"));
-			//res = 2;
-			//res = (countd[n] >= 2) + 1;
-		}else{
-			countd[n]=0;
+			nup[n]++;
+			if(nup[n] > 0){
+				res = 2;
+			}else{
+				//first rising is allowed
+				avg[n] = mval;
+			}
 		}
 		
 		count[n]++;		
@@ -124,7 +194,6 @@ short checkRange(double mval, byte n) {
 
 	return res;
 }
-
 /*
 // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
  count = count + 1 
