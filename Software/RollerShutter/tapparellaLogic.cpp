@@ -178,10 +178,10 @@ void startEndOfRunTimer(byte n){
 	//comincia a cronometrare la corsa
 	startCrono(n); 
 	setGroupState(3,n);	//														stato 3: il motore va in moto cronometrato
-	DEBUG_PRINT(F("stato 3: il motore " ));
-	DEBUG_PRINT(n);
-	DEBUG_PRINT(F(" è cronometrato verso "));
-	DEBUG_PRINTLN(target[n]);	
+	//DEBUG_PRINT(F("stato 3: il motore " ));
+	//DEBUG_PRINT(n);
+	//DEBUG_PRINT(F(" è cronometrato verso "));
+	//DEBUG_PRINTLN(target[n]);	
 }
 
 bool startEngineDelayTimer(byte n){

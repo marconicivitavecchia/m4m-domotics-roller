@@ -1,7 +1,7 @@
   #include "common.h"
 //End MQTT config------------------------------------------
 //inizio variabili e costanti dello schedulatore (antirimbalzo)
-#define time_base     	20           // periodo base in millisecondi
+#define time_base     	2            // periodo base in millisecondi
 #define nsteps          12000        // numero di fasi massimo di un periodo generico
 
 //stats variables
@@ -13,16 +13,19 @@ double peak = 0;
 double VRMS = 0;
 double VMCU = 0;
 double AmpsRMS = 0;
-double ex, m, v;
-int x;
 int zero, l=0, h=1024;
-unsigned long smplcnt;
+unsigned long smplcnt, sampleCount;
+unsigned short isrundelay[2] = {RUNDELAY, RUNDELAY};
 //double ex=0;
 unsigned long n=1;
 unsigned long pn=0;
 int minx = 1024;
 int maxx = 0;
-int d = 0;
+int x;
+int dd = 0;
+float m;
+
+double ex = 0;
 double calAvg[2] = {0,0};
 double weight[2] = {0,0};
 short chk[2]={0,0};
@@ -31,6 +34,7 @@ bool isrun[2]={false,false};
 byte cont=0;
 //end of stats variables
 unsigned long prec=0;
+unsigned long current = 0;
 wl_status_t wfs;
 byte wifiState = WIFISTA;
 volatile bool wifiConn, keepConn, startWait, endWait;
@@ -297,7 +301,7 @@ void mqttReconnect() {
 	DEBUG_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
 	noInterrupts ();
 	mqttClient = new MQTT((params[MQTTID]).c_str(),(params[MQTTADDR]).c_str(), 1883);
-	interrupts ();
+	//interrupts ();
     DEBUG_PRINTLN(F("Registro i callback dell'MQTT."));
 		
 	DEBUG_PRINT(F("Attempting MQTT connection to: "));
@@ -641,11 +645,13 @@ void httpSetup(){
 
 void zeroDetect(){
 	for(int i = 0, m = 0; i < 1000; i++) {
-		m = m + analogRead(A0);
+		m = (float) m + analogRead(A0);
 		delay(1);
 	}
-	m/=1000;
+	m /= 1000;
 	smplcnt = 0;
+	minx = 1024;
+	maxx = 0;
 }
 
 void loop() {
@@ -653,109 +659,148 @@ void loop() {
   //funzioni eseguite ad ogni loop (istante di esecuione dipendente dal clock della CPU)
   aggiornaTimer(TMRHALT);
   aggiornaTimer(TMRHALT+TIMERDIM); 
-#if (AUTOCAL)  
-	//if(nRunning()) //starts when at least one motor is running
-  sensorRead();
-#endif
-  webSocket.loop();
-  server.handleClient();  // Listen for HTTP requests from clients
 
+  webSocket.loop();
+  server.handleClient();  // Listen for HTTP requests from clients 
+  
   if((millis()-prec) > time_base) //schedulatore con tempo base 
   {	
 	prec = millis();
+	//prec += time_base;
 	//calcolo dei multipli interi del tempo base
 	step = (step + 1) % nsteps;
 	
+	//current = millis();
+#if (AUTOCAL) 
+	x = (int) analogRead(A0) - m;	
+	if (x > maxx) 					
+	{    							
+		maxx = x; 					
+	}
+	if(x < minx) 					
+	{       						
+		minx = x;					
+	}
+	sampleCount++;
+#endif
+	
+	if(!(step % 10)){
 #if (AUTOCAL)  
-	if(!(isrun[0] || isrun[1])){
-		//all motors are stopped
-		//running mean calculation
-		smplcnt++;
-		smplcnt && (m += (double) x / smplcnt);  //protected against overflow by a logic short circuit
-	}
-	//EMA calculation
-	ex = (float) d*EMA + (1.0 - EMA)*ex;
-	//ACSVolt = (double) ex/2.0;
-	peak = (double) ex/2.0;
-	//reset of peak sample value
-	minx = 1024;
-	maxx = 0;
-	d = 0;
-	//peak=x;
-	//DEBUG_PRINT(F("-ACSVolt: "));
-	//DEBUG_PRINTLN(peak);
-	//DEBUG_PRINT(F("x: "));
-	//DEBUG_PRINTLN(x);
-	
-	if(isrun[0]){
-		chk[0] = checkRange((double) peak*(1 - weight[1]*isMoving(1)),0);
-		//DEBUG_PRINT(F("Ampere: "));
-		//float amp = getAmpRMS();
-		//DEBUG_PRINTLN(amp);
-		if(chk[0] != 0){
-			if(chk[0] == -1){
-				blocked[0] = secondPress(0);
-				scriviOutDaStato();
-				DEBUG_PRINTLN(F("\nStop: sottosoglia"));
-			}else if(chk[0] == 2){
-				blocked[0] = secondPress(0);
-				scriviOutDaStato();
-				blocked[0] = 1;
-				DEBUG_PRINTLN(F("\nStop: soprasoglia"));
-			}else if(chk[0] == 1){
-				startEndOfRunTimer(0);
-				DEBUG_PRINTLN(F("\nStart: fronte di salita"));
+		dd = maxx - minx;
+		//EMA calculation
+		//ex = dd*EMA + (1.0 - EMA)*ex;
+		//ACSVolt = (double) ex/2.0;
+		//peak = (double) ex/2.0;
+		peak = dd;
+		//reset of peak sample value
+		
+		//peak=x;
+		//DEBUG_PRINT(F("-ACSVolt: "));
+		//DEBUG_PRINTLN(peak);
+		//DEBUG_PRINT(F("x: "));
+		//DEBUG_PRINTLN(x);
+		if(isrun[0]){
+			if(isrundelay[0] == 0){
+				DEBUG_PRINTLN(F("---------------------------------"));
+				DEBUG_PRINT(F("minx sensor: "));
+				DEBUG_PRINTLN(minx);
+				DEBUG_PRINT(F("maxx sensor: "));
+				DEBUG_PRINTLN(maxx);
+				DEBUG_PRINT(F("Mean sensor: "));
+				DEBUG_PRINTLN(m);
+				DEBUG_PRINT(F("\nPeak: "));
+				DEBUG_PRINTLN(peak);
+				DEBUG_PRINT(F("\nSample count: "));
+				DEBUG_PRINTLN(sampleCount);
+				sampleCount = 0;
+				chk[0] = checkRange((double) peak*(1 - weight[1]*isMoving(1)),0);
+				//DEBUG_PRINT(F("Ampere: "));
+				//float amp = getAmpRMS();
+				//DEBUG_PRINTLN(amp);
+				if(chk[0] != 0){
+					if(chk[0] == -1){
+						blocked[0] = secondPress(0);
+						scriviOutDaStato();
+						DEBUG_PRINTLN(F("\nStop: sottosoglia"));
+					}else if(chk[0] == 2){
+						blocked[0] = secondPress(0);
+						scriviOutDaStato();
+						blocked[0] = 1;
+						DEBUG_PRINTLN(F("\nStop: soprasoglia"));
+					}else if(chk[0] == 1){
+						startEndOfRunTimer(0);
+						DEBUG_PRINTLN(F("\nStart: fronte di salita"));
+					}
+					readStatesAndPub();
+					yield();
+				}
+			}else{
+				DEBUG_PRINT(F("\naspetto: "));
+				DEBUG_PRINTLN(isrundelay[0]);
+				DEBUG_PRINT(F("minx sensor: "));
+				DEBUG_PRINTLN(minx);
+				DEBUG_PRINT(F("maxx sensor: "));
+				DEBUG_PRINTLN(maxx);
+				DEBUG_PRINT(F("\nPeak: "));
+				DEBUG_PRINTLN(peak);
+				isrundelay[0]--;
+				ex = dd;
+				DEBUG_PRINT(F("\ndd: "));
+				DEBUG_PRINTLN(dd);
 			}
-			readStatesAndPub();
-			DEBUG_PRINT(F("weight 2: "));
-			DEBUG_PRINTLN(weight[1]*isMoving(1));
-			DEBUG_PRINT("Auto stop! chk[0]: ");
-			DEBUG_PRINTLN(F("------------------------------------------"));
-			DEBUG_PRINT(F("x: "));
-			DEBUG_PRINTLN(x);
-			DEBUG_PRINT(F("d: "));
-			DEBUG_PRINTLN(d);
-			DEBUG_PRINT(F("peak: "));
-			DEBUG_PRINTLN(peak);
-			DEBUG_PRINT(F("AVG 1: "));
-			DEBUG_PRINTLN(getAVG(0));
-			DEBUG_PRINT(F("ThresholdUp(0): "));
-			DEBUG_PRINTLN(getThresholdUp(0));
-			DEBUG_PRINT(F("ThresholdDown(0): "));
-			DEBUG_PRINTLN(getThresholdDown(0));
+		}else{
+			isrundelay[0] = RUNDELAY;
 		}
-	}
-	
-	if(isrun[1]){
-		chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
-		if(chk[1] != 0){
-			if(chk[1] == -1){
-				blocked[1] = secondPress(1);
-				scriviOutDaStato();
-			}else if(chk[1] == 2){
-				blocked[1] = secondPress(1);
-				scriviOutDaStato();
-				blocked[1] = 1;
-			}else if(chk[1] == 1){
-				startEndOfRunTimer(1);
+		
+		if(isrun[1]){
+			if(isrundelay[1] == 0){
+				DEBUG_PRINTLN(F("---------------------------------"));
+				DEBUG_PRINT(F("\nPeak: "));
+				DEBUG_PRINTLN(peak);
+				DEBUG_PRINT(F("\nSample count: "));
+				DEBUG_PRINTLN(sampleCount);
+				sampleCount = 0;
+				chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
+				if(chk[1] != 0){
+					if(chk[1] == -1){
+						blocked[1] = secondPress(1);
+						scriviOutDaStato();
+					}else if(chk[1] == 2){
+						blocked[1] = secondPress(1);
+						scriviOutDaStato();
+						blocked[1] = 1;
+					}else if(chk[1] == 1){
+						startEndOfRunTimer(1);
+					}
+					readStatesAndPub();
+					yield();
+				}
+			}else{
+				DEBUG_PRINT(F("\naspetto: "));
+				DEBUG_PRINTLN(isrundelay[1]);
+				DEBUG_PRINT(F("\nPeak: "));
+				DEBUG_PRINTLN(peak);
+				isrundelay[1]--;
+				ex = dd;
+				DEBUG_PRINT(F("\ndd: "));
+				DEBUG_PRINTLN(dd);
 			}
-			readStatesAndPub();
-			DEBUG_PRINT("Auto stop! chk[1]: ");
-			DEBUG_PRINTLN(F("------------------------------------------"));
-			DEBUG_PRINT(F("x: "));
-			DEBUG_PRINTLN(x);
-			DEBUG_PRINT(F("d: "));
-			DEBUG_PRINTLN(d);
-			DEBUG_PRINT(F("ACSVolt: "));
-			DEBUG_PRINTLN(ACSVolt);
-			DEBUG_PRINT(F("AVG 2: "));
-			DEBUG_PRINTLN(getAVG(1));
+		}else{
+			isrundelay[1] = RUNDELAY;
 		}
+		
+		if(!(isrun[0] || isrun[1])){
+			//all motors are stopped
+			//running mean calculation
+			smplcnt++;
+			smplcnt && (m += (float) x / smplcnt);  //protected against overflow by a logic short circuit
+		}
+		minx = 1024;
+		maxx = 0;
 	}
 #endif
-	//codice eseguito ogni 100*50 msec = 5 sec
-	//riconnessione MQTT
-	if(!(step % 50)){
+	//1 sec
+	if(!(step % 500)){
 		//aggiornaTimer(APOFFTIMER);
 		
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
@@ -881,15 +926,13 @@ void loop() {
 	
 	//codice eseguito ogni 20*50 msec = 1000 msec
 	//riconnessione WiFi
-	if(!(step % 60)){
+	if(!(step % 600)){
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
 		
 		DEBUG_PRINT(F("Mean sensor: "));
-		DEBUG_PRINT(m);
-		DEBUG_PRINT(F(" - peak sensor: "));
-		DEBUG_PRINTLN(v);
-		
+		DEBUG_PRINTLN(m);
+				
 		byte stat = WiFi.status();
 		if(stat == WL_CONNECTED){
 			wifiConn = true;		
@@ -922,7 +965,7 @@ void loop() {
 							startWait = false;
 							endWait=true;
 						}							
-						yield();	
+						//yield();	
 					//interrupts ();
 					//ETS_UART_INTR_ENABLE();
 					wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
@@ -961,7 +1004,7 @@ void loop() {
 	}
 	
 	//ogni 100ms
-	if(!(step % 5)){
+	if(!(step % 50)){
 		//byte status = (WiFi.localIP().toString() == "0.0.0.0");
 		if(startWait){
 			Serial.println(F("Comincia attesa..."));
@@ -980,7 +1023,7 @@ void loop() {
 	}
 	
 	//ogni 50ms
-	if(!(step % 3)){		
+	if(!(step % 30)){		
 		//leggi ingressi locali e mette il loro valore sull'array val[]
 		leggiTasti();
 		leggiRemoto();

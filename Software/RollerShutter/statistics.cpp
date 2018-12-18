@@ -5,7 +5,7 @@ double stdDev[2] = {0.0, 0.0};
 unsigned long count[2] = {1, 1};
 short count2[2] = {0, 0};
 short countd[2] = {0, 0};
-unsigned short swdelay[2] = {2, 2};
+unsigned short swdelay[2] = {1, 1};
 unsigned short nup[2] = {0, 0};
 double thresholdUp[2] = {1024, 1024};
 double thresholdDown[2] = {0, 0};
@@ -53,7 +53,19 @@ double getThresholdDown(byte n) {
 double inline getSTDDEV(byte n) {
   return sqrt(stdDev[n] / (count[n] - 1));
 }
-
+/*
+inline bool switchd(byte dval, unsigned short d[], byte n){
+	//passo di campionamento
+	count2[n] ++;
+	bool changed = false;
+	if(count2[n] >= d[n]){
+		count2[n] = 0;
+		changed = (dval != precdval[n]);
+		precdval[n] = dval;            // valore di val campionato al loop precedente 
+	}
+	return changed;
+}
+*/
 inline bool switchd(byte dval, unsigned short d[], byte n){
 	//passo di campionamento
 	count2[n] ++;
@@ -78,7 +90,6 @@ double getSigma() {
 */
 short checkRange2(double mval, byte n) {
 	short res = 0; //res init!!
-	
 	DEBUG_PRINT(F("mval: "));
 	DEBUG_PRINTLN(mval);
 	DEBUG_PRINT(F("thresholdUp[n]: "));
@@ -88,21 +99,17 @@ short checkRange2(double mval, byte n) {
 	
 	//level evaluation
 	//started[n] = started[n] && (mval > thresholdUp[n]); mval > thresholdUp[n]
-	//if(started[n]){
 	if(mval > thresholdDown[n]){
 		//sono sul livello alto
 		//calcolo statistiche solo con motore in movimento		
 		DEBUG_PRINT(F("avg[n]: "));
 		DEBUG_PRINTLN(avg[n]);
 		
-		count[n]++;		
 		double delta = (double) mval - avg[n];
 		count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
 		stdDev[n] += (double) delta * (mval - avg[n]);
-		if (count[n] > 1) {
-			thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
-			thresholdDown[n] = (double) avg[n]/3;
-		}
+		thresholdDown[n] = (double) avg[n]/4;
+		(count[n] > 1) && (thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA));	//protected against overflow by a logic short circuit
 		
 		if(mval > thresholdUp[n] && mval > fixedThreshld) {
 			//filtro picco di avvio
@@ -112,6 +119,7 @@ short checkRange2(double mval, byte n) {
 				res = 2;
 			}else{
 				//first rising is allowed
+				DEBUG_PRINTLN(F("Primo picco"));
 				avg[n] = mval;
 			}
 		}
@@ -163,7 +171,6 @@ short checkRange(double mval, byte n) {
 	}
 	
 	//level evaluation
-	//if(started[n]){
 	if(mval > thresholdDown[n]){
 		//sono sul livello alto
 		//calcolo statistiche solo con motore in movimento		
@@ -178,6 +185,7 @@ short checkRange(double mval, byte n) {
 				res = 2;
 			}else{
 				//first rising is allowed
+				DEBUG_PRINTLN(F("Primo picco"));
 				avg[n] = mval;
 			}
 		}
@@ -186,10 +194,8 @@ short checkRange(double mval, byte n) {
 		double delta = (double) mval - avg[n];
 		count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
 		stdDev[n] += (double) delta * (mval - avg[n]);
-		if (count[n] > 1) {
-			thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA);
-			thresholdDown[n] = (double) avg[n]/3;
-		}
+		thresholdDown[n] = (double) avg[n]/4;
+		(count[n] > 1) && (thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA)); //protected against overflow by a logic short circuit
 	}
 
 	return res;

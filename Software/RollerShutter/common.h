@@ -62,6 +62,7 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
+#define RUNDELAY  	3
 #define DELTAL		4
 #define AUTOCAL		1
 #define NSIGMA 		10
@@ -235,6 +236,7 @@ extern RemoteDebug telnet;
 
 #if (AUTOCAL)  
 #include "statistics.h"
+/*
 #define sensorRead()	if((millis()-pn) > 2){		\
 	pn = millis();					\
 	v =analogRead(A0);			\
@@ -247,9 +249,9 @@ extern RemoteDebug telnet;
      {       						\
 		minx = x;					\
 	 }								\
-	d = maxx - minx -1.5;			\
+	dd = maxx - minx -1.5;			\
   }									\
-
+*/
 #define getAmpRMS()		ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;		\
 		VRMS = ACSVolt * 0.707;					\
 		AmpsRMS = (double) (VRMS * 1000) / mVperAmp;		\
