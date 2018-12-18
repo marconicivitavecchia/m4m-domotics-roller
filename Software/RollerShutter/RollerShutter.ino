@@ -14,7 +14,7 @@ double VRMS = 0;
 double VMCU = 0;
 double AmpsRMS = 0;
 int zero, l=0, h=1024;
-unsigned long smplcnt, sampleCount;
+unsigned long smplcnt; //sampleCount;
 unsigned short isrundelay[2] = {RUNDELAY, RUNDELAY};
 //double ex=0;
 unsigned long n=1;
@@ -681,24 +681,17 @@ void loop() {
 	{       						
 		minx = x;					
 	}
-	sampleCount++;
-#endif
-	
+	//sampleCount++;
+
 	if(!(step % 10)){
-#if (AUTOCAL)  
 		dd = maxx - minx;
 		//EMA calculation
-		//ex = dd*EMA + (1.0 - EMA)*ex;
+		ex = dd*EMA + (1.0 - EMA)*ex;
 		//ACSVolt = (double) ex/2.0;
 		//peak = (double) ex/2.0;
-		peak = dd;
+		peak = ex;
 		//reset of peak sample value
 		
-		//peak=x;
-		//DEBUG_PRINT(F("-ACSVolt: "));
-		//DEBUG_PRINTLN(peak);
-		//DEBUG_PRINT(F("x: "));
-		//DEBUG_PRINTLN(x);
 		if(isrun[0]){
 			if(isrundelay[0] == 0){
 				DEBUG_PRINTLN(F("---------------------------------"));
@@ -710,9 +703,9 @@ void loop() {
 				DEBUG_PRINTLN(m);
 				DEBUG_PRINT(F("\nPeak: "));
 				DEBUG_PRINTLN(peak);
-				DEBUG_PRINT(F("\nSample count: "));
-				DEBUG_PRINTLN(sampleCount);
-				sampleCount = 0;
+				//DEBUG_PRINT(F("\nSample count: "));
+				//DEBUG_PRINTLN(sampleCount);
+				//sampleCount = 0;
 				chk[0] = checkRange((double) peak*(1 - weight[1]*isMoving(1)),0);
 				//DEBUG_PRINT(F("Ampere: "));
 				//float amp = getAmpRMS();
@@ -757,9 +750,9 @@ void loop() {
 				DEBUG_PRINTLN(F("---------------------------------"));
 				DEBUG_PRINT(F("\nPeak: "));
 				DEBUG_PRINTLN(peak);
-				DEBUG_PRINT(F("\nSample count: "));
-				DEBUG_PRINTLN(sampleCount);
-				sampleCount = 0;
+				//DEBUG_PRINT(F("\nSample count: "));
+				//DEBUG_PRINTLN(sampleCount);
+				//sampleCount = 0;
 				chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
 				if(chk[1] != 0){
 					if(chk[1] == -1){
