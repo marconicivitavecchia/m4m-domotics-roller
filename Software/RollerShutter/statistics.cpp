@@ -3,13 +3,13 @@
 double avg[2] = {0.0, 0.0};
 double stdDev[2] = {0.0, 0.0};
 unsigned long count[2] = {1, 1};
-short count2[2] = {0, 0};
+//short count2[2] = {0, 0};
 short countd[2] = {0, 0};
 unsigned short swdelay[2] = {1, 1};
 unsigned short nup[2] = {0, 0};
 double thresholdUp[2] = {1024, 1024};
 double thresholdDown[2] = {0, 0};
-unsigned fixedThreshld = 12;
+unsigned fixedThreshld = 13;
 //bool started[2] = {false, false};
 //bool highLevel[2]={false, false};
 byte precdval[2]={false, false};
@@ -66,6 +66,7 @@ inline bool switchd(byte dval, unsigned short d[], byte n){
 	return changed;
 }
 */
+/*
 inline bool switchd(byte dval, unsigned short d[], byte n){
 	//passo di campionamento
 	count2[n] ++;
@@ -75,6 +76,13 @@ inline bool switchd(byte dval, unsigned short d[], byte n){
 		changed = (dval != precdval[n]);
 		precdval[n] = dval;            // valore di val campionato al loop precedente 
 	}
+	return changed;
+}
+*/
+inline bool switchd(byte dval, byte n){
+	bool changed = false;
+	changed = (dval != precdval[n]);
+	precdval[n] = dval;            // valore di val campionato al loop precedente 
 	return changed;
 }
 /*
@@ -90,19 +98,21 @@ double getSigma() {
 */
 short checkRange2(double mval, byte n) {
 	short res = 0; //res init!!
-	DEBUG_PRINT(F("mval: "));
-	DEBUG_PRINTLN(mval);
-	DEBUG_PRINT(F("thresholdUp[n]: "));
-	DEBUG_PRINTLN(thresholdUp[n]);
-	DEBUG_PRINT(F("thresholddown[n]: "));
+	DEBUG_PRINT(n);
+	DEBUG_PRINT(F(") mval: "));
+	DEBUG_PRINT(mval);
+	DEBUG_PRINT(F(" - thresholdUp[n]: "));
+	DEBUG_PRINT(thresholdUp[n]);
+	DEBUG_PRINT(F(" - thresholddown[n]: "));
 	DEBUG_PRINTLN(thresholdDown[n]);
 	
 	//level evaluation
 	//started[n] = started[n] && (mval > thresholdUp[n]); mval > thresholdUp[n]
 	if(mval > thresholdDown[n]){
 		//sono sul livello alto
-		//calcolo statistiche solo con motore in movimento		
-		DEBUG_PRINT(F("avg[n]: "));
+		//calcolo statistiche solo con motore in movimento	
+		DEBUG_PRINT(n);
+		DEBUG_PRINT(F(") avg[n]: "));
 		DEBUG_PRINTLN(avg[n]);
 		
 		double delta = (double) mval - avg[n];
@@ -113,28 +123,33 @@ short checkRange2(double mval, byte n) {
 		
 		if(mval > thresholdUp[n] && mval > fixedThreshld) {
 			//filtro picco di avvio
-			DEBUG_PRINTLN(F("Sopra massimo"));
-			nup[n]++;
+			DEBUG_PRINT(n);
+			DEBUG_PRINT(F(") Sopra massimo - nup[n]: "));
+			DEBUG_PRINTLN(nup[n]);
 			if(nup[n] > 0){
 				res = 2;
 			}else{
 				//first rising is allowed
-				DEBUG_PRINTLN(F("Primo picco"));
+				DEBUG_PRINT(n);
+				DEBUG_PRINTLN(F(") Primo picco"));
 				avg[n] = mval;
 			}
+			nup[n]++;
 		}
 	}
 	
-	if(switchd(mval > thresholdDown[n],swdelay,n)){
+	//if(switchd(mval > thresholdDown[n],swdelay,n)){
+	if(switchd(mval > thresholdDown[n],n)){
 		//sono su un fronte
 		if (mval > thresholdDown[n]){
 			//Fronte di salita
-			DEBUG_PRINTLN(F("Fronte di salita sensore"));
+			DEBUG_PRINT(n);
+			DEBUG_PRINTLN(F(")Fronte di salita sensore"));
 			res = 1;
 		}else{
 			//Fronte di discesa
-			DEBUG_PRINTLN(F("Fronte di discesa sensore "));
-			DEBUG_PRINTLN(F("Sotto minimo"));
+			DEBUG_PRINT(n);
+			DEBUG_PRINTLN(F(") Fronte di discesa sensore - sotto minimo"));
 			res = -1;   
 			thresholdUp[n] = 1024;
 			nup[n] = 0;
@@ -153,18 +168,20 @@ short checkRange(double mval, byte n) {
 	DEBUG_PRINTLN(thresholdUp[n]);
 	DEBUG_PRINT(F("thresholddown[n]: "));
 	DEBUG_PRINTLN(thresholdDown[n]);
-
-	if(switchd(mval > thresholdDown[n],swdelay,n)){
+	
+	//if(switchd(mval > thresholdDown[n],swdelay,n)){
+	if(switchd(mval > thresholdDown[n],n)){
 		//sono su un fronte
 		if (mval > thresholdDown[n]){
 			//Fronte di salita
-			DEBUG_PRINTLN(F("Fronte di salita sensore"));
+			DEBUG_PRINT(n);
+			DEBUG_PRINTLN(F(")Fronte di salita sensore"));
 			res = 1;
 		}else{
 			//Fronte di discesa
-			DEBUG_PRINTLN(F("Fronte di discesa sensore "));
-			DEBUG_PRINTLN(F("Sotto minimo"));
-			res = -1;
+			DEBUG_PRINT(n);
+			DEBUG_PRINTLN(F(") Fronte di discesa sensore - sotto minimo"));
+			res = -1;   
 			thresholdUp[n] = 1024;
 			nup[n] = 0;
 		}
@@ -179,8 +196,9 @@ short checkRange(double mval, byte n) {
 			
 		if(mval > thresholdUp[n] && mval > fixedThreshld) {
 			//filtro picco di avvio
-			DEBUG_PRINTLN(F("Sopra massimo"));
-			nup[n]++;
+			DEBUG_PRINT(n);
+			DEBUG_PRINT(F(") Sopra massimo - nup[n]: "));
+			DEBUG_PRINTLN(nup[n]);
 			if(nup[n] > 0){
 				res = 2;
 			}else{
@@ -188,6 +206,7 @@ short checkRange(double mval, byte n) {
 				DEBUG_PRINTLN(F("Primo picco"));
 				avg[n] = mval;
 			}
+			nup[n]++;
 		}
 		
 		count[n]++;		

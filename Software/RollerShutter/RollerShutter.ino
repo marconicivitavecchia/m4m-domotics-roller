@@ -673,7 +673,7 @@ void loop() {
 	//current = millis();
 #if (AUTOCAL) 
 	x = (int) analogRead(A0) - m;	
-	if (x > maxx) 					
+	if(x > maxx) 					
 	{    							
 		maxx = x; 					
 	}
@@ -693,15 +693,16 @@ void loop() {
 		//reset of peak sample value
 		
 		if(isrun[0]){
+			DEBUG_PRINT(0);
 			if(isrundelay[0] == 0){
 				DEBUG_PRINTLN(F("---------------------------------"));
 				DEBUG_PRINT(F("minx sensor: "));
-				DEBUG_PRINTLN(minx);
-				DEBUG_PRINT(F("maxx sensor: "));
-				DEBUG_PRINTLN(maxx);
-				DEBUG_PRINT(F("Mean sensor: "));
-				DEBUG_PRINTLN(m);
-				DEBUG_PRINT(F("\nPeak: "));
+				DEBUG_PRINT(minx);
+				DEBUG_PRINT(F(" - maxx sensor: "));
+				DEBUG_PRINT(maxx);
+				DEBUG_PRINT(F(" - Mean sensor: "));
+				DEBUG_PRINT(m);
+				DEBUG_PRINT(F(" - Peak: "));
 				DEBUG_PRINTLN(peak);
 				//DEBUG_PRINT(F("\nSample count: "));
 				//DEBUG_PRINTLN(sampleCount);
@@ -711,34 +712,35 @@ void loop() {
 				//float amp = getAmpRMS();
 				//DEBUG_PRINTLN(amp);
 				if(chk[0] != 0){
+					DEBUG_PRINT(0);
 					if(chk[0] == -1){
 						blocked[0] = secondPress(0);
 						scriviOutDaStato();
-						DEBUG_PRINTLN(F("\nStop: sottosoglia"));
+						DEBUG_PRINTLN(F(") Stop: sottosoglia"));
 					}else if(chk[0] == 2){
 						blocked[0] = secondPress(0);
 						scriviOutDaStato();
 						blocked[0] = 1;
-						DEBUG_PRINTLN(F("\nStop: soprasoglia"));
+						DEBUG_PRINTLN(F(") Stop: soprasoglia"));
 					}else if(chk[0] == 1){
 						startEndOfRunTimer(0);
-						DEBUG_PRINTLN(F("\nStart: fronte di salita"));
+						DEBUG_PRINTLN(F(") Start: fronte di salita"));
 					}
 					readStatesAndPub();
 					yield();
 				}
 			}else{
-				DEBUG_PRINT(F("\naspetto: "));
-				DEBUG_PRINTLN(isrundelay[0]);
-				DEBUG_PRINT(F("minx sensor: "));
-				DEBUG_PRINTLN(minx);
-				DEBUG_PRINT(F("maxx sensor: "));
-				DEBUG_PRINTLN(maxx);
-				DEBUG_PRINT(F("\nPeak: "));
-				DEBUG_PRINTLN(peak);
+				DEBUG_PRINT(F(") aspetto: "));
+				DEBUG_PRINT(isrundelay[0]);
+				DEBUG_PRINT(F(" - minx sensor: "));
+				DEBUG_PRINT(minx);
+				DEBUG_PRINT(F(" - maxx sensor: "));
+				DEBUG_PRINT(maxx);
+				DEBUG_PRINT(F(" - Peak: "));
+				DEBUG_PRINT(peak);
 				isrundelay[0]--;
 				ex = dd;
-				DEBUG_PRINT(F("\ndd: "));
+				DEBUG_PRINT(F(" - dd: "));
 				DEBUG_PRINTLN(dd);
 			}
 		}else{
@@ -747,14 +749,21 @@ void loop() {
 		
 		if(isrun[1]){
 			if(isrundelay[1] == 0){
-				DEBUG_PRINTLN(F("---------------------------------"));
-				DEBUG_PRINT(F("\nPeak: "));
+				DEBUG_PRINT(1);
+				DEBUG_PRINT(F("minx sensor: "));
+				DEBUG_PRINT(minx);
+				DEBUG_PRINT(F(" - maxx sensor: "));
+				DEBUG_PRINT(maxx);
+				DEBUG_PRINT(F(" - Mean sensor: "));
+				DEBUG_PRINT(m);
+				DEBUG_PRINT(F(" - Peak: "));
 				DEBUG_PRINTLN(peak);
 				//DEBUG_PRINT(F("\nSample count: "));
 				//DEBUG_PRINTLN(sampleCount);
 				//sampleCount = 0;
 				chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
 				if(chk[1] != 0){
+					DEBUG_PRINT(1);
 					if(chk[1] == -1){
 						blocked[1] = secondPress(1);
 						scriviOutDaStato();
@@ -769,13 +778,17 @@ void loop() {
 					yield();
 				}
 			}else{
-				DEBUG_PRINT(F("\naspetto: "));
-				DEBUG_PRINTLN(isrundelay[1]);
-				DEBUG_PRINT(F("\nPeak: "));
-				DEBUG_PRINTLN(peak);
+				DEBUG_PRINT(F(") aspetto: "));
+				DEBUG_PRINT(isrundelay[1]);
+				DEBUG_PRINT(F(" - minx sensor: "));
+				DEBUG_PRINT(minx);
+				DEBUG_PRINT(F(" - maxx sensor: "));
+				DEBUG_PRINT(maxx);
+				DEBUG_PRINT(F(" - Peak: "));
+				DEBUG_PRINT(peak);
 				isrundelay[1]--;
 				ex = dd;
-				DEBUG_PRINT(F("\ndd: "));
+				DEBUG_PRINT(F(" - dd: "));
 				DEBUG_PRINTLN(dd);
 			}
 		}else{
