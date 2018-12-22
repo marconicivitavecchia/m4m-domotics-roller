@@ -692,7 +692,9 @@ void loop() {
 			DEBUG_PRINT(0);
 			if(isrundelay[0] == 0){
 				DEBUG_PRINTLN(F("---------------------------------"));
-				DEBUG_PRINT(F("minx sensor: "));
+				DEBUG_PRINT(F("\n("));
+				DEBUG_PRINT(0);
+				DEBUG_PRINT(F(") minx sensor: "));
 				DEBUG_PRINT(minx);
 				DEBUG_PRINT(F(" - maxx sensor: "));
 				DEBUG_PRINT(maxx);
@@ -708,6 +710,7 @@ void loop() {
 				//float amp = getAmpRMS();
 				//DEBUG_PRINTLN(amp);
 				if(chk[0] != 0){
+					DEBUG_PRINT(F("\n("));
 					DEBUG_PRINT(0);
 					if(chk[0] == -1){
 						blocked[0] = secondPress(0);
@@ -726,7 +729,9 @@ void loop() {
 					yield();
 				}
 			}else{
-				DEBUG_PRINTLN(F(") aspetto: "));
+				DEBUG_PRINT(F("\n("));
+				DEBUG_PRINT(0);
+				DEBUG_PRINT(F(") aspetto: "));
 				DEBUG_PRINT(isrundelay[0]);
 				DEBUG_PRINT(F(" - minx sensor: "));
 				DEBUG_PRINT(minx);
@@ -745,8 +750,9 @@ void loop() {
 		
 		if(isrun[1]){
 			if(isrundelay[1] == 0){
+				DEBUG_PRINT(F("\n("));
 				DEBUG_PRINT(1);
-				DEBUG_PRINT(F("minx sensor: "));
+				DEBUG_PRINT(F(") minx sensor: "));
 				DEBUG_PRINT(minx);
 				DEBUG_PRINT(F(" - maxx sensor: "));
 				DEBUG_PRINT(maxx);
@@ -759,6 +765,7 @@ void loop() {
 				//sampleCount = 0;
 				chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
 				if(chk[1] != 0){
+					DEBUG_PRINT(F("\n("));
 					DEBUG_PRINT(1);
 					if(chk[1] == -1){
 						blocked[1] = secondPress(1);
@@ -774,7 +781,9 @@ void loop() {
 					yield();
 				}
 			}else{
-				DEBUG_PRINTLN(F(") aspetto: "));
+				DEBUG_PRINT(F("\n("));
+				DEBUG_PRINT(1);
+				DEBUG_PRINT(F(") aspetto: "));
 				DEBUG_PRINT(isrundelay[1]);
 				DEBUG_PRINT(F(" - minx sensor: "));
 				DEBUG_PRINT(minx);

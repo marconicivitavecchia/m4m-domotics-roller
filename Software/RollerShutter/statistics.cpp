@@ -86,7 +86,8 @@ double getSigma() {
 */
 short checkRange2(double mval, byte n) {
 	short res = 0; //res init!!
-	DEBUG_PRINTLN(n);
+	DEBUG_PRINT(F("\n("));
+	DEBUG_PRINT(n);
 	DEBUG_PRINT(F(") mval: "));
 	DEBUG_PRINT(mval);
 	DEBUG_PRINT(F(" - thresholdUp[n]: "));
@@ -99,7 +100,8 @@ short checkRange2(double mval, byte n) {
 	if(mval > thresholdDown[n]){
 		//sono sul livello alto
 		//calcolo statistiche solo con motore in movimento	
-		DEBUG_PRINTLN(n);
+		DEBUG_PRINT(F("\n("));
+		DEBUG_PRINT(n);
 		DEBUG_PRINT(F(") avg[n]: "));
 		DEBUG_PRINT(avg[n]);
 		
@@ -111,8 +113,7 @@ short checkRange2(double mval, byte n) {
 		
 		if(mval > thresholdUp[n] && mval > fixedThreshld[n]) {
 			//filtro picco di avvio
-			DEBUG_PRINTLN(n);
-			DEBUG_PRINT(F(") Sopra massimo - nup[n]: "));
+			DEBUG_PRINT(F("- Sopra massimo - nup[n]: "));
 			DEBUG_PRINT(nup[n]);
 			if(nup[n] > 0){
 				res = 2;
@@ -128,7 +129,8 @@ short checkRange2(double mval, byte n) {
 	if(switchd(mval > thresholdDown[n],swdelay,n)){
 	//if(switchd(mval > thresholdDown[n],n)){
 		//sono su un fronte
-		DEBUG_PRINTLN(n);
+		DEBUG_PRINT(F("\n("));
+		DEBUG_PRINT(n);
 		if (mval > thresholdDown[n]){
 			//Fronte di salita
 			DEBUG_PRINT(F(")Fronte di salita sensore"));
@@ -148,7 +150,8 @@ short checkRange2(double mval, byte n) {
 short checkRange(double mval, byte n) {
 	short res = 0; //res init!!
 	
-	DEBUG_PRINTLN(n);
+	DEBUG_PRINT(F("\n("));
+	DEBUG_PRINT(n);
 	DEBUG_PRINT(F(") mval: "));
 	DEBUG_PRINT(mval);
 	DEBUG_PRINT(F(" - thresholdUp[n]: "));
@@ -159,7 +162,8 @@ short checkRange(double mval, byte n) {
 	if(switchd(mval > thresholdDown[n],swdelay,n)){
 	//if(switchd(mval > thresholdDown[n],n)){
 		//sono su un fronte
-		DEBUG_PRINTLN(n);
+		DEBUG_PRINT(F("\n("));
+		DEBUG_PRINT(n);
 		if (mval > thresholdDown[n]){
 			//Fronte di salita
 			DEBUG_PRINT(F(")Fronte di salita sensore"));
@@ -175,16 +179,15 @@ short checkRange(double mval, byte n) {
 	
 	//level evaluation
 	if(mval > thresholdDown[n]){
-		DEBUG_PRINTLN(n);
+		DEBUG_PRINT(F("\n("));
+		DEBUG_PRINT(n);
 		//sono sul livello alto
 		//calcolo statistiche solo con motore in movimento		
-		DEBUG_PRINT(F("avg[n]: "));
-		DEBUG_PRINT(avg[n]);
-			
+		DEBUG_PRINT(F(") avg[n]: "));
+		DEBUG_PRINT(avg[n]);		
 		if(mval > thresholdUp[n] && mval > fixedThreshld[n]) {
 			//filtro picco di avvio
-			DEBUG_PRINTLN(n);
-			DEBUG_PRINT(F(") Sopra massimo - nup[n]: "));
+			DEBUG_PRINT(F("- Sopra massimo - nup[n]: "));
 			DEBUG_PRINT(nup[n]);
 			if(nup[n] > 0){
 				res = 2;
