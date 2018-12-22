@@ -730,7 +730,7 @@ void loop() {
 					yield();
 				}
 			}else{
-				DEBUG_PRINT(F(") aspetto: "));
+				DEBUG_PRINTLN(F(") aspetto: "));
 				DEBUG_PRINT(isrundelay[0]);
 				DEBUG_PRINT(F(" - minx sensor: "));
 				DEBUG_PRINT(minx);
@@ -778,7 +778,7 @@ void loop() {
 					yield();
 				}
 			}else{
-				DEBUG_PRINT(F(") aspetto: "));
+				DEBUG_PRINTLN(F(") aspetto: "));
 				DEBUG_PRINT(isrundelay[1]);
 				DEBUG_PRINT(F(" - minx sensor: "));
 				DEBUG_PRINT(minx);
