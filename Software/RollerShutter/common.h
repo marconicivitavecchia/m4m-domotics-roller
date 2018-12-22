@@ -254,22 +254,7 @@ extern RemoteDebug telnet;
 
 #if (AUTOCAL)  
 #include "statistics.h"
-/*
-#define sensorRead()	if((millis()-pn) > 2){		\
-	pn = millis();					\
-	v =analogRead(A0);			\
-	x = v - m;		\
-	if (x > maxx) 					\
-     {    							\
-		maxx = x; 					\
-     }								\
-	if (x < minx) 					\
-     {       						\
-		minx = x;					\
-	 }								\
-	dd = maxx - minx -1.5;			\
-  }									\
-*/
+
 #define getAmpRMS()		ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;		\
 		VRMS = ACSVolt * 0.707;					\
 		AmpsRMS = (double) (VRMS * 1000) / mVperAmp;		\
