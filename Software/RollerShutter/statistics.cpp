@@ -66,7 +66,7 @@ inline bool switchd(byte dval, unsigned short d[], byte n){
 	return changed;
 }
 */
-/*
+
 inline bool switchd(byte dval, unsigned short d[], byte n){
 	//passo di campionamento
 	count2[n] ++;
@@ -78,13 +78,14 @@ inline bool switchd(byte dval, unsigned short d[], byte n){
 	}
 	return changed;
 }
-*/
+/*
 inline bool switchd(byte dval, byte n){
 	bool changed = false;
 	changed = (dval != precdval[n]);
 	precdval[n] = dval;            // valore di val campionato al loop precedente 
 	return changed;
 }
+*/
 /*
 void setSigma(byte i) {
 	if(i > 0){
@@ -137,8 +138,8 @@ short checkRange2(double mval, byte n) {
 		}
 	}
 	
-	//if(switchd(mval > thresholdDown[n],swdelay,n)){
-	if(switchd(mval > thresholdDown[n],n)){
+	if(switchd(mval > thresholdDown[n],swdelay,n)){
+	//if(switchd(mval > thresholdDown[n],n)){
 		//sono su un fronte
 		DEBUG_PRINTLN(n);
 		if (mval > thresholdDown[n]){
@@ -168,8 +169,8 @@ short checkRange(double mval, byte n) {
 	DEBUG_PRINT(F(" - thresholddown[n]: "));
 	DEBUG_PRINT(thresholdDown[n]);
 	
-	//if(switchd(mval > thresholdDown[n],swdelay,n)){
-	if(switchd(mval > thresholdDown[n],n)){
+	if(switchd(mval > thresholdDown[n],swdelay,n)){
+	//if(switchd(mval > thresholdDown[n],n)){
 		//sono su un fronte
 		DEBUG_PRINTLN(n);
 		if (mval > thresholdDown[n]){
