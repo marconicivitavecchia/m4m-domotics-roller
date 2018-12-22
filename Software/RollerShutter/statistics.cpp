@@ -5,11 +5,11 @@ double stdDev[2] = {0.0, 0.0};
 unsigned long count[2] = {1, 1};
 short count2[2] = {0, 0};
 short countd[2] = {0, 0};
-unsigned short swdelay[2] = {RAMPDELAY, RAMPDELAY};
+unsigned short swdelay[2] = {RAMPDELAY1, RAMPDELAY2};
 unsigned short nup[2] = {0, 0};
 double thresholdUp[2] = {1024, 1024};
 double thresholdDown[2] = {0, 0};
-unsigned fixedThreshld = 13;
+unsigned fixedThreshld[2] = {THRESHOLD1, THRESHOLD2};
 //bool started[2] = {false, false};
 //bool highLevel[2]={false, false};
 byte precdval[2]={false, false};
@@ -56,13 +56,13 @@ double inline getSTDDEV(byte n) {
 
 inline bool switchd(byte dval, unsigned short d[], byte n){
 	//passo di campionamento
-	count2[n] ++;
 	bool changed = false;
 	if(count2[n] >= d[n]){
 		count2[n] = 0;
 		changed = (dval != precdval[n]);
 		precdval[n] = dval;            // valore di val campionato al loop precedente 
 	}
+	count2[n] ++;
 	return changed;
 }
 /*
@@ -109,7 +109,7 @@ short checkRange2(double mval, byte n) {
 		thresholdDown[n] = (double) avg[n]/4;
 		(count[n] > 1) && (thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA));	//protected against overflow by a logic short circuit
 		
-		if(mval > thresholdUp[n] && mval > fixedThreshld) {
+		if(mval > thresholdUp[n] && mval > fixedThreshld[n]) {
 			//filtro picco di avvio
 			DEBUG_PRINTLN(n);
 			DEBUG_PRINT(F(") Sopra massimo - nup[n]: "));
@@ -181,7 +181,7 @@ short checkRange(double mval, byte n) {
 		DEBUG_PRINT(F("avg[n]: "));
 		DEBUG_PRINT(avg[n]);
 			
-		if(mval > thresholdUp[n] && mval > fixedThreshld) {
+		if(mval > thresholdUp[n] && mval > fixedThreshld[n]) {
 			//filtro picco di avvio
 			DEBUG_PRINTLN(n);
 			DEBUG_PRINT(F(") Sopra massimo - nup[n]: "));

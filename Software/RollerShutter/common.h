@@ -30,16 +30,16 @@ extern RemoteDebug telnet;
 
 //DEFAULT CONFIGURATIONS
 //wifi config----------------------------------------------
-#define OUTTOPIC "sonoff17/out"
-#define INTOPIC "sonoff17/in"
-#define SSID1 "OpenWrt"
-#define PSW1 "dorabino.7468!"
-#define SSID2 "AndroidAP1"
-#define PSW2 "melituz123"
-#define SSIDAP "admin"
-#define PSWAP "admin"
-#define MQTTSRV "iot.eclipse.org"
-#define MQTTCLIENTID "NodeMCUtanzo2344378"
+#define OUTTOPIC		"sonoff17/out"
+#define INTOPIC			"sonoff17/in"
+#define SSID1			"OpenWrt"
+#define PSW1			"dorabino.7468!"
+#define SSID2			"AndroidAP1"
+#define PSW2			"melituz123"
+#define SSIDAP			"admin"
+#define PSWAP			"admin"
+#define MQTTSRV			"iot.eclipse.org"
+#define MQTTCLIENTID 	"NodeMCUtanzo2344378"
 //END DEFAULTS
 
 //Definizione modello
@@ -76,7 +76,10 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
-#define RAMPDELAY	2
+#define THRESHOLD1	13
+#define THRESHOLD2	13
+#define RAMPDELAY1	1  		//n*20ms
+#define RAMPDELAY2	1  		//n*20ms
 #define RUNDELAY  	3
 #define DELTAL		4
 #define AUTOCAL		1
