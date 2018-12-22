@@ -76,6 +76,7 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
+#define RAMPDELAY	2
 #define RUNDELAY  	3
 #define DELTAL		4
 #define AUTOCAL		1
