@@ -53,19 +53,6 @@ double getThresholdDown(byte n) {
 double inline getSTDDEV(byte n) {
   return sqrt(stdDev[n] / (count[n] - 1));
 }
-/*
-inline bool switchd(byte dval, unsigned short d[], byte n){
-	//passo di campionamento
-	count2[n] ++;
-	bool changed = false;
-	if(count2[n] >= d[n]){
-		count2[n] = 0;
-		changed = (dval != precdval[n]);
-		precdval[n] = dval;            // valore di val campionato al loop precedente 
-	}
-	return changed;
-}
-*/
 
 inline bool switchd(byte dval, unsigned short d[], byte n){
 	//passo di campionamento

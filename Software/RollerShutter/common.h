@@ -28,6 +28,20 @@
 
 extern RemoteDebug telnet;
 
+//DEFAULT CONFIGURATIONS
+//wifi config----------------------------------------------
+#define OUTTOPIC "sonoff17/out"
+#define INTOPIC "sonoff17/in"
+#define SSID1 "OpenWrt"
+#define PSW1 "dorabino.7468!"
+#define SSID2 "AndroidAP1"
+#define PSW2 "melituz123"
+#define SSIDAP "admin"
+#define PSWAP "admin"
+#define MQTTSRV "iot.eclipse.org"
+#define MQTTCLIENTID "NodeMCUtanzo2344378"
+//END DEFAULTS
+
 //Definizione modello
 #define SONOFF_4CH		1
 #define ROLLERSHUTTER 	0
