@@ -3,7 +3,7 @@
 double avg[2] = {0.0, 0.0};
 double stdDev[2] = {0.0, 0.0};
 unsigned long count[2] = {1, 1};
-//short count2[2] = {0, 0};
+short count2[2] = {0, 0};
 short countd[2] = {0, 0};
 unsigned short swdelay[2] = {1, 1};
 unsigned short nup[2] = {0, 0};
