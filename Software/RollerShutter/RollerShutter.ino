@@ -1,4 +1,4 @@
-  #include "common.h"
+   #include "common.h"
 //End MQTT config------------------------------------------
 //inizio variabili e costanti dello schedulatore (antirimbalzo)
 #define time_base     	2            // periodo base in millisecondi
@@ -24,7 +24,6 @@ int maxx = 0;
 int x;
 int dd = 0;
 float m;
-
 double ex = 0;
 double calAvg[2] = {0,0};
 double weight[2] = {0,0};
@@ -691,7 +690,7 @@ void loop() {
 		if(isrun[0]){
 			DEBUG_PRINT(0);
 			if(isrundelay[0] == 0){
-				DEBUG_PRINTLN(F("---------------------------------"));
+				DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 				DEBUG_PRINT(F("\n("));
 				DEBUG_PRINT(0);
 				DEBUG_PRINT(F(") minx sensor: "));
@@ -701,7 +700,7 @@ void loop() {
 				DEBUG_PRINT(F(" - Mean sensor: "));
 				DEBUG_PRINT(m);
 				DEBUG_PRINT(F(" - Peak: "));
-				DEBUG_PRINTLN(peak);
+				DEBUG_PRINT(peak);
 				//DEBUG_PRINT(F("\nSample count: "));
 				//DEBUG_PRINTLN(sampleCount);
 				//sampleCount = 0;
@@ -742,7 +741,7 @@ void loop() {
 				isrundelay[0]--;
 				ex = dd;
 				DEBUG_PRINT(F(" - dd: "));
-				DEBUG_PRINTLN(dd);
+				DEBUG_PRINT(dd);
 			}
 		}else{
 			isrundelay[0] = RUNDELAY;
@@ -750,6 +749,7 @@ void loop() {
 		
 		if(isrun[1]){
 			if(isrundelay[1] == 0){
+				DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 				DEBUG_PRINT(F("\n("));
 				DEBUG_PRINT(1);
 				DEBUG_PRINT(F(") minx sensor: "));
@@ -759,7 +759,7 @@ void loop() {
 				DEBUG_PRINT(F(" - Mean sensor: "));
 				DEBUG_PRINT(m);
 				DEBUG_PRINT(F(" - Peak: "));
-				DEBUG_PRINTLN(peak);
+				DEBUG_PRINT(peak);
 				//DEBUG_PRINT(F("\nSample count: "));
 				//DEBUG_PRINTLN(sampleCount);
 				//sampleCount = 0;
@@ -794,7 +794,7 @@ void loop() {
 				isrundelay[1]--;
 				ex = dd;
 				DEBUG_PRINT(F(" - dd: "));
-				DEBUG_PRINTLN(dd);
+				DEBUG_PRINT(dd);
 			}
 		}else{
 			isrundelay[1] = RUNDELAY;
@@ -1262,6 +1262,7 @@ void onCalibrEnd(unsigned long app, byte n){
 	weight[0] = (double) calAvg[0] / (calAvg[0] +  calAvg[1]);
 	weight[1] = (double) calAvg[1] / (calAvg[0] +  calAvg[1]);
 	params[VALWEIGHT] = String(weight[0]);
+	updateUpThreshold(n);
 	//params[TRSHOLD1 + n] = String(getThresholdUp(n));
 	//setThresholdUp((params[TRSHOLD1 + n]).toFloat(), n);
 #endif
@@ -1300,6 +1301,7 @@ void manualCalibration(byte btn){
 	//setStatsLearnMode();
 #if (AUTOCAL)
 	//resetStatDelayCounter(btn);
+	disableUpThreshold(btn);
 #endif
 	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione
 	
