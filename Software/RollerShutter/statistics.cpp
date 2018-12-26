@@ -5,7 +5,7 @@ double stdDev[2] = {0.0, 0.0};
 unsigned long count[2] = {1, 1};
 short count2[2] = {0, 0};
 short countd[2] = {0, 0};
-unsigned short swdelay[2] = {RAMPDELAY1, RAMPDELAY2};
+//unsigned short swdelay[2] = {RAMPDELAY1, RAMPDELAY2};
 unsigned short nup[2] = {0, 0};
 unsigned short npeak[2] = {0, 0};
 double thresholdUp[2] = {1024, 1024};
@@ -86,6 +86,7 @@ double getSigma() {
   return sigma;
 }
 */
+/*
 short checkRange2(double mval, byte n) {
 	short res = 0; //res init!!
 	DEBUG_PRINT(F("\n("));
@@ -212,7 +213,7 @@ short checkRange3(double mval, byte n) {
 
 	return res;
 }
-
+*/
 short checkRange(double mval, byte n) {
 	short res = 0; //res init!!
 	

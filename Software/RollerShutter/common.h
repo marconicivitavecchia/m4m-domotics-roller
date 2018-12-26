@@ -78,10 +78,10 @@ extern RemoteDebug telnet;
   #error Wrong version defined - cannot continue!
 #endif
 
-#define THRESHOLD1	13
-#define THRESHOLD2	13
-#define RAMPDELAY1	1  		//n*20ms
-#define RAMPDELAY2	1  		//n*20ms
+//#define THRESHOLD1	13
+//#define THRESHOLD2	13
+//#define RAMPDELAY1	1  		//n*20ms
+//#define RAMPDELAY2	1  		//n*20ms
 #define RUNDELAY  	3
 #define DELTAL		4
 #define AUTOCAL		1
@@ -89,7 +89,7 @@ extern RemoteDebug telnet;
 #define EMA  		0.7
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
-#define	TCOUNT		12		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
+#define	TCOUNT		4		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
 #define RSTTIME		20		//DEFINE HOW MANY SECONDS BUTTON1 MUST BE PRESSED UNTIL A RESET OCCUR 
 #define CNTIME		4		//DEFINE HOW MANY SECONDS HAVE TO LAST THALT PARAMETER AT LEAST
 //#define CONFTIME	4		//DEFINE HOW MANY SECONDS 
@@ -205,7 +205,8 @@ extern RemoteDebug telnet;
 //--------------------------Fine array indexes-----------------------------------
 //-----------------------DEBUG MACRO------------------------------------------------------------
 #ifdef DEBUG
- #define DEBUG_PRINT(x)     Serial.print (x) ; telnet.print(x)
+ //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
+ #define DEBUG_PRINT(x)     Serial.print (x); telnet.print(x)
  #define DEBUG_PRINTDEC(x)     Serial.print (x, DEC) ; telnet.println(x)
  #define DEBUG_PRINTLN(x)  Serial.println (x) ; telnet.println(x)
 #else

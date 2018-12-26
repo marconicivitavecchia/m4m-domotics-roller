@@ -145,6 +145,7 @@ inline byte tapLogic(byte n){
 }
 
 void setup_AP(bool apmode) {
+  ESP.wdtFeed();
   Serial.println(F("Configuring access point..."));
   // You can remove the password parameter if you want the AP to be open. 
   //WiFi.softAP(APSsid.c_str(), APPsw.c_str());
@@ -183,17 +184,18 @@ int numberOfNetworks = WiFi.scanNetworks();
  
   for(int i =0; i<numberOfNetworks; i++){
  
-      Serial.print("Network name: ");
-      Serial.println(WiFi.SSID(i));
-      Serial.print("Signal strength: ");
-      Serial.println(WiFi.RSSI(i));
-      Serial.println("-----------------------");
+     DEBUG_PRINT("\nNetwork name: ");
+     DEBUG_PRINT(WiFi.SSID(i));
+     DEBUG_PRINT("\nSignal strength: ");
+     DEBUG_PRINT(WiFi.RSSI(i));
+     DEBUG_PRINT("\n-----------------------");
  
   }
 }
 
 //wifi setup function
 void setup_wifi(int wifindx) {
+	ESP.wdtFeed();
 	wifindx = wifindx*2;  //client1 e client2 hanno indici contigui nell'array params
 	// We start by connecting to a WiFi network
 	Serial.println(F("Connecting to "));
@@ -528,6 +530,8 @@ void setup() {
   //------------------------------------------END OTA SETUP---------------------------------------------------------------------------------------
   //segnala  la corretta accensione della macchina con un blink dei led dei pulsanti
   /*
+  ESP.eraseConfig();
+  WiFi.disconnect(true);
   digitalWrite(OUTSLED, HIGH);
   delay(100);
   digitalWrite(OUT1EU, HIGH);
@@ -641,7 +645,7 @@ void httpSetup(){
 void zeroDetect(){
 	for(int i = 0, m = 0; i < 1000; i++) {
 		m = (float) m + analogRead(A0);
-		delay(1);
+		delay(2);
 	}
 	m /= 1000;
 	smplcnt = 0;
@@ -668,6 +672,9 @@ void loop() {
 	//current = millis();
 #if (AUTOCAL) 
 	x = (int) analogRead(A0) - m;	
+
+	//(x > maxx) && (maxx = x);
+	//(x < minx) && (minx = x);
 	if(x > maxx) 					
 	{    							
 		maxx = x; 					
@@ -806,6 +813,7 @@ void loop() {
 			smplcnt++;
 			smplcnt && (m += (float) x / smplcnt);  //protected against overflow by a logic short circuit
 		}
+		//AC peak measure init
 		minx = 1024;
 		maxx = 0;
 	}
@@ -813,16 +821,18 @@ void loop() {
 	//1 sec
 	if(!(step % 500)){
 		//aggiornaTimer(APOFFTIMER);
-		
+		Serial.print(F("\nMean sensor: "));
+		Serial.print(m);
+		Serial.print(F(" - "));
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
         if(wifiConn && mqttClient!=NULL){
 			if(!(mqttClient->isConnected())){
-				DEBUG_PRINTLN(F("MQTT: isConnected() dice non sono connesso."));
+				Serial.print(F("MQTT: isConnected() dice non sono connesso."));
 				mqttConnected=false;
 			}	
 			else{
-				DEBUG_PRINT(F("MQTT: isConnected() dice sono connesso. Local IP: "));
-				DEBUG_PRINTLN(WiFi.localIP());
+				Serial.print(F("MQTT: isConnected() dice sono connesso. Local IP: "));
+				Serial.print(WiFi.localIP());
 				mqttConnected=true;
 			}
 		}
@@ -933,16 +943,13 @@ void loop() {
 		}
 		
 		//delay(0);
-	}
+	//}
 	
 	//codice eseguito ogni 20*50 msec = 1000 msec
 	//riconnessione WiFi
-	if(!(step % 600)){
+	//if(!(step % 600)){
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
-		
-		DEBUG_PRINT(F("Mean sensor: "));
-		DEBUG_PRINTLN(m);
 				
 		byte stat = WiFi.status();
 		if(stat == WL_CONNECTED){
@@ -965,6 +972,7 @@ void loop() {
 					Serial.println(F("Connection timed out"));
 					if(endWait){
 						WiFi.disconnect(false);
+						ESP.eraseConfig();
 						Serial.println(F("Do new connection"));
 						setup_wifi(wifindx);	//tetativo di connessione
 						//WiFi.waitForConnectResult();	
@@ -1173,6 +1181,7 @@ void onElapse(byte n){
 						WiFi.persistent(false);
 						// disconnect sta, start ap
 						WiFi.disconnect(true); //  disconnect and disable STA mode
+						ESP.eraseConfig();
 						WiFi.mode(WIFI_AP);
 						//WiFi.persistent(true);
 					}else{
@@ -1395,33 +1404,55 @@ String macToString(const unsigned char* mac) {
 }
 
 void processCmdRemoteDebug() {
-
 	String lastCmd = telnet.getLastCommand();
-
-	if (lastCmd == "showconf") {
+	
+	if(lastCmd == "showconf"){
 		// overall config print
 		printConfig();
-	}else if (lastCmd == "reboot") {
+	}else if(lastCmd == "reboot"){
 		// Rebooting ESP without reset of configuration
-		DEBUG_PRINTLN(F("Rebooting ESP without reset of configuration"));
+		DEBUG_PRINT(F("\nRebooting ESP without reset of configuration"));
 		ESP.restart();
-	}else if (lastCmd == "reset") {
+	}else if(lastCmd == "reset"){
 		//Reboot ESP with reset of configuration
-		DEBUG_PRINTLN(F("Reboot ESP with reset of configuration"));
+		DEBUG_PRINT(F("\nReboot ESP with reset of configuration"));
 		rebootSystem();
-	}else if (lastCmd == "calibrate1") {
+	}else if(lastCmd == "calibrate1"){
 		//ATTIVATA CALIBRAZIONE MANUALE BTN 1
 		manualCalibration(0);
-	}else if (lastCmd == "calibrate2") {
+	}else if(lastCmd == "calibrate2"){
 		//ATTIVATA CALIBRAZIONE MANUALE BTN 1
 		manualCalibration(1);
-	}else if (lastCmd == "apmodeon") {
-		DEBUG_PRINTLN(F("Atttivato AP mode"));
+	}else if(lastCmd == "apmodeon"){
+		DEBUG_PRINT(F("\nAtttivato AP mode"));
 		startTimer(APOFFTIMER);
 		//WiFi.enableSTA(false);
 		WiFi.setAutoConnect(false);
 		WiFi.setAutoReconnect(false);
+	}else if(lastCmd == "scanwifi"){
+		//scansione reti wifi disponibili
+		scan_wifi();
+	}else if(lastCmd == "getip"){
+		DEBUG_PRINT("\nLocal IP: ");
+		DEBUG_PRINT(WiFi.localIP());
+	}else if(lastCmd == "testflash"){
+		testFlash();
+	}else if(lastCmd == "getmqttstat"){
+		if(!(mqttClient->isConnected())){
+			DEBUG_PRINT(F("\nMQTT non connesso."));
+		}
+		else
+		{
+			DEBUG_PRINT(F("\nMQTT connesso"));
+		}
+	}else if(lastCmd == "getsensor"){
+		DEBUG_PRINT(F("\nMean sensor: "));
+		DEBUG_PRINT(m);
+	}else{
+		DEBUG_PRINT(F("\nComandi disponibili: "));
+		DEBUG_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, testflash\n"));
 	}
+	//telnet.flush();
 }
 
 #if (DEBUG)	
@@ -1452,9 +1483,9 @@ void testFlash(){
   telnet.printf("Flash ide mode:  %s\n", (ideMode == FM_QIO ? "QIO" : ideMode == FM_QOUT ? "QOUT" : ideMode == FM_DIO ? "DIO" : ideMode == FM_DOUT ? "DOUT" : "UNKNOWN"));
 
   if (ideSize != realSize) {
-    DEBUG_PRINTLN("Flash Chip configuration wrong!\n");
+    DEBUG_PRINT("\nFlash Chip configuration wrong!\n");
   } else {
-    DEBUG_PRINTLN("Flash Chip configuration ok.\n");
+    DEBUG_PRINT("\nFlash Chip configuration ok.\n");
   }
 }
 #endif
