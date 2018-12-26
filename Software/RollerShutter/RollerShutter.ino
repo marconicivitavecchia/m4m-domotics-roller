@@ -697,7 +697,6 @@ void loop() {
 		if(isrun[0]){
 			DEBUG_PRINT(0);
 			if(isrundelay[0] == 0){
-				DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 				DEBUG_PRINT(F("\n("));
 				DEBUG_PRINT(0);
 				DEBUG_PRINT(F(") minx sensor: "));
@@ -756,7 +755,6 @@ void loop() {
 		
 		if(isrun[1]){
 			if(isrundelay[1] == 0){
-				DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 				DEBUG_PRINT(F("\n("));
 				DEBUG_PRINT(1);
 				DEBUG_PRINT(F(") minx sensor: "));
@@ -812,6 +810,8 @@ void loop() {
 			//running mean calculation
 			smplcnt++;
 			smplcnt && (m += (float) x / smplcnt);  //protected against overflow by a logic short circuit
+		}else{
+			DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}
 		//AC peak measure init
 		minx = 1024;
