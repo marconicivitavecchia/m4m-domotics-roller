@@ -27,7 +27,6 @@
 #include "schedservices.h"
 
 extern RemoteDebug telnet;
-
 //DEFAULT CONFIGURATIONS
 //wifi config----------------------------------------------
 #define OUTTOPIC		"sonoff17/out"
@@ -89,7 +88,7 @@ extern RemoteDebug telnet;
 #define EMA  		0.7
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
-#define	TCOUNT		4		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
+#define	TCOUNT		2		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
 #define RSTTIME		20		//DEFINE HOW MANY SECONDS BUTTON1 MUST BE PRESSED UNTIL A RESET OCCUR 
 #define CNTIME		4		//DEFINE HOW MANY SECONDS HAVE TO LAST THALT PARAMETER AT LEAST
 //#define CONFTIME	4		//DEFINE HOW MANY SECONDS 
