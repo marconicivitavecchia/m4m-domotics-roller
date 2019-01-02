@@ -60,8 +60,8 @@ IPAddress mygateway(192, 168, 43, 1);
 IPAddress mysubnet(255, 255, 255, 0);
 
 RemoteDebug telnet;
-//WiFiEventHandler stationConnectedHandler;
-//WiFiEventHandler stationDisconnectedHandler;
+WiFiEventHandler stationConnectedHandler;
+WiFiEventHandler stationDisconnectedHandler;
 //WiFiEventHandler gotIpEventHandler, disconnectedEventHandler, connectedEventHandler;
 
 //User config
@@ -97,7 +97,6 @@ String params[PARAMSDIM]={webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid
 ESP8266WebServer server(80);    	// Create a webserver object that listens for HTTP request on port 80
 WebSocketsServer webSocket(81);	    // create a websocket server on port 81
 ESP8266HTTPUpdateServer httpUpdater;
-
 
 // fine variabili e costanti dello schedulatore
 // Update these with values suitabule for your network.
@@ -151,17 +150,16 @@ void setup_AP(bool apmode) {
   //WiFi.softAP(APSsid.c_str(), APPsw.c_str());
   
   if(apmode){
-	  //WiFi.softAPConfig(ip, gateway, subnet);
 	  Serial.print(F("Setting soft-AP configuration ... "));
-	  //Serial.println(WiFi.softAPConfig(myip, mygateway, mysubnet) ? F("Ready") : F("Failed!"));
-	  
+	  Serial.println(WiFi.softAPConfig(myip, mygateway, mysubnet) ? F("Ready") : F("Failed!"));
 	  //noInterrupts ();
 	  WiFi.softAP((params[APPSSID]).c_str());
-	  //WiFi.softAP("cacca8");
+	  //WiFi.softAP("cacca9");
 	  //interrupts();
 	  //DEBUG_PRINT(F("Setting soft-AP ... "));
 	  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
 	  //delay(500); // Without delay I've seen the IP address blank
+	  delay(1000);
 	  params[LOCALIP] = WiFi.softAPIP().toString();
 	  Serial.print(F("Soft-AP IP address = "));
 	  Serial.println(params[LOCALIP]);
@@ -173,7 +171,7 @@ void setup_AP(bool apmode) {
 	  //interrupts();
 	  //DEBUG_PRINT(F("Setting soft-AP ... "));
 	  //DEBUG_PRINTLN(WiFi.softAP((params[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
-	  
+	  delay(1000);
 	  params[LOCALIP] = WiFi.softAPIP().toString();
 	  Serial.print(F("Soft-AP IP address = "));
 	  Serial.println(params[LOCALIP]);
@@ -402,8 +400,8 @@ void setup() {
   //inizializza la seriale
   Serial.begin(115200);
   //importante per il debug del WIFI!
-  Serial.setDebugOutput(true);
-  WiFi.printDiag(Serial);
+  //Serial.setDebugOutput(true);
+  //WiFi.printDiag(Serial);
   //carica la configurazione dalla EEPROM
   //DEBUG_PRINTLN(F("Carico configurazione."));
   initCommon(&server,params,mqttJson);
@@ -424,24 +422,23 @@ void setup() {
   
   WiFi.printDiag(Serial);
   //WiFi.enableAP(false);
-  delay(100);
-  
-  WiFi.persistent(true);
-  WiFi.softAPdisconnect(true);
+  //delay(100);
+  //WiFi.persistent(true);
+  //WiFi.softAPdisconnect(true);
   //ESP.eraseConfig();
   WiFi.persistent(false);
-  WiFi.softAPdisconnect(true);
+  //ESP.eraseConfig();
+  //WiFi.softAPdisconnect(true);
   //ESP.eraseConfig();
   //inizializza l'AP wifi
-  setup_AP(true);
-  //WiFi.mode(WIFI_STA);
-  //WiFi.enableAP(false);
-  delay(1000);
+  //setup_AP(true);
   wifiState = WIFISTA;
+  WiFi.mode(WIFI_STA);
   setup_wifi(wifindx);
-  WiFi.mode(WIFI_AP_STA);
   //WiFi.mode(WIFI_AP);
-  delay(100);
+  //delay(6000);
+  //WiFi.mode(WIFI_AP);
+  //delay(6000);
   //delay(TCOUNT*1000);
   //delay(1000);
   
@@ -518,9 +515,9 @@ void setup() {
   // Register event handlers.
   // Callback functions will be called as long as these handler objects exist.
   // Call "onStationConnected" each time a station connects
-  //stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
+  stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
   // Call "onStationDisconnected" each time a station disconnects
-  //stationDisconnectedHandler = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
+  stationDisconnectedHandler = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
 /*  
   gotIpEventHandler = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP& event)
   {
@@ -548,9 +545,9 @@ void setup() {
 #endif
 
   zeroDetect();
- 
+
   cont=0;
- while (WiFi.status() != WL_CONNECTED && cont<30000/500) {
+  while (WiFi.status() != WL_CONNECTED && cont<30000/500) {
      delay(500);
 	 cont++;
      Serial.print(".");
@@ -622,12 +619,8 @@ void loop(){
 	}else{
 		//workaround for the DHCP offer problem ERROR: send_offer (error -13)
 		//no busy loop!
-		if((millis()-prec) > 1000){
-			boot = false;
-			prec = millis();
-			WiFi.mode(WIFI_STA);
-			DEBUG_PRINT(F("\nInit WIFI_STA\n"));
-		}
+		delay(3000);
+		boot = false;
 	}
 }
 	
@@ -807,12 +800,15 @@ inline void loop2() {
 		Serial.print(F(" - "));
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
         if(wifiConn && mqttClient!=NULL){
-			if(!(mqttClient->isConnected())){
-				Serial.print(F("MQTT: isConnected() dice non sono connesso."));
+			noInterrupts ();
+			byte mqttStat = mqttClient->isConnected();
+			interrupts ();
+			if(!mqttStat){
+				Serial.print(F("\nMQTT dice non sono connesso."));
 				mqttConnected=false;
 			}	
 			else{
-				Serial.print(F("MQTT: isConnected() dice sono connesso. Local IP: "));
+				Serial.print(F("\nMQTT  dice sono connesso. Local IP: "));
 				Serial.print(WiFi.localIP());
 				mqttConnected=true;
 			}
@@ -823,12 +819,10 @@ inline void loop2() {
 		}
 		
 		if((wifiConn == true)&&(!mqttConnected) && WiFi.status()==WL_CONNECTED && WiFi.getMode()==WIFI_STA) {
-			DEBUG_PRINT(F("MQTT client loop: provo a riconnettermi..."));
+			DEBUG_PRINT(F("\nMQTT client loop: provo a riconnettermi..."));
 			if(mqttClient==NULL){
 				DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
 				mqttReconnect();
-				yield();
-				DEBUG_PRINTLN(F("mqttReconnect() dice sono connesso."));
 				//mqttConnected=true;
 			}
 			else
@@ -840,6 +834,7 @@ inline void loop2() {
 					noInterrupts ();
 					mqttClient->connect();
 					interrupts ();
+					delay(100);
 				}
 				else
 				{
@@ -848,6 +843,7 @@ inline void loop2() {
 					noInterrupts ();
 					mqttClient->disconnect();
 					interrupts ();
+					delay(100);
 				}
 				//non si può fare senza disconnect perchè dopo pochi loop crasha
 				//mqttClient->setUserPwd((params[MQTTUSR]).c_str(), (params[MQTTPSW]).c_str());
@@ -856,14 +852,16 @@ inline void loop2() {
 		//is else if per gestione priorità, l'ordine è importante! vanno fatti in momenti successivi
 		if(params[WIFICHANGED]=="true"){
 			params[WIFICHANGED]="false";
-			//setup_AP();
 			wifindx=0;
-			WiFi.persistent(true);
-			WiFi.mode(WIFI_STA);	
+			boot = true;
+			WiFi.softAPdisconnect(true);
+			WiFi.persistent(false);
+			WiFi.softAPdisconnect(true);
+			ESP.eraseConfig();
+			setup_AP(true);
 			wifiState = WIFISTA;
 			setup_wifi(wifindx);
-			WiFi.persistent(false);
-			//httpSetup();
+			WiFi.mode(WIFI_AP_STA);
 		}
 	
 		if(params[MQTTADDRMODFIED]=="true"){
@@ -940,7 +938,7 @@ inline void loop2() {
 				//yield();
 				Serial.print(F(" - swcount roll: "));
 				Serial.println(swcount);
-					
+				
 				if((swcount <= 0)){
 					swcount = TCOUNT;
 					Serial.println(F("Connection timed out"));
@@ -1049,21 +1047,20 @@ void onElapse(byte n){
 						// disconnect sta, start ap
 						WiFi.persistent(false);      
 						WiFi.disconnect();  //cancella la connessione corrente memorizzata
-						//ESP.eraseConfig();
 						WiFi.mode(WIFI_AP);
+						WiFi.persistent(true);
 						DEBUG_PRINTLN(F("SET AP"));
 						wifiConn = false;
-						//WiFi.persistent(true);
 					}else{
 						WiFi.mode(WIFI_AP_STA);
 						DEBUG_PRINTLN(F("SET AP STA"));
 					}
-					//ETS_UART_INTR_ENABLE();
-					delay(200);
+					setup_AP(true);
+					delay(500);
 					yield();
 					//WiFi.persistent(true);
 					//setup_AP(true);
-					WiFi.printDiag(Serial);
+					//WiFi.printDiag(Serial);
 					//wifi_station_dhcpc_stop();
 					//interrupts ();
 					//WiFi.enableAP(true); //is STA + AP
@@ -1072,7 +1069,7 @@ void onElapse(byte n){
 					//MDNS.notifyAPChange()();
 					//wifi_softap_dhcps_start();
 					//delay(100);
-					WiFi.printDiag(Serial);
+					//WiFi.printDiag(Serial);
 					//MDNS.update();
 					setGroupState(0,n%2);
 				}else if(testCntEvnt(4,CNTSERV1)){
@@ -1116,6 +1113,8 @@ void onElapse(byte n){
 	}else if(n == APOFFTIMER){
 		if(WiFi.softAPgetStationNum() == 0){
 			DEBUG_PRINTLN(F("WIFI: reconnecting to AP"));
+			byte stat = WiFi.status();
+			wifiConn = (stat == WL_CONNECTED);	
 			WiFi.mode(WIFI_STA);	
 			wifiState = WIFISTA;
 			setup_wifi(wifindx);
@@ -1200,15 +1199,16 @@ void rebootSystem(){
 }
 //----------------------------------------------------FINE TIMER----------------------------------------------------------------------
 void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
-	DEBUG_PRINTLN(F("AP mode: Station connected: "));
+	DEBUG_PRINT(F("\nAP mode: Station connected: "));
 	DEBUG_PRINTLN(macToString(evt.mac));
 	if(WiFi.softAPgetStationNum() == 1){
+		boot = true;
 		wifiState = WIFIAP;
 	}
 }
 
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
-	DEBUG_PRINTLN(F("Station disconnected: "));
+	DEBUG_PRINTLN(F("\nStation disconnected: "));
 	DEBUG_PRINTLN(macToString(evt.mac));
 	if(WiFi.softAPgetStationNum() == 0){
 		resetTimer(APOFFTIMER);
