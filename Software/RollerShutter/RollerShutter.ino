@@ -153,6 +153,7 @@ void setup_AP(bool apmode) {
 	  Serial.print(F("Setting soft-AP configuration ... "));
 	  Serial.println(WiFi.softAPConfig(myip, mygateway, mysubnet) ? F("Ready") : F("Failed!"));
 	  //noInterrupts ();
+	  delay(100);
 	  WiFi.softAP((params[APPSSID]).c_str());
 	  //WiFi.softAP("cacca9");
 	  //interrupts();
@@ -259,6 +260,10 @@ void mqttReconnect() {
 	// Loop until we're mqttReconnected
 	DEBUG_PRINTLN(F("Distruggo l'oggetto MQTT client."));
 	if(mqttClient!=NULL){
+		noInterrupts ();
+		mqttClient->disconnect();
+		interrupts ();
+		delay(50);
 		delete mqttClient;
 	}
 	DEBUG_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
@@ -834,7 +839,7 @@ inline void loop2() {
 					noInterrupts ();
 					mqttClient->connect();
 					interrupts ();
-					delay(100);
+					delay(50);
 				}
 				else
 				{
@@ -843,7 +848,7 @@ inline void loop2() {
 					noInterrupts ();
 					mqttClient->disconnect();
 					interrupts ();
-					delay(100);
+					delay(50);
 				}
 				//non si può fare senza disconnect perchè dopo pochi loop crasha
 				//mqttClient->setUserPwd((params[MQTTUSR]).c_str(), (params[MQTTPSW]).c_str());
@@ -942,9 +947,9 @@ inline void loop2() {
 				if((swcount <= 0)){
 					swcount = TCOUNT;
 					Serial.println(F("Connection timed out"));
-					WiFi.persistent(true);
-					WiFi.disconnect(true);
-					WiFi.persistent(true);
+					//WiFi.persistent(true);
+					//WiFi.disconnect(true);
+					WiFi.persistent(false);
 					WiFi.disconnect(true);
 					WiFi.mode(WIFI_OFF);    
 					Serial.println(F("Do new connection"));
@@ -1118,6 +1123,7 @@ void onElapse(byte n){
 			WiFi.mode(WIFI_STA);	
 			wifiState = WIFISTA;
 			setup_wifi(wifindx);
+			//mqttReconnect();
 			//wifi_station_dhcpc_start();
 			DEBUG_PRINTLN(F("-----------------------------"));
 			DEBUG_PRINTLN(F("Nussun client si è ancora connesso, disatttivato AP mode"));
@@ -1218,6 +1224,7 @@ void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
 		WiFi.mode(WIFI_STA);	
 		wifiState = WIFISTA;
 		setup_wifi(wifindx);
+		//mqttReconnect();
 	}
 }
 
