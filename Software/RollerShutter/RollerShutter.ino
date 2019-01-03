@@ -6,6 +6,7 @@
 
 //stats variables
 #if (AUTOCAL)
+byte stat;
 double ACSVolt;
 unsigned int mVperAmp = 100;   // 185 for 5A, 100 for 20A and 66 for 30A Module
 double ACSVoltage = 0;
@@ -262,10 +263,10 @@ void mqttReconnect() {
 	if(mqttClient!=NULL){
 		noInterrupts ();
 		mqttClient->disconnect();
-		interrupts ();
-		delay(50);
 		delete mqttClient;
+		interrupts ();
 	}
+	delay(50);
 	DEBUG_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
 	noInterrupts ();
 	mqttClient = new MQTT((params[MQTTID]).c_str(),(params[MQTTADDR]).c_str(), 1883);
@@ -277,6 +278,7 @@ void mqttReconnect() {
 	DEBUG_PRINT(params[MQTTID]);
 	DEBUG_PRINTLN(F(" ..."));
 	//mqttClient->setClientId(params[MQTTID]);
+	delay(50);
 	if(mqttClient==NULL){
 		DEBUG_PRINTLN(F("ERROR on mqttReconnect! MQTT client is not allocated."));
 	}
@@ -299,6 +301,7 @@ void mqttReconnect() {
 		
 		mqttClient->setUserPwd((params[MQTTUSR]).c_str(), (params[MQTTPSW]).c_str());
 		mqttClient->connect();
+		delay(50);
 		mqttClient->subscribe(params[MQTTINTOPIC]);
 		mqttClient->publish(params[MQTTOUTTOPIC], params[MQTTID]);
 	}
@@ -563,7 +566,7 @@ void setup() {
   Serial.print("\nStation connected, IP: ");
   Serial.println(WiFi.localIP());
   
-  swcount = TCOUNT;
+  swcount = 0;
   DEBUG_PRINTLN(F(" OK"));
   DEBUG_PRINTLN(F("Last reset reason: "));
   DEBUG_PRINTLN(ESP.getResetReason());
@@ -802,12 +805,49 @@ inline void loop2() {
 		
 		Serial.print(F("\nMean sensor: "));
 		Serial.print(m);
-		Serial.print(F(" - "));
+		Serial.print(F(" - "));stat = WiFi.status();
+		wifiConn = (stat == WL_CONNECTED);	
+		//DEBUG_PRINTLN(wl_status_to_string(wfs));
+		if(WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
+			if(wifiConn == false){
+				//lampeggia led di connessione
+				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
+				//yield();
+				Serial.print(F("\nSwcount roll: "));
+				Serial.println(swcount);
+				
+				if((swcount == 0)){
+					Serial.println(F("Connection timed out"));
+					WiFi.persistent(false);
+					WiFi.disconnect(true);
+					WiFi.mode(WIFI_OFF);    
+					Serial.println(F("Do new connection"));
+					WiFi.setAutoReconnect(true);	
+					WiFi.mode(WIFI_STA);
+					WiFi.setAutoReconnect(true);
+					WiFi.config(0U, 0U, 0U);
+					setup_wifi(wifindx);	//tetativo di connessione
+					wifi_station_dhcpc_start();
+					//WiFi.waitForConnectResult();	
+					stat = WiFi.status();
+					wifiConn = (stat == WL_CONNECTED);
+					wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
+					if(wifiConn)
+						mqttReconnect();
+				}
+				swcount = (swcount + 1) % TCOUNT;
+			}else{
+				digitalWrite(OUTSLED, LOW);
+				params[LOCALIP] = WiFi.localIP().toString();
+			}
+		}
+		
+		
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
         if(wifiConn && mqttClient!=NULL){
-			noInterrupts ();
+			//noInterrupts ();
 			byte mqttStat = mqttClient->isConnected();
-			interrupts ();
+			//interrupts ();
 			if(!mqttStat){
 				Serial.print(F("\nMQTT dice non sono connesso."));
 				mqttConnected=false;
@@ -858,15 +898,11 @@ inline void loop2() {
 		if(params[WIFICHANGED]=="true"){
 			params[WIFICHANGED]="false";
 			wifindx=0;
-			boot = true;
-			WiFi.softAPdisconnect(true);
-			WiFi.persistent(false);
-			WiFi.softAPdisconnect(true);
-			ESP.eraseConfig();
-			setup_AP(true);
+			byte stat = WiFi.status();
+			wifiConn = (stat == WL_CONNECTED);	
+			WiFi.mode(WIFI_STA);	
 			wifiState = WIFISTA;
 			setup_wifi(wifindx);
-			WiFi.mode(WIFI_AP_STA);
 		}
 	
 		if(params[MQTTADDRMODFIED]=="true"){
@@ -930,48 +966,6 @@ inline void loop2() {
 				mqttClient->publish(params[MQTTOUTTOPIC], params[MQTTID]);
 			}
 		}
-		
-		byte stat = WiFi.status();
-		wifiConn = (stat == WL_CONNECTED);	
-		//DEBUG_PRINTLN(wl_status_to_string(wfs));
-		if(WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
-			if(wifiConn == false){
-				Serial.print(F("\nblink: "));
-				//lampeggia led di connessione
-				//yield();
-				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
-				//yield();
-				Serial.print(F(" - swcount roll: "));
-				Serial.println(swcount);
-				
-				if((swcount <= 0)){
-					swcount = TCOUNT;
-					Serial.println(F("Connection timed out"));
-					//WiFi.persistent(true);
-					//WiFi.disconnect(true);
-					WiFi.persistent(false);
-					WiFi.disconnect(true);
-					WiFi.mode(WIFI_OFF);    
-					Serial.println(F("Do new connection"));
-					WiFi.setAutoReconnect(true);	
-					WiFi.mode(WIFI_STA);
-					WiFi.setAutoReconnect(true);
-					WiFi.config(0U, 0U, 0U);
-					setup_wifi(wifindx);	//tetativo di connessione
-					wifi_station_dhcpc_start();
-					//WiFi.config(0U, 0U, 0U);
-					//WiFi.persistent(true);
-					WiFi.waitForConnectResult();	
-					stat = WiFi.status();
-					wifiConn = (stat == WL_CONNECTED);		
-					wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
-				}
-				swcount--;
-			}else{
-				digitalWrite(OUTSLED, LOW);
-				params[LOCALIP] = WiFi.localIP().toString();
-			}
-		}
 	}
 	
 	//ogni 50ms
@@ -989,9 +983,16 @@ inline void loop2() {
 			//DEBUG_PRINTLN("Fine callback MQTT.");
 			blocked[0]=blocked[1]=false;
 		}
+		//Finestra di riconnessione
+		if((wifiConn == false)){
+			//DEBUG_PRINTLN(F("to ESP stack... "));
+			delay(30);//give 30ms to the ESP stack for wifi connect
+			stat = WiFi.status();
+			wifiConn = (stat == WL_CONNECTED);
+		}
 	}
-	//FINE Time base
-  }
+	
+  }//FINE Time base
   
   telnet.handle();
   yield();	// Give a time for ESP8266
