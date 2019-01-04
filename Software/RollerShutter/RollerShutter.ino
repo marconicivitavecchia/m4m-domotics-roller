@@ -887,13 +887,13 @@ inline void loop2() {
 
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
         if(wifiConn && mqttClient!=NULL){
-			noInterrupts ();
+			//noInterrupts ();
 			byte mqttStat = mqttClient->isConnected();
-			interrupts ();
-			delay(50);
-			noInterrupts ();
-			mqttStat = mqttClient->isConnected();
-			interrupts ();
+			//interrupts ();
+			//delay(50);
+			//noInterrupts ();
+			//mqttStat = mqttClient->isConnected();
+			//interrupts ();
 			Serial.print(F("\nMQTT check : "));
 			Serial.println(mqttStat);
 			if(!mqttStat){
