@@ -16,6 +16,8 @@ double VMCU = 0;
 double AmpsRMS = 0;
 int zero, l=0, h=1024;
 unsigned long smplcnt; //sampleCount;
+unsigned short zeroCnt = 0;
+unsigned short mqttcnt = 0;
 unsigned short isrundelay[2] = {RUNDELAY, RUNDELAY};
 //double ex=0;
 unsigned long n=1;
@@ -29,8 +31,10 @@ double ex = 0;
 double calAvg[2] = {0,0};
 double weight[2] = {0,0};
 short chk[2]={0,0};
+//unsigned x20ms, x60ms, x1s;
 #endif
 bool isrun[2]={false,false};
+bool dosmpl = false;
 byte cont=0;
 //end of stats variables
 unsigned long prec=0;
@@ -258,12 +262,22 @@ void startWebSocket() { // Start a WebSocket server
 }
 
 void mqttReconnect() {
-	// Loop until we're mqttReconnected
-	DEBUG_PRINTLN(F("Distruggo l'oggetto MQTT client."));
+	// Loop until we're mqttReconnecte
 	if(mqttClient!=NULL){
+		DEBUG_PRINTLN(F("Distruggo l'oggetto MQTT client."));
+		DEBUG_PRINTLN(F("Mi disconetto dal server MQTT"));
+		if(mqttClient->isConnected()){
+			noInterrupts ();
+			mqttClient->disconnect();
+			interrupts ();
+		}
+		delay(50);
+		DEBUG_PRINTLN(F("Cancello la vechia istanza dell'oggetto MQTT"));
 		noInterrupts ();
-		mqttClient->disconnect();
-		delete mqttClient;
+		mqttClient->~MQTT();
+		//free((mqttClient));
+		//delete mqttClient;
+		mqttClient = NULL;
 		interrupts ();
 	}
 	delay(50);
@@ -287,7 +301,7 @@ void mqttReconnect() {
 		mqttClient->onData(mqttCallback);
 		mqttClient->onConnected([]() {
 		DEBUG_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
-			
+			mqttcnt = 0;
 			//Altrimenti dice che è connesso ma non comunica
 			mqttClient->subscribe(params[MQTTINTOPIC]);
 			mqttClient->publish(params[MQTTOUTTOPIC], params[MQTTID]);
@@ -298,9 +312,11 @@ void mqttReconnect() {
 		DEBUG_PRINTLN(F("MQTT: onDisconnected([]() dice mi sono disconnesso."));
 			//mqttConnected=false;
 		});
-		
+		DEBUG_PRINTLN(F("MQTT: Eseguo la prima connect."));
 		mqttClient->setUserPwd((params[MQTTUSR]).c_str(), (params[MQTTPSW]).c_str());
+		noInterrupts ();
 		mqttClient->connect();
+		interrupts ();
 		delay(50);
 		mqttClient->subscribe(params[MQTTINTOPIC]);
 		mqttClient->publish(params[MQTTOUTTOPIC], params[MQTTID]);
@@ -405,6 +421,9 @@ void initIiming(bool first){
 }
 
 void setup() {
+  dosmpl = false;
+  zeroCnt = 0;
+  mqttcnt = 0;
   //inizializza la seriale
   Serial.begin(115200);
   //importante per il debug del WIFI!
@@ -551,9 +570,9 @@ void setup() {
 #if (DEBUG)  
   testFlash();
 #endif
-
+#if (AUTOCAL)  
   zeroDetect();
-
+#endif
   cont=0;
   while (WiFi.status() != WL_CONNECTED && cont<30000/500) {
      delay(500);
@@ -571,7 +590,8 @@ void setup() {
   DEBUG_PRINTLN(F("Last reset reason: "));
   DEBUG_PRINTLN(ESP.getResetReason());
   
-  mqttReconnect();
+  if(WiFi.status() == WL_CONNECTED)
+		mqttReconnect();
 }
 
 void httpSetup(){
@@ -610,11 +630,11 @@ void httpSetup(){
 }
 
 void zeroDetect(){
-	for(int i = 0, m = 0; i < 1000; i++) {
+	for(int i = 0, m = 0; i < 2000; i++) {
 		m = (float) m + analogRead(A0);
 		delay(2);
 	}
-	m /= 1000;
+	m /= 2000;
 	smplcnt = 0;
 	minx = 1024;
 	maxx = 0;
@@ -650,154 +670,166 @@ inline void loop2() {
 	
 	//current = millis();
 #if (AUTOCAL) 
-	x = (int) analogRead(A0) - m;	
-
-	(x > maxx) && (maxx = x);
-	(x < minx) && (minx = x);
-	/*if(x > maxx) 					
-	{    							
-		maxx = x; 					
+	if(dosmpl){
+		x = (int) analogRead(A0) - m;	
+		(x > maxx) && (maxx = x);
+		(x < minx) && (minx = x);
+		/*if(x > maxx) 					
+		{    							
+			maxx = x; 					
+		}
+		if(x < minx) 					
+		{       						
+			minx = x;					
+		}*/
+		//sampleCount++;
 	}
-	if(x < minx) 					
-	{       						
-		minx = x;					
-	}*/
-	//sampleCount++;
-
+	
+	//ogni 20ms
 	if(!(step % 10)){
-		dd = maxx - minx;
-		//EMA calculation
-		ex = dd*EMA + (1.0 - EMA)*ex;
-		//ACSVolt = (double) ex/2.0;
-		//peak = (double) ex/2.0;
-		peak = ex;
-		//reset of peak sample value
+		//zero detection scheduler
+		zeroCnt = (zeroCnt + 1) % 50;
 		
-		if(isrun[0]){
-			DEBUG_PRINT(0);
-			if(isrundelay[0] == 0){
-				DEBUG_PRINT(F("\n("));
+		if((isrun[0] || isrun[1])){
+			dd = maxx - minx;
+			//EMA calculation
+			ex = dd*EMA + (1.0 - EMA)*ex;
+			//ACSVolt = (double) ex/2.0;
+			//peak = (double) ex/2.0;
+			peak = ex;
+			//reset of peak sample value
+			
+			if(isrun[0] && dosmpl){
 				DEBUG_PRINT(0);
-				DEBUG_PRINT(F(") minx sensor: "));
-				DEBUG_PRINT(minx);
-				DEBUG_PRINT(F(" - maxx sensor: "));
-				DEBUG_PRINT(maxx);
-				DEBUG_PRINT(F(" - Mean sensor: "));
-				DEBUG_PRINT(m);
-				DEBUG_PRINT(F(" - Peak: "));
-				DEBUG_PRINT(peak);
-				//DEBUG_PRINT(F("\nSample count: "));
-				//DEBUG_PRINTLN(sampleCount);
-				//sampleCount = 0;
-				chk[0] = checkRange((double) peak*(1 - weight[1]*isMoving(1)),0);
-				//DEBUG_PRINT(F("Ampere: "));
-				//float amp = getAmpRMS();
-				//DEBUG_PRINTLN(amp);
-				if(chk[0] != 0){
+				if(isrundelay[0] == 0){
 					DEBUG_PRINT(F("\n("));
 					DEBUG_PRINT(0);
-					if(chk[0] == -1){
-						blocked[0] = secondPress(0);
-						scriviOutDaStato();
-						DEBUG_PRINTLN(F(") Stop: sottosoglia"));
-					}else if(chk[0] == 2){
-						blocked[0] = secondPress(0);
-						scriviOutDaStato();
-						blocked[0] = 1;
-						DEBUG_PRINTLN(F(") Stop: soprasoglia"));
-					}else if(chk[0] == 1){
-						startEndOfRunTimer(0);
-						DEBUG_PRINTLN(F(") Start: fronte di salita"));
+					DEBUG_PRINT(F(") minx sensor: "));
+					DEBUG_PRINT(minx);
+					DEBUG_PRINT(F(" - maxx sensor: "));
+					DEBUG_PRINT(maxx);
+					DEBUG_PRINT(F(" - Mean sensor: "));
+					DEBUG_PRINT(m);
+					DEBUG_PRINT(F(" - Peak: "));
+					DEBUG_PRINT(peak);
+					//DEBUG_PRINT(F("\nSample count: "));
+					//DEBUG_PRINTLN(sampleCount);
+					//sampleCount = 0;
+					chk[0] = checkRange((double) peak*(1 - weight[1]*isMoving(1)),0);
+					//DEBUG_PRINT(F("Ampere: "));
+					//float amp = getAmpRMS();
+					//DEBUG_PRINTLN(amp);
+					if(chk[0] != 0){
+						DEBUG_PRINT(F("\n("));
+						DEBUG_PRINT(0);
+						if(chk[0] == -1){
+							blocked[0] = secondPress(0);
+							scriviOutDaStato();
+							DEBUG_PRINTLN(F(") Stop: sottosoglia"));
+						}else if(chk[0] == 2){
+							blocked[0] = secondPress(0);
+							scriviOutDaStato();
+							blocked[0] = 1;
+							DEBUG_PRINTLN(F(") Stop: soprasoglia"));
+						}else if(chk[0] == 1){
+							startEndOfRunTimer(0);
+							DEBUG_PRINTLN(F(") Start: fronte di salita"));
+						}
+						readStatesAndPub();
+						yield();
 					}
-					readStatesAndPub();
-					yield();
+				}else{
+					DEBUG_PRINT(F("\n("));
+					DEBUG_PRINT(0);
+					DEBUG_PRINT(F(") aspetto: "));
+					DEBUG_PRINT(isrundelay[0]);
+					DEBUG_PRINT(F(" - minx sensor: "));
+					DEBUG_PRINT(minx);
+					DEBUG_PRINT(F(" - maxx sensor: "));
+					DEBUG_PRINT(maxx);
+					DEBUG_PRINT(F(" - Peak: "));
+					DEBUG_PRINT(peak);
+					isrundelay[0]--;
+					ex = dd;
+					DEBUG_PRINT(F(" - dd: "));
+					DEBUG_PRINT(dd);
 				}
 			}else{
-				DEBUG_PRINT(F("\n("));
-				DEBUG_PRINT(0);
-				DEBUG_PRINT(F(") aspetto: "));
-				DEBUG_PRINT(isrundelay[0]);
-				DEBUG_PRINT(F(" - minx sensor: "));
-				DEBUG_PRINT(minx);
-				DEBUG_PRINT(F(" - maxx sensor: "));
-				DEBUG_PRINT(maxx);
-				DEBUG_PRINT(F(" - Peak: "));
-				DEBUG_PRINT(peak);
-				isrundelay[0]--;
-				ex = dd;
-				DEBUG_PRINT(F(" - dd: "));
-				DEBUG_PRINT(dd);
+				isrundelay[0] = RUNDELAY;
 			}
-		}else{
-			isrundelay[0] = RUNDELAY;
-		}
-		
-		if(isrun[1]){
-			if(isrundelay[1] == 0){
-				DEBUG_PRINT(F("\n("));
-				DEBUG_PRINT(1);
-				DEBUG_PRINT(F(") minx sensor: "));
-				DEBUG_PRINT(minx);
-				DEBUG_PRINT(F(" - maxx sensor: "));
-				DEBUG_PRINT(maxx);
-				DEBUG_PRINT(F(" - Mean sensor: "));
-				DEBUG_PRINT(m);
-				DEBUG_PRINT(F(" - Peak: "));
-				DEBUG_PRINT(peak);
-				//DEBUG_PRINT(F("\nSample count: "));
-				//DEBUG_PRINTLN(sampleCount);
-				//sampleCount = 0;
-				chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
-				if(chk[1] != 0){
+			
+			if(isrun[1] && dosmpl){
+				if(isrundelay[1] == 0){
 					DEBUG_PRINT(F("\n("));
 					DEBUG_PRINT(1);
-					if(chk[1] == -1){
-						blocked[1] = secondPress(1);
-						scriviOutDaStato();
-					}else if(chk[1] == 2){
-						blocked[1] = secondPress(1);
-						scriviOutDaStato();
-						blocked[1] = 1;
-					}else if(chk[1] == 1){
-						startEndOfRunTimer(1);
+					DEBUG_PRINT(F(") minx sensor: "));
+					DEBUG_PRINT(minx);
+					DEBUG_PRINT(F(" - maxx sensor: "));
+					DEBUG_PRINT(maxx);
+					DEBUG_PRINT(F(" - Mean sensor: "));
+					DEBUG_PRINT(m);
+					DEBUG_PRINT(F(" - Peak: "));
+					DEBUG_PRINT(peak);
+					//DEBUG_PRINT(F("\nSample count: "));
+					//DEBUG_PRINTLN(sampleCount);
+					//sampleCount = 0;
+					chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
+					if(chk[1] != 0){
+						DEBUG_PRINT(F("\n("));
+						DEBUG_PRINT(1);
+						if(chk[1] == -1){
+							blocked[1] = secondPress(1);
+							scriviOutDaStato();
+						}else if(chk[1] == 2){
+							blocked[1] = secondPress(1);
+							scriviOutDaStato();
+							blocked[1] = 1;
+						}else if(chk[1] == 1){
+							startEndOfRunTimer(1);
+						}
+						readStatesAndPub();
+						yield();
 					}
-					readStatesAndPub();
-					yield();
+				}else{
+					DEBUG_PRINT(F("\n("));
+					DEBUG_PRINT(1);
+					DEBUG_PRINT(F(") aspetto: "));
+					DEBUG_PRINT(isrundelay[1]);
+					DEBUG_PRINT(F(" - minx sensor: "));
+					DEBUG_PRINT(minx);
+					DEBUG_PRINT(F(" - maxx sensor: "));
+					DEBUG_PRINT(maxx);
+					DEBUG_PRINT(F(" - Peak: "));
+					DEBUG_PRINT(peak);
+					isrundelay[1]--;
+					ex = dd;
+					DEBUG_PRINT(F(" - dd: "));
+					DEBUG_PRINT(dd);
 				}
 			}else{
-				DEBUG_PRINT(F("\n("));
-				DEBUG_PRINT(1);
-				DEBUG_PRINT(F(") aspetto: "));
-				DEBUG_PRINT(isrundelay[1]);
-				DEBUG_PRINT(F(" - minx sensor: "));
-				DEBUG_PRINT(minx);
-				DEBUG_PRINT(F(" - maxx sensor: "));
-				DEBUG_PRINT(maxx);
-				DEBUG_PRINT(F(" - Peak: "));
-				DEBUG_PRINT(peak);
-				isrundelay[1]--;
-				ex = dd;
-				DEBUG_PRINT(F(" - dd: "));
-				DEBUG_PRINT(dd);
+				isrundelay[1] = RUNDELAY;
 			}
-		}else{
-			isrundelay[1] = RUNDELAY;
-		}
-		
-		if(!(isrun[0] || isrun[1])){
-			//all motors are stopped
-			//running mean calculation
-			smplcnt++;
-			smplcnt && (m += (float) x / smplcnt);  //protected against overflow by a logic short circuit
-		}else{
+			//AC peak measure init
+			minx = 1024;
+			maxx = 0;
+			dosmpl = true;
 			DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
-		}
-		//AC peak measure init
-		minx = 1024;
-		maxx = 0;
-		yield();
+		}else{
+			dosmpl = false;
+			//all motors are stopped
+			if(zeroCnt < 3){
+				//zero detection activation (2 values every second)
+				x = (int) analogRead(A0) - m;
+				//running mean calculation
+				smplcnt++;
+				smplcnt && (m += (float) x / smplcnt);  //protected against overflow by a logic short circuit
+				Serial.print(F("\nMean sensor: "));
+				Serial.print(m);
+			}
+		}	
 	}
 #endif
+
 	//1 sec
 	if(!(step % 500)){
 		aggiornaTimer(RESETTIMER);
@@ -805,11 +837,12 @@ inline void loop2() {
 		
 		Serial.print(F("\nMean sensor: "));
 		Serial.print(m);
-		Serial.print(F(" - "));stat = WiFi.status();
+		Serial.print(F(" - "));
+		stat = WiFi.status();
 		wifiConn = (stat == WL_CONNECTED);	
 		//DEBUG_PRINTLN(wl_status_to_string(wfs));
 		if(WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
-			if(wifiConn == false){
+			if(wifiConn == false && !(isrun[0] || isrun[1])){
 				//lampeggia led di connessione
 				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
 				//yield();
@@ -827,13 +860,13 @@ inline void loop2() {
 					WiFi.setAutoReconnect(true);
 					WiFi.config(0U, 0U, 0U);
 					setup_wifi(wifindx);	//tetativo di connessione
-					wifi_station_dhcpc_start();
+					//wifi_station_dhcpc_start();
 					//WiFi.waitForConnectResult();	
 					stat = WiFi.status();
 					wifiConn = (stat == WL_CONNECTED);
 					wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
-					if(wifiConn)
-						mqttReconnect();
+					//if(wifiConn)
+					//	mqttReconnect();
 				}
 				swcount = (swcount + 1) % TCOUNT;
 			}else{
@@ -841,7 +874,6 @@ inline void loop2() {
 				params[LOCALIP] = WiFi.localIP().toString();
 			}
 		}
-		
 		
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
         if(wifiConn && mqttClient!=NULL){
@@ -868,27 +900,38 @@ inline void loop2() {
 			if(mqttClient==NULL){
 				DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
 				mqttReconnect();
-				//mqttConnected=true;
+				mqttcnt = 0;
+			}else if(mqttcnt == 8){
+				DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
+				//mqttReconnect();
+				mqttcnt = 0;
+				Serial.println(F("Doing WiFi disconnection"));
+				WiFi.persistent(false);
+				WiFi.disconnect(false);
+				WiFi.mode(WIFI_OFF);    
+				WiFi.mode(WIFI_STA);
+				wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
 			}
 			else
 			{
+				mqttcnt++;
 				//non si può fare perchè dopo pochi loop crasha
 				if(dscnct){
 					dscnct=false;
 					DEBUG_PRINTLN(F("eseguo la MQTT connect()..."));
-					noInterrupts ();
+					//noInterrupts ();
 					mqttClient->connect();
-					interrupts ();
-					delay(50);
+					//interrupts ();
+					//delay(100);
 				}
 				else
 				{
 					dscnct=true;
 					DEBUG_PRINTLN(F("eseguo la MQTT disconnect()..."));
-					noInterrupts ();
+					//noInterrupts ();
 					mqttClient->disconnect();
-					interrupts ();
-					delay(50);
+					//interrupts ();
+					//delay(100);
 				}
 				//non si può fare senza disconnect perchè dopo pochi loop crasha
 				//mqttClient->setUserPwd((params[MQTTUSR]).c_str(), (params[MQTTPSW]).c_str());
@@ -984,14 +1027,12 @@ inline void loop2() {
 			blocked[0]=blocked[1]=false;
 		}
 		//Finestra di riconnessione
-		if((wifiConn == false)){
+		if((wifiConn == false && !(isrun[0] || isrun[1]))){
 			//DEBUG_PRINTLN(F("to ESP stack... "));
-			delay(30);//give 30ms to the ESP stack for wifi connect
-			stat = WiFi.status();
-			wifiConn = (stat == WL_CONNECTED);
+			//delay(30);//give 30ms to the ESP stack for wifi connect
+			wifiConn = (WiFi.status() == WL_CONNECTED);
 		}
 	}
-	
   }//FINE Time base
   
   telnet.handle();
