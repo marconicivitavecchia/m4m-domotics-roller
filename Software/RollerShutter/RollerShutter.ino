@@ -17,7 +17,8 @@ double AmpsRMS = 0;
 int zero, l=0, h=1024;
 unsigned long smplcnt; //sampleCount;
 unsigned short zeroCnt = 0;
-unsigned short mqttcnt = 0;
+unsigned long mqttcnt = 0;
+unsigned short mqttofst = 0;
 unsigned short isrundelay[2] = {RUNDELAY, RUNDELAY};
 //double ex=0;
 unsigned long n=1;
@@ -272,15 +273,20 @@ void mqttReconnect() {
 			interrupts ();
 		}
 		delay(50);
-		DEBUG_PRINTLN(F("Cancello la vechia istanza dell'oggetto MQTT"));
-		noInterrupts ();
+		DEBUG_PRINTLN(F("Chiamo il distruttore dell'oggetto MQTT"));
+		//noInterrupts ();
+		ESP.wdtFeed();
 		mqttClient->~MQTT();
+		delay(100);
 		//free((mqttClient));
+		//DEBUG_PRINTLN(F("Cancello la vechia istanza dell'oggetto MQTT"));
 		//delete mqttClient;
+		DEBUG_PRINTLN(F("Annullo istanza dell'oggetto MQTT"));
+		ESP.wdtFeed();
 		mqttClient = NULL;
-		interrupts ();
+		//interrupts ();
+		delay(50);
 	}
-	delay(50);
 	DEBUG_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
 	noInterrupts ();
 	mqttClient = new MQTT((params[MQTTID]).c_str(),(params[MQTTADDR]).c_str(), 1883);
@@ -424,6 +430,7 @@ void setup() {
   dosmpl = false;
   zeroCnt = 0;
   mqttcnt = 0;
+  mqttofst = 2;
   //inizializza la seriale
   Serial.begin(115200);
   //importante per il debug del WIFI!
@@ -823,7 +830,7 @@ inline void loop2() {
 				//running mean calculation
 				smplcnt++;
 				smplcnt && (m += (float) x / smplcnt);  //protected against overflow by a logic short circuit
-				Serial.print(F("\nMean sensor: "));
+				Serial.print(F("\nZero mean sensor: "));
 				Serial.print(m);
 			}
 		}	
@@ -837,12 +844,15 @@ inline void loop2() {
 		
 		Serial.print(F("\nMean sensor: "));
 		Serial.print(m);
-		Serial.print(F(" - "));
+		Serial.print(F(" - Conn stat: "));
 		stat = WiFi.status();
+		Serial.print(stat);
 		wifiConn = (stat == WL_CONNECTED);	
+		Serial.print(F(" - Wifi mode: "));
+		Serial.println(WiFi.getMode());
 		//DEBUG_PRINTLN(wl_status_to_string(wfs));
-		if(WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
-			if(wifiConn == false && !(isrun[0] || isrun[1])){
+		if(WiFi.getMode() == WIFI_OFF || WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
+			if(!wifiConn && !(isrun[0] || isrun[1])){
 				//lampeggia led di connessione
 				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
 				//yield();
@@ -874,20 +884,28 @@ inline void loop2() {
 				params[LOCALIP] = WiFi.localIP().toString();
 			}
 		}
-		
+
 		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
         if(wifiConn && mqttClient!=NULL){
-			//noInterrupts ();
+			noInterrupts ();
 			byte mqttStat = mqttClient->isConnected();
-			//interrupts ();
+			interrupts ();
+			delay(50);
+			noInterrupts ();
+			mqttStat = mqttClient->isConnected();
+			interrupts ();
+			Serial.print(F("\nMQTT check : "));
+			Serial.println(mqttStat);
 			if(!mqttStat){
 				Serial.print(F("\nMQTT dice non sono connesso."));
 				mqttConnected=false;
 			}	
 			else{
 				Serial.print(F("\nMQTT  dice sono connesso. Local IP: "));
-				Serial.print(WiFi.localIP());
+				Serial.println(WiFi.localIP());
 				mqttConnected=true;
+				mqttcnt = 0;
+				mqttofst = 2;
 			}
 		}
 		else
@@ -896,42 +914,43 @@ inline void loop2() {
 		}
 		
 		if((wifiConn == true)&&(!mqttConnected) && WiFi.status()==WL_CONNECTED && WiFi.getMode()==WIFI_STA) {
-			DEBUG_PRINT(F("\nMQTT client loop: provo a riconnettermi..."));
+			mqttcnt++;
+			
 			if(mqttClient==NULL){
 				DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
 				mqttReconnect();
 				mqttcnt = 0;
-			}else if(mqttcnt == 8){
+				mqttofst = 2;
+			}else if(mqttcnt == 20){
 				DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
-				//mqttReconnect();
-				mqttcnt = 0;
-				Serial.println(F("Doing WiFi disconnection"));
-				WiFi.persistent(false);
-				WiFi.disconnect(false);
-				WiFi.mode(WIFI_OFF);    
-				WiFi.mode(WIFI_STA);
-				wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
-			}
-			else
-			{
-				mqttcnt++;
-				//non si può fare perchè dopo pochi loop crasha
-				if(dscnct){
-					dscnct=false;
-					DEBUG_PRINTLN(F("eseguo la MQTT connect()..."));
-					//noInterrupts ();
-					mqttClient->connect();
-					//interrupts ();
-					//delay(100);
-				}
-				else
-				{
-					dscnct=true;
-					DEBUG_PRINTLN(F("eseguo la MQTT disconnect()..."));
-					//noInterrupts ();
-					mqttClient->disconnect();
-					//interrupts ();
-					//delay(100);
+				mqttofst = 4;
+			}else if(mqttcnt == 40){
+				mqttofst = 8;
+			}else if(mqttcnt == 100){
+				mqttofst = 10;
+			}else{
+				if(!(mqttcnt % mqttofst)){
+					//non si può fare perchè dopo pochi loop crasha
+					if(dscnct){
+						dscnct=false;
+						DEBUG_PRINT(F("eseguo la MQTT connect()...Cnt: "));
+						//noInterrupts ();
+						mqttClient->connect();
+						//interrupts ();
+						delay(50);
+					}
+					else
+					{
+						dscnct=true;
+						DEBUG_PRINT(F("eseguo la MQTT disconnect()...Cnt: "));
+						//noInterrupts ();
+						mqttClient->disconnect();
+						//interrupts ();
+						delay(50);
+					}
+					DEBUG_PRINT(mqttcnt);
+					DEBUG_PRINT(F(" - Passo: "));
+					DEBUG_PRINTLN(mqttofst);
 				}
 				//non si può fare senza disconnect perchè dopo pochi loop crasha
 				//mqttClient->setUserPwd((params[MQTTUSR]).c_str(), (params[MQTTPSW]).c_str());
@@ -941,11 +960,12 @@ inline void loop2() {
 		if(params[WIFICHANGED]=="true"){
 			params[WIFICHANGED]="false";
 			wifindx=0;
-			byte stat = WiFi.status();
-			wifiConn = (stat == WL_CONNECTED);	
-			WiFi.mode(WIFI_STA);	
-			wifiState = WIFISTA;
-			setup_wifi(wifindx);
+			Serial.println(F("Doing WiFi disconnection"));
+			WiFi.persistent(false);
+			WiFi.disconnect(false);
+			WiFi.mode(WIFI_OFF);    
+			//WiFi.mode(WIFI_STA);
+			wifindx = 0;
 		}
 	
 		if(params[MQTTADDRMODFIED]=="true"){
@@ -1305,7 +1325,7 @@ void processCmdRemoteDebug() {
 		scan_wifi();
 	}else if(lastCmd == "getip"){
 		DEBUG_PRINT("\nLocal IP: ");
-		DEBUG_PRINT(WiFi.localIP());
+		DEBUG_PRINTLN(WiFi.localIP());
 	}else if(lastCmd == "testflash"){
 		testFlash();
 	}else if(lastCmd == "getmqttstat"){
@@ -1450,4 +1470,9 @@ WL_CONNECTED = 3,
 WL_CONNECT_FAILED = 4,
  WL_CONNECTION_LOST = 5, 
  WL_DISCONNECTED = 6 } wl_status_t;
+ 
+ typedef enum WiFiMode 
+{
+    WIFI_OFF = 0, WIFI_STA = 1, WIFI_AP = 2, WIFI_AP_STA = 3
+} WiFiMode_t;
 */
