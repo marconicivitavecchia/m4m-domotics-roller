@@ -31,6 +31,7 @@
 //variabili globali
 //toggle per un solo pulsante
 extern byte dprecval2[SWITCHND]; 
+extern float asyncBuf[GATEND]; 
 void initdfn(byte,  byte);
 
 //void initTogglen(byte,  byte);

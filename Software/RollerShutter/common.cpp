@@ -127,6 +127,18 @@ const char HTTP_FORM_MQTT[] PROGMEM =
 			"<div class=\"col-1-2\"><label for=\"btndown2\">MQTT message button 2 DOWN:</label>"
                  "<input type=\"text\" name=\"btndown2\" value=\"{J4}\">"
             "</div>"
+			"<div class=\"col-1-2\"><label for=\"btntemp\">Temperature request button:</label>"
+                 "<input type=\"text\" name=\"btntemp\" value=\"{J5}\">"
+            "</div>"
+			"<div class=\"col-1-2\"><label for=\"btnmeanpwr\">Mean power request button:</label>"
+                 "<input type=\"text\" name=\"btnmeanpwr\" value=\"{J6}\">"
+            "</div>"
+			"<div class=\"col-1-2\"><label for=\"btnpeakpwr\">Peak power request button:</label>"
+                 "<input type=\"text\" name=\"btnpeakpwr\" value=\"{J7}\">"
+            "</div>"
+			"<div class=\"col-1-2\"><label for=\"btnall\">All states request button:</label>"
+                 "<input type=\"text\" name=\"btnall\" value=\"{J8}\">"
+            "</div>"
 			"<input type=\"submit\" value=\"Save\" formaction=\"/modify\" formmethod=\"post\">"
 			"<input type=\"submit\" value=\"Back\">"
         "</form>"
@@ -725,10 +737,14 @@ void handleMQTTConf() {  // If a POST request is made to URI /login
 		page.replace(F("{MI}"), paramsp[MQTTID] );
 		page.replace(F("{MO}"), paramsp[MQTTOUTTOPIC] );
 		page.replace(F("{QI}"), paramsp[MQTTINTOPIC] );
-		page.replace(F("{J2}"), mqttJsonp[MQTTJSON2] );
-		page.replace(F("{J1}"), mqttJsonp[MQTTJSON1] );
-		page.replace(F("{J4}"), mqttJsonp[MQTTJSON4] );
-		page.replace(F("{J3}"), mqttJsonp[MQTTJSON3] );
+		page.replace(F("{J1}"), mqttJsonp[MQTTJSONUP1] );
+		page.replace(F("{J2}"), mqttJsonp[MQTTJSONDOWN1] );
+		page.replace(F("{J3}"), mqttJsonp[MQTTJSONUP2] );
+		page.replace(F("{J4}"), mqttJsonp[MQTTJSONDOWN2] );
+		page.replace(F("{J5}"), mqttJsonp[MQTTJSONTEMP] );
+		page.replace(F("{J6}"), mqttJsonp[MQTTJSONMEANPWR] );
+		page.replace(F("{J7}"), mqttJsonp[MQTTJSONPEAKPWR] );
+		page.replace(F("{J8}"), mqttJsonp[MQTTJSONALL] );
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -867,33 +883,62 @@ void handleModify(){
 	//Topic MQTT cambiato!
 	paramsp[TOPICCHANGED]="true";
   }
-  if(serverp.hasArg("btnup1") && paramsp[MQTTJSON1] != serverp.arg("btnup1") ){
-	mqttJsonp[1] = serverp.arg("btnup1");
-	EEPROMWriteStr(MQTTJSON1OFST,(mqttJsonp[MQTTJSON1]).c_str());
+  if(serverp.hasArg("btnup1") && paramsp[MQTTJSONUP1] != serverp.arg("btnup1") ){
+	mqttJsonp[MQTTJSONUP1] = serverp.arg("btnup1");
+	EEPROMWriteStr(MQTTJSONUP1OFST,(mqttJsonp[MQTTJSONUP1]).c_str());
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified mqttJsonp[1] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSON1]);
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP1]);
   }
-  if(serverp.hasArg("btndown1") && paramsp[MQTTJSON2] != serverp.arg("btndown1") ){
-	mqttJsonp[2] = serverp.arg("btndown1");
-	EEPROMWriteStr(MQTTJSON2OFST,(mqttJsonp[MQTTJSON2]).c_str());
+  if(serverp.hasArg("btndown1") && paramsp[MQTTJSONDOWN1] != serverp.arg("btndown1") ){
+	mqttJsonp[MQTTJSONDOWN1] = serverp.arg("btndown1");
+	EEPROMWriteStr(MQTTJSONDOWN1OFST,(mqttJsonp[MQTTJSONDOWN1]).c_str());
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified mqttJsonp[2] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSON2]);
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN1]);
   }
-  if(serverp.hasArg("btnup2") && paramsp[MQTTJSON3] != serverp.arg("btnup2") ){
-	mqttJsonp[3] = serverp.arg("btnup2");
-	EEPROMWriteStr(MQTTJSON3OFST,(mqttJsonp[MQTTJSON3]).c_str());
+  if(serverp.hasArg("btnup2") && paramsp[MQTTJSONUP2] != serverp.arg("btnup2") ){
+	mqttJsonp[MQTTJSONUP2] = serverp.arg("btnup2");
+	EEPROMWriteStr(MQTTJSONUP2OFST,(mqttJsonp[MQTTJSONUP2]).c_str());
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified mqttJsonp[3] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSON3]);
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP2]);
   }
-  if(serverp.hasArg("btndown2") && paramsp[MQTTJSON4] != serverp.arg("btndown2") ){ 
-	mqttJsonp[4] = serverp.arg("btndown2");
-	EEPROMWriteStr(MQTTJSON4OFST,(mqttJsonp[MQTTJSON4]).c_str());
+  if(serverp.hasArg("btndown2") && paramsp[MQTTJSONDOWN2] != serverp.arg("btndown2") ){ 
+	mqttJsonp[MQTTJSONDOWN2] = serverp.arg("btndown2");
+	EEPROMWriteStr(MQTTJSONDOWN2OFST,(mqttJsonp[MQTTJSONDOWN2]).c_str());
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified mqttJsonp[4] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSON4]);
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN2]);
+  }
+  if(serverp.hasArg("btntemp") && paramsp[MQTTJSONTEMP] != serverp.arg("btntemp") ){ 
+	mqttJsonp[MQTTJSONTEMP] = serverp.arg("btndown2");
+	EEPROMWriteStr(MQTTJSONTEMPOFST,(mqttJsonp[MQTTJSONTEMP]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified mqttJsonp btntemp "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONTEMP]);
+  }
+  if(serverp.hasArg("btnmeanpwr") && paramsp[MQTTJSONMEANPWR] != serverp.arg("btnmeanpwr") ){ 
+	mqttJsonp[MQTTJSONMEANPWR] = serverp.arg("btnmeanpwr");
+	EEPROMWriteStr(MQTTJSONMEANPWROFST,(mqttJsonp[MQTTJSONMEANPWR]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified mqttJsonp btnmeanpwr "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONMEANPWR]);
+  }
+  if(serverp.hasArg("btnpeakpwr") && paramsp[MQTTJSONPEAKPWR] != serverp.arg("btnpeakpwr") ){ 
+	mqttJsonp[MQTTJSONPEAKPWR] = serverp.arg("btnpeakpwr");
+	EEPROMWriteStr(MQTTJSONPEAKPWROFST,(mqttJsonp[MQTTJSONPEAKPWR]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified mqttJsonp btnpeakpwr "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONPEAKPWR]);
+  }
+  
+  if(serverp.hasArg("btnall") && paramsp[MQTTJSONALL] != serverp.arg("btnall") ){ 
+	mqttJsonp[MQTTJSONALL] = serverp.arg("btndown2");
+	EEPROMWriteStr(MQTTJSONALLOFST,(mqttJsonp[MQTTJSONALL]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified mqttJsonp btnall "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONALL]);
   }
   if(serverp.hasArg("wificlientssid1") && paramsp[CLNTSSID1] != serverp.arg("wificlientssid1") ){
 	paramsp[CLNTSSID1]=serverp.arg("wificlientssid1");
@@ -1109,25 +1154,45 @@ void loadConfig() {
 		DEBUG_PRINT(F("mqttInTopic: "));
 		DEBUG_PRINTLN(paramsp[MQTTINTOPIC]);
 		
-		EEPROMReadStr(MQTTJSON1OFST,buf);
-		mqttJsonp[MQTTJSON1] = buf;
-		DEBUG_PRINT(F("mqttJsonp[1]: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSON1]);
+		EEPROMReadStr(MQTTJSONUP1OFST,buf);
+		mqttJsonp[MQTTJSONUP1] = buf;
+		DEBUG_PRINT(F("MQTTJSONUP1: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP1]);
 		
-		EEPROMReadStr(MQTTJSON2OFST,buf);
-		mqttJsonp[MQTTJSON2] = buf;
-		DEBUG_PRINT(F("mqttJsonp[2]: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSON2]);
+		EEPROMReadStr(MQTTJSONDOWN1OFST,buf);
+		mqttJsonp[MQTTJSONDOWN1] = buf;
+		DEBUG_PRINT(F("MQTTJSONDOWN1: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN1]);
 		
-		EEPROMReadStr(MQTTJSON3OFST,buf);
-		mqttJsonp[MQTTJSON3] = buf;
-		DEBUG_PRINT(F("mqttJsonp[3]: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSON3]);
+		EEPROMReadStr(MQTTJSONUP2OFST,buf);
+		mqttJsonp[MQTTJSONUP2] = buf;
+		DEBUG_PRINT(F("MQTTJSONUP2: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP2]);
 		
-		EEPROMReadStr(MQTTJSON4OFST,buf);
-		mqttJsonp[MQTTJSON4] = buf;
-		DEBUG_PRINT(F("mqttJsonp[4]: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSON4]);
+		EEPROMReadStr(MQTTJSONDOWN2OFST,buf);
+		mqttJsonp[MQTTJSONDOWN2] = buf;
+		DEBUG_PRINT(F("MQTTJSONDOWN2: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN2]);
+		
+		EEPROMReadStr(MQTTJSONTEMPOFST,buf);
+		mqttJsonp[MQTTJSONTEMP] = buf;
+		DEBUG_PRINT(F("MQTTJSONTEMP: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSONTEMP]);
+		
+		EEPROMReadStr(MQTTJSONMEANPWROFST,buf);
+		mqttJsonp[MQTTJSONMEANPWR] = buf;
+		DEBUG_PRINT(F("MQTTJSONMEANPWR: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSONMEANPWR]);
+		
+		EEPROMReadStr(MQTTJSONPEAKPWROFST,buf);
+		mqttJsonp[MQTTJSONPEAKPWR] = buf;
+		DEBUG_PRINT(F("MQTTJSONPEAKPWR: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSONPEAKPWR]);
+		
+		EEPROMReadStr(MQTTJSONALLOFST,buf);
+		mqttJsonp[MQTTJSONALL] = buf;
+		DEBUG_PRINT(F("MQTTJSONALL: "));
+		DEBUG_PRINTLN(mqttJsonp[MQTTJSONALL]);
 		
 		EEPROMReadStr(WIFICLIENTSSIDOFST1,buf);
 		paramsp[CLNTSSID1] = buf;
@@ -1306,25 +1371,45 @@ void saveOnEEPROM(){
 	//Topic MQTT cambiato!
 	//paramsp[TOPICCHANGED]="true"
 
-	EEPROMWriteStr(MQTTJSON1OFST,(mqttJsonp[MQTTJSON1]).c_str());
+	EEPROMWriteStr(MQTTJSONUP1OFST,(mqttJsonp[MQTTJSONUP1]).c_str());
 	EEPROM.commit();
-	DEBUG_PRINT(F("Modified mqttJsonp[1] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSON1]);
+	DEBUG_PRINT(F("Modified MQTTJSONUP1 "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP1]);
 	
-	EEPROMWriteStr(MQTTJSON2OFST,(mqttJsonp[MQTTJSON2]).c_str());
+	EEPROMWriteStr(MQTTJSONDOWN1OFST,(mqttJsonp[MQTTJSONDOWN1]).c_str());
 	EEPROM.commit();
-	DEBUG_PRINT(F("Modified mqttJsonp[2] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSON2]);
+	DEBUG_PRINT(F("Modified MQTTJSONDOWN1 "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN1]);
 
-	EEPROMWriteStr(MQTTJSON3OFST,(mqttJsonp[MQTTJSON3]).c_str());
+	EEPROMWriteStr(MQTTJSONUP2OFST,(mqttJsonp[MQTTJSONUP2]).c_str());
 	EEPROM.commit();
-	DEBUG_PRINT(F("Modified mqttJsonp[3] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSON3]);
+	DEBUG_PRINT(F("Modified MQTTJSONUP2 "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP2]);
 	
-	EEPROMWriteStr(MQTTJSON4OFST,(mqttJsonp[MQTTJSON4]).c_str());
+	EEPROMWriteStr(MQTTJSONDOWN2OFST,(mqttJsonp[MQTTJSONDOWN2]).c_str());
 	EEPROM.commit();
-	DEBUG_PRINT(F("Modified mqttJsonp[4] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSON4]);
+	DEBUG_PRINT(F("Modified MQTTJSONDOWN2 "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN2]);
+	
+	EEPROMWriteStr(MQTTJSONTEMPOFST,(mqttJsonp[MQTTJSONTEMP]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified MQTTJSONTEMP "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONTEMP]);
+	
+	EEPROMWriteStr(MQTTJSONMEANPWROFST,(mqttJsonp[MQTTJSONMEANPWR]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified MQTTJSONMEANPWR "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONMEANPWR]);
+	
+	EEPROMWriteStr(MQTTJSONPEAKPWROFST,(mqttJsonp[MQTTJSONPEAKPWR]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified MQTTJSONPEAKPWR "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONPEAKPWR]);
+	
+	EEPROMWriteStr(MQTTJSONALLOFST,(mqttJsonp[MQTTJSONALL]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified MQTTJSONALL "));
+	DEBUG_PRINTLN(mqttJsonp[MQTTJSONALL]);
 	
 	EEPROMWriteStr(WIFICLIENTSSIDOFST1,(paramsp[CLNTSSID1]).c_str());
 	EEPROM.commit();
@@ -1450,17 +1535,29 @@ void printConfig(){
 		DEBUG_PRINT(F("\nmqttInTopic: "));
 		DEBUG_PRINT(paramsp[MQTTINTOPIC]);
 		
-		DEBUG_PRINT(F("\nmqttJsonp[1]: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSON1]);
+		DEBUG_PRINT(F("\nMQTTJSONUP1: "));
+		DEBUG_PRINT(mqttJsonp[MQTTJSONUP1]);
 		
-		DEBUG_PRINT(F("\nmqttJsonp[2]: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSON2]);
+		DEBUG_PRINT(F("\nMQTTJSONDOWN1: "));
+		DEBUG_PRINT(mqttJsonp[MQTTJSONDOWN1]);
 		
-		DEBUG_PRINT(F("\nmqttJsonp[3]: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSON3]);
+		DEBUG_PRINT(F("\nMQTTJSONUP2: "));
+		DEBUG_PRINT(mqttJsonp[MQTTJSONUP2]);
 		
-		DEBUG_PRINT(F("\nmqttJsonp[4]: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSON4]);
+		DEBUG_PRINT(F("\nMQTTJSONDOWN2: "));
+		DEBUG_PRINT(mqttJsonp[MQTTJSONDOWN2]);
+		
+		DEBUG_PRINT(F("\nMQTTJSONTEMP: "));
+		DEBUG_PRINT(mqttJsonp[MQTTJSONTEMP]);
+		
+		DEBUG_PRINT(F("\nMQTTJSONMEANPWR: "));
+		DEBUG_PRINT(mqttJsonp[MQTTJSONMEANPWR]);
+		
+		DEBUG_PRINT(F("\nMQTTJSONPEAKPWR: "));
+		DEBUG_PRINT(mqttJsonp[MQTTJSONPEAKPWR]);
+		
+		DEBUG_PRINT(F("\nMQTTJSONALL: "));
+		DEBUG_PRINT(mqttJsonp[MQTTJSONALL]);
 		
 		DEBUG_PRINT(F("\nclntSsid1: "));
 		DEBUG_PRINT(paramsp[CLNTSSID1]);

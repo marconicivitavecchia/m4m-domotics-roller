@@ -21,6 +21,9 @@
 #include <ESP8266HTTPUpdateServer.h>
 #include <WiFiUdp.h>
 #include <WebSocketsServer.h>
+//#include <Base64.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 //#include <ArduinoOTA.h>
 #include "eepromUtils.h"
 #include "timersNonSchedulati.h"
@@ -31,10 +34,8 @@ extern RemoteDebug telnet;
 //wifi config----------------------------------------------
 #define OUTTOPIC		"sonoff17/out"
 #define INTOPIC			"sonoff17/in"
-//#define SSID1			"OpenWrt"
-//#define PSW1			"dorabino.7468!"
-#define SSID1			"D-Link-6A30CC"
-#define PSW1			"FabSeb050770250368120110"
+#define SSID1			"OpenWrt"
+#define PSW1			"dorabino.7468!"
 #define SSID2			"AndroidAP1"
 #define PSW2			"pippo2503"
 #define SSIDAP			"admin"
@@ -81,6 +82,8 @@ extern RemoteDebug telnet;
 //#define THRESHOLD2	13
 //#define RAMPDELAY1	1  		//n*20ms
 //#define RAMPDELAY2	1  		//n*20ms
+#define PUSHINTERV	 60 // in sec
+#define ONE_WIRE_BUS 2  // DS18B20 pin
 #define RUNDELAY  	3
 #define DELTAL		4
 #define AUTOCAL		1
@@ -91,6 +94,10 @@ extern RemoteDebug telnet;
 #define	TCOUNT		5		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
 #define RSTTIME		20		//DEFINE HOW MANY SECONDS BUTTON1 MUST BE PRESSED UNTIL A RESET OCCUR 
 #define CNTIME		4		//DEFINE HOW MANY SECONDS HAVE TO LAST THALT PARAMETER AT LEAST
+#define CHROLLER	0
+#define CHTEMP		1
+#define CHPOWER		2
+#define ALL			3
 //#define CONFTIME	4		//DEFINE HOW MANY SECONDS 
 #define APOFFT		120		//DEFINE HOW MANY SECONDS   
 #define MAINBTN		3		//BUTTON WITH PROGRAMMING AND RESET FUNCTIONS
@@ -119,7 +126,7 @@ extern RemoteDebug telnet;
 #define TAP1      	0		//INDICE TAPPARELLA 1
 #define TAP2      	1		//INDICE TAPPARELLA 2
 #define OUTDIM    	2     	//OUT PORT ARRAY DIMENSION (NUMBER OF OUT PORTS FOR BUTTON GROUPS)
-#define JSONLEN   	5		//NUMBER OF FIELDS OF THE JSON MESSAGE
+//#define JSONLEN   	8		//NUMBER OF FIELDS OF THE JSON MESSAGE
 #define STATBTNNDX  0  	    //STATUS BUTTON INDEX
 //special array elements (not used for normal functions in all button groups, are always after normal elements)
 //#define CONNSTATSW  4		//INDEX OF CONNECTION SWITCH (DETECTS WIFI STATUS RISE FRONTS)
@@ -131,6 +138,20 @@ extern RemoteDebug telnet;
 #define BTNDOWN		1		//INDEX OF CALIBRATION CRONO (DETECTS UP TIME AND DOWN TIME)
 #define WIFISTA		0
 #define WIFIAP		1
+//Sensor gates
+#define GTTEMP		0
+#define GTMEANPWR1	1
+#define GTMEANPWR2	2
+#define GTPEAKPWR1	3
+#define GTPEAKPWR2	4
+#define GATEND 		5	//OVERALL NUMBER OF GATES
+//Async R/W buffers
+#define ASYNCDIM	5	//OVERALL NUMBER OF R/W BUFFERS
+#define TEMPRND			0
+#define MEANPWR1RND		0
+#define MEANPWR2RND		0	
+#define PEAKPWR1RND		0
+#define PEAKPWR2RND		0
 //--------------------------EEPROM offsets-------------------------------------------
 #define NAMEOFST				0
 #define THALT1OFST             	8
@@ -139,29 +160,33 @@ extern RemoteDebug telnet;
 #define MQTTIDOFST				72
 #define OUTTOPICOFST			104
 #define INTOPICOFST				136
-#define MQTTJSON1OFST			168
-#define MQTTJSON2OFST			200
-#define MQTTJSON3OFST			232
-#define MQTTJSON4OFST			264
-#define WIFICLIENTSSIDOFST1		296
-#define WIFICLIENTPSWOFST1		328
-#define WIFICLIENTSSIDOFST2		360
-#define WIFICLIENTPSWOFST2		392
-#define WIFIAPSSIDOFST			424
-#define WIFIAPPPSWOFST			456
-#define WEBUSROFST      		488
-#define WEBPSWOFST				520
-#define MQTTUSROFST				552
-#define MQTTPSWOFST				584
-#define STDEL1OFST				616
-#define STDEL2OFST				648
-#define VALWEIGHTOFST			680
-#define	TLENGTHOFST				712
-#define	BARRELRADOFST			744
-#define	THICKNESSOFST			776
-//#define TRSHOLD1OFST			680
+#define MQTTJSONUP1OFST			168
+#define MQTTJSONDOWN1OFST		200
+#define MQTTJSONUP2OFST			232
+#define MQTTJSONDOWN2OFST		264
+#define MQTTJSONTEMPOFST		296
+#define MQTTJSONMEANPWROFST		328
+#define MQTTJSONPEAKPWROFST		360
+#define MQTTJSONALLOFST			392
+#define WIFICLIENTSSIDOFST1		424
+#define WIFICLIENTPSWOFST1		456
+#define WIFICLIENTSSIDOFST2		488
+#define WIFICLIENTPSWOFST2		520
+#define WIFIAPSSIDOFST			552
+#define WIFIAPPPSWOFST			584
+#define WEBUSROFST      		616
+#define WEBPSWOFST				648
+#define MQTTUSROFST				680
+#define MQTTPSWOFST				712
+#define STDEL1OFST				744
+#define STDEL2OFST				776
+#define VALWEIGHTOFST			808
+#define	TLENGTHOFST				840
+#define	BARRELRADOFST			872
+#define	THICKNESSOFST			904
+//#define TRSHOLD1OFST			872
 //#define TRSHOLD2OFST			712
-#define EEPROMPARAMSLEN			808
+#define EEPROMPARAMSLEN			936
 //--------------------------Fine EEPROM offsets-------------------------------------------
 //--------------------------Inizio params array indexes-----------------------------------
 #define WEBUSR					0
@@ -194,23 +219,28 @@ extern RemoteDebug telnet;
 #define MQTTCONNCHANGED			27
 #define	TIMINGCHANGED			28
 #define PARAMSDIM				29
-
 //--------------------------Inizio mqttJson array indexes-----------------------------------
-#define MQTTJSON1				1
-#define MQTTJSON2				2
-#define MQTTJSON3				3
-#define MQTTJSON4				4
-#define MQTTJSONDIM				5
+#define MQTTJSONUP1				0
+#define MQTTJSONDOWN1			1
+#define MQTTJSONUP2				2
+#define MQTTJSONDOWN2			3
+#define MQTTJSONTEMP			4
+#define MQTTJSONMEANPWR			5
+#define MQTTJSONPEAKPWR			6
+#define MQTTJSONALL				7
+#define MQTTJSONDIM				8
 //--------------------------Fine array indexes-----------------------------------
 //-----------------------DEBUG MACRO------------------------------------------------------------
+//#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
+//#define PGMT( pgm_ptr ) ( reinterpret_cast< const __FlashStringHelper * >( pgm_ptr ) )
 #ifdef DEBUG
  //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
- #define DEBUG_PRINT(x)     Serial.print (x); telnet.print(x)
- #define DEBUG_PRINTDEC(x)     Serial.print (x, DEC) ; telnet.println(x)
- #define DEBUG_PRINTLN(x)  Serial.println (x) ; telnet.println(x)
+ #define DEBUG_PRINT(x)   Serial.print (x); telnet.print(x)
+ //#define DEBUG_PRINTDEC(x)     Serial.print (x, DEC);  telnet.print(x)
+ #define DEBUG_PRINTLN(x)   Serial.println (x);  telnet.println(x)
 #else
  #define DEBUG_PRINT(x)
- #define DEBUG_PRINTDEC(x)
+ //#define DEBUG_PRINTDEC(x)
  #define DEBUG_PRINTLN(x) 
 #endif
 
@@ -256,45 +286,19 @@ extern RemoteDebug telnet;
 
 #if (AUTOCAL)  
 #include "statistics.h"
-
-#define getAmpRMS()		ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;		\
-		VRMS = ACSVolt * 0.707;					\
-		AmpsRMS = (double) (VRMS * 1000) / mVperAmp;		\
-		if((AmpsRMS > -0.015) && (AmpsRMS < 0.008)){ 	\
-			AmpsRMS = 0.0;		\
-		}	 					\
-
 #endif
 
-#define setup_wifi2(x) 	x = x*2; \
-	if(wifiConn == false) {	\
-		WiFi.mode(WIFI_STA);	\
-		wifiState = WIFISTA;	\
-		if ((params[CLNTSSID1+x]).c_str() != "") {	\
-			WiFi.begin((params[CLNTSSID1+x]).c_str(), (params[CLNTPSW1+x]).c_str());	\
-		} else {	\
-			if (WiFi.SSID()) {	\
-			  ETS_UART_INTR_DISABLE();	\
-			  wifi_station_disconnect();	\
-			  ETS_UART_INTR_ENABLE();	\
-			  WiFi.begin();	\
-			} else {	\
-			  Serial.println(F("No saved credentials"));	\
-			}	\
-		}	\
-	}		\
-	if(wifiConn) {	\
-		params[LOCALIP] = WiFi.localIP().toString();	\
-	}	\
-
-	
 void setup_AP(bool);
 void setup_wifi();
 void setup_mDNS();
 void mqttReconnect();
 //void mqttCallback(String (&)[PARAMSDIM], String (&)[MQTTJSONDIM]);
 void mqttCallback(String &, String &);
-//void readStatesAndPub();
+void readStatesAndPub(bool ch = false);
+void readAvgPowerAndPub();
+void readPeakPowerAndPub();
+void readTempAndPub();
+void publishStr(String &);
 //void leggiTasti();
 //void scriviOutDaStato();
 void saveOnEEPROM();
@@ -342,7 +346,7 @@ void handleModify();
 
      GPIO_USER,        // GPIO01 Serial RXD and Optional sensor
 
-     GPIO_USER,        // GPIO02 Optional sensor
+     GPIO_USER,        // GPIO02 Optional sensor (riservato alla selezione del boot mode, può essere in o out ma al boot deve essere sempre alto)
 
      GPIO_USER,        // GPIO03 Serial TXD and Optional sensor
 

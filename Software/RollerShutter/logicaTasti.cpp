@@ -16,6 +16,7 @@ Tipi di tasto:
 #include "common.h"
 
 byte dprecval2[SWITCHND]; 
+float asyncBuf[GATEND]; 
 //#define SWITCHN 	5 
 //#define stateN 	0 
 

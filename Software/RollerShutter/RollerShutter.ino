@@ -20,6 +20,7 @@ unsigned short zeroCnt = 0;
 unsigned long mqttcnt = 0;
 unsigned short mqttofst = 0;
 unsigned short isrundelay[2] = {RUNDELAY, RUNDELAY};
+unsigned pushCnt = 0;
 //double ex=0;
 unsigned long n=1;
 unsigned long pn=0;
@@ -68,6 +69,8 @@ IPAddress mysubnet(255, 255, 255, 0);
 RemoteDebug telnet;
 WiFiEventHandler stationConnectedHandler;
 WiFiEventHandler stationDisconnectedHandler;
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature DS18B20(&oneWire);
 //WiFiEventHandler gotIpEventHandler, disconnectedEventHandler, connectedEventHandler;
 
 //User config
@@ -94,7 +97,8 @@ int ncifre=3;
 //l'ordine è importante! Le proprietà verranno ricercate nella stringa in arrivo con questo ordine.
 //e salvate in un array con indici a questo corrrispondenti
 //l'ordine di trasmissione da remoto dei campi è ininfluente
-String mqttJson[5]={"outsled","up1","down1","up2","down2"};
+//I comandi della tapparella devono essere  gli ultimi!
+String mqttJson[MQTTJSONDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all"};
 //Valore iniziale: il suo contenuto viene poi caricato da EEPROM
 unsigned int thalt1=5000;
 unsigned int thalt2=5000;
@@ -120,7 +124,8 @@ String  s;  //global: contain current json message
 unsigned int step;
 //bool extCmd=false;
 //vettori di ingresso, uscite e stato
-byte in[NBTN*BTNDIM], inr[NBTN*BTNDIM], outPorts[NBTN*BTNDIM];
+byte in[NBTN*BTNDIM], outPorts[NBTN*BTNDIM];
+byte inr[MQTTJSONDIM];
 //numerazione porte
 byte outLogic[NBTN*STATUSDIM];
 //inizio variabili globali antirimbalzo----------------------------------------------
@@ -145,9 +150,39 @@ inline bool switchdfn(byte val, byte n){
 	return changed;
 }
 
+inline bool gatedfn(float val, byte n, float rnd){
+	//n: numero di porte
+	bool changed = (val > asyncBuf[n] - rnd && val < asyncBuf[n] + rnd);
+	asyncBuf[n] = val;            // valore di val campionato al loop precedente 
+	return changed;
+}
+
 inline byte tapLogic(byte n){
 	return (switchLogic(0,n) + switchLogic(1,n));
 }
+
+inline float getAmpRMS(float ACSVolt){
+	ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;
+	VRMS = ACSVolt * 0.707;
+	AmpsRMS = (double) (VRMS * 1000) / mVperAmp;
+	if((AmpsRMS > -0.015) && (AmpsRMS < 0.008)){ 
+		AmpsRMS = 0.0;
+	}
+	return AmpsRMS;
+}
+
+inline float getTemperature(){
+	DS18B20.requestTemperatures(); 
+	float temp;
+	unsigned short cnt = 0;
+	do{
+		temp = DS18B20.getTempCByIndex(0);
+		DEBUG_PRINT("Temperature: ");
+		DEBUG_PRINTLN(temp);
+		cnt++;		
+	}while((temp == 85.0 || temp == (-127.0)) && cnt < 3);
+	return temp;
+}	
 
 void setup_AP(bool apmode) {
   //ESP.wdtFeed();
@@ -342,10 +377,10 @@ void mqttCallback(String &topic, String &response) {
 	DEBUG_PRINT(F("], "));
 	DEBUG_PRINTLN(response);
 #endif	
-	v = parseJsonFieldToInt(response, mqttJson[0], ncifre);
+	//v = parseJsonFieldToInt(response, mqttJson[0], ncifre);
 	//digitalWrite(OUTSLED, v); 
    
-	parseJsonFieldArrayToInt(response, inr, mqttJson, ncifre, JSONLEN,1);
+	parseJsonFieldArrayToInt(response, inr, mqttJson, ncifre, MQTTJSONDIM,0);
     //inr: memoria tampone per l'evento asincrono scrittura da remoto
 }
 
@@ -372,21 +407,20 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 }
 
 //legge il valore dello stato dei toggle e li pubblica sul broker come stringa JSON
-void readStatesAndPub(){
+void readStatesAndPub(bool all){
   int vals; 
 
-  DEBUG_PRINTLN(F("\nreadStatesAndPub")); 
+  //DEBUG_PRINTLN(F("\nreadStatesAndPub")); 
   
   //crea una stringa JSON con i valori  dello stato corrente dei pulsanti
 
-  vals=digitalRead(OUTSLED); //legge lo stato del led di stato
+  //vals=digitalRead(OUTSLED); //legge lo stato del led di stato
   //crea una stringa JSON con i valori  dello stato corrente dei pulsanti
   s=F("{\"");	
-  s+=mqttJson[STATBTNNDX]+F("\":\"")+vals+F("\",\"");
-  s+=mqttJson[1]+F("\":\"")+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+F("\",\""); 	//up1 DIRS=HIGH
-  s+=mqttJson[2]+F("\":\"")+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+F("\",\"");    //down1  DIRS=LOW
-  s+=mqttJson[3]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+F("\",\"");	//up2 
-  s+=mqttJson[4]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+F("\",\"");    //down2
+  s+=mqttJson[MQTTJSONUP1]+F("\":\"")+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+F("\",\""); 	//up1 DIRS=HIGH
+  s+=mqttJson[MQTTJSONDOWN1]+F("\":\"")+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+F("\",\"");    //down1  DIRS=LOW
+  s+=mqttJson[MQTTJSONUP2]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+F("\",\"");	//up2 
+  s+=mqttJson[MQTTJSONDOWN2]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+F("\",\"");    //down2
   s+= (String) F("pr1\":\"")+String(round(calcLen(0)))+F("\",\"");		//pr1
   s+= (String) F("pr2\":\"")+String(round(calcLen(1)))+F("\",\"");		//pr2
   if(blocked[0]>0){
@@ -396,9 +430,48 @@ void readStatesAndPub(){
 	  s+= (String) F("blk1\":\"")+blocked[1]+F("\",\"");		//blk2
   }
   s+= (String) F("sp1\":\"")+String((long)getTapThalt(0))+F("\",\"");		//sp1
-  s+= (String) F("sp2\":\"")+String((long)getTapThalt(1))+F("\"}");		//sp2
+  s+= (String) F("sp2\":\"")+String((long)getTapThalt(1));
   
-  //pubblica sul broker la stringa JSON
+  if(all){
+		s+=F("\",\"");		//sp2
+		s+=mqttJson[MQTTJSONTEMP]+F("\":\"")+String(asyncBuf[GTTEMP])+F("\",\"");
+		s+=mqttJson[MQTTJSONMEANPWR]+F("\":[\"")+String(asyncBuf[GTMEANPWR1])+F("\",\"")+String(asyncBuf[GTMEANPWR2])+F("\"],\"");
+		s+=mqttJson[MQTTJSONPEAKPWR]+F("\":[\"")+String(asyncBuf[GTPEAKPWR1])+F("\",\"")+String(asyncBuf[GTPEAKPWR2])+F("\"]}");
+  }else{
+		s+=F("\"}");		//sp2
+  }
+  publishStr(s);
+}
+
+void readAvgPowerAndPub(){
+  int vals; 
+
+  //DEBUG_PRINTLN(F("\nreadPowerAndPub")); 
+  s=F("{\"");	
+  s+=mqttJson[MQTTJSONMEANPWR]+F("\":[\"")+String(asyncBuf[GTMEANPWR1])+F("\",\"")+String(asyncBuf[GTMEANPWR2])+F("\"],\"");
+  publishStr(s);
+}
+
+void readPeakPowerAndPub(){
+  int vals; 
+
+  //DEBUG_PRINTLN(F("\nreadPowerAndPub")); 
+  s=F("{\"");	
+  s+=mqttJson[MQTTJSONPEAKPWR]+F("\":[\"")+String(asyncBuf[GTPEAKPWR1])+F("\",\"")+String(asyncBuf[GTPEAKPWR2])+F("\"]}");
+  publishStr(s);
+}
+
+void readTempAndPub(){
+  int vals; 
+
+  //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
+  s=F("{\"");	
+  s+=mqttJson[MQTTJSONTEMP]+F("\":\"")+String(asyncBuf[GTTEMP])+F("\"}");
+  publishStr(s);
+}
+
+void publishStr(String &s){
+//pubblica sul broker la stringa JSON
   if(mqttClient==NULL){
 	  DEBUG_PRINTLN(F("ERROR on readStatesAndPub MQTT client is not allocated."));
   }
@@ -412,7 +485,7 @@ void readStatesAndPub(){
   //}
   //else
   //{
-	  webSocket.broadcastTXT(s);
+  webSocket.broadcastTXT(s);
   //}
 }
 
@@ -830,8 +903,8 @@ inline void loop2() {
 				//running mean calculation
 				smplcnt++;
 				smplcnt && (m += (float) x / smplcnt);  //protected against overflow by a logic short circuit
-				Serial.print(F("\nZero mean sensor: "));
-				Serial.print(m);
+				DEBUG_PRINT(F("\nZero mean sensor: "));
+				DEBUG_PRINT(m);
 			}
 		}	
 	}
@@ -841,30 +914,65 @@ inline void loop2() {
 	if(!(step % 500)){
 		aggiornaTimer(RESETTIMER);
 		aggiornaTimer(APOFFTIMER);
-		
-		Serial.print(F("\nMean sensor: "));
-		Serial.print(m);
-		Serial.print(F(" - Conn stat: "));
+		pushCnt++;
+		DEBUG_PRINT(F("\n------------------------------------------"));
+		DEBUG_PRINT(F("\nMean sensor: "));
+		DEBUG_PRINT(m);
+		DEBUG_PRINT(F(" - Conn stat: "));
 		stat = WiFi.status();
-		Serial.print(stat);
+		DEBUG_PRINT(stat);
 		wifiConn = (stat == WL_CONNECTED);	
-		Serial.print(F(" - Wifi mode: "));
-		Serial.println(WiFi.getMode());
+		DEBUG_PRINT(F(" - Wifi mode: "));
+		DEBUG_PRINTLN(WiFi.getMode());
+		
+		if(!(isrun[0] || isrun[1])){
+			//sensor variation polling management
+			//on events basis push of reports
+			if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
+				readTempAndPub();
+			}
+			bool updatePwr = false;
+			if(gatedfn(getAmpRMS(getAVG(0)/2),GTMEANPWR1, MEANPWR1RND)){
+				updatePwr == true;
+			}
+			if(gatedfn(getAmpRMS(getAVG(1)/2),GTMEANPWR2, MEANPWR2RND)){
+				updatePwr == true;
+			}
+			if(updatePwr){
+				readAvgPowerAndPub();
+				updatePwr = false;
+			}
+			if(gatedfn(getAmpRMS(getAVG(0)+getThresholdUp(0)/2),GTPEAKPWR1, PEAKPWR1RND)){
+				updatePwr == true;
+			}
+			if(gatedfn(getAmpRMS(getAVG(1)+getThresholdUp(1)/2),GTPEAKPWR2, PEAKPWR2RND)){
+				updatePwr == true;
+			}
+			if(updatePwr){
+				readPeakPowerAndPub();
+			}
+			//periodic push of all reports
+			if(pushCnt == PUSHINTERV){
+				pushCnt = 0;
+				readStatesAndPub(true);
+			}
+		}
+		
 		//DEBUG_PRINTLN(wl_status_to_string(wfs));
 		if(WiFi.getMode() == WIFI_OFF || WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
 			if(!wifiConn && !(isrun[0] || isrun[1])){
 				//lampeggia led di connessione
 				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
 				//yield();
-				Serial.print(F("\nSwcount roll: "));
-				Serial.println(swcount);
+				DEBUG_PRINT(F("\nSwcount roll: "));
+				DEBUG_PRINTLN(swcount);
 				
 				if((swcount == 0)){
-					Serial.println(F("Connection timed out"));
+					DEBUG_PRINTLN(F("Connection timed out"));
 					WiFi.persistent(false);
 					WiFi.disconnect(true);
 					WiFi.mode(WIFI_OFF);    
-					Serial.println(F("Do new connection"));
+					DEBUG_PRINTLN(F("Do new connection"));
 					WiFi.setAutoReconnect(true);	
 					WiFi.mode(WIFI_STA);
 					WiFi.setAutoReconnect(true);
@@ -894,15 +1002,15 @@ inline void loop2() {
 			//noInterrupts ();
 			//mqttStat = mqttClient->isConnected();
 			//interrupts ();
-			Serial.print(F("\nMQTT check : "));
-			Serial.println(mqttStat);
+			DEBUG_PRINT(F("MQTT check : "));
+			DEBUG_PRINT(mqttStat);
 			if(!mqttStat){
-				Serial.print(F("\nMQTT dice non sono connesso."));
+				DEBUG_PRINT(F("\nMQTT dice non sono connesso."));
 				mqttConnected=false;
 			}	
 			else{
-				Serial.print(F("\nMQTT  dice sono connesso. Local IP: "));
-				Serial.println(WiFi.localIP());
+				DEBUG_PRINT(F("\nMQTT  dice sono connesso. Local IP: "));
+				DEBUG_PRINT(WiFi.localIP());
 				mqttConnected=true;
 				mqttcnt = 0;
 				mqttofst = 2;
@@ -1051,6 +1159,19 @@ inline void loop2() {
 			//DEBUG_PRINTLN(F("to ESP stack... "));
 			//delay(30);//give 30ms to the ESP stack for wifi connect
 			wifiConn = (WiFi.status() == WL_CONNECTED);
+		}
+		//gestione eventi MQTT sui sensori
+		if(inr[MQTTJSONTEMP]){
+			inr[MQTTJSONTEMP] = LOW;
+			readTempAndPub();
+		}
+		if(inr[MQTTJSONMEANPWR]){
+			inr[MQTTJSONMEANPWR] = LOW;
+			readAvgPowerAndPub();
+		}
+		if(inr[MQTTJSONPEAKPWR]){
+			inr[MQTTJSONPEAKPWR] = LOW;
+			readPeakPowerAndPub();
 		}
 	}
   }//FINE Time base
@@ -1330,18 +1451,32 @@ void processCmdRemoteDebug() {
 		testFlash();
 	}else if(lastCmd == "getmqttstat"){
 		if(!(mqttClient->isConnected())){
-			DEBUG_PRINT(F("\nMQTT non connesso."));
+			DEBUG_PRINTLN(F("\nMQTT non connesso."));
 		}
 		else
 		{
-			DEBUG_PRINT(F("\nMQTT connesso"));
+			DEBUG_PRINTLN(F("\nMQTT connesso"));
 		}
-	}else if(lastCmd == "getsensor"){
+	}else if(lastCmd == "gettemp"){
+		DEBUG_PRINT(F("\nTemperature: "));
+		DEBUG_PRINT(asyncBuf[GTTEMP]);
+	}else if(lastCmd == "getadczero"){
 		DEBUG_PRINT(F("\nMean sensor: "));
-		DEBUG_PRINT(m);
+		DEBUG_PRINTLN(m);
+	}else if(lastCmd == "getpower"){
+		DEBUG_PRINT(F("\nAvg power: ["));
+		DEBUG_PRINT(asyncBuf[GTMEANPWR1]);
+		DEBUG_PRINT(F(","));
+		DEBUG_PRINT(asyncBuf[GTMEANPWR2]);
+		DEBUG_PRINTLN(F("]"));
+		DEBUG_PRINT(F("\nPeak power: ["));
+		DEBUG_PRINT(asyncBuf[GTPEAKPWR1]);
+		DEBUG_PRINT(F(","));
+		DEBUG_PRINT(asyncBuf[GTPEAKPWR2]);
+		DEBUG_PRINTLN(F("]"));
 	}else{
 		DEBUG_PRINT(F("\nComandi disponibili: "));
-		DEBUG_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, testflash\n"));
+		DEBUG_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, testflash,getadczero,gettemp,getpower\n"));
 	}
 	//telnet.flush();
 }
