@@ -120,7 +120,6 @@ bool boot=true;
 byte swcount=0;
 byte wifindx=0;
 //End port config------------------------------------------
-String  s;  //global: contain current json message
 unsigned int step;
 //bool extCmd=false;
 //vettori di ingresso, uscite e stato
@@ -416,7 +415,7 @@ void readStatesAndPub(bool all){
 
   //vals=digitalRead(OUTSLED); //legge lo stato del led di stato
   //crea una stringa JSON con i valori  dello stato corrente dei pulsanti
-  s=F("{\"");	
+  String s=F("{\"");	
   s+=mqttJson[MQTTJSONUP1]+F("\":\"")+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+F("\",\""); 	//up1 DIRS=HIGH
   s+=mqttJson[MQTTJSONDOWN1]+F("\":\"")+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+F("\",\"");    //down1  DIRS=LOW
   s+=mqttJson[MQTTJSONUP2]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+F("\",\"");	//up2 
@@ -447,8 +446,8 @@ void readAvgPowerAndPub(){
   int vals; 
 
   //DEBUG_PRINTLN(F("\nreadPowerAndPub")); 
-  s=F("{\"");	
-  s+=mqttJson[MQTTJSONMEANPWR]+F("\":[\"")+String(asyncBuf[GTMEANPWR1])+F("\",\"")+String(asyncBuf[GTMEANPWR2])+F("\"],\"");
+  String s=F("{\"");	
+  s+=mqttJson[MQTTJSONMEANPWR]+F("\":[\"")+String(asyncBuf[GTMEANPWR1])+F("\",\"")+String(asyncBuf[GTMEANPWR2])+F("\"]}");
   publishStr(s);
 }
 
@@ -456,7 +455,7 @@ void readPeakPowerAndPub(){
   int vals; 
 
   //DEBUG_PRINTLN(F("\nreadPowerAndPub")); 
-  s=F("{\"");	
+  String s=F("{\"");	
   s+=mqttJson[MQTTJSONPEAKPWR]+F("\":[\"")+String(asyncBuf[GTPEAKPWR1])+F("\",\"")+String(asyncBuf[GTPEAKPWR2])+F("\"]}");
   publishStr(s);
 }
@@ -465,27 +464,30 @@ void readTempAndPub(){
   int vals; 
 
   //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
-  s=F("{\"");	
+  String s=F("{\"");
+  //char sd[300];
   s+=mqttJson[MQTTJSONTEMP]+F("\":\"")+String(asyncBuf[GTTEMP])+F("\"}");
+//sprintf(sd,"%s%s%s%f%s",F("{\""),mqttJson[MQTTJSONTEMP].c_str(),F("\":\""),asyncBuf[GTTEMP],F("\"}"));
+  //s=String(sd);
   publishStr(s);
 }
 
-void publishStr(String &s){
+void publishStr(String &str){
 //pubblica sul broker la stringa JSON
   if(mqttClient==NULL){
-	  DEBUG_PRINTLN(F("ERROR on readStatesAndPub MQTT client is not allocated."));
+	  DEBUG_PRINTLN(F("ERROR on publishStr MQTT client is not allocated."));
   }
   else
   {
-	  mqttClient->publish(params[MQTTOUTTOPIC], s);
-	  DEBUG_PRINTLN(s);
+	  mqttClient->publish(params[MQTTOUTTOPIC], str);
+	  DEBUG_PRINTLN(str);
   }
   //if(!webSocket){
 	  //DEBUG_PRINTLN(F("ERROR on readStatesAndPub webSocket server is not allocated."));
   //}
   //else
   //{
-  webSocket.broadcastTXT(s);
+  webSocket.broadcastTXT(str);
   //}
 }
 
@@ -752,16 +754,16 @@ inline void loop2() {
 #if (AUTOCAL) 
 	if(dosmpl){
 		x = (int) analogRead(A0) - m;	
-		(x > maxx) && (maxx = x);
-		(x < minx) && (minx = x);
-		/*if(x > maxx) 					
+		//(x > maxx) && (maxx = x);
+		//(x < minx) && (minx = x);
+		if(x > maxx) 					
 		{    							
 			maxx = x; 					
 		}
 		if(x < minx) 					
 		{       						
 			minx = x;					
-		}*/
+		}
 		//sampleCount++;
 	}
 	
@@ -778,7 +780,10 @@ inline void loop2() {
 			//peak = (double) ex/2.0;
 			peak = ex;
 			//reset of peak sample value
-			
+			DEBUG_PRINT(F("\n("));
+			DEBUG_PRINT(0);
+			DEBUG_PRINT(F(") ADC enable: "));
+			DEBUG_PRINT(dosmpl);
 			if(isrun[0] && dosmpl){
 				DEBUG_PRINT(0);
 				if(isrundelay[0] == 0){
@@ -803,17 +808,17 @@ inline void loop2() {
 						DEBUG_PRINT(F("\n("));
 						DEBUG_PRINT(0);
 						if(chk[0] == -1){
+							DEBUG_PRINTLN(F(") Stop: sottosoglia"));
 							blocked[0] = secondPress(0);
 							scriviOutDaStato();
-							DEBUG_PRINTLN(F(") Stop: sottosoglia"));
 						}else if(chk[0] == 2){
+							DEBUG_PRINTLN(F(") Stop: soprasoglia"));
 							blocked[0] = secondPress(0);
 							scriviOutDaStato();
 							blocked[0] = 1;
-							DEBUG_PRINTLN(F(") Stop: soprasoglia"));
 						}else if(chk[0] == 1){
-							startEndOfRunTimer(0);
 							DEBUG_PRINTLN(F(") Start: fronte di salita"));
+							startEndOfRunTimer(0);
 						}
 						readStatesAndPub();
 						yield();
@@ -850,6 +855,8 @@ inline void loop2() {
 					DEBUG_PRINT(m);
 					DEBUG_PRINT(F(" - Peak: "));
 					DEBUG_PRINT(peak);
+					DEBUG_PRINT(F(" - ADC enable: "));
+					DEBUG_PRINT(dosmpl);
 					//DEBUG_PRINT(F("\nSample count: "));
 					//DEBUG_PRINTLN(sampleCount);
 					//sampleCount = 0;
@@ -1145,6 +1152,7 @@ inline void loop2() {
 		leggiTasti();
 		leggiRemoto();
 		//se uno dei tasti delle tapparelle è stato premuto
+		//o se è arrivato un comando dala mqttCallback
 		if(tapLogic(TAP1) == 1 ||  tapLogic(TAP2) == 1){ 
 			//once any button is pressed
 			//legge lo stato finale e lo scrive sulle uscite

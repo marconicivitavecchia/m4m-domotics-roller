@@ -294,7 +294,7 @@ void setup_mDNS();
 void mqttReconnect();
 //void mqttCallback(String (&)[PARAMSDIM], String (&)[MQTTJSONDIM]);
 void mqttCallback(String &, String &);
-void readStatesAndPub(bool ch = false);
+void readStatesAndPub(bool all = false);
 void readAvgPowerAndPub();
 void readPeakPowerAndPub();
 void readTempAndPub();
