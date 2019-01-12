@@ -753,11 +753,16 @@ inline void loop2() {
 	//current = millis();
 #if (AUTOCAL) 
 	if(dosmpl){
-		noInterrupts();
+		//wifi_set_opmode(NULL_MODE);
+        system_soft_wdt_stop();
+        ets_intr_lock( ); //close interrupt
+        noInterrupts();
 		x = (int) analogRead(A0) - m;	
 		(x > maxx) && (maxx = x);
 		(x < minx) && (minx = x);
 		interrupts();
+        ets_intr_unlock(); //open interrupt
+        system_soft_wdt_restart();
 		/*if(x > maxx) 					
 		{    							
 			maxx = x; 					
@@ -908,7 +913,13 @@ inline void loop2() {
 			//all motors are stopped
 			if(zeroCnt < 3){
 				//zero detection activation (2 values every second)
+				system_soft_wdt_stop();
+				ets_intr_lock( ); //close interrupt
+				noInterrupts();
 				x = (int) analogRead(A0) - m;
+				interrupts();
+				ets_intr_unlock(); //open interrupt
+				system_soft_wdt_restart();
 				//running mean calculation
 				smplcnt++;
 				smplcnt && (m += (float) x / smplcnt);  //protected against overflow by a logic short circuit
