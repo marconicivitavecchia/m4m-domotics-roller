@@ -9,9 +9,12 @@
 //  DEVE ESSERE INCLUSO CON  #include "common.h"  IN TUTTI GLI HEADERS FILES DELLE LIBRERIE
 //----------------------------------------------------------------------------------------------------------------------------------
 //libreria col codice del client wifi
+extern "C" {
+    #include "user_interface.h"
+}
+
 #include <Arduino.h>
 #include <EEPROM.h>
-#include <util/atomic.h> 
 //#include <sched.h>
 #include <ESP8266WiFi.h>
 #include <RemoteDebug.h> 

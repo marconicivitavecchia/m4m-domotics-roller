@@ -6,6 +6,8 @@
 
 //stats variables
 #if (AUTOCAL)
+int samples[10];
+byte indx = 0;
 byte stat;
 float vcosfi = 220*0.8;
 double ACSVolt;
@@ -37,7 +39,7 @@ short chk[2]={0,0};
 //unsigned x20ms, x60ms, x1s;
 #endif
 bool isrun[2]={false,false};
-bool dosmpl = false;
+volatile bool dosmpl = false;
 byte cont=0;
 //end of stats variables
 unsigned long prec=0;
@@ -758,12 +760,11 @@ inline void loop2() {
         system_soft_wdt_stop();
         ets_intr_lock( ); //close interrupt
         noInterrupts();
-		x = (int) analogRead(A0) - m;	
+		x = system_adc_read() - m;
+		//samples[indx] = system_adc_read();
+		//x = samples[indx] - m;	
 		(x > maxx) && (maxx = x);
 		(x < minx) && (minx = x);
-		interrupts();
-        ets_intr_unlock(); //open interrupt
-        system_soft_wdt_restart();
 		/*if(x > maxx) 					
 		{    							
 			maxx = x; 					
@@ -772,7 +773,10 @@ inline void loop2() {
 		{       						
 			minx = x;					
 		}*/
-		//sampleCount++;
+		//indx++;
+		interrupts();
+        ets_intr_unlock(); //open interrupt
+        system_soft_wdt_restart();
 	}
 	
 	//ogni 20ms
@@ -805,6 +809,16 @@ inline void loop2() {
 					DEBUG_PRINT(m);
 					DEBUG_PRINT(F(" - Peak: "));
 					DEBUG_PRINT(peak);
+					DEBUG_PRINT(F(" - diff: "));
+					DEBUG_PRINT(dd);
+					//DEBUG_PRINT(F("\n("));
+					//DEBUG_PRINT(0);
+					//DEBUG_PRINT(F(") Samples: "));
+					//for(int i=0;i<10;i++){
+					//	DEBUG_PRINT(samples[i]);
+					//	DEBUG_PRINT(F(", "));
+					//	samples[i] = 0;
+					//}
 					//DEBUG_PRINT(F("\nSample count: "));
 					//DEBUG_PRINTLN(sampleCount);
 					//sampleCount = 0;
@@ -826,6 +840,7 @@ inline void loop2() {
 							blocked[0] = 1;
 						}else if(chk[0] == 1){
 							DEBUG_PRINTLN(F(") Start: fronte di salita"));
+							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(0);
 						}
 						readStatesAndPub();
@@ -880,6 +895,7 @@ inline void loop2() {
 							scriviOutDaStato();
 							blocked[1] = 1;
 						}else if(chk[1] == 1){
+							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(1);
 						}
 						readStatesAndPub();
@@ -905,6 +921,7 @@ inline void loop2() {
 				isrundelay[1] = RUNDELAY;
 			}
 			//AC peak measure init
+			//indx = 0;
 			minx = 1024;
 			maxx = 0;
 			dosmpl = true;
@@ -917,14 +934,16 @@ inline void loop2() {
 				system_soft_wdt_stop();
 				ets_intr_lock( ); //close interrupt
 				noInterrupts();
-				x = (int) analogRead(A0) - m;
+				x = system_adc_read();
 				interrupts();
 				ets_intr_unlock(); //open interrupt
 				system_soft_wdt_restart();
 				//running mean calculation
 				smplcnt++;
-				smplcnt && (m += (float) x / smplcnt);  //protected against overflow by a logic short circuit
-				DEBUG_PRINT(F("\nZero mean sensor: "));
+				smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
+				DEBUG_PRINT(F("\nZero peak sensor: "));
+				DEBUG_PRINT(x);
+				DEBUG_PRINT(F(" - Zero mean sensor: "));
 				DEBUG_PRINT(m);
 			}
 		}	
