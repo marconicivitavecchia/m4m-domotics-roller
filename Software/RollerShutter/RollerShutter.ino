@@ -753,17 +753,19 @@ inline void loop2() {
 	//current = millis();
 #if (AUTOCAL) 
 	if(dosmpl){
+		noInterrupts();
 		x = (int) analogRead(A0) - m;	
-		//(x > maxx) && (maxx = x);
-		//(x < minx) && (minx = x);
-		if(x > maxx) 					
+		(x > maxx) && (maxx = x);
+		(x < minx) && (minx = x);
+		interrupts();
+		/*if(x > maxx) 					
 		{    							
 			maxx = x; 					
 		}
 		if(x < minx) 					
 		{       						
 			minx = x;					
-		}
+		}*/
 		//sampleCount++;
 	}
 	
