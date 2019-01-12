@@ -7,6 +7,7 @@
 //stats variables
 #if (AUTOCAL)
 byte stat;
+float vcosfi = 220*0.8;
 double ACSVolt;
 unsigned int mVperAmp = 100;   // 185 for 5A, 100 for 20A and 66 for 30A Module
 double ACSVoltage = 0;
@@ -167,7 +168,7 @@ inline float getAmpRMS(float ACSVolt){
 	if((AmpsRMS > -0.015) && (AmpsRMS < 0.008)){ 
 		AmpsRMS = 0.0;
 	}
-	return AmpsRMS;
+	return AmpsRMS*vcosfi;
 }
 
 inline float getTemperature(){
