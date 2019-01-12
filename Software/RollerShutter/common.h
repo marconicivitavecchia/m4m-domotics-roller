@@ -11,6 +11,7 @@
 //libreria col codice del client wifi
 #include <Arduino.h>
 #include <EEPROM.h>
+#include <util/atomic.h> 
 //#include <sched.h>
 #include <ESP8266WiFi.h>
 #include <RemoteDebug.h> 
