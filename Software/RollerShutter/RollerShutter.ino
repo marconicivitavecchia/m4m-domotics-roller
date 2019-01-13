@@ -725,28 +725,42 @@ void zeroDetect(){
 	maxx = 0;
 }
 
+
 void loop(){
 	if(boot == false){
 		//busy loop
 		loop2();
 	}else{
+		//Dummy loop! Finestra solo wifi!
 		//workaround for the DHCP offer problem ERROR: send_offer (error -13)
-		//no busy loop!
+		//no busy loop! For difficult (intensive time consuming) wifi operation
 		delay(3000);
 		boot = false;
 	}
 }
 	
 inline void loop2() {
+  //PRE SCHEDULERS ACTIONS ----------------------------------------------
   //ArduinoOTA.handle();
-  //funzioni eseguite ad ogni loop (istante di esecuione dipendente dal clock della CPU)
+  //funzioni eseguite ad ogni loop (istante di esecuzione dipendente dal clock della CPU)
   aggiornaTimer(TMRHALT);
   aggiornaTimer(TMRHALT+TIMERDIM); 
-
   webSocket.loop();
-  server.handleClient();  // Listen for HTTP requests from clients 
+  server.handleClient();  // Listen for HTTP requests from clients
+  //FINE PRE SCHEDULERS ACTIONS -----------------------------------------  
   
-  if((millis()-prec) > time_base) //schedulatore con tempo base 
+  //SCHEDULATED LOOPS------------------------------------------------------------------------------
+  //Linee guida:
+  //- azioni pesanti si dovrebbero eseguire molto raramente (o per pochi loop)
+  //- azioni leggere possono essere eseguite molto frequentemente (o per molti loop)
+  //- vie di mezzo di complessità da eseguire con tempi intermedi
+  //- evitare il più possibile la contemporaneità di azioni pesanti 
+  //-----------------------------------------------------------------------------------------------
+  
+  //---------------------------------------------------------------------
+  // 2 msec scheduler (main scheduler)
+  //---------------------------------------------------------------------
+  if((millis()-prec) > time_base) //schedulatore per tempo base 
   {	
 	prec = millis();
 	//prec += time_base;
@@ -755,8 +769,101 @@ inline void loop2() {
 	
 	//current = millis();
 #if (AUTOCAL) 
-	if(dosmpl){
-		//wifi_set_opmode(NULL_MODE);
+	if(dosmpl){//solo a motore in moto
+		currentPeakDetector();
+	}
+	
+	//---------------------------------------------------------------------
+	// 20 msec scheduler
+	//---------------------------------------------------------------------
+	if(!(step % 10)){		
+		automaticStopManager();
+	}//END 20ms scheduler-------------------------------------------------
+#endif
+
+	//---------------------------------------------------------------------
+	// 1 sec scheduler
+	//---------------------------------------------------------------------
+	if(!(step % 500)){
+		aggiornaTimer(RESETTIMER);
+		aggiornaTimer(APOFFTIMER);
+		pushCnt++;
+		DEBUG_PRINT(F("\n------------------------------------------"));
+		DEBUG_PRINT(F("\nMean sensor: "));
+		DEBUG_PRINT(m);
+		DEBUG_PRINT(F(" - Conn stat: "));
+		stat = WiFi.status();
+		DEBUG_PRINT(stat);
+		wifiConn = (stat == WL_CONNECTED);	
+		DEBUG_PRINT(F(" - Wifi mode: "));
+		DEBUG_PRINTLN(WiFi.getMode());
+		
+		if(!(isrun[0] || isrun[1])){//solo a motore fermo! Per evitare contemporaneità col currentPeakDetector
+			sensorStatePoll();
+			wifiFailoverManager();
+			MQTTReconnectManager();
+		}	
+		paramsModificationPoll();
+	}//END 1 sec scheduler-----------------------------------------------------
+	
+	//---------------------------------------------------------------------
+	// 60 msec scheduler
+	//---------------------------------------------------------------------
+	if(!(step % 30)){		
+		//leggi ingressi locali e mette il loro valore sull'array val[]
+		leggiTastiLocali();
+		leggiTastiLocaliRemoto();
+		//se uno dei tasti delle tapparelle è stato premuto
+		//o se è arrivato un comando dala mqttCallback
+		if(tapLogic(TAP1) == 1 ||  tapLogic(TAP2) == 1){ 
+			//once any button is pressed
+			//legge lo stato finale e lo scrive sulle uscite
+			scriviOutDaStato();
+			//legge lo stato finale e lo pubblica su MQTT
+			readStatesAndPub();
+			//DEBUG_PRINTLN("Fine callback MQTT.");
+			blocked[0]=blocked[1]=false;
+		}
+		//provenienti dalla mqttCallback
+		//remote pressed button event
+		leggiTastiRemoti();
+		//------------------------------------------------------------------------------------------------------------
+		//Finestra idle di riconnessione (necessaria se il loop è molto denso di eventi e il wifi non si aggancia!!!)
+		//------------------------------------------------------------------------------------------------------------
+		//if((wifiConn == false && !(isrun[0] || isrun[1]))){
+			//DEBUG_PRINTLN(F("to ESP stack... "));
+			//delay(30);//give 30ms to the ESP stack for wifi connect
+		//	wifiConn = (WiFi.status() == WL_CONNECTED);
+		//}
+		//------------------------------------------------------------------------------------------------------------
+	}//END 60ms scheduler------------------------------------------------------------------------------------
+	
+  }//END Time base (2 msec) main scheduler------------------------------------------------------------------------
+  
+  //POST SCHEDULERS ACTIONS-----------------
+  telnet.handle();
+  yield();	// Give a time for ESP8266
+}//END loop
+
+
+inline void leggiTastiRemoti(){
+	//gestione eventi MQTT sui sensori
+	if(inr[MQTTJSONTEMP]){
+		inr[MQTTJSONTEMP] = LOW;
+		readTempAndPub();
+	}
+	if(inr[MQTTJSONMEANPWR]){
+		inr[MQTTJSONMEANPWR] = LOW;
+		readAvgPowerAndPub();
+	}
+	if(inr[MQTTJSONPEAKPWR]){
+		inr[MQTTJSONPEAKPWR] = LOW;
+		readPeakPowerAndPub();
+	}
+}
+
+inline void currentPeakDetector(){
+	//AC current peak detector
         system_soft_wdt_stop();
         ets_intr_lock( ); //close interrupt
         noInterrupts();
@@ -777,14 +884,11 @@ inline void loop2() {
 		interrupts();
         ets_intr_unlock(); //open interrupt
         system_soft_wdt_restart();
-	}
-	
-	//ogni 20ms
-	if(!(step % 10)){
-		//zero detection scheduler
-		zeroCnt = (zeroCnt + 1) % 50;
-		
-		if((isrun[0] || isrun[1])){
+}
+
+inline void automaticStopManager(){
+	if((isrun[0] || isrun[1])){
+			//automatic stop manager
 			dd = maxx - minx;
 			//EMA calculation
 			ex = dd*EMA + (1.0 - EMA)*ex;
@@ -796,6 +900,7 @@ inline void loop2() {
 			DEBUG_PRINT(0);
 			DEBUG_PRINT(F(") ADC enable: "));
 			DEBUG_PRINT(dosmpl);
+			
 			if(isrun[0] && dosmpl){
 				DEBUG_PRINT(0);
 				if(isrundelay[0] == 0){
@@ -927,6 +1032,9 @@ inline void loop2() {
 			dosmpl = true;
 			DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}else{
+			//zero detection manager
+			//zero detection scheduler
+			zeroCnt = (zeroCnt + 1) % 50;
 			dosmpl = false;
 			//all motors are stopped
 			if(zeroCnt < 3){
@@ -947,163 +1055,156 @@ inline void loop2() {
 				DEBUG_PRINT(m);
 			}
 		}	
+}
+
+inline void sensorStatePoll(){
+	//sensor variation polling management
+	//on events basis push of reports
+	if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
+		readTempAndPub();
 	}
-#endif
+	bool updatePwr = false;
+	if(gatedfn(getAmpRMS(getAVG(0)/2),GTMEANPWR1, MEANPWR1RND)){
+		updatePwr == true;
+	}
+	if(gatedfn(getAmpRMS(getAVG(1)/2),GTMEANPWR2, MEANPWR2RND)){
+		updatePwr == true;
+	}
+	if(updatePwr){
+		readAvgPowerAndPub();
+		updatePwr = false;
+	}
+	if(gatedfn(getAmpRMS(getAVG(0)+getThresholdUp(0)/2),GTPEAKPWR1, PEAKPWR1RND)){
+		updatePwr == true;
+	}
+	if(gatedfn(getAmpRMS(getAVG(1)+getThresholdUp(1)/2),GTPEAKPWR2, PEAKPWR2RND)){
+		updatePwr == true;
+	}
+	if(updatePwr){
+		readPeakPowerAndPub();
+	}
+	//periodic push of all reports
+	if(pushCnt == PUSHINTERV){
+		pushCnt = 0;
+		readStatesAndPub(true);
+	}
+}
 
-	//1 sec
-	if(!(step % 500)){
-		aggiornaTimer(RESETTIMER);
-		aggiornaTimer(APOFFTIMER);
-		pushCnt++;
-		DEBUG_PRINT(F("\n------------------------------------------"));
-		DEBUG_PRINT(F("\nMean sensor: "));
-		DEBUG_PRINT(m);
-		DEBUG_PRINT(F(" - Conn stat: "));
-		stat = WiFi.status();
-		DEBUG_PRINT(stat);
-		wifiConn = (stat == WL_CONNECTED);	
-		DEBUG_PRINT(F(" - Wifi mode: "));
-		DEBUG_PRINTLN(WiFi.getMode());
-		
-		if(!(isrun[0] || isrun[1])){
-			//sensor variation polling management
-			//on events basis push of reports
-			if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
-				readTempAndPub();
-			}
-			bool updatePwr = false;
-			if(gatedfn(getAmpRMS(getAVG(0)/2),GTMEANPWR1, MEANPWR1RND)){
-				updatePwr == true;
-			}
-			if(gatedfn(getAmpRMS(getAVG(1)/2),GTMEANPWR2, MEANPWR2RND)){
-				updatePwr == true;
-			}
-			if(updatePwr){
-				readAvgPowerAndPub();
-				updatePwr = false;
-			}
-			if(gatedfn(getAmpRMS(getAVG(0)+getThresholdUp(0)/2),GTPEAKPWR1, PEAKPWR1RND)){
-				updatePwr == true;
-			}
-			if(gatedfn(getAmpRMS(getAVG(1)+getThresholdUp(1)/2),GTPEAKPWR2, PEAKPWR2RND)){
-				updatePwr == true;
-			}
-			if(updatePwr){
-				readPeakPowerAndPub();
-			}
-			//periodic push of all reports
-			if(pushCnt == PUSHINTERV){
-				pushCnt = 0;
-				readStatesAndPub(true);
-			}
-		}
-		
-		//DEBUG_PRINTLN(wl_status_to_string(wfs));
-		if(WiFi.getMode() == WIFI_OFF || WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
-			if(!wifiConn && !(isrun[0] || isrun[1])){
-				//lampeggia led di connessione
-				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
-				//yield();
-				DEBUG_PRINT(F("\nSwcount roll: "));
-				DEBUG_PRINTLN(swcount);
-				
-				if((swcount == 0)){
-					DEBUG_PRINTLN(F("Connection timed out"));
-					WiFi.persistent(false);
-					WiFi.disconnect(true);
-					WiFi.mode(WIFI_OFF);    
-					DEBUG_PRINTLN(F("Do new connection"));
-					WiFi.setAutoReconnect(true);	
-					WiFi.mode(WIFI_STA);
-					WiFi.setAutoReconnect(true);
-					WiFi.config(0U, 0U, 0U);
-					setup_wifi(wifindx);	//tetativo di connessione
-					//wifi_station_dhcpc_start();
-					//WiFi.waitForConnectResult();	
-					stat = WiFi.status();
-					wifiConn = (stat == WL_CONNECTED);
-					wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
-					//if(wifiConn)
-					//	mqttReconnect();
-				}
-				swcount = (swcount + 1) % TCOUNT;
-			}else{
-				digitalWrite(OUTSLED, LOW);
-				params[LOCALIP] = WiFi.localIP().toString();
-			}
-		}
-
-		//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
-        if(wifiConn && mqttClient!=NULL){
-			//noInterrupts ();
-			byte mqttStat = mqttClient->isConnected();
-			//interrupts ();
-			//delay(50);
-			//noInterrupts ();
-			//mqttStat = mqttClient->isConnected();
-			//interrupts ();
-			DEBUG_PRINT(F("MQTT check : "));
-			DEBUG_PRINT(mqttStat);
-			if(!mqttStat){
-				DEBUG_PRINT(F("\nMQTT dice non sono connesso."));
-				mqttConnected=false;
-			}	
-			else{
-				DEBUG_PRINT(F("\nMQTT  dice sono connesso. Local IP: "));
-				DEBUG_PRINT(WiFi.localIP());
-				mqttConnected=true;
-				mqttcnt = 0;
-				mqttofst = 2;
-			}
-		}
-		else
-		{
-			mqttConnected=false;
-		}
-		
-		if((wifiConn == true)&&(!mqttConnected) && WiFi.status()==WL_CONNECTED && WiFi.getMode()==WIFI_STA) {
-			mqttcnt++;
+inline void wifiFailoverManager(){
+	//wifi failover management
+	//DEBUG_PRINTLN(wl_status_to_string(wfs));
+	if(WiFi.getMode() == WIFI_OFF || WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
+		if(!wifiConn){
+			//lampeggia led di connessione
+			digitalWrite(OUTSLED, !digitalRead(OUTSLED));
+			//yield();
+			DEBUG_PRINT(F("\nSwcount roll: "));
+			DEBUG_PRINTLN(swcount);
 			
-			if(mqttClient==NULL){
-				DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
-				mqttReconnect();
-				mqttcnt = 0;
-				mqttofst = 2;
-			}else if(mqttcnt == 20){
-				DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
-				mqttofst = 4;
-			}else if(mqttcnt == 40){
-				mqttofst = 8;
-			}else if(mqttcnt == 100){
-				mqttofst = 10;
-			}else{
-				if(!(mqttcnt % mqttofst)){
-					//non si può fare perchè dopo pochi loop crasha
-					if(dscnct){
-						dscnct=false;
-						DEBUG_PRINT(F("eseguo la MQTT connect()...Cnt: "));
-						//noInterrupts ();
-						mqttClient->connect();
-						//interrupts ();
-						delay(50);
-					}
-					else
-					{
-						dscnct=true;
-						DEBUG_PRINT(F("eseguo la MQTT disconnect()...Cnt: "));
-						//noInterrupts ();
-						mqttClient->disconnect();
-						//interrupts ();
-						delay(50);
-					}
-					DEBUG_PRINT(mqttcnt);
-					DEBUG_PRINT(F(" - Passo: "));
-					DEBUG_PRINTLN(mqttofst);
-				}
-				//non si può fare senza disconnect perchè dopo pochi loop crasha
-				//mqttClient->setUserPwd((params[MQTTUSR]).c_str(), (params[MQTTPSW]).c_str());
+			if((swcount == 0)){
+				DEBUG_PRINTLN(F("Connection timed out"));
+				WiFi.persistent(false);
+				WiFi.disconnect(true);
+				WiFi.mode(WIFI_OFF);    
+				DEBUG_PRINTLN(F("Do new connection"));
+				WiFi.setAutoReconnect(true);	
+				WiFi.mode(WIFI_STA);
+				WiFi.setAutoReconnect(true);
+				WiFi.config(0U, 0U, 0U);
+				setup_wifi(wifindx);	//tetativo di connessione
+				//wifi_station_dhcpc_start();
+				//WiFi.waitForConnectResult();	
+				stat = WiFi.status();
+				wifiConn = (stat == WL_CONNECTED);
+				wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
+				//if(wifiConn)
+				//	mqttReconnect();
 			}
+			swcount = (swcount + 1) % TCOUNT;
+		}else{
+			digitalWrite(OUTSLED, LOW);
+			params[LOCALIP] = WiFi.localIP().toString();
 		}
+	}
+}
+
+inline void MQTTReconnectManager(){
+	//MQTT reconnect management
+			//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
+			if(wifiConn && mqttClient!=NULL){
+				//noInterrupts ();
+				byte mqttStat = mqttClient->isConnected();
+				//interrupts ();
+				//delay(50);
+				//noInterrupts ();
+				//mqttStat = mqttClient->isConnected();
+				//interrupts ();
+				DEBUG_PRINT(F("MQTT check : "));
+				DEBUG_PRINT(mqttStat);
+				if(!mqttStat){
+					DEBUG_PRINT(F("\nMQTT dice non sono connesso."));
+					mqttConnected=false;
+				}	
+				else{
+					DEBUG_PRINT(F("\nMQTT  dice sono connesso. Local IP: "));
+					DEBUG_PRINT(WiFi.localIP());
+					mqttConnected=true;
+					mqttcnt = 0;
+					mqttofst = 2;
+				}
+			}
+			else
+			{
+				mqttConnected=false;
+			}
+			
+			if((wifiConn == true)&&(!mqttConnected) && WiFi.status()==WL_CONNECTED && WiFi.getMode()==WIFI_STA) {
+				mqttcnt++;
+				
+				if(mqttClient==NULL){
+					DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
+					mqttReconnect();
+					mqttcnt = 0;
+					mqttofst = 2;
+				}else if(mqttcnt == 20){
+					DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
+					mqttofst = 4;
+				}else if(mqttcnt == 40){
+					mqttofst = 8;
+				}else if(mqttcnt == 100){
+					mqttofst = 10;
+				}else{
+					if(!(mqttcnt % mqttofst)){
+						//non si può fare perchè dopo pochi loop crasha
+						if(dscnct){
+							dscnct=false;
+							DEBUG_PRINT(F("eseguo la MQTT connect()...Cnt: "));
+							//noInterrupts ();
+							mqttClient->connect();
+							//interrupts ();
+							delay(50);
+						}
+						else
+						{
+							dscnct=true;
+							DEBUG_PRINT(F("eseguo la MQTT disconnect()...Cnt: "));
+							//noInterrupts ();
+							mqttClient->disconnect();
+							//interrupts ();
+							delay(50);
+						}
+						DEBUG_PRINT(mqttcnt);
+						DEBUG_PRINT(F(" - Passo: "));
+						DEBUG_PRINTLN(mqttofst);
+					}
+					//non si può fare senza disconnect perchè dopo pochi loop crasha
+					//mqttClient->setUserPwd((params[MQTTUSR]).c_str(), (params[MQTTPSW]).c_str());
+				}
+			}
+}
+
+inline void paramsModificationPoll(){
+	//actions on parametrs saving
 		//is else if per gestione priorità, l'ordine è importante! vanno fatti in momenti successivi
 		if(params[WIFICHANGED]=="true"){
 			params[WIFICHANGED]="false";
@@ -1177,49 +1278,8 @@ inline void loop2() {
 				mqttClient->publish(params[MQTTOUTTOPIC], params[MQTTID]);
 			}
 		}
-	}
-	
-	//ogni 50ms
-	if(!(step % 30)){		
-		//leggi ingressi locali e mette il loro valore sull'array val[]
-		leggiTasti();
-		leggiRemoto();
-		//se uno dei tasti delle tapparelle è stato premuto
-		//o se è arrivato un comando dala mqttCallback
-		if(tapLogic(TAP1) == 1 ||  tapLogic(TAP2) == 1){ 
-			//once any button is pressed
-			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato();
-			//legge lo stato finale e lo pubblica su MQTT
-			readStatesAndPub();
-			//DEBUG_PRINTLN("Fine callback MQTT.");
-			blocked[0]=blocked[1]=false;
-		}
-		//Finestra di riconnessione
-		//if((wifiConn == false && !(isrun[0] || isrun[1]))){
-			//DEBUG_PRINTLN(F("to ESP stack... "));
-			//delay(30);//give 30ms to the ESP stack for wifi connect
-		//	wifiConn = (WiFi.status() == WL_CONNECTED);
-		//}
-		//gestione eventi MQTT sui sensori
-		if(inr[MQTTJSONTEMP]){
-			inr[MQTTJSONTEMP] = LOW;
-			readTempAndPub();
-		}
-		if(inr[MQTTJSONMEANPWR]){
-			inr[MQTTJSONMEANPWR] = LOW;
-			readAvgPowerAndPub();
-		}
-		if(inr[MQTTJSONPEAKPWR]){
-			inr[MQTTJSONPEAKPWR] = LOW;
-			readPeakPowerAndPub();
-		}
-	}
-  }//FINE Time base
-  
-  telnet.handle();
-  yield();	// Give a time for ESP8266
 }
+
 //-----------------------------------------------INIZIO TIMER----------------------------------------------------------------------
 //azione da compiere allo scadere di uno dei timer dell'array	
 void onElapse(byte n){

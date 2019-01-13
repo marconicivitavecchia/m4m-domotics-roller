@@ -249,7 +249,7 @@ extern RemoteDebug telnet;
 #endif
 
 //legge gli ingressi dei tasti già puliti dai rimbalzi
-#define leggiTasti()  in[BTN1IN] =!digitalRead(BTN1U);	\
+#define leggiTastiLocali()  in[BTN1IN] =!digitalRead(BTN1U);	\
     in[BTN2IN] =!digitalRead(BTN1D);	\
     in[BTN1IN+BTNDIM] =!digitalRead(BTN2U); 	\
     in[BTN2IN+BTNDIM] =!digitalRead(BTN2D)
@@ -258,7 +258,7 @@ extern RemoteDebug telnet;
 //si deve mischiare con la lettura locale DOPO che questa venga scritta
 //al giro di loop() successivo in[] locale riporta a livello basso l'eccitazione remota
 //legge gli ingressi dei tasti già puliti dai rimbalzi	
-#define leggiRemoto() in[BTN1IN] = in[BTN1IN] + inr[BTN1IN];	\
+#define leggiTastiLocaliRemoto() in[BTN1IN] = in[BTN1IN] + inr[BTN1IN];	\
     in[BTN2IN] = in[BTN2IN] + inr[BTN2IN];	\
     in[BTN1IN+BTNDIM] = in[BTN1IN+BTNDIM] + inr[BTN1IN+BTNDIM];	  \
     in[BTN2IN+BTNDIM] = in[BTN2IN+BTNDIM] + inr[BTN2IN+BTNDIM]; 	\
