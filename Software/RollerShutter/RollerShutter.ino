@@ -1196,11 +1196,11 @@ inline void loop2() {
 			blocked[0]=blocked[1]=false;
 		}
 		//Finestra di riconnessione
-		if((wifiConn == false && !(isrun[0] || isrun[1]))){
+		//if((wifiConn == false && !(isrun[0] || isrun[1]))){
 			//DEBUG_PRINTLN(F("to ESP stack... "));
 			//delay(30);//give 30ms to the ESP stack for wifi connect
-			wifiConn = (WiFi.status() == WL_CONNECTED);
-		}
+		//	wifiConn = (WiFi.status() == WL_CONNECTED);
+		//}
 		//gestione eventi MQTT sui sensori
 		if(inr[MQTTJSONTEMP]){
 			inr[MQTTJSONTEMP] = LOW;
