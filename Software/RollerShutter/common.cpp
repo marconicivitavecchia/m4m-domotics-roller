@@ -1054,7 +1054,7 @@ void handleModify(){
   }
   if(serverp.hasArg("taplength") && (paramsp[TLENGTH] != String(serverp.arg("taplength"))) ){
 	paramsp[TLENGTH] = serverp.arg("taplength");
-	EEPROMWriteInt(TLENGTHOFST,(paramsp[TLENGTH]).toInt());
+	EEPROMWriteStr(TLENGTHOFST,(paramsp[TLENGTH]).c_str());
 	EEPROM.commit();
 	DEBUG_PRINT(F("Modified TLENGTH "));
 	DEBUG_PRINTLN(paramsp[TLENGTH]);
@@ -1062,7 +1062,7 @@ void handleModify(){
   }
   if(serverp.hasArg("barrelrad") && (paramsp[BARRELRAD] != String(serverp.arg("barrelrad"))) ){
 	paramsp[BARRELRAD] = serverp.arg("barrelrad");
-	EEPROMWriteInt(BARRELRADOFST,(paramsp[BARRELRAD]).toInt());
+	EEPROMWriteStr(BARRELRADOFST,(paramsp[BARRELRAD]).c_str());
 	EEPROM.commit();
     DEBUG_PRINT(F("Modified BARRELRAD "));
     DEBUG_PRINTLN(paramsp[BARRELRAD]);
@@ -1070,7 +1070,7 @@ void handleModify(){
   }
   if(serverp.hasArg("thickness") && (paramsp[THICKNESS] != String(serverp.arg("thickness"))) ){
 	paramsp[THICKNESS] = serverp.arg("thickness");
-	EEPROMWriteInt(THICKNESSOFST,(paramsp[THICKNESS]).toInt());
+	EEPROMWriteStr(THICKNESSOFST,(paramsp[THICKNESS]).c_str());
 	EEPROM.commit();
     DEBUG_PRINT(F("Modified THICKNESS "));
     DEBUG_PRINTLN(paramsp[THICKNESS]);
