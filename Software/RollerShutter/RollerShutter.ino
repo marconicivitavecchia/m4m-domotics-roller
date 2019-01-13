@@ -830,6 +830,7 @@ inline void loop2() {
 		//------------------------------------------------------------------------------------------------------------
 		//Finestra idle di riconnessione (necessaria se il loop è molto denso di eventi e il wifi non si aggancia!!!)
 		//------------------------------------------------------------------------------------------------------------
+		//sostituisce la bloccante WiFi.waitForConnectResult();	
 		//if((wifiConn == false && !(isrun[0] || isrun[1]))){
 			//DEBUG_PRINTLN(F("to ESP stack... "));
 			//delay(30);//give 30ms to the ESP stack for wifi connect
@@ -837,7 +838,6 @@ inline void loop2() {
 		//}
 		//------------------------------------------------------------------------------------------------------------
 	}//END 60ms scheduler------------------------------------------------------------------------------------
-	
   }//END Time base (2 msec) main scheduler------------------------------------------------------------------------
   
   //POST SCHEDULERS ACTIONS-----------------
@@ -1113,7 +1113,7 @@ inline void wifiFailoverManager(){
 				WiFi.config(0U, 0U, 0U);
 				setup_wifi(wifindx);	//tetativo di connessione
 				//wifi_station_dhcpc_start();
-				//WiFi.waitForConnectResult();	
+				//WiFi.waitForConnectResult();	//non necessaria se il loop ha sufficienti slot di idle!
 				stat = WiFi.status();
 				wifiConn = (stat == WL_CONNECTED);
 				wifindx = (wifindx +1) % 2; //0 or 1 are the index of the two alternative SSID
