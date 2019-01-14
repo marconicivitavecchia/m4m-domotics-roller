@@ -11,7 +11,7 @@ byte indx = 0;
 byte stat;
 float vcosfi = 220*0.8;
 double ACSVolt;
-unsigned int mVperAmp = 100;   // 185 for 5A, 100 for 20A and 66 for 30A Module
+unsigned int mVperAmp = 185;   // 185 for 5A, 100 for 20A and 66 for 30A Module
 double ACSVoltage = 0;
 double peak = 0;
 double VRMS = 0;
