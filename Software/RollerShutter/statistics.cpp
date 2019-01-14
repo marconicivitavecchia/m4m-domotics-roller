@@ -244,7 +244,7 @@ short checkRange(double mval, byte n) {
 			res = -1;   
 			thresholdUp[n] = 1024;
 			nup[n] = 0;
-			firstPeak = 0;
+			//firstPeak = 0;
 		}
 	}
 	
@@ -270,6 +270,7 @@ short checkRange(double mval, byte n) {
 			}
 			nup[n]++;
 			mesrdThreshld[n] = mval;
+			fixedThreshld[n] = mesrdThreshld[n] * 3 / 4; 
 		}
 		
 		count[n]++;		
