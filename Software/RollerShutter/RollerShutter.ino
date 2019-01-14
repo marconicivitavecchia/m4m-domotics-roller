@@ -767,7 +767,6 @@ inline void loop2() {
 	//calcolo dei multipli interi del tempo base
 	step = (step + 1) % nsteps;
 	
-	//current = millis();
 #if (AUTOCAL) 
 	if(dosmpl){//solo a motore in moto
 		currentPeakDetector();
@@ -784,21 +783,21 @@ inline void loop2() {
 	//---------------------------------------------------------------------
 	// 1 sec scheduler
 	//---------------------------------------------------------------------
-	if(!(step % 500)){
-		aggiornaTimer(RESETTIMER);
-		aggiornaTimer(APOFFTIMER);
-		pushCnt++;
-		DEBUG_PRINT(F("\n------------------------------------------"));
-		DEBUG_PRINT(F("\nMean sensor: "));
-		DEBUG_PRINT(m);
-		DEBUG_PRINT(F(" - Conn stat: "));
-		stat = WiFi.status();
-		DEBUG_PRINT(stat);
-		wifiConn = (stat == WL_CONNECTED);	
-		DEBUG_PRINT(F(" - Wifi mode: "));
-		DEBUG_PRINTLN(WiFi.getMode());
-		
+	if(!(step % 500)){	
 		if(!(isrun[0] || isrun[1])){//solo a motore fermo! Per evitare contemporaneità col currentPeakDetector
+			aggiornaTimer(RESETTIMER);
+			aggiornaTimer(APOFFTIMER);
+			pushCnt++;
+			DEBUG_PRINT(F("\n------------------------------------------"));
+			DEBUG_PRINT(F("\nMean sensor: "));
+			DEBUG_PRINT(m);
+			DEBUG_PRINT(F(" - Conn stat: "));
+			stat = WiFi.status();
+			DEBUG_PRINT(stat);
+			wifiConn = (stat == WL_CONNECTED);	
+			DEBUG_PRINT(F(" - Wifi mode: "));
+			DEBUG_PRINTLN(WiFi.getMode());
+			
 			sensorStatePoll();
 			wifiFailoverManager();
 			MQTTReconnectManager();

@@ -15,6 +15,7 @@ unsigned mesrdThreshld[2] = {0, 0};
 //bool started[2] = {false, false};
 //bool highLevel[2]={false, false};
 byte precdval[2]={false, false};
+short firstPeak = 0;
 //bool learn = false;
 
 //double sigma = NSIGMA;
@@ -236,14 +237,14 @@ short checkRange(double mval, byte n) {
 		if (mval > thresholdDown[n]){
 			//Fronte di salita
 			DEBUG_PRINT(F(")Fronte di salita sensore"));
-			res = 1;
+			res = firstPeak;
 		}else{
 			//Fronte di discesa
 			DEBUG_PRINT(F(") Fronte di discesa sensore - sotto minimo"));
 			res = -1;   
 			thresholdUp[n] = 1024;
 			nup[n] = 0;
-			
+			firstPeak = 0;
 		}
 	}
 	
@@ -265,6 +266,7 @@ short checkRange(double mval, byte n) {
 				//first rising is allowed
 				DEBUG_PRINT(F(" - Primo picco"));
 				avg[n] = mval;
+				firstPeak = 1;
 			}
 			nup[n]++;
 			mesrdThreshld[n] = mval;
