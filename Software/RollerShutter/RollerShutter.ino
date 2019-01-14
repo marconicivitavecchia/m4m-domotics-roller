@@ -968,7 +968,6 @@ inline void automaticStopManager(){
 				}
 			}else{
 				isrundelay[0] = RUNDELAY;
-				ex = 0; //importante! Se no picchi negativi!
 			}
 			
 			if(isrun[1] && dosmpl){
@@ -1032,6 +1031,7 @@ inline void automaticStopManager(){
 			dosmpl = true;
 			DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}else{
+			ex = 0; //importante! Se no picchi negativi!
 			//zero detection manager
 			//zero detection scheduler
 			zeroCnt = (zeroCnt + 1) % 50;
