@@ -238,7 +238,7 @@ short checkRange(double mval, byte n) {
 			//Fronte di salita
 			DEBUG_PRINT(F(")Fronte di salita sensore"));
 			res = 1;
-		}else{
+		}else if(mval < thresholdDown[n]){
 			//Fronte di discesa
 			DEBUG_PRINT(F(") Fronte di discesa sensore - sotto minimo"));
 			res = -1;   
