@@ -8,13 +8,13 @@ short countd[2] = {0, 0};
 //unsigned short swdelay[2] = {RAMPDELAY1, RAMPDELAY2};
 unsigned short nup[2] = {0, 0};
 unsigned short npeak[2] = {0, 0};
-double thresholdUp[2] = {1024, 1024};
+double thresholdUp[2] = {0, 0};
 double thresholdDown[2] = {0, 0};
 unsigned fixedThreshld[2] = {0, 0};
 unsigned mesrdThreshld[2] = {0, 0};
 //bool started[2] = {false, false};
 //bool highLevel[2]={false, false};
-byte precdval[2]={false, false};
+byte precdval[4]={false, false,false, false};
 short firstPeak = 0;
 //bool learn = false;
 
@@ -234,15 +234,15 @@ short checkRange(double mval, byte n) {
 		//sono su un fronte
 		DEBUG_PRINT(F("\n("));
 		DEBUG_PRINT(n);
-		if (mval > thresholdDown[n]){
+		if (mval - thresholdDown[n] > ONGAP){
 			//Fronte di salita
 			DEBUG_PRINT(F(")Fronte di salita sensore"));
-			res = firstPeak;
+			res = 1;
 		}else{
 			//Fronte di discesa
 			DEBUG_PRINT(F(") Fronte di discesa sensore - sotto minimo"));
 			res = -1;   
-			thresholdUp[n] = 1024;
+			//thresholdUp[n] = 0;
 			nup[n] = 0;
 			//firstPeak = 0;
 		}
@@ -255,23 +255,34 @@ short checkRange(double mval, byte n) {
 		//sono sul livello alto
 		//calcolo statistiche solo con motore in movimento		
 		DEBUG_PRINT(F(") avg[n]: "));
-		DEBUG_PRINT(avg[n]);		
-		if(mval > thresholdUp[n] && mval > fixedThreshld[n]) {
-			//filtro picco di avvio
-			DEBUG_PRINT(F("- Sopra massimo - nup[n]: "));
-			DEBUG_PRINT(nup[n]);
-			if(nup[n] > npeak[n]){
-				res = 2;
+		DEBUG_PRINT(avg[n]);
+       		
+		if(switchd(mval > thresholdUp[n], n+2)) {
+			if(mval > thresholdUp[n] && mval > ONGAP){
+				//filtro picco di avvio
+				DEBUG_PRINT(F("- Sopra massimo - nup[n]: "));
+				DEBUG_PRINT(nup[n]);
+				if(nup[n] > npeak[n]){
+					res = 2;
+				}else{
+					//first rising is allowed
+					DEBUG_PRINT(F(" - Primo picco"));
+					//avg[n] = mval;
+					//firstPeak = 1;
+				}
+				nup[n]++;
 			}else{
-				//first rising is allowed
-				DEBUG_PRINT(F(" - Primo picco"));
-				avg[n] = mval;
-				firstPeak = 1;
+				nup[n] = 0;
 			}
-			nup[n]++;
+		}
+		
+		/*if(mval > thresholdUp[n] && mval > fixedThreshld[n]) {
+			//filtro picco di avvio
+			DEBUG_PRINT(F("- fixedThreshld: "));
+			DEBUG_PRINT(fixedThreshld[n]);
 			mesrdThreshld[n] = mval;
 			fixedThreshld[n] = mesrdThreshld[n] * 3 / 4; 
-		}
+		}*/
 		
 		count[n]++;		
 		double delta = (double) mval - avg[n];
@@ -279,8 +290,10 @@ short checkRange(double mval, byte n) {
 		stdDev[n] += (double) delta * (mval - avg[n]);
 		thresholdDown[n] = (double) avg[n]/4;
 		(count[n] > 1) && (thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA)); //protected against overflow by a logic short circuit
+	}else{
+		nup[n] = 0;	
 	}
-
+	
 	return res;
 }
 /*

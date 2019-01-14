@@ -968,6 +968,7 @@ inline void automaticStopManager(){
 				}
 			}else{
 				isrundelay[0] = RUNDELAY;
+				ex = 0; //importante! Se no picchi negativi!
 			}
 			
 			if(isrun[1] && dosmpl){

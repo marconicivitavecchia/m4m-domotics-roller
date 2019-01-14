@@ -86,12 +86,13 @@ extern RemoteDebug telnet;
 //#define THRESHOLD2	13
 //#define RAMPDELAY1	1  		//n*20ms
 //#define RAMPDELAY2	1  		//n*20ms
+#define ONGAP		15
 #define PUSHINTERV	 60 // in sec
 #define ONE_WIRE_BUS 2  // DS18B20 pin
-#define RUNDELAY  	3
+#define RUNDELAY  	1
 #define DELTAL		4
 #define AUTOCAL		1
-#define NSIGMA 		10
+#define NSIGMA 		3
 #define EMA  		0.7
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
