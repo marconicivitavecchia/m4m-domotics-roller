@@ -74,11 +74,11 @@ short checkRange(double mval, byte n) {
 	
 	//Edges evaluations -----------------------------------------------------------------------------------
 	//soglia cronometro marcia
-	if(switchd((mval > thresholdDown[n] + ONGAP),n+4)){
+	if(switchd((mval > ONGAP),n+4)){
 		//sono su un fronte
 		DEBUG_PRINT(F("\n("));
 		DEBUG_PRINT(n);
-		if (mval > thresholdDown[n] + ONGAP){
+		if (mval > ONGAP){
 			//Fronte di salita
 			DEBUG_PRINT(F(")Fronte marcia cronometrata: sopra ONGAP...Start cronometro!"));
 			res = 1;
@@ -170,7 +170,7 @@ void resetEdges(byte n) {
   //reset Fronte marcia cronometrata!!!
   precdval[n+4] = false;
   precdval[n+2] = false;
-  precdval[n] = false;
+  precdval[n] = true;
 }
 
 void resetAVGStats(double val, byte n) {
