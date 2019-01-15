@@ -960,7 +960,7 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(F(" - Peak: "));
 					DEBUG_PRINT(ex[0]);
 					isrundelay[0]--;
-					//ex[0] = dd;
+					ex[0] = dd;
 					DEBUG_PRINT(F(" - dd: "));
 					DEBUG_PRINT(dd);
 				}
@@ -968,7 +968,7 @@ inline void automaticStopManager(){
 				isrundelay[0] = RUNDELAY;
 				//reset dei fronti su blocco marcia (sia manuale che automatica) 
 				resetEdges(0);
-				ex[0] = getAVG(0); //importante! Se no picchi negativi!
+				//ex[0] = getAVG(0); //importante! Se no picchi negativi!
 			}
 			
 			if(isrun[1] && dosmpl){
@@ -1019,7 +1019,7 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(F(" - Peak: "));
 					DEBUG_PRINT(ex[1]);
 					isrundelay[1]--;
-					//ex[1] = dd;
+					ex[1] = dd;
 					DEBUG_PRINT(F(" - dd: "));
 					DEBUG_PRINT(dd);
 				}
@@ -1027,7 +1027,7 @@ inline void automaticStopManager(){
 				isrundelay[1] = RUNDELAY;
 				//reset dei fronti su blocco marcia (sia manuale che automatica)
 				resetEdges(1);
-				ex[1] = getAVG(1); //importante! Se no picchi negativi!
+				//ex[1] = getAVG(1); //importante! Se no picchi negativi!
 			}
 			//AC peak measure init
 			//indx = 0;
