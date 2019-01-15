@@ -1,41 +1,23 @@
 #include "statistics.h"
-#define MAXDELAY 4
 double avg[2] = {0.0, 0.0};
 double stdDev[2] = {0.0, 0.0};
 unsigned long count[2] = {1, 1};
-short count2[2] = {0, 0};
-short countd[2] = {0, 0};
+//short count2[2] = {0, 0};
+//short countd[2] = {0, 0};
 //unsigned short swdelay[2] = {RAMPDELAY1, RAMPDELAY2};
 unsigned short nup[2] = {0, 0};
 unsigned short npeak[2] = {0, 0};
 double thresholdUp[2] = {0, 0};
 double thresholdDown[2] = {0, 0};
-unsigned fixedThreshld[2] = {0, 0};
-unsigned mesrdThreshld[2] = {0, 0};
+byte precdval[6]={false, false,false, false,false, false};
+//unsigned fixedThreshld[2] = {0, 0};
+//unsigned mesrdThreshld[2] = {0, 0};
 //bool started[2] = {false, false};
 //bool highLevel[2]={false, false};
-byte precdval[4]={false, false,false, false};
-short firstPeak = 0;
+//short firstPeak = 0;
 //bool learn = false;
 
 //double sigma = NSIGMA;
-/*
-void setStatsLearnMode(){
-	learn = true;
-	thresholdUp[0] = 1024;
-	thresholdUp[1] = 1024;
-	avg[0] = 0.0;
-	avg[1] = 0.0;
-}
-
-void clrStatsLearnMode(){
-	learn = false;
-}
-
-bool isStatsLearnMode(){
-	return learn;
-}
-*/
 
 double getAVG(byte n) {
   return avg[n];
@@ -76,145 +58,6 @@ inline bool switchd(byte dval, byte n){
 	return changed;
 }
 
-/*
-void setSigma(byte i) {
-	if(i > 0){
-		sigma = (double) i*NSIGMA;
-	}
-}
-
-double getSigma() {
-  return sigma;
-}
-*/
-/*
-short checkRange2(double mval, byte n) {
-	short res = 0; //res init!!
-	DEBUG_PRINT(F("\n("));
-	DEBUG_PRINT(n);
-	DEBUG_PRINT(F(") mval: "));
-	DEBUG_PRINT(mval);
-	DEBUG_PRINT(F(" - thresholdUp[n]: "));
-	DEBUG_PRINT(thresholdUp[n]);
-	DEBUG_PRINT(F(" - thresholddown[n]: "));
-	DEBUG_PRINT(thresholdDown[n]);
-	
-	//level evaluation
-	//started[n] = started[n] && (mval > thresholdUp[n]); mval > thresholdUp[n]
-	if(mval > thresholdDown[n]){
-		//sono sul livello alto
-		//calcolo statistiche solo con motore in movimento	
-		DEBUG_PRINT(F("\n("));
-		DEBUG_PRINT(n);
-		DEBUG_PRINT(F(") avg[n]: "));
-		DEBUG_PRINT(avg[n]);
-		
-		double delta = (double) mval - avg[n];
-		count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
-		stdDev[n] += (double) delta * (mval - avg[n]);
-		thresholdDown[n] = (double) avg[n]/4;
-		(count[n] > 1) && (thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA));	//protected against overflow by a logic short circuit
-		
-		if(mval > thresholdUp[n] && mval > fixedThreshld[n]) {
-			//filtro picco di avvio
-			DEBUG_PRINT(F("- Sopra massimo - nup[n]: "));
-			DEBUG_PRINT(nup[n]);
-			if(nup[n] > 0){
-				res = 2;
-			}else{
-				//first rising is allowed
-				DEBUG_PRINT(F(" - Primo picco"));
-				avg[n] = mval;
-			}
-			nup[n]++;
-		}
-	}
-	
-	//if(switchd(mval > thresholdDown[n],swdelay,n)){
-	if(switchd(mval > thresholdDown[n],n)){
-		//sono su un fronte
-		DEBUG_PRINT(F("\n("));
-		DEBUG_PRINT(n);
-		if (mval > thresholdDown[n]){
-			//Fronte di salita
-			DEBUG_PRINT(F(")Fronte di salita sensore"));
-			res = 1;
-		}else{
-			//Fronte di discesa
-			DEBUG_PRINT(F(") Fronte di discesa sensore - sotto minimo"));
-			res = -1;   
-			thresholdUp[n] = 1024;
-			nup[n] = 0;
-		}
-	}
-	
-	return res;
-}
-
-short checkRange3(double mval, byte n) {
-	short res = 0; //res init!!
-	
-	DEBUG_PRINT(F("\n("));
-	DEBUG_PRINT(n);
-	DEBUG_PRINT(F(") mval: "));
-	DEBUG_PRINT(mval);
-	DEBUG_PRINT(F(" - thresholdUp[n]: "));
-	DEBUG_PRINT(thresholdUp[n]);
-	DEBUG_PRINT(F(" - thresholddown[n]: "));
-	DEBUG_PRINT(thresholdDown[n]);
-	
-	//if(switchd(mval > thresholdDown[n],swdelay,n)){
-	if(switchd(mval > thresholdDown[n],n)){
-		//sono su un fronte
-		DEBUG_PRINT(F("\n("));
-		DEBUG_PRINT(n);
-		if (mval > thresholdDown[n]){
-			//Fronte di salita
-			DEBUG_PRINT(F(")Fronte di salita sensore"));
-			res = 1;
-		}else{
-			//Fronte di discesa
-			DEBUG_PRINT(F(") Fronte di discesa sensore - sotto minimo"));
-			res = -1;   
-			thresholdUp[n] = 1024;
-			nup[n] = 0;
-			
-		}
-	}
-	
-	//level evaluation
-	if(mval > thresholdDown[n]){
-		DEBUG_PRINT(F("\n("));
-		DEBUG_PRINT(n);
-		//sono sul livello alto
-		//calcolo statistiche solo con motore in movimento		
-		DEBUG_PRINT(F(") avg[n]: "));
-		DEBUG_PRINT(avg[n]);		
-		if(mval > thresholdUp[n] && mval > fixedThreshld[n]) {
-			//filtro picco di avvio
-			DEBUG_PRINT(F("- Sopra massimo - nup[n]: "));
-			DEBUG_PRINT(nup[n]);
-			if(nup[n] > 0){
-				res = 2;
-			}else{
-				//first rising is allowed
-				DEBUG_PRINT(F(" - Primo picco"));
-				avg[n] = mval;
-			}
-			nup[n]++;
-		}
-		
-		count[n]++;		
-		double delta = (double) mval - avg[n];
-		count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
-		stdDev[n] += (double) delta * (mval - avg[n]);
-		thresholdDown[n] = (double) avg[n]/4;
-		(count[n] > 1) && (thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA)); //protected against overflow by a logic short circuit
-	}
-
-	return res;
-}
-*/
 short checkRange(double mval, byte n) {
 	short res = 0; //res init!!
 	
@@ -226,49 +69,59 @@ short checkRange(double mval, byte n) {
 	DEBUG_PRINT(thresholdUp[n]);
 	DEBUG_PRINT(F(" - thresholddown[n]: "));
 	DEBUG_PRINT(thresholdDown[n]);
-	DEBUG_PRINT(F(" - fixedThreshld[n]: "));
-	DEBUG_PRINT(fixedThreshld[n]);
+	//DEBUG_PRINT(F(" - fixedThreshld[n]: "));
+	//DEBUG_PRINT(fixedThreshld[n]);
 	
-	//if(switchd(mval > thresholdDown[n],swdelay,n)){
-	if(switchd(mval > thresholdDown[n],n)){
+	//Edges evaluations -----------------------------------------------------------------------------------
+	//soglia cronometro marcia
+	if(switchd((mval > thresholdDown[n] + ONGAP),n+4)){
 		//sono su un fronte
 		DEBUG_PRINT(F("\n("));
 		DEBUG_PRINT(n);
-		if (mval - thresholdDown[n] > ONGAP){
+		if (mval > thresholdDown[n] + ONGAP){
 			//Fronte di salita
-			DEBUG_PRINT(F(")Fronte di salita sensore"));
+			DEBUG_PRINT(F(")Fronte marcia cronometrata: sopra ONGAP...Start cronometro!"));
 			res = 1;
-		}else if(mval < thresholdDown[n]){
+		}
+	}
+	//soglia blocco motore
+	if(switchd(mval < thresholdDown[n],n)){
+		//sono su un fronte
+		DEBUG_PRINT(F("\n("));
+		DEBUG_PRINT(n);
+		if(mval < thresholdDown[n]){
 			//Fronte di discesa
-			DEBUG_PRINT(F(") Fronte di discesa sensore - sotto minimo"));
+			DEBUG_PRINT(F(") Fronte di blocco marcia motore: sotto minimo...Stop!"));
 			res = -1;   
 			//thresholdUp[n] = 0;
 			nup[n] = 0;
 			//firstPeak = 0;
 		}
 	}
+	//End of edges evaluations ---------------------------------------------------------------------------
 	
-	//level evaluation
+	//level evaluation -----------------------------------------------------------------------------------
+	//soglia di marcia motore
 	if(mval > thresholdDown[n]){
+		//se il motore è in marcia
 		DEBUG_PRINT(F("\n("));
 		DEBUG_PRINT(n);
-		//sono sul livello alto
-		//calcolo statistiche solo con motore in movimento		
 		DEBUG_PRINT(F(") avg[n]: "));
 		DEBUG_PRINT(avg[n]);
-       		
+       	
+		//fronte soglia di urto potenziale
 		if(switchd(mval > thresholdUp[n], n+2)) {
 			if(mval > thresholdUp[n] && mval > ONGAP){
 				//filtro picco di avvio
-				DEBUG_PRINT(F("- Sopra massimo - nup[n]: "));
+				DEBUG_PRINT(F("- Sopra massimo nup[n]: "));
 				DEBUG_PRINT(nup[n]);
 				if(nup[n] > npeak[n]){
 					res = 2;
+					DEBUG_PRINT(F(" - Urto...Stop!"));
 				}else{
 					//first rising is allowed
-					DEBUG_PRINT(F(" - Primo picco"));
+					DEBUG_PRINT(F(" - Primo picco...Partenza!")); //non è un urto, è la partenza!
 					//avg[n] = mval;
-					//firstPeak = 1;
 				}
 				nup[n]++;
 			}else{
@@ -276,14 +129,7 @@ short checkRange(double mval, byte n) {
 			}
 		}
 		
-		/*if(mval > thresholdUp[n] && mval > fixedThreshld[n]) {
-			//filtro picco di avvio
-			DEBUG_PRINT(F("- fixedThreshld: "));
-			DEBUG_PRINT(fixedThreshld[n]);
-			mesrdThreshld[n] = mval;
-			fixedThreshld[n] = mesrdThreshld[n] * 3 / 4; 
-		}*/
-		
+		//calcolo statistiche (media e varianza) solo con motore in movimento	
 		count[n]++;		
 		double delta = (double) mval - avg[n];
 		count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
@@ -291,8 +137,10 @@ short checkRange(double mval, byte n) {
 		thresholdDown[n] = (double) avg[n]/4;
 		(count[n] > 1) && (thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA)); //protected against overflow by a logic short circuit
 	}else{
+		//se il motore è fermo
 		nup[n] = 0;	
 	}
+	//End of level evaluation --------------------------------------------------------------------------------------------------------- 
 	
 	return res;
 }
@@ -306,7 +154,7 @@ short checkRange(double mval, byte n) {
 */
 
 void updateUpThreshold(byte n) {
-  fixedThreshld[n] = mesrdThreshld[n] * 3 / 4; 
+  //fixedThreshld[n] = mesrdThreshld[n] * 3 / 4; 
   npeak[n] = 0; 
 }
 
@@ -327,4 +175,11 @@ void resetStatDelayCounter(byte n) {
   precdval[n]=false;
 }
 
+/*if(mval > thresholdUp[n] && mval > fixedThreshld[n]) {
+			//filtro picco di avvio
+			DEBUG_PRINT(F("- fixedThreshld: "));
+			DEBUG_PRINT(fixedThreshld[n]);
+			mesrdThreshld[n] = mval;
+			fixedThreshld[n] = mesrdThreshld[n] * 3 / 4; 
+		}*/
 
