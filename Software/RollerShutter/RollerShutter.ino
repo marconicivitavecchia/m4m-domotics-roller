@@ -13,7 +13,7 @@ float vcosfi = 220*0.8;
 double ACSVolt;
 unsigned int mVperAmp = 185;   // 185 for 5A, 100 for 20A and 66 for 30A Module
 double ACSVoltage = 0;
-double peak = 0;
+//double peak = 0;
 double VRMS = 0;
 double VMCU = 0;
 double AmpsRMS = 0;
@@ -32,7 +32,7 @@ volatile int maxx = 0;
 volatile int x;
 int dd = 0;
 volatile float m;
-double ex = 0;
+double ex[2] = {0,0};
 double calAvg[2] = {0,0};
 double weight[2] = {0,0};
 short chk[2]={0,0};
@@ -621,7 +621,7 @@ void setup() {
   delay(500);
   for(int i=0;i<NBTN*STATUSDIM;i++)
 	  outLogic[i]=LOW;
-  for(int i=0;i<4;i++)
+  for(int i=0;i<MQTTJSONDIM;i++)
 		inr[i]=LOW;
   initIiming(true);
   // Register event handlers.
@@ -889,10 +889,8 @@ inline void automaticStopManager(){
 			//automatic stop manager
 			dd = maxx - minx;
 			//EMA calculation
-			ex = dd*EMA + (1.0 - EMA)*ex;
 			//ACSVolt = (double) ex/2.0;
 			//peak = (double) ex/2.0;
-			peak = ex;
 			//reset of peak sample value
 			DEBUG_PRINT(F("\n("));
 			DEBUG_PRINT(0);
@@ -902,6 +900,7 @@ inline void automaticStopManager(){
 			if(isrun[0] && dosmpl){
 				DEBUG_PRINT(0);
 				if(isrundelay[0] == 0){
+					ex[0] = dd*EMA + (1.0 - EMA)*ex[0];
 					DEBUG_PRINT(F("\n("));
 					DEBUG_PRINT(0);
 					DEBUG_PRINT(F(") minx sensor: "));
@@ -911,7 +910,7 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(F(" - Mean sensor: "));
 					DEBUG_PRINT(m);
 					DEBUG_PRINT(F(" - Peak: "));
-					DEBUG_PRINT(peak);
+					DEBUG_PRINT(ex[0]);
 					DEBUG_PRINT(F(" - diff: "));
 					DEBUG_PRINT(dd);
 					//DEBUG_PRINT(F("\n("));
@@ -925,7 +924,7 @@ inline void automaticStopManager(){
 					//DEBUG_PRINT(F("\nSample count: "));
 					//DEBUG_PRINTLN(sampleCount);
 					//sampleCount = 0;
-					chk[0] = checkRange((double) peak*(1 - weight[1]*isMoving(1)),0);
+					chk[0] = checkRange((double) ex[0]*(1 - weight[1]*isMoving(1)),0);
 					//DEBUG_PRINT(F("Ampere: "));
 					//float amp = getAmpRMS();
 					//DEBUG_PRINTLN(amp);
@@ -959,9 +958,9 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(F(" - maxx sensor: "));
 					DEBUG_PRINT(maxx);
 					DEBUG_PRINT(F(" - Peak: "));
-					DEBUG_PRINT(peak);
+					DEBUG_PRINT(ex[0]);
 					isrundelay[0]--;
-					ex = dd;
+					//ex[0] = dd;
 					DEBUG_PRINT(F(" - dd: "));
 					DEBUG_PRINT(dd);
 				}
@@ -969,10 +968,12 @@ inline void automaticStopManager(){
 				isrundelay[0] = RUNDELAY;
 				//reset dei fronti su blocco marcia (sia manuale che automatica) 
 				resetEdges(0);
+				ex[0] = getAVG(0); //importante! Se no picchi negativi!
 			}
 			
 			if(isrun[1] && dosmpl){
 				if(isrundelay[1] == 0){
+					ex[1] = dd*EMA + (1.0 - EMA)*ex[1];
 					DEBUG_PRINT(F("\n("));
 					DEBUG_PRINT(1);
 					DEBUG_PRINT(F(") minx sensor: "));
@@ -982,13 +983,13 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(F(" - Mean sensor: "));
 					DEBUG_PRINT(m);
 					DEBUG_PRINT(F(" - Peak: "));
-					DEBUG_PRINT(peak);
+					DEBUG_PRINT(ex[1]);
 					DEBUG_PRINT(F(" - ADC enable: "));
 					DEBUG_PRINT(dosmpl);
 					//DEBUG_PRINT(F("\nSample count: "));
 					//DEBUG_PRINTLN(sampleCount);
 					//sampleCount = 0;
-					chk[1] = checkRange((double) peak*(1 - weight[0]*isMoving(0)),1);
+					chk[1] = checkRange((double) ex[1]*(1 - weight[0]*isMoving(0)),1);
 					if(chk[1] != 0){
 						DEBUG_PRINT(F("\n("));
 						DEBUG_PRINT(1);
@@ -1016,9 +1017,9 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(F(" - maxx sensor: "));
 					DEBUG_PRINT(maxx);
 					DEBUG_PRINT(F(" - Peak: "));
-					DEBUG_PRINT(peak);
+					DEBUG_PRINT(ex[1]);
 					isrundelay[1]--;
-					ex = dd;
+					//ex[1] = dd;
 					DEBUG_PRINT(F(" - dd: "));
 					DEBUG_PRINT(dd);
 				}
@@ -1026,6 +1027,7 @@ inline void automaticStopManager(){
 				isrundelay[1] = RUNDELAY;
 				//reset dei fronti su blocco marcia (sia manuale che automatica)
 				resetEdges(1);
+				ex[1] = getAVG(1); //importante! Se no picchi negativi!
 			}
 			//AC peak measure init
 			//indx = 0;
@@ -1034,7 +1036,6 @@ inline void automaticStopManager(){
 			dosmpl = true;
 			DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}else{
-			ex = 0; //importante! Se no picchi negativi!
 			//zero detection manager
 			//zero detection scheduler
 			zeroCnt = (zeroCnt + 1) % 50;
