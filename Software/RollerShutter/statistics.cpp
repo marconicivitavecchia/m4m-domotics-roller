@@ -96,6 +96,8 @@ short checkRange(double mval, byte n) {
 			//thresholdUp[n] = 0;
 			nup[n] = 0;
 			//firstPeak = 0;
+			//reset Fronte marcia cronometrata!!!
+			//precdval[n+4] = false;
 		}
 	}
 	//End of edges evaluations ---------------------------------------------------------------------------
@@ -139,6 +141,8 @@ short checkRange(double mval, byte n) {
 	}else{
 		//se il motore è fermo
 		nup[n] = 0;	
+		//reset Fronte marcia cronometrata!!!
+		//precdval[n+4] = false;
 	}
 	//End of level evaluation --------------------------------------------------------------------------------------------------------- 
 	
@@ -162,6 +166,12 @@ void disableUpThreshold(byte n) {
   npeak[n] = 255; 
 }
 
+void resetEdges(byte n) {
+  //reset Fronte marcia cronometrata!!!
+  precdval[n+4] = false;
+  precdval[n+2] = false;
+  precdval[n] = false;
+}
 
 void resetAVGStats(double val, byte n) {
   avg[n] = val;

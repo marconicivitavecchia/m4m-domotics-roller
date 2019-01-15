@@ -967,6 +967,8 @@ inline void automaticStopManager(){
 				}
 			}else{
 				isrundelay[0] = RUNDELAY;
+				//reset dei fronti su blocco marcia (sia manuale che automatica) 
+				resetEdges(0);
 			}
 			
 			if(isrun[1] && dosmpl){
@@ -1022,6 +1024,8 @@ inline void automaticStopManager(){
 				}
 			}else{
 				isrundelay[1] = RUNDELAY;
+				//reset dei fronti su blocco marcia (sia manuale che automatica)
+				resetEdges(1);
 			}
 			//AC peak measure init
 			//indx = 0;

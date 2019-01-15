@@ -7,6 +7,7 @@
 double getAVG(byte);
 //void setSigma(byte);
 //double getSigma();
+void resetEdges(byte);
 void resetAVGStats(double, byte);
 void resetStatDelayCounter(byte);
 double getSTDDEV(byte);

@@ -93,7 +93,7 @@ extern RemoteDebug telnet;
 #define DELTAL		4
 #define AUTOCAL		1
 #define NSIGMA 		3
-#define EMA  		0.7
+#define EMA  		0.8
 #define THALTMAX   	90000 
 #define DEBUG   	1		//ACTIVATE DEBUG MODE
 #define	TCOUNT		5		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
