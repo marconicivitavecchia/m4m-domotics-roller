@@ -10,6 +10,7 @@ unsigned short npeak[2] = {0, 0};
 double thresholdUp[2] = {0, 0};
 double thresholdDown[2] = {0, 0};
 byte precdval[6]={false, false,false, false,false, false};
+bool run[2] = {false, false};
 //unsigned fixedThreshld[2] = {0, 0};
 //unsigned mesrdThreshld[2] = {0, 0};
 //bool started[2] = {false, false};
@@ -82,6 +83,7 @@ short checkRange(double mval, byte n) {
 			//Fronte di salita
 			DEBUG_PRINT(F(")Fronte marcia cronometrata: sopra ONGAP...Start cronometro!"));
 			res = 1;
+			run[n] = true;
 		}
 	}
 	//soglia blocco motore
@@ -93,11 +95,8 @@ short checkRange(double mval, byte n) {
 			//Fronte di discesa
 			DEBUG_PRINT(F(") Fronte di blocco marcia motore: sotto minimo...Stop!"));
 			res = -1;   
-			//thresholdUp[n] = 0;
 			nup[n] = 0;
-			//firstPeak = 0;
-			//reset Fronte marcia cronometrata!!!
-			//precdval[n+4] = false;
+			run[n] = false;
 		}
 	}
 	//End of edges evaluations ---------------------------------------------------------------------------
@@ -119,6 +118,7 @@ short checkRange(double mval, byte n) {
 				DEBUG_PRINT(nup[n]);
 				if(nup[n] > npeak[n]){
 					res = 2;
+					run[n] = false;
 					DEBUG_PRINT(F(" - Urto...Stop!"));
 				}else{
 					//first rising is allowed
@@ -131,13 +131,18 @@ short checkRange(double mval, byte n) {
 			}
 		}
 		
-		//calcolo statistiche (media e varianza) solo con motore in movimento	
-		count[n]++;		
-		double delta = (double) mval - avg[n];
-		count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
-		stdDev[n] += (double) delta * (mval - avg[n]);
-		thresholdDown[n] = (double) avg[n]/4;
-		(count[n] > 1) && (thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA)); //protected against overflow by a logic short circuit
+        //calcolo delle medie attivo solo sulla marcia cronometrata!
+		if(run){
+			//calcolo statistiche (media e varianza) solo con motore in movimento	
+			count[n]++;		
+			double delta = (double) mval - avg[n];
+			count[n] && (avg[n] += (double) delta / count[n]);  //protected against overflow by a logic short circuit
+			stdDev[n] += (double) delta * (mval - avg[n]);
+			thresholdDown[n] = (double) avg[n]/4;
+			(count[n] > 1) && (thresholdUp[n] = (double) avg[n] + (getSTDDEV(n) * NSIGMA)); //protected against overflow by a logic short circuit
+		}else{
+			DEBUG_PRINT(F(" - marcia fittizia: medie congelate! "));
+		}
 	}else{
 		//se il motore è fermo
 		nup[n] = 0;	

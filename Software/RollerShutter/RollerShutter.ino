@@ -940,6 +940,7 @@ inline void automaticStopManager(){
 							blocked[0] = secondPress(0);
 							scriviOutDaStato();
 							blocked[0] = 1;
+							ex[0] = getAVG(0);
 						}else if(chk[0] == 1){
 							DEBUG_PRINTLN(F(") Start: fronte di salita"));
 							//inizio conteggio timer di posizionamento
@@ -968,7 +969,6 @@ inline void automaticStopManager(){
 				isrundelay[0] = RUNDELAY;
 				//reset dei fronti su blocco marcia (sia manuale che automatica) 
 				resetEdges(0);
-				//ex[0] = getAVG(0); //importante! Se no picchi negativi!
 			}
 			
 			if(isrun[1] && dosmpl){
@@ -1000,6 +1000,7 @@ inline void automaticStopManager(){
 							blocked[1] = secondPress(1);
 							scriviOutDaStato();
 							blocked[1] = 1;
+							ex[1] = getAVG(1);
 						}else if(chk[1] == 1){
 							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(1);
@@ -1027,7 +1028,6 @@ inline void automaticStopManager(){
 				isrundelay[1] = RUNDELAY;
 				//reset dei fronti su blocco marcia (sia manuale che automatica)
 				resetEdges(1);
-				//ex[1] = getAVG(1); //importante! Se no picchi negativi!
 			}
 			//AC peak measure init
 			//indx = 0;
