@@ -14,23 +14,29 @@ int parseJsonFieldToInt(String &srcJSONStr, String &field, int valueLen){
 }
 
 void parseJsonFieldArrayToInt(String srcJSONStr, byte destIntArr[], String (&fieldArr)[MQTTJSONDIM], int valueLen, int arrLen, int first=0){
-	int start, ends, last;
+	int start, ends=0;
 	valueLen+=3;
-	last=0;
 	if(first < 0 || first > arrLen)
 		first=0;
 
-	Serial.println(F("Dentro il parser"));
+	DEBUG_PRINT(F("\nDentro il parser: "));
+	DEBUG_PRINT(srcJSONStr);
+	DEBUG_PRINT(F("- campi: "));
 	for(int i=first; i<arrLen; i++){
-		//Serial.print(", ");
 		///calcola l'inizio del valore
-		start = srcJSONStr.indexOf(fieldArr[i] + "\":\"") + (fieldArr[i]).length() + 3; // ":" --> 3
-		//calcola la fine del valore 
-		ends = start + valueLen; // "0"= n+\0+\n+\r --> 4
-		//estrae il campo e lo converte in intero e aggiorna gli ingressi dello switchf X
-		//outLogic[mapLogic[i-1]] = (response.substring(start, ends)).toInt();
-		destIntArr[i-first] = (srcJSONStr.substring(start, ends)).toInt();
-		//Serial.println(srcJSONStr.substring(start, ends));
-		//Serial.println(destIntArr[i-first]);
+		start = srcJSONStr.indexOf("\""+fieldArr[i] + "\":\"");
+		if(start > 0){
+			start += (fieldArr[i]).length() + 4;
+			for(ends=start+1; ends < start + valueLen && srcJSONStr.charAt(ends)!='"'; ends++);
+			//calcola la fine del valore 
+			//estrae il campo e lo converte in intero e aggiorna gli ingressi dello switchf X
+			destIntArr[i-first] = (srcJSONStr.substring(start, ends)).toInt();
+			DEBUG_PRINT(srcJSONStr.substring(start, ends));
+			DEBUG_PRINT(F(" - start: "));
+			DEBUG_PRINT(start);
+			DEBUG_PRINT(F(" - end: "));
+			DEBUG_PRINT(ends);
+			DEBUG_PRINT(F(" - "));
+		}
 	}  
 }

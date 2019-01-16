@@ -18,14 +18,12 @@ extern "C" {
 //#include <sched.h>
 #include <ESP8266WiFi.h>
 #include <RemoteDebug.h> 
-//#include <telnet.h>
 #include <MQTT.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <WiFiUdp.h>
 #include <WebSocketsServer.h>
-//#include <Base64.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 //#include <ArduinoOTA.h>
@@ -95,7 +93,8 @@ extern RemoteDebug telnet;
 #define NSIGMA 		3
 #define EMA  		0.8
 #define THALTMAX   	90000 
-#define DEBUG   	1		//ACTIVATE DEBUG MODE
+#define DEBUG   	0		//ACTIVATE LOCAL AND REMOTE DEBUG MODE
+#define DEBUGR   	1		//ACTIVATE ONLY REMOTE DEBUG MODE
 #define	TCOUNT		5		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
 #define RSTTIME		20		//DEFINE HOW MANY SECONDS BUTTON1 MUST BE PRESSED UNTIL A RESET OCCUR 
 #define CNTIME		4		//DEFINE HOW MANY SECONDS HAVE TO LAST THALT PARAMETER AT LEAST
@@ -233,21 +232,15 @@ extern RemoteDebug telnet;
 #define MQTTJSONMEANPWR			5
 #define MQTTJSONPEAKPWR			6
 #define MQTTJSONALL				7
-#define MQTTJSONDIM				8
+#define MQTTJSONMAC				8
+#define MQTTJSONIP				9
+#define MQTTJSONTIME			10
+#define MQTTJSONMQTTID			11
+#define MQTTJSONDIM				12
 //--------------------------Fine array indexes-----------------------------------
 //-----------------------DEBUG MACRO------------------------------------------------------------
 //#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
 //#define PGMT( pgm_ptr ) ( reinterpret_cast< const __FlashStringHelper * >( pgm_ptr ) )
-#ifdef DEBUG
- //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
- #define DEBUG_PRINT(x)   Serial.print (x); telnet.print(x)
- //#define DEBUG_PRINTDEC(x)     Serial.print (x, DEC);  telnet.print(x)
- #define DEBUG_PRINTLN(x)   Serial.println (x);  telnet.println(x)
-#else
- #define DEBUG_PRINT(x)
- //#define DEBUG_PRINTDEC(x)
- #define DEBUG_PRINTLN(x) 
-#endif
 
 //legge gli ingressi dei tasti già puliti dai rimbalzi
 #define leggiTastiLocali()  in[BTN1IN] =!digitalRead(BTN1U);	\
@@ -265,7 +258,22 @@ extern RemoteDebug telnet;
     in[BTN2IN+BTNDIM] = in[BTN2IN+BTNDIM] + inr[BTN2IN+BTNDIM]; 	\
 	for(int i=0;i<4;i++)	\
 		inr[i]=LOW	
+
+#ifdef DEBUG
+ //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
+ #define DEBUG_PRINT(x)   Serial.print (x); telnet.print(x)	
+ //#define DEBUG_PRINTDEC(x)     Serial.print (x, DEC);  telnet.print(x)
+ #define DEBUG_PRINTLN(x)   Serial.println (x);  telnet.println(x)
+#elif DEBUGR
+  #define DEBUG_PRINT(x)   telnet.print(x)
+  #define DEBUG_PRINTLN(x) telnet.println(x)
+#else 
+ #define DEBUG_PRINT(x)
+ //#define DEBUG_PRINTDEC(x)
+ #define DEBUG_PRINTLN(x) 
+#endif	
 //legge legge lo stato dei pulsanti e scrive il loro valore sulle porte di uscita dei led
+/*
 #if (SCR)
 #define scriviOutDaStato()  digitalWrite(OUT1DD,(outLogic[ENABLES] && (outLogic[DIRS]==HIGH)));	\
 	 digitalWrite(OUT1EU,(outLogic[ENABLES] && (outLogic[DIRS]==LOW)));		\
@@ -281,7 +289,7 @@ extern RemoteDebug telnet;
 	 isrun[0] = (outLogic[ENABLES]==HIGH);					\
 	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH)			 
 #endif
-
+*/
 //#define tapLogic(n)	(switchLogic(0,n) + switchLogic(1,n))
 
 //PRIMA DEFINISCO LE COSTANTI, POI INCLUDO I FILES HEADERS (.h) CHE LE USANO
@@ -303,9 +311,15 @@ void readStatesAndPub(bool all = false);
 void readAvgPowerAndPub();
 void readPeakPowerAndPub();
 void readTempAndPub();
+void readMacAndPub();
+void readIpAndPub();
+void readTimeAndPub();
+void readMQTTIdAndPub();
 void publishStr(String &);
+float getAmpRMS(float);
+float getTemperature();
 //void leggiTasti();
-//void scriviOutDaStato();
+void scriviOutDaStato();
 void saveOnEEPROM();
 void loadConfig();
 void rebootSystem();

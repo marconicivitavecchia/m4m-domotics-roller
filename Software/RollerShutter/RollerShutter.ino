@@ -4,6 +4,18 @@
 #define time_base     	2            // periodo base in millisecondi
 #define nsteps          12000        // numero di fasi massimo di un periodo generico
 
+//global strings
+String twodot = "\":\"";
+String comma = "\",\"";
+String openbrk = "{\"";
+String openbrk2 = "{";
+String opensqr = "\":[\"";
+String closesqr = "\"]}";
+String closesqr2 = "\"],\"";
+String closesqr3 = "\"],";
+String closebrk = "\"}";
+String enda = "\",";
+//end global string
 //stats variables
 #if (AUTOCAL)
 int samples[10];
@@ -95,13 +107,13 @@ String mqttPsw("");
 //End JSON config------------------------------------------
 //JSON config----------------------------------------------
 //{"OUTSLED":"0","up1":"1","down1":"0","up2":"50","down2":"0", pr1:"12", pr2:"76"}
-int ncifre=3;
+int ncifre=4;
 //array delle proprietà
 //l'ordine è importante! Le proprietà verranno ricercate nella stringa in arrivo con questo ordine.
 //e salvate in un array con indici a questo corrrispondenti
 //l'ordine di trasmissione da remoto dei campi è ininfluente
 //I comandi della tapparella devono essere  gli ultimi!
-String mqttJson[MQTTJSONDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all"};
+String mqttJson[MQTTJSONDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all","mac","ip","time","mqttid"};
 //Valore iniziale: il suo contenuto viene poi caricato da EEPROM
 unsigned int thalt1=5000;
 unsigned int thalt2=5000;
@@ -163,7 +175,7 @@ inline byte tapLogic(byte n){
 	return (switchLogic(0,n) + switchLogic(1,n));
 }
 
-inline float getAmpRMS(float ACSVolt){
+float getAmpRMS(float ACSVolt){
 	ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;
 	VRMS = ACSVolt * 0.707;
 	AmpsRMS = (double) (VRMS * 1000) / mVperAmp;
@@ -173,7 +185,7 @@ inline float getAmpRMS(float ACSVolt){
 	return AmpsRMS*vcosfi;
 }
 
-inline float getTemperature(){
+float getTemperature(){
 	DS18B20.requestTemperatures(); 
 	float temp;
 	unsigned short cnt = 0;
@@ -184,7 +196,25 @@ inline float getTemperature(){
 		cnt++;		
 	}while((temp == 85.0 || temp == (-127.0)) && cnt < 3);
 	return temp;
-}	
+}
+
+void scriviOutDaStato(){
+#if (SCR)
+	 digitalWrite(OUT1DD,(outLogic[ENABLES] && (outLogic[DIRS]==HIGH)));	
+	 digitalWrite(OUT1EU,(outLogic[ENABLES] && (outLogic[DIRS]==LOW)));		
+	 digitalWrite(OUT2DD,(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH)));	
+	 digitalWrite(OUT2EU,(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW)));		
+	 isrun[0] = (outLogic[ENABLES]==HIGH);					
+	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH);	
+#else		
+	 digitalWrite(OUT1EU,outLogic[ENABLES]);	
+	 digitalWrite(OUT1DD,outLogic[DIRS]);		
+	 digitalWrite(OUT2EU,outLogic[ENABLES+STATUSDIM]);		
+	 digitalWrite(OUT2DD,outLogic[DIRS+STATUSDIM]);			
+	 isrun[0] = (outLogic[ENABLES]==HIGH);					
+	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH);			 
+#endif
+}
 
 void setup_AP(bool apmode) {
   //ESP.wdtFeed();
@@ -373,7 +403,7 @@ void mqttCallback(String &topic, String &response) {
 	//applica la logica ricevuta da remoto sulle uscite locali (led)
     
 	int v;
-#if (DEBUG)	
+#if (DEBUG || DEBUGR)	
 	DEBUG_PRINT(F("Message arrived on topic: ["));
 	DEBUG_PRINT(topic);
 	DEBUG_PRINT(F("], "));
@@ -410,7 +440,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 
 //legge il valore dello stato dei toggle e li pubblica sul broker come stringa JSON
 void readStatesAndPub(bool all){
-  int vals; 
 
   //DEBUG_PRINTLN(F("\nreadStatesAndPub")); 
   
@@ -418,65 +447,86 @@ void readStatesAndPub(bool all){
 
   //vals=digitalRead(OUTSLED); //legge lo stato del led di stato
   //crea una stringa JSON con i valori  dello stato corrente dei pulsanti
-  String s=F("{\"");	
-  s+=mqttJson[MQTTJSONUP1]+F("\":\"")+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+F("\",\""); 	//up1 DIRS=HIGH
-  s+=mqttJson[MQTTJSONDOWN1]+F("\":\"")+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+F("\",\"");    //down1  DIRS=LOW
-  s+=mqttJson[MQTTJSONUP2]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+F("\",\"");	//up2 
-  s+=mqttJson[MQTTJSONDOWN2]+F("\":\"")+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+F("\",\"");    //down2
-  s+= (String) F("pr1\":\"")+String(round(calcLen(0)))+F("\",\"");		//pr1
-  s+= (String) F("pr2\":\"")+String(round(calcLen(1)))+F("\",\"");		//pr2
+  String s=openbrk;	
+  s+=mqttJson[MQTTJSONUP1]+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+comma; 	//up1 DIRS=HIGH
+  s+=mqttJson[MQTTJSONDOWN1]+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+comma;    //down1  DIRS=LOW
+  s+=mqttJson[MQTTJSONUP2]+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+comma;	//up2 
+  s+=mqttJson[MQTTJSONDOWN2]+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+comma;    //down2
+  s+= (String) "pr1"+twodot+String(round(calcLen(0)))+comma;		//pr1
+  s+= (String) "pr2"+twodot+String(round(calcLen(1)))+comma;		//pr2
   if(blocked[0]>0){
-	  s+= (String) F("blk1\":\"")+blocked[0]+F("\",\"");		//blk1
+	  s+= (String) "blk1"+twodot+blocked[0]+comma;		//blk1
   }
   if(blocked[1]>0){
-	  s+= (String) F("blk1\":\"")+blocked[1]+F("\",\"");		//blk2
+	  s+= (String) "blk2"+twodot+blocked[1]+comma;		//blk2
   }
-  s+= (String) F("sp1\":\"")+String((long)getTapThalt(0))+F("\",\"");		//sp1
-  s+= (String) F("sp2\":\"")+String((long)getTapThalt(1));
+  s+= (String) "sp1"+twodot+String((long)getTapThalt(0))+comma;		//sp1
+  s+= (String) "sp2"+twodot+String((long)getTapThalt(1));
   
   if(all){
-		s+=F("\",\"");		//sp2
-		s+=mqttJson[MQTTJSONTEMP]+F("\":\"")+String(asyncBuf[GTTEMP])+F("\",\"");
-		s+=mqttJson[MQTTJSONMEANPWR]+F("\":[\"")+String(asyncBuf[GTMEANPWR1])+F("\",\"")+String(asyncBuf[GTMEANPWR2])+F("\"],\"");
-		s+=mqttJson[MQTTJSONPEAKPWR]+F("\":[\"")+String(asyncBuf[GTPEAKPWR1])+F("\",\"")+String(asyncBuf[GTPEAKPWR2])+F("\"]}");
+	    s+=comma;
+		s+=mqttJson[MQTTJSONTEMP]+twodot+String(asyncBuf[GTTEMP])+comma;
+		s+=mqttJson[MQTTJSONMEANPWR]+opensqr+String(asyncBuf[GTMEANPWR1])+comma+String(asyncBuf[GTMEANPWR2])+closesqr2;
+		s+=mqttJson[MQTTJSONPEAKPWR]+opensqr+String(asyncBuf[GTPEAKPWR1])+comma+String(asyncBuf[GTPEAKPWR2])+"\"],";
   }else{
-		s+=F("\"}");		//sp2
+		s+=enda;
   }
   publishStr(s);
 }
 
 void readAvgPowerAndPub(){
-  int vals; 
-
   //DEBUG_PRINTLN(F("\nreadPowerAndPub")); 
-  String s=F("{\"");	
-  s+=mqttJson[MQTTJSONMEANPWR]+F("\":[\"")+String(asyncBuf[GTMEANPWR1])+F("\",\"")+String(asyncBuf[GTMEANPWR2])+F("\"]}");
+  String s=openbrk;
+  s+=mqttJson[MQTTJSONMEANPWR]+opensqr+String(asyncBuf[GTMEANPWR1])+comma+String(asyncBuf[GTMEANPWR2])+closesqr3;
   publishStr(s);
 }
 
 void readPeakPowerAndPub(){
-  int vals; 
-
   //DEBUG_PRINTLN(F("\nreadPowerAndPub")); 
-  String s=F("{\"");	
-  s+=mqttJson[MQTTJSONPEAKPWR]+F("\":[\"")+String(asyncBuf[GTPEAKPWR1])+F("\",\"")+String(asyncBuf[GTPEAKPWR2])+F("\"]}");
+  String s=openbrk;
+  s+=mqttJson[MQTTJSONPEAKPWR]+opensqr+String(asyncBuf[GTPEAKPWR1])+comma+String(asyncBuf[GTPEAKPWR2])+closesqr3;
   publishStr(s);
 }
 
 void readTempAndPub(){
-  int vals; 
-
   //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
-  String s=F("{\"");
+  String s=openbrk;
   //char sd[300];
-  s+=mqttJson[MQTTJSONTEMP]+F("\":\"")+String(asyncBuf[GTTEMP])+F("\"}");
-//sprintf(sd,"%s%s%s%f%s",F("{\""),mqttJson[MQTTJSONTEMP].c_str(),F("\":\""),asyncBuf[GTTEMP],F("\"}"));
+  s+=mqttJson[MQTTJSONTEMP]+twodot+String(asyncBuf[GTTEMP])+enda;
+//sprintf(sd,"%s%s%s%f%s",openbrk,mqttJson[MQTTJSONTEMP].c_str(),twodot,asyncBuf[GTTEMP],closebrk);
   //s=String(sd);
   publishStr(s);
 }
 
+void readMacAndPub(){
+  String s=openbrk2;
+  publishStr(s);
+}
+
+void readIpAndPub(){
+  String s=openbrk2;
+  publishStr(s);
+}
+
+void readTimeAndPub(){
+  String s=openbrk2;
+  publishStr(s);
+}
+
+void readMQTTIdAndPub(){
+  String s=openbrk2;
+  publishStr(s);
+}
+
 void publishStr(String &str){
-//pubblica sul broker la stringa JSON
+  //pubblica sul broker la stringa JSON
+  //informazioni mittente
+  str+="\"";
+  str+=mqttJson[MQTTJSONTIME]+twodot+String(millis())+comma;
+  str+=mqttJson[MQTTJSONMAC]+twodot+String(WiFi.macAddress())+comma;
+  str+=mqttJson[MQTTJSONIP]+twodot+WiFi.localIP().toString()+comma;
+  str+=mqttJson[MQTTJSONMQTTID]+twodot+params[MQTTID]+closebrk;
+   
   if(mqttClient==NULL){
 	  DEBUG_PRINTLN(F("ERROR on publishStr MQTT client is not allocated."));
   }
@@ -652,7 +702,7 @@ void setup() {
 */
   //initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt());
   //esp_log_set_vprintf(_log_vprintf);
-#if (DEBUG)  
+#if (DEBUG || DEBUGR)  
   testFlash();
 #endif
 #if (AUTOCAL)  
@@ -858,6 +908,22 @@ inline void leggiTastiRemoti(){
 		inr[MQTTJSONPEAKPWR] = LOW;
 		readPeakPowerAndPub();
 	}
+	if(inr[MQTTJSONMAC]){
+		inr[MQTTJSONMAC] = LOW;
+		readMacAndPub();
+	}
+	if(inr[MQTTJSONIP]){
+		inr[MQTTJSONIP] = LOW;
+		readIpAndPub();
+	}
+	if(inr[MQTTJSONTIME]){
+		inr[MQTTJSONTIME] = LOW;
+		readTimeAndPub();
+	}
+	if(inr[MQTTJSONMQTTID]){
+		inr[MQTTJSONMQTTID] = LOW;
+		readMQTTIdAndPub();
+	}
 }
 
 inline void currentPeakDetector(){
@@ -940,8 +1006,8 @@ inline void automaticStopManager(){
 							blocked[0] = secondPress(0);
 							scriviOutDaStato();
 							blocked[0] = 1;
-							ex[0] = getAVG(0);
 						}else if(chk[0] == 1){
+							ex[0] = getAVG(0);
 							DEBUG_PRINTLN(F(") Start: fronte di salita"));
 							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(0);
@@ -1000,8 +1066,8 @@ inline void automaticStopManager(){
 							blocked[1] = secondPress(1);
 							scriviOutDaStato();
 							blocked[1] = 1;
-							ex[1] = getAVG(1);
 						}else if(chk[1] == 1){
+							ex[1] = getAVG(1);
 							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(1);
 						}
@@ -1233,7 +1299,7 @@ inline void paramsModificationPoll(){
 			}
 			else
 			{
-			#if (DEBUG)	
+			#if (DEBUG || DEBUGR)	
 				DEBUG_PRINTLN(F("MQTTCONNCHANGED! Eseguo la setUserPwd() con usr "));
 				DEBUG_PRINTLN(params[MQTTUSR]);
 				DEBUG_PRINTLN(F(" e psw "));
@@ -1242,13 +1308,13 @@ inline void paramsModificationPoll(){
 				mqttClient->setUserPwd((params[MQTTUSR]).c_str(), (params[MQTTPSW]).c_str());
 				DEBUG_PRINTLN(F("MQTTCONNCHANGED! Eseguo la connect() ..."));
 				mqttClient->connect();
-			#if (DEBUG)	
+			#if (DEBUG || DEBUGR)	
 				DEBUG_PRINTLN(F("MQTTCONNCHANGED! Eseguo la subscribe() con "));
 				DEBUG_PRINTLN(params[MQTTINTOPIC]);
 				DEBUG_PRINTLN(F("..."));
 			#endif	
 				mqttClient->subscribe(params[MQTTINTOPIC]);
-			#if (DEBUG)	
+			#if (DEBUG || DEBUGR)	
 				DEBUG_PRINTLN(F("MQTTCONNCHANGED! publish(): "));
 				DEBUG_PRINTLN(params[MQTTOUTTOPIC]);
 				DEBUG_PRINTLN(F(" Intopic: "));
@@ -1264,7 +1330,7 @@ inline void paramsModificationPoll(){
 			}
 			else
 			{
-			#if (DEBUG)	
+			#if (DEBUG || DEBUGR)	
 				DEBUG_PRINTLN(F("TOPICCHANGED! Outtopic: "));
 				DEBUG_PRINTLN(params[MQTTOUTTOPIC]);
 				DEBUG_PRINTLN(F(" Intopic: "));
@@ -1274,7 +1340,7 @@ inline void paramsModificationPoll(){
 				DEBUG_PRINTLN(F("..."));
 			#endif		
 				mqttClient->subscribe(params[MQTTINTOPIC]);
-			#if (DEBUG)	
+			#if (DEBUG || DEBUGR)	
 				DEBUG_PRINTLN(F("TOPICCHANGED! Eseguo la publish() con "));
 				DEBUG_PRINTLN(params[MQTTOUTTOPIC]);
 				DEBUG_PRINTLN(F(" ..."));
@@ -1552,8 +1618,6 @@ void processCmdRemoteDebug() {
 	}else if(lastCmd == "getip"){
 		DEBUG_PRINT("\nLocal IP: ");
 		DEBUG_PRINTLN(WiFi.localIP());
-	}else if(lastCmd == "testflash"){
-		testFlash();
 	}else if(lastCmd == "getmqttstat"){
 		if(!(mqttClient->isConnected())){
 			DEBUG_PRINTLN(F("\nMQTT non connesso."));
@@ -1578,15 +1642,24 @@ void processCmdRemoteDebug() {
 		DEBUG_PRINT(asyncBuf[GTPEAKPWR1]);
 		DEBUG_PRINT(F(","));
 		DEBUG_PRINT(asyncBuf[GTPEAKPWR2]);
-		DEBUG_PRINTLN(F("]"));
+		DEBUG_PRINTLN(F("]")); 
+	}else if(lastCmd == "getmac"){
+		DEBUG_PRINT(F("\nMAC: "));
+		DEBUG_PRINTLN(WiFi.macAddress());
+	}else if(lastCmd == "gettime"){
+		DEBUG_PRINT(F("\nTime (ms): "));
+		DEBUG_PRINTLN(millis());
+	}else if(lastCmd == "getmqttid"){
+		DEBUG_PRINT(F("\nMQTT ID: "));
+		DEBUG_PRINTLN(params[MQTTID]);
 	}else{
 		DEBUG_PRINT(F("\nComandi disponibili: "));
-		DEBUG_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, testflash,getadczero,gettemp,getpower\n"));
+		DEBUG_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, getadczero, gettemp, getpower, getmac, gettime, getmqttid\n"));
 	}
 	//telnet.flush();
 }
 
-#if (DEBUG)	
+#if (DEBUG || DEBUGR)	
 const char* wl_status_to_string(wl_status_t status) {
   switch (status) {
     case WL_NO_SHIELD: return "WL_NO_SHIELD";
@@ -1600,7 +1673,7 @@ const char* wl_status_to_string(wl_status_t status) {
   }
 }
 #endif
-#if (DEBUG)	
+#if (DEBUG || DEBUGR)	
 void testFlash(){
   uint32_t realSize = ESP.getFlashChipRealSize();
   uint32_t ideSize = ESP.getFlashChipSize();

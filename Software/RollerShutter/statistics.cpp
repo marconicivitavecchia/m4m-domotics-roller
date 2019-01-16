@@ -11,14 +11,6 @@ double thresholdUp[2] = {0, 0};
 double thresholdDown[2] = {0, 0};
 byte precdval[6]={false, false,false, false,false, false};
 bool run[2] = {false, false};
-//unsigned fixedThreshld[2] = {0, 0};
-//unsigned mesrdThreshld[2] = {0, 0};
-//bool started[2] = {false, false};
-//bool highLevel[2]={false, false};
-//short firstPeak = 0;
-//bool learn = false;
-
-//double sigma = NSIGMA;
 
 double getAVG(byte n) {
   return avg[n];
