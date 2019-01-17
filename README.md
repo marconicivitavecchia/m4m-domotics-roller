@@ -14,10 +14,11 @@ A sequence of pressions is considered valid if it's executed in a 2Seconds max t
 
 
 ## Library list
-https://github.com/JoaoLopesF/RemoteDebug
-https://github.com/Links2004/arduinoWebSockets
-https://www.pjrc.com/teensy/td_libs_OneWire.html
-https://github.com/milesburton/Arduino-Temperature-Control-Library
+* https://github.com/JoaoLopesF/RemoteDebug
+* https://github.com/Links2004/arduinoWebSockets
+* https://www.pjrc.com/teensy/td_libs_OneWire.html
+* https://github.com/milesburton/Arduino-Temperature-Control-Library
+* https://github.com/i-n-g-o/esp-mqtt-arduino
 
 
 
