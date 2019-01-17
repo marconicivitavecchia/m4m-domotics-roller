@@ -17,15 +17,15 @@ extern "C" {
 #include <EEPROM.h>
 //#include <sched.h>
 #include <ESP8266WiFi.h>
-#include <RemoteDebug.h> 
-#include <MQTT.h>
+#include <RemoteDebug.h>                  // https://github.com/JoaoLopesF/RemoteDebug
+#include <MQTT.h>                         // https://github.com/i-n-g-o/esp-mqtt-arduino
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <WiFiUdp.h>
-#include <WebSocketsServer.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
+#include <WebSocketsServer.h>             //  https://github.com/Links2004/arduinoWebSockets
+#include <OneWire.h>                      //  https://www.pjrc.com/teensy/td_libs_OneWire.html
+#include <DallasTemperature.h>            //  https://github.com/milesburton/Arduino-Temperature-Control-Library
 //#include <ArduinoOTA.h>
 #include "eepromUtils.h"
 #include "timersNonSchedulati.h"
@@ -114,6 +114,7 @@ extern RemoteDebug telnet;
 #define SWITCHND 	4		//OVERALL NUMBER OF SWITCHES (FUNCTION SWITCHES + SPECIAL SWITCHES) 
 #define JSONN   	4		//JSON ARRAY DIMENSION 
 //INIZIO COSTANTI LOGICA DI COMANDO---------------------------------------------------
+#define TENDCHECK	2		//MAX TIME IN SEC BEFORE THE EFFECTIVE START OF THE MOTOR 
 #define NBTN     	2     	//NUMBER OF BUTTONS
 #define	BTNDEL1   	500    	//BTN DELAY (ms)
 #define	BTNDEL2  	500    	//BTN DELAY (ms)

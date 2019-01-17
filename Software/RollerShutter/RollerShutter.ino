@@ -113,7 +113,7 @@ int ncifre=4;
 //e salvate in un array con indici a questo corrrispondenti
 //l'ordine di trasmissione da remoto dei campi è ininfluente
 //I comandi della tapparella devono essere  gli ultimi!
-String mqttJson[MQTTJSONDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all","mac","ip","time","mqttid"};
+String mqttJson[MQTTJSONDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all","mac","ip","time","mqttid"/*,"calibr1","calibr2"*/};
 //Valore iniziale: il suo contenuto viene poi caricato da EEPROM
 unsigned int thalt1=5000;
 unsigned int thalt2=5000;
@@ -625,6 +625,8 @@ void setup() {
 #if (AUTOCAL)
   weight[0] =  (params[VALWEIGHT]).toFloat();
   weight[1] = 1 - weight[0];
+  params[STDEL1] = TENDCHECK*1000;
+  params[STDEL2] = TENDCHECK*1000;
   //setThresholdUp((params[TRSHOLD1]).toFloat(), 0);
   //setThresholdUp((params[TRSHOLD2]).toFloat(), 1);
 #endif
@@ -924,6 +926,18 @@ inline void leggiTastiRemoti(){
 		inr[MQTTJSONMQTTID] = LOW;
 		readMQTTIdAndPub();
 	}
+	/*
+	if(inr[MQTTJSONCALIBR1]){
+		inr[MQTTJSONCALIBR1] = LOW;
+		//ATTIVATA CALIBRAZIONE MANUALE BTN 1
+		manualCalibration(0);
+	}
+	if(inr[MQTTJSONCALIBR2]){
+		inr[MQTTJSONCALIBR2] = LOW;
+		//ATTIVATA CALIBRAZIONE MANUALE BTN 2
+		manualCalibration(1);
+	}
+	*/
 }
 
 inline void currentPeakDetector(){
@@ -1008,7 +1022,7 @@ inline void automaticStopManager(){
 							blocked[0] = 1;
 						}else if(chk[0] == 1){
 							ex[0] = getAVG(0);
-							DEBUG_PRINTLN(F(") Start: fronte di salita"));
+							DEBUG_PRINTLN(F(") Start: fronte di salita"));					
 							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(0);
 						}
@@ -1372,6 +1386,7 @@ void onElapse(byte n){
 				readStatesAndPub();
 			}else if(getGroupState(n)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
 				DEBUG_PRINTLN(F("onElapse:  timer di attesa scaduto"));
+			    setupTimer(TENDCHECK*1000,TMRHALT+n*TIMERDIM);	
 				startEngineDelayTimer(n);
 				//adesso parte...
 				scriviOutDaStato();
@@ -1383,6 +1398,13 @@ void onElapse(byte n){
 				startEndOfRunTimer(n);
 				//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
 				readStatesAndPub();
+			}
+#else
+			else if(getGroupState(n)==2){//se il motore è in moto a vuoto
+				DEBUG_PRINTLN(F("onElapse:  timer di check pressione su fine corsa scaduto"));
+				secondPress(n);
+				//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
+				scriviOutDaStato();
 			}
 #endif
 		}else if(getCntValue(n) > 1){
