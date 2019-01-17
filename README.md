@@ -11,3 +11,14 @@ A rapid pression-sequence of button connected to IN1 input can enable special fu
 
 
 A sequence of pressions is considered valid if it's executed in a 2Seconds max time with a pause of 1Second before and after.
+
+
+## Library list
+https://github.com/JoaoLopesF/RemoteDebug
+https://github.com/Links2004/arduinoWebSockets
+https://www.pjrc.com/teensy/td_libs_OneWire.html
+https://github.com/milesburton/Arduino-Temperature-Control-Library
+
+
+
+
