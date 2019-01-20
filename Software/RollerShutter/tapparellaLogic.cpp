@@ -248,7 +248,6 @@ short secondPress(byte n, int delay){
 				}else if(getCronoCount(n) >= (long) thaltp[n]*(1+fact)){
 					//correzione posizione tetto escursione (necessaria all'avvio!)
 					setCronoCount(thaltp[n], n);
-					first[n] = false;
 					rslt = 2;
 					DEBUG_PRINTLN(F("Correzione posizione tetto escursione. Prima escursione o forzatura...può essere necessaria ricalibrazione"));
 				}
@@ -271,44 +270,11 @@ short secondPress(byte n, int delay){
 				}else if(getCronoCount(n) <= (long) -thaltp[n]*fact){
 					//correzione posizione base escursione (necessaria all'avvio!)
 					resetCronoCount(n);
-					first[n] = false;
 					rslt = 3;
 					DEBUG_PRINTLN(F("Grande correzione della posizione della base escursione, può essere necessaria ricalibrazione"));
 				}
 			}
-		}//*/
-		
-		/*
-		if(getCronoDir(n)==UP){		
-			//versione con correzzione in base alla lettura del sensore solo se 
-			//la differenza tra il valore misurato e quello stimato supera una certa soglia
-			if(getCronoCount(n) > (long) thaltp[n]*0.95 && getCronoCount(n) < (long) thaltp[n]*1.05){
-				rslt = 0;
-				//do nothing
-			}else if(getCronoCount(n) > (long) thaltp[n]*1.05 && getCronoCount(n) < (long) thaltp[n]*1.2){
-				setCronoCount(thaltp[n], n);
-				rslt = 0;
-				DEBUG_PRINTLN(F("tapparella impiega un tempo diverso dalla stima per apertura totale: correzione..."));
-			}if(getCronoCount(n) > (long) thaltp[n]*1.2){
-				setCronoCount(thaltp[n], n);
-				rslt = 2;
-				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa alto, possibile forzatura"));
-				}
-		}else{
-			if(getCronoCount(n) < (long) thaltp[n]*0.05 && getCronoCount(n) > (long) -thaltp[n]*0.05){
-				rslt = 0;
-				//do nothing
-			}else if(getCronoCount(n) < (long) -thaltp[n]*0.05 && getCronoCount(n) > (long)  -thaltp[n]*0.2){
-				resetCronoCount(n);
-				rslt = 0;
-				DEBUG_PRINTLN(F("tapparella impiega un tempo diverso dalla stima per apertura totale: correzione..."));
-			}if(getCronoCount(n) < (long) -thaltp[n]*0.2){
-				rslt = 3;
-				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa basso, ricalibrare"));
-				stopCrono(n);
-				resetCronoCount(n);
-			}
-		}//*/
+		}
 #else		
 		if(first[n] == true){
 			if(getCronoCount(n) >= (long) thaltp[n]){
@@ -412,21 +378,21 @@ void firstPress(byte sw, byte n){
 		outlogicp[DIRS+offset]=sw;	
 		//fai partire il timer di fine corsa
 		setCronoDir(upmap[sw],n);
-
+#if (AUTOCAL)
+		//Blocco di sicurezza in caso di rottura della sensoristica di fine corsa	
+		//target[n] = ENDFACT*(thaltp[n]) * (!sw);
+		//posizionamento agli estremi stabilito dai sensori fino ad un tetto massimo, dopo scatta il posizionamento col timer
+		target[n] = (1+fact)*thaltp[n] * (!sw);
+		//target[n] = thaltp[n] * (!sw);
+#else
 		if(first[n] == true){
 			target[n] = 1.5*thaltp[n];
 		}else{
-#if (AUTOCAL)
-			//Blocco di sicurezza in caso di rottura della sensoristica di fine corsa	
-			//target[n] = ENDFACT*(thaltp[n]) * (!sw);
-			//posizionamento agli estremi stabilito dai sensori fino ad un tetto massimo, dopo scatta il posizionamento col timer
-			target[n] = (1+fact)*thaltp[n] * (!sw);
-			//target[n] = thaltp[n] * (!sw);
-#else
 			target[n] = (thaltp[n]) * (!sw);
-#endif			
-			target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
 		}
+#endif			
+		target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
+		
 		//DEBUG_PRINT(F("first: "));
 		//DEBUG_PRINTLN(first[n]);
 		//DEBUG_PRINT(F("Target: in moto verso "));
@@ -501,182 +467,3 @@ double calcLen(byte n){
 	double app = (double) getCronoCount(n)/thaltp[n]*nmax;
 	return  (double) PI*app*((double) app*tapthick + 2*barrad)*100/taplen;
 }
-
-/*
-byte tapparellaLogic(byte n){
-	//ad ogni pressione del tasto 1 entro il tempo prefissato attiva il motore nella DIRSezione A
-	//inp=digitalReaoutd(tasto1);
-	//switch attivo su entrambi i fronti
-	byte changed2 = 0;	
-	
-	//button UP
-	changed2 = switchLogic(0,n);
-	//button DOWN
-	changed2 = switchLogic(1,n);
-	
-	return changed2;
-}
-*/
-
-
-/*
-//pulsante UP
-	if(switchdfn(inp[BTN1IN+poffset],BTN1IN+poffset))
-	{
-		DEBUG_PRINT(F("fronte di SW1ONS: "));
-		DEBUG_PRINTLN(inp[BTN1IN+poffset]);
-		DEBUG_PRINT(F("stato switch 1:  "));
-		DEBUG_PRINTLN(getGroupState(n));
-		
-		byte s = getGroupState(n);
-		//siamo su uno dei fronti del pulsante UP
-		if(inp[BTN1IN+poffset]>0)  
-		{			
-			changed = 0;
-			//fronte di salita
-			startTimer(RESETTIMER);
-			//DEBUG_PRINTLN(F("Partito il timer di reset"));
-			//DEBUG_PRINT(F("fronte di salita SW1ONS: "));
-			//DEBUG_PRINTLN(outlogicp[SW1ONS+offset]);			
-			//eseguo il lock del pulsante di DOWN	
-			//inizio sezione critica
-			//noInterrupts ();
-			outlogicp[SW1ONS+offset]=true;
-			if(!outlogicp[SW2ONS+offset]){  //evita attivazioni con pressione contemporanea di due tasti (interblocco)
-				//interrupts ();
-				//fine sezione critica
-				//lastCmd[BTN1IN+poffset]=inp[BTN1IN+poffset];
-				DEBUG_PRINTLN(F("dopo interblocco "));
-				//effettuata prima pressione
-				
-				if(s==0)
-				{ 	
-					setCronoDir(UP,n);
-					if(btndelay[n]>0 && inp[BTN1IN+poffset] < 201){
-						//se il motore è fermo
-						lastCmd[BTN1IN + poffset] = inp[BTN1IN+poffset];
-						DEBUG_PRINTLN(F("tapparellaLogic: stato 1: il motore va in attesa da stato 0 (fermo)"));
-						startTimer(btndelay[n],TMRHALT+toffset);	
-						setGroupState(1,n);	
-						//stato 1: il motore va in attesa
-						updateCnt(n);
-					}else{
-						setGroupState(2,n);	//il motore è in moto a vuoto
-						firstPress(0,n);
-						startTimer(engdelay[0],TMRHALT+n*TIMERDIM);
-						DEBUG_PRINTLN(F("stato 2: il motore va in moto a vuoto"));
-						changed=1;
-					}
-				}else if(s==1)
-				{//se il motore è in attesa
-					//sono pressioni di configurazione
-					resetTimer(TMRHALT+toffset);
-					startTimer(btndelay[n],TMRHALT+toffset);	
-					updateCnt(n);
-				}else  if(s==2 || s==3)//se il motore è in moto a vuoto o in moto cronometrato
-				{
-					resetCnt(n);
-					secondPress(n);
-					changed=1;
-					DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo "));
-				}
-				
-				//onUpPressed(n);
-			}
-		}
-		else
-		{
-			DEBUG_PRINTLN(F("fronte di discesa "));
-			//fronte di discesa
-			//DEBUG_PRINTLN(F("Rilascio pulsanti"));
-			//rilascio interblocco
-			//inizio sezione critica
-			//noInterrupts ();
-			outlogicp[SW1ONS+offset]=false;
-			//interrupts ();
-			//fine sezione critica
-			changed=255;
-			//ferma il timer di reset
-			//Tasto rilasciato: blocca il timer di reset
-			resetTimer(RESETTIMER);
-			//DEBUG_PRINTLN(F("Bloccato il timer di reset"));
-		}
-	
-	}
-	
-	//pulsante DOWN
-	if(switchdfn(inp[BTN2IN+poffset],BTN2IN+poffset)){
-		
-		DEBUG_PRINT(F("fronte di SW2ONS: "));
-		DEBUG_PRINTLN(inp[BTN1IN+poffset]);
-		
-		byte s = getGroupState(n);
-		//siamo su uno dei fronti del pulsante Down
-		if(inp[BTN2IN+poffset]>0) 
-		{
-			changed = 0;
-			DEBUG_PRINT(F("fronte di salita con stato: "));
-			DEBUG_PRINTLN(s);
-			//fronte di salita
-			//eseguo il lock del pulsante di UP nointerruppt()
-			//inizio sezione critica
-			//noInterrupts ();
-			outlogicp[SW2ONS+offset]=true;
-			if(!outlogicp[SW1ONS+offset]){  //evita attivazioni con pressione contemporanea di due tasti (interblocco)
-				//interrupts ();
-				//fine sezione critica
-				//lastCmd[BTN2IN+poffset]=inp[BTN2IN+poffset];
-				DEBUG_PRINTLN(F("dopo interblocco "));
-				
-				//effettuata prima pressione
-			    if(s==0)
-				{ //se il motore è fermo
-					setCronoDir(DOWN,n);
-					if(btndelay[n]>0 && inp[BTN1IN+poffset] < 201){
-						lastCmd[BTN2IN + poffset] = inp[BTN2IN+poffset];
-						DEBUG_PRINTLN(F("stato 1: il motore va in attesa "));
-						setGroupState(1,n);												//stato 1: il motore va in attesa
-						startTimer(btndelay[n],TMRHALT+toffset);	
-						updateCnt(n);
-					}else{
-						setGroupState(2,n);												//stato 2: il motore va in moto a vuoto
-						firstPress(1,n);
-						startTimer(engdelay[1],TMRHALT+n*TIMERDIM);
-						DEBUG_PRINTLN(F("stato 2: il motore va in moto a vuoto"));
-						changed=1;
-					}
-					//firstPressDown(n);
-				}else if(s==1)
-				{//se il motore è in attesa
-					//pressioni di configurazione del sistema, riavvio lo stato di attesa
-					resetTimer(TMRHALT+toffset);
-					startTimer(btndelay[n],TMRHALT+toffset);						
-					updateCnt(n);
-				}else if(s==2 || s==3)//se il motore è in moto a vuoto o in moto cronometrato
-				{
-					resetCnt(n);
-					secondPress(n);
-					changed=1;
-					DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo "));
-				}
-				
-				//onDownPressed(n);
-			}
-		}
-		else
-		{
-			DEBUG_PRINTLN(F("fronte di discesa "));
-			//fronte di discesa
-			//DEBUG_PRINTLN(F("Rilascio pulsanti"));
-			//rilascio interblocco
-			//inizio sezione critica
-			//noInterrupts ();
-			outlogicp[SW2ONS+offset]=false;
-			//interrupts ();
-			//fine sezione critica
-			changed= 255;
-			
-		}
-		
-	}
-	*/
