@@ -400,6 +400,7 @@ void firstPress(byte sw, byte n){
 #if (AUTOCAL)
 			//Blocco di sicurezza in caso di rottura della sensoristica di fine corsa	
 			//target[n] = ENDFACT*(thaltp[n]) * (!sw);
+			//target[n] = ENDFACT*(thaltp[n]) * (!sw);
 			target[n] = ENDFACT*(thaltp[n]) * (!sw);
 #else
 			target[n] = (thaltp[n]) * (!sw);
