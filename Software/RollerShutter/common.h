@@ -85,7 +85,7 @@ extern RemoteDebug telnet;
 //#define RAMPDELAY1	1  		//n*20ms
 //#define RAMPDELAY2	1  		//n*20ms
 #define ONGAP		20
-#define ENDFACT		0.1
+#define ENDFACT		2
 #define PUSHINTERV	 60 // in sec
 #define ONE_WIRE_BUS 2  // DS18B20 pin
 #define RUNDELAY  	1

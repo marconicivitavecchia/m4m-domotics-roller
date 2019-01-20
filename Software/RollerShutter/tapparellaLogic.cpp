@@ -11,7 +11,8 @@ float taplen, deltal;
 float barrad;
 float tapthick; 
 unsigned long thaltp[2]={THALTMAX/2,THALTMAX/2};
-#if (!AUTOCAL) 
+#if (AUTOCAL) 
+float fact;
 #endif
 unsigned long engdelay[2]={0,0};
 unsigned long btndelay[2]={0,0};
@@ -142,6 +143,8 @@ void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, String  *paramsi, 
 	//thaltp[0]=(paramsl[THALT1]).toInt();
 	//thaltp[1]=(paramsl[THALT2]).toInt();
 	first[0] = first[1] = firstTime;
+#else
+	fact = (float) ENDFACT/100.0;
 #endif	
 	deltal=DELTAL;
 	nmax = (double) ((double) sqrt((double) taplen*tapthick/PI + barrad*barrad) - barrad) / tapthick;		//100% of excursion
@@ -229,21 +232,21 @@ short secondPress(byte n, int delay){
 #if (AUTOCAL)  
 		if(getCronoDir(n)==UP){
 			//versione con correzzione continua in base alla lettura del sensore
-			if(getCronoCount(n) > (long) thaltp[n]*(1-ENDFACT) && getCronoCount(n) < (long) thaltp[n]*(1+ENDFACT)){
+			if(getCronoCount(n) > (long) thaltp[n]*(1-fact) && getCronoCount(n) < (long) thaltp[n]*(1+fact)){
 				//setCronoCount(thaltp[n], n);
 				rslt = 0;
 				long app = (long) getCronoCount(n)-thaltp[n];
 				DEBUG_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per apertura totale. Correzione: "));
 				DEBUG_PRINTLN(app);
 				thaltp[n] = getCronoCount(n);
-			}else if(getCronoCount(n) >= (long) thaltp[n]*(1+ENDFACT)){
+			}else if(getCronoCount(n) >= (long) thaltp[n]*(1+fact)){
 				setCronoCount(thaltp[n], n);
 				first[n] = false;
 				rslt = 2;
 				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa alto, possibile forzatura"));
 			}
 		}else{
-			if(getCronoCount(n) < (long) thaltp[n]*ENDFACT && getCronoCount(n) > (long) -thaltp[n]*ENDFACT){
+			if(getCronoCount(n) < (long) thaltp[n]*fact && getCronoCount(n) > (long) -thaltp[n]*fact){
 				//resetCronoCount(n);
 				rslt = 0;
 				DEBUG_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per chiusura totale. Correzione: "));
@@ -251,7 +254,8 @@ short secondPress(byte n, int delay){
 				DEBUG_PRINTLN(app);
 				app = thaltp[n] + getCronoCount(n);
 				thaltp[n] = app;
-			}else if(getCronoCount(n) <= (long) -thaltp[n]*ENDFACT){
+				resetCronoCount(n);
+			}else if(getCronoCount(n) <= (long) -thaltp[n]*fact){
 				resetCronoCount(n);
 				first[n] = false;
 				rslt = 3;
@@ -400,8 +404,8 @@ void firstPress(byte sw, byte n){
 #if (AUTOCAL)
 			//Blocco di sicurezza in caso di rottura della sensoristica di fine corsa	
 			//target[n] = ENDFACT*(thaltp[n]) * (!sw);
-			//target[n] = ENDFACT*(thaltp[n]) * (!sw);
-			target[n] = ENDFACT*(thaltp[n]) * (!sw);
+			target[n] = (1+fact)*thaltp[n] * (!sw);
+			//target[n] = thaltp[n] * (!sw);
 #else
 			target[n] = (thaltp[n]) * (!sw);
 #endif			
