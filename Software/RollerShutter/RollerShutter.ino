@@ -81,11 +81,15 @@ IPAddress myip(192, 168, 43, 1);
 IPAddress mygateway(192, 168, 43, 1);
 IPAddress mysubnet(255, 255, 255, 0);
 
+#if(LARGEFW)
 RemoteDebug telnet;
-WiFiEventHandler stationConnectedHandler;
-WiFiEventHandler stationDisconnectedHandler;
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature DS18B20(&oneWire);
+#endif
+
+WiFiEventHandler stationConnectedHandler;
+WiFiEventHandler stationDisconnectedHandler;
+
 //WiFiEventHandler gotIpEventHandler, disconnectedEventHandler, connectedEventHandler;
 
 //User config
@@ -186,8 +190,9 @@ float getAmpRMS(float ACSVolt){
 }
 
 float getTemperature(){
+	float temp = -127;
+#if(LARGEFW)
 	DS18B20.requestTemperatures(); 
-	float temp;
 	unsigned short cnt = 0;
 	do{
 		temp = DS18B20.getTempCByIndex(0);
@@ -195,6 +200,7 @@ float getTemperature(){
 		DEBUG_PRINTLN(temp);
 		cnt++;		
 	}while((temp == 85.0 || temp == (-127.0)) && cnt < 3);
+#endif
 	return temp;
 }
 
@@ -314,7 +320,7 @@ void setup_wifi(int wifindx) {
 	//WiFi.enableAP(true);
   //}
 }
-
+#if (LARGEFW)
 void setup_mDNS() {
 	if (MDNS.begin((params[MQTTID]).c_str())) {              // Start the mDNS responder for esp8266.local
 		DEBUG_PRINTLN(F("mDNS responder started"));
@@ -322,6 +328,7 @@ void setup_mDNS() {
 		DEBUG_PRINTLN(F("Error setting up MDNS responder!"));
 	}
 }
+#endif
 
 void startWebSocket() { // Start a WebSocket server
   webSocket.begin();                          // start the websocket server
@@ -417,25 +424,34 @@ void mqttCallback(String &topic, String &response) {
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
-  telnet.printf("webSocketEvent(%d, %d, ...)\r\n", num, type);
+  DEBUG_PRINT("webSocketEvent(");
+  DEBUG_PRINT(num);
+  DEBUG_PRINT(", ");
+  DEBUG_PRINT(type);
+  char s[20];
+  
   switch (type) {
     case WStype_DISCONNECTED:             // if the websocket is disconnected
-	  wsnconn--;
-      telnet.printf("[%u] Disconnected!\n", num);
+		wsnconn--;
+		DEBUG_PRINT("[%u] Disconnected! ");
+		DEBUG_PRINTLN(num);
     break;
     case WStype_CONNECTED: {              // if a new websocket connection is established
 		wsnconn++;
         IPAddress wip = webSocket.remoteIP(num);
-        telnet.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, wip[0], wip[1], wip[2], wip[3], payload);
+		sprintf(s,"[%u] Connected from %d.%d.%d.%d url: %s\n", num, wip[0], wip[1], wip[2], wip[3], payload);
+		DEBUG_PRINT(s);
 		readStatesAndPub();
 	}
     break;
     case WStype_TEXT:                     // if new text data is received 
-		telnet.printf("[%u] get Text: %s\r\n", num, payload);
+		sprintf(s,"[%u] get Text: %s\r\n", num, payload);
+		DEBUG_PRINT(s);
 		String str = String((char *)payload);
 		String str2 = String("");
 		mqttCallback(str2, str);
-	}
+	break;
+  }
 }
 
 //legge il valore dello stato dei toggle e li pubblica sul broker come stringa JSON
@@ -598,11 +614,12 @@ void setup() {
   WiFi.mode(WIFI_STA);
   setup_wifi(wifindx);  
   //setTimerState(wfs, CONNSTATSW);
-  //telnet.begin();
+#if(LARGEFW)
   telnet.begin((params[MQTTID]).c_str()); // Initiaze the telnet server
   telnet.setResetCmdEnabled(true); // Enable the reset command
   telnet.setCallBackProjectCmds(&processCmdRemoteDebug);
   DEBUG_PRINTLN(F("Activated remote debug"));
+#endif  
   DEBUG_PRINTLN(F("Inizializzo i pulsanti."));
   initdfn(LOW, 0);  //pull DOWN init (in realtà è un pull up, c'è un not in ogni ingresso sui pulsanti)
   initdfn(LOW, 1);
@@ -753,10 +770,12 @@ void httpSetup(){
   //start HTTP server
   server.begin();
   DEBUG_PRINTLN("HTTP server started");
-  //MDNS.addService(F("http"), F("tcp"), 80); 
+#if(LARGEFW)
+  MDNS.addService(F("http"), F("tcp"), 80); 
   DEBUG_PRINT("HTTPUpdateServer ready! Open http://");
   DEBUG_PRINT(params[MQTTID]);
   DEBUG_PRINTLN(".local/update in your browser");
+#endif
 }
 
 void zeroDetect(){
@@ -881,10 +900,11 @@ inline void loop2() {
 		//}
 		//------------------------------------------------------------------------------------------------------------
 	}//END 60ms scheduler------------------------------------------------------------------------------------
-  }//END Time base (2 msec) main scheduler------------------------------------------------------------------------
-  
+  }//END Time base (2 msec) main scheduler------------------------------------------------------------------------  
   //POST SCHEDULERS ACTIONS-----------------
+#if(LARGEFW)
   telnet.handle();
+#endif  
   yield();	// Give a time for ESP8266
 }//END loop
 
@@ -1591,6 +1611,7 @@ String macToString(const unsigned char* mac) {
   return String(buf);
 }
 
+#if(LARGEFW)
 void processCmdRemoteDebug() {
 	String lastCmd = telnet.getLastCommand();
 	
@@ -1660,6 +1681,8 @@ void processCmdRemoteDebug() {
 	}
 	//telnet.flush();
 }
+#endif
+
 
 #if (DEBUG || DEBUGR)	
 const char* wl_status_to_string(wl_status_t status) {
@@ -1675,18 +1698,24 @@ const char* wl_status_to_string(wl_status_t status) {
   }
 }
 #endif
+
 #if (DEBUG || DEBUGR)	
 void testFlash(){
   uint32_t realSize = ESP.getFlashChipRealSize();
   uint32_t ideSize = ESP.getFlashChipSize();
   FlashMode_t ideMode = ESP.getFlashChipMode();
-
-  telnet.printf("Flash real id:   %08X\n", ESP.getFlashChipId());
-  telnet.printf("Flash real size: %u bytes\n\n", realSize);
-
-  telnet.printf("Flash ide  size: %u bytes\n", ideSize);
-  telnet.printf("Flash ide speed: %u Hz\n", ESP.getFlashChipSpeed());
-  telnet.printf("Flash ide mode:  %s\n", (ideMode == FM_QIO ? "QIO" : ideMode == FM_QOUT ? "QOUT" : ideMode == FM_DIO ? "DIO" : ideMode == FM_DOUT ? "DOUT" : "UNKNOWN"));
+  char s[25];
+  
+  sprintf(s,"\nFlash real id:   %08X\n", ESP.getFlashChipId());
+  DEBUG_PRINT(s);
+  sprintf(s,"Flash real size: %u bytes\n", realSize);
+  DEBUG_PRINT(s);
+  sprintf(s,"Flash ide  size: %u bytes\n", ideSize);
+  DEBUG_PRINT(s);
+  sprintf(s,"Flash ide speed: %u Hz\n", ESP.getFlashChipSpeed());
+  DEBUG_PRINT(s);
+  sprintf(s,"Flash ide mode:  %s\n", (ideMode == FM_QIO ? "QIO" : ideMode == FM_QOUT ? "QOUT" : ideMode == FM_DIO ? "DIO" : ideMode == FM_DOUT ? "DOUT" : "UNKNOWN"));
+  DEBUG_PRINT(s);
 
   if (ideSize != realSize) {
     DEBUG_PRINT("\nFlash Chip configuration wrong!\n");

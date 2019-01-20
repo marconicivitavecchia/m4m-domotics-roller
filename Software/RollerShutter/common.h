@@ -17,21 +17,17 @@ extern "C" {
 #include <EEPROM.h>
 //#include <sched.h>
 #include <ESP8266WiFi.h>
-#include <RemoteDebug.h>                  // https://github.com/JoaoLopesF/RemoteDebug
 #include <MQTT.h>                         // https://github.com/i-n-g-o/esp-mqtt-arduino
-#include <ESP8266mDNS.h>
+#include <WebSocketsServer.h>             //  https://github.com/Links2004/arduinoWebSockets
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
-#include <WiFiUdp.h>
-#include <WebSocketsServer.h>             //  https://github.com/Links2004/arduinoWebSockets
-#include <OneWire.h>                      //  https://www.pjrc.com/teensy/td_libs_OneWire.html
-#include <DallasTemperature.h>            //  https://github.com/milesburton/Arduino-Temperature-Control-Library
+//#include <WiFiUdp.h>
+
 //#include <ArduinoOTA.h>
 #include "eepromUtils.h"
 #include "timersNonSchedulati.h"
 #include "schedservices.h"
 
-extern RemoteDebug telnet;
 //DEFAULT CONFIGURATIONS
 //wifi config----------------------------------------------
 #define OUTTOPIC		"sonoff17/out"
@@ -46,6 +42,9 @@ extern RemoteDebug telnet;
 #define MQTTCLIENTID 	"NodeMCUtanzo2344378"
 //END DEFAULTS
 
+//LARGE FW OTA UPLOAD---------------------
+#define LARGEFW 		0
+//----------------------------------------
 //Definizione modello
 #define SONOFF_4CH		1
 #define ROLLERSHUTTER 	0
@@ -240,6 +239,19 @@ extern RemoteDebug telnet;
 #define MQTTJSONMQTTID			11
 #define MQTTJSONDIM				12
 //--------------------------Fine array indexes-----------------------------------
+
+#if (LARGEFW)
+	#include <ESP8266mDNS.h>
+	#include <RemoteDebug.h>                  // https://github.com/JoaoLopesF/RemoteDebug
+	#include <OneWire.h>                      //  https://www.pjrc.com/teensy/td_libs_OneWire.html
+	#include <DallasTemperature.h>            //  https://github.com/milesburton/Arduino-Temperature-Control-Library
+	extern RemoteDebug telnet;
+	void setup_mDNS();
+#else
+	#define DEBUGR			0	
+	#define DEBUG   	    0		
+#endif
+
 //-----------------------DEBUG MACRO------------------------------------------------------------
 //#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
 //#define PGMT( pgm_ptr ) ( reinterpret_cast< const __FlashStringHelper * >( pgm_ptr ) )
@@ -261,12 +273,12 @@ extern RemoteDebug telnet;
 	for(int i=0;i<4;i++)	\
 		inr[i]=LOW	
 
-#ifdef DEBUG
+#if (DEBUG)
  //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
  #define DEBUG_PRINT(x)   Serial.print (x); telnet.print(x)	
  //#define DEBUG_PRINTDEC(x)     Serial.print (x, DEC);  telnet.print(x)
  #define DEBUG_PRINTLN(x)   Serial.println (x);  telnet.println(x)
-#elif DEBUGR
+#elif (DEBUGR)
   #define DEBUG_PRINT(x)   telnet.print(x)
   #define DEBUG_PRINTLN(x) telnet.println(x)
 #else 
@@ -286,7 +298,6 @@ extern RemoteDebug telnet;
 
 void setup_AP(bool);
 void setup_wifi();
-void setup_mDNS();
 void mqttReconnect();
 //void mqttCallback(String (&)[PARAMSDIM], String (&)[MQTTJSONDIM]);
 void mqttCallback(String &, String &);
