@@ -43,7 +43,7 @@ extern "C" {
 //END DEFAULTS
 
 //LARGE FW OTA UPLOAD---------------------
-#define LARGEFW 		0
+#define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
 #define SONOFF_4CH		1

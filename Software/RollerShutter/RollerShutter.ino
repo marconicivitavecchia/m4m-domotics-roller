@@ -428,13 +428,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
   DEBUG_PRINT(num);
   DEBUG_PRINT(", ");
   DEBUG_PRINT(type);
-  char s[20];
+  char s[300];
   
   switch (type) {
     case WStype_DISCONNECTED:             // if the websocket is disconnected
+		sprintf(s,"\n[%u] Disconnected!", num);
+		DEBUG_PRINT(s);
 		wsnconn--;
-		DEBUG_PRINT("[%u] Disconnected! ");
-		DEBUG_PRINTLN(num);
     break;
     case WStype_CONNECTED: {              // if a new websocket connection is established
 		wsnconn++;
