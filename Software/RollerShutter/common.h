@@ -85,6 +85,7 @@ extern RemoteDebug telnet;
 //#define RAMPDELAY1	1  		//n*20ms
 //#define RAMPDELAY2	1  		//n*20ms
 #define ONGAP		20
+#define ENDFACT		0.1
 #define PUSHINTERV	 60 // in sec
 #define ONE_WIRE_BUS 2  // DS18B20 pin
 #define RUNDELAY  	1
@@ -273,25 +274,6 @@ extern RemoteDebug telnet;
  //#define DEBUG_PRINTDEC(x)
  #define DEBUG_PRINTLN(x) 
 #endif	
-//legge legge lo stato dei pulsanti e scrive il loro valore sulle porte di uscita dei led
-/*
-#if (SCR)
-#define scriviOutDaStato()  digitalWrite(OUT1DD,(outLogic[ENABLES] && (outLogic[DIRS]==HIGH)));	\
-	 digitalWrite(OUT1EU,(outLogic[ENABLES] && (outLogic[DIRS]==LOW)));		\
-	 digitalWrite(OUT2DD,(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH)));	\
-	 digitalWrite(OUT2EU,(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW)));		\
-	 isrun[0] = (outLogic[ENABLES]==HIGH);					\
-	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH)		
-#else		
-#define scriviOutDaStato()	digitalWrite(OUT1EU,outLogic[ENABLES]);	\
-	 digitalWrite(OUT1DD,outLogic[DIRS]);		\
-	 digitalWrite(OUT2EU,outLogic[ENABLES+STATUSDIM]);		\
-	 digitalWrite(OUT2DD,outLogic[DIRS+STATUSDIM]);			\
-	 isrun[0] = (outLogic[ENABLES]==HIGH);					\
-	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH)			 
-#endif
-*/
-//#define tapLogic(n)	(switchLogic(0,n) + switchLogic(1,n))
 
 //PRIMA DEFINISCO LE COSTANTI, POI INCLUDO I FILES HEADERS (.h) CHE LE USANO
 #include "tapparellaLogic.h"
@@ -394,42 +376,4 @@ void handleModify();
 
   },
   
-  
-
-int Sensor_Value=0;
-float voltage;
-float ARDUINO_ANALOG_SCALING = 0.00488758;
-float Actual_voltage;
-float Current_Sensor_Value;
-void setup()
-{
-  Serial.begin(9600);
-  pinMode(A0, INPUT) ;
-
-}
-
-void loop()
-{
-
-  CS_Output();
-  Serial.println("........................");
-  delay(1000);
-}
-
-
-void CS_Output()
-{
-  float average = 0;
-  for(int i = 0; i < 1000; i++) {
-    average = average + (.0264 * analogRead(A0) -13.51) / 1000;
-    delay(1);
-  }
-  Serial.print("before calibration:");
-  Serial.println(average);
-  average=average+0.15;
-  Serial.print("after calibration:");
-  Serial.println(average);  
-}
-
-
  */

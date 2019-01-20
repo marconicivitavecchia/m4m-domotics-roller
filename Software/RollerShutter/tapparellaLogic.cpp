@@ -178,10 +178,12 @@ void startEndOfRunTimer(byte n){
 	//comincia a cronometrare la corsa
 	startCrono(n); 
 	setGroupState(3,n);	//														stato 3: il motore va in moto cronometrato
-	//DEBUG_PRINT(F("stato 3: il motore " ));
-	//DEBUG_PRINT(n);
-	//DEBUG_PRINT(F(" è cronometrato verso "));
-	//DEBUG_PRINTLN(target[n]);	
+	DEBUG_PRINT(F("stato 3: il motore " ));
+	DEBUG_PRINT(n);
+	DEBUG_PRINT(F(" al tempo  " ));
+	DEBUG_PRINT(getCronoCount(n));
+	DEBUG_PRINT(F(" è cronometrato verso "));
+	DEBUG_PRINTLN(target[n]);	
 }
 
 bool startEngineDelayTimer(byte n){
@@ -203,7 +205,7 @@ bool startEngineDelayTimer(byte n){
 		//}	
 }
 
-short secondPress(byte n){
+short secondPress(byte n, int delay){
 	int offset=n*STATUSDIM;
 	int toffset=n*TIMERDIM;
 	int poffset=n*BTNDIM;
@@ -222,28 +224,36 @@ short secondPress(byte n){
 		nrun--;
 		outlogicp[DIRS+offset]=LOW;
 		setGroupState(0,n);												//stato 0: il motore va in stato fermo
-		addCronoCount(stopCrono(n), (short) getCronoDir(n),n); 
+		addCronoCount(stopCrono(n)-delay, (short) getCronoDir(n),n); 
 		long app = getCronoCount(n);
 #if (AUTOCAL)  
 		if(getCronoDir(n)==UP){
 			//versione con correzzione continua in base alla lettura del sensore
-			if(getCronoCount(n) > (long) thaltp[n]*0.9 && getCronoCount(n) < (long) thaltp[n]*1.1){
-				setCronoCount(thaltp[n], n);
+			if(getCronoCount(n) > (long) thaltp[n]*(1-ENDFACT) && getCronoCount(n) < (long) thaltp[n]*(1+ENDFACT)){
+				//setCronoCount(thaltp[n], n);
 				rslt = 0;
-				//thaltp[n] = getCronoCount(n);
-				DEBUG_PRINTLN(F("tapparella impiega un tempo diverso dalla stima per apertura totale: correzione..."));
-			}else if(getCronoCount(n) > (long) thaltp[n]*1.1){
+				long app = (long) getCronoCount(n)-thaltp[n];
+				DEBUG_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per apertura totale. Correzione: "));
+				DEBUG_PRINTLN(app);
+				thaltp[n] = getCronoCount(n);
+			}else if(getCronoCount(n) >= (long) thaltp[n]*(1+ENDFACT)){
 				setCronoCount(thaltp[n], n);
+				first[n] = false;
 				rslt = 2;
 				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa alto, possibile forzatura"));
 			}
 		}else{
-			if(getCronoCount(n) < (long) thaltp[n]*0.1 && getCronoCount(n) > (long) -thaltp[n]*0.1){
-				resetCronoCount(n);
+			if(getCronoCount(n) < (long) thaltp[n]*ENDFACT && getCronoCount(n) > (long) -thaltp[n]*ENDFACT){
+				//resetCronoCount(n);
 				rslt = 0;
-				DEBUG_PRINTLN(F("tapparella impiega un tempo diverso dalla stima per la chiusura totale: correzione..."));
-			}else if(getCronoCount(n) < (long) -thaltp[n]*0.1){
+				DEBUG_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per chiusura totale. Correzione: "));
+				long app = (long) getCronoCount(n);
+				DEBUG_PRINTLN(app);
+				app = thaltp[n] + getCronoCount(n);
+				thaltp[n] = app;
+			}else if(getCronoCount(n) <= (long) -thaltp[n]*ENDFACT){
 				resetCronoCount(n);
+				first[n] = false;
 				rslt = 3;
 				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa basso, ricalibrare"));
 			}
@@ -311,7 +321,8 @@ short secondPress(byte n){
 		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index 
 		lastCmd[btn] = 201;
 		setGroupState(1,n);			//stato 1: il sitema va in stato di attesa		
-#if(AUTOCAL)		
+#if(AUTOCAL)
+		//tempo di ripartenza (non corto per far riposare il motore ed evitare spikes di corrente)
 		startTimer(1500,TMRHALT+toffset);
 #else
 		startTimer(500,TMRHALT+toffset);
@@ -338,7 +349,7 @@ short secondPress(byte n){
 		//blocca il cronometro di DOWN
 		//addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
 		//stopCrono(n);
-		unsigned int app =addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
+		unsigned int app = addCronoCount(stopCrono(n)-delay, (short) getCronoDir(n),n);
 		//unsigned int app = getCronoCount(n);
 		setCronoCount( app*(getCronoDir(n)==UP),n);
 		if(app < CNTIME*1000)
@@ -382,20 +393,24 @@ void firstPress(byte sw, byte n){
 		outlogicp[DIRS+offset]=sw;	
 		//fai partire il timer di fine corsa
 		setCronoDir(upmap[sw],n);
-#if (AUTOCAL)  
-		target[n] = 1.5*thaltp[n];
-#else
+
 		if(first[n] == true){
 			target[n] = 1.5*thaltp[n];
 		}else{
+#if (AUTOCAL)
+			//Blocco di sicurezza in caso di rottura della sensoristica di fine corsa	
+			//target[n] = ENDFACT*(thaltp[n]) * (!sw);
+			target[n] = ENDFACT*(thaltp[n]) * (!sw);
+#else
 			target[n] = (thaltp[n]) * (!sw);
+#endif			
 			target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
 		}
 		//DEBUG_PRINT(F("first: "));
 		//DEBUG_PRINTLN(first[n]);
 		//DEBUG_PRINT(F("Target: in moto verso "));
 		//DEBUG_PRINTLN(target[n]);
-#endif
+
 	}else if(inp[BTN1IN+poffset+sw] == 201){
 		DEBUG_PRINT(F("Calibrazione: in moto verso "));
 		DEBUG_PRINTLN(sw);
@@ -414,6 +429,8 @@ void firstPress(byte sw, byte n){
 		//DEBUG_PRINTLN(F(" in moto verso l'alto perc"));
 		if(inp[BTN1IN+poffset+sw] > 100){
 			inp[BTN1IN+poffset+sw] = 100;
+		}else if(inp[BTN1IN+poffset+sw] < 4){
+			inp[BTN1IN+poffset+sw] = 0;
 		}
 		target[n] = (unsigned long) (thaltp[n]*calcTiming(inp[BTN1IN+poffset+sw]))/100;
 		long delta = (long) (target[n] - getCronoCount(n));

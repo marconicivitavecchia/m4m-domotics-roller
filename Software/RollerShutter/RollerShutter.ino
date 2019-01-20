@@ -113,7 +113,7 @@ int ncifre=4;
 //e salvate in un array con indici a questo corrrispondenti
 //l'ordine di trasmissione da remoto dei campi è ininfluente
 //I comandi della tapparella devono essere  gli ultimi!
-String mqttJson[MQTTJSONDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all","mac","ip","time","mqttid"/*,"calibr1","calibr2"*/};
+String mqttJson[MQTTJSONDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all","mac","ip","time","mqttid"};
 //Valore iniziale: il suo contenuto viene poi caricato da EEPROM
 unsigned int thalt1=5000;
 unsigned int thalt2=5000;
@@ -596,14 +596,7 @@ void setup() {
   //setup_AP(true);
   wifiState = WIFISTA;
   WiFi.mode(WIFI_STA);
-  setup_wifi(wifindx);
-  //WiFi.mode(WIFI_AP);
-  //delay(6000);
-  //WiFi.mode(WIFI_AP);
-  //delay(6000);
-  //delay(TCOUNT*1000);
-  //delay(1000);
-  
+  setup_wifi(wifindx);  
   //setTimerState(wfs, CONNSTATSW);
   //telnet.begin();
   telnet.begin((params[MQTTID]).c_str()); // Initiaze the telnet server
@@ -926,18 +919,6 @@ inline void leggiTastiRemoti(){
 		inr[MQTTJSONMQTTID] = LOW;
 		readMQTTIdAndPub();
 	}
-	/*
-	if(inr[MQTTJSONCALIBR1]){
-		inr[MQTTJSONCALIBR1] = LOW;
-		//ATTIVATA CALIBRAZIONE MANUALE BTN 1
-		manualCalibration(0);
-	}
-	if(inr[MQTTJSONCALIBR2]){
-		inr[MQTTJSONCALIBR2] = LOW;
-		//ATTIVATA CALIBRAZIONE MANUALE BTN 2
-		manualCalibration(1);
-	}
-	*/
 }
 
 inline void currentPeakDetector(){
@@ -1013,11 +994,11 @@ inline void automaticStopManager(){
 						DEBUG_PRINT(0);
 						if(chk[0] == -1){
 							DEBUG_PRINTLN(F(") Stop: sottosoglia"));
-							blocked[0] = secondPress(0);
+							blocked[0] = secondPress(0,40);
 							scriviOutDaStato();
 						}else if(chk[0] == 2){
 							DEBUG_PRINTLN(F(") Stop: soprasoglia"));
-							blocked[0] = secondPress(0);
+							blocked[0] = secondPress(0,40);
 							scriviOutDaStato();
 							blocked[0] = 1;
 						}else if(chk[0] == 1){
@@ -1074,10 +1055,10 @@ inline void automaticStopManager(){
 						DEBUG_PRINT(F("\n("));
 						DEBUG_PRINT(1);
 						if(chk[1] == -1){
-							blocked[1] = secondPress(1);
+							blocked[1] = secondPress(40,1);
 							scriviOutDaStato();
 						}else if(chk[1] == 2){
-							blocked[1] = secondPress(1);
+							blocked[1] = secondPress(40,1);
 							scriviOutDaStato();
 							blocked[1] = 1;
 						}else if(chk[1] == 1){
@@ -1386,7 +1367,6 @@ void onElapse(byte n){
 				readStatesAndPub();
 			}else if(getGroupState(n)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
 				DEBUG_PRINTLN(F("onElapse:  timer di attesa scaduto"));
-			    setupTimer(TENDCHECK*1000,TMRHALT+n*TIMERDIM);	
 				startEngineDelayTimer(n);
 				//adesso parte...
 				scriviOutDaStato();
