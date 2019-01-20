@@ -1675,9 +1675,11 @@ void processCmdRemoteDebug() {
 	}else if(lastCmd == "getmqttid"){
 		DEBUG_PRINT(F("\nMQTT ID: "));
 		DEBUG_PRINTLN(params[MQTTID]);
+	}else if(lastCmd == "testflash"){
+		testFlash();
 	}else{
 		DEBUG_PRINT(F("\nComandi disponibili: "));
-		DEBUG_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, getadczero, gettemp, getpower, getmac, gettime, getmqttid\n"));
+		DEBUG_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, getadczero, gettemp, getpower, getmac, gettime, getmqttid, testflash\n"));
 	}
 	//telnet.flush();
 }
@@ -1704,7 +1706,7 @@ void testFlash(){
   uint32_t realSize = ESP.getFlashChipRealSize();
   uint32_t ideSize = ESP.getFlashChipSize();
   FlashMode_t ideMode = ESP.getFlashChipMode();
-  char s[25];
+  char s[100];
   
   sprintf(s,"\nFlash real id:   %08X\n", ESP.getFlashChipId());
   DEBUG_PRINT(s);
