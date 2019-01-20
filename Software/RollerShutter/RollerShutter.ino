@@ -1359,7 +1359,7 @@ void onElapse(byte n){
 		if(getCntValue(n) == 1){
 			int toffset=n*TIMERDIM;
 			if(getGroupState(n)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
-				DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo da fine corsa"));
+				DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 				secondPress(n);
 				//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
 				scriviOutDaStato();

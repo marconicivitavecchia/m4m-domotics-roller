@@ -11,6 +11,7 @@ float taplen, deltal;
 float barrad;
 float tapthick; 
 unsigned long thaltp[2]={THALTMAX/2,THALTMAX/2};
+unsigned long base[2]={0,0};
 #if (AUTOCAL) 
 float fact;
 #endif
@@ -231,35 +232,47 @@ short secondPress(byte n, int delay){
 		long app = getCronoCount(n);
 #if (AUTOCAL)  
 		if(getCronoDir(n)==UP){
-			//versione con correzzione continua in base alla lettura del sensore
+			//versione con correzzione continua della posizione escursione in base alla lettura dei due sensori H e L
+			//l'ampiezza dell'escursione attualmente non viene modificata ed è stimata solo in fase di calibrazione
 			if(getCronoCount(n) > (long) thaltp[n]*(1-fact) && getCronoCount(n) < (long) thaltp[n]*(1+fact)){
+				//correzione posizione tetto escursione 
 				//setCronoCount(thaltp[n], n);
+				//stima base escursione da parte del sensore H (alto)
+				base[n] = (long) getCronoCount(n)-thaltp[n];
+				DEBUG_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per apertura totale. Correzione posizione necessaria: "));
+				DEBUG_PRINTLN(base[n]);
+				//elastico parte alta (correzione ampiezza escursione)
+				//thaltp[n] = getCronoCount(n);	//elastico parte alta (correzione escursione)
 				rslt = 0;
-				long app = (long) getCronoCount(n)-thaltp[n];
-				DEBUG_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per apertura totale. Correzione: "));
-				DEBUG_PRINTLN(app);
-				thaltp[n] = getCronoCount(n);
 			}else if(getCronoCount(n) >= (long) thaltp[n]*(1+fact)){
+				//correzione posizione tetto escursione (necessaria all'avvio!)
 				setCronoCount(thaltp[n], n);
 				first[n] = false;
 				rslt = 2;
-				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa alto, possibile forzatura"));
+				DEBUG_PRINTLN(F("Correzione posizione tetto escursione. Prima escursione o forzatura...può essere necessaria ricalibrazione"));
 			}
 		}else{
 			if(getCronoCount(n) < (long) thaltp[n]*fact && getCronoCount(n) > (long) -thaltp[n]*fact){
 				//resetCronoCount(n);
 				rslt = 0;
-				DEBUG_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per chiusura totale. Correzione: "));
+				DEBUG_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per chiusura totale. Correzione posizione necassaria: "));
+				//stima base escursione da parte del sensore L (basso)
 				long app = (long) getCronoCount(n);
+				//calcolo media delle due stime sulla base escursione
+				app = (app + base[n])/2;
 				DEBUG_PRINTLN(app);
-				app = thaltp[n] + getCronoCount(n);
-				thaltp[n] = app;
-				resetCronoCount(n);
+				//elastico parte bassa (correzione ampiezza escursione)
+				//app = thaltp[n] + getCronoCount(n);  
+				//thaltp[n] = app;
+				//correzione posizione base escursione 
+				setCronoCount(app, n);
+				//resetCronoCount(n);
 			}else if(getCronoCount(n) <= (long) -thaltp[n]*fact){
+				//correzione posizione base escursione (necessaria all'avvio!)
 				resetCronoCount(n);
 				first[n] = false;
 				rslt = 3;
-				DEBUG_PRINTLN(F("tapparella molto oltre il fine corsa basso, ricalibrare"));
+				DEBUG_PRINTLN(F("Grande correzione della posizione della base escursione, può essere necessaria ricalibrazione"));
 			}
 		}//*/
 		
