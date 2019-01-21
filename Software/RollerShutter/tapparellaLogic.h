@@ -16,7 +16,7 @@ long getTarget(byte);
 //void firstPressDown(byte);
 void firstPress(byte, byte);
 //void firstPressUp(byte);
-short secondPress(byte, int delay=0);
+short secondPress(byte, int delay=0, bool end=false);
 byte getGroupState(byte);
 void setGroupState(byte, byte);
 byte getDelayedCmd(byte);

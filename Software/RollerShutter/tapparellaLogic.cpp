@@ -10,8 +10,8 @@ String  *paramsl;
 float taplen, deltal;
 float barrad;
 float tapthick; 
-unsigned long thaltp[2]={THALTMAX/2,THALTMAX/2};
-unsigned long base[2]={0,0};
+long thaltp[2]={THALTMAX/2,THALTMAX/2};
+long base[2]={0,0};
 #if (AUTOCAL) 
 float fact;
 #endif
@@ -209,7 +209,7 @@ bool startEngineDelayTimer(byte n){
 		//}	
 }
 
-short secondPress(byte n, int delay){
+short secondPress(byte n, int delay, bool end){
 	int offset=n*STATUSDIM;
 	int toffset=n*TIMERDIM;
 	int poffset=n*BTNDIM;
@@ -227,12 +227,12 @@ short secondPress(byte n, int delay){
 		outlogicp[ENABLES+offset]=LOW;
 		nrun--;
 		outlogicp[DIRS+offset]=LOW;
-		setGroupState(0,n);												//stato 0: il motore va in stato fermo
+		//setGroupState(0,n);												//stato 0: il motore va in stato fermo
 		addCronoCount(stopCrono(n)-delay, (short) getCronoDir(n),n); 
 		long app = getCronoCount(n);
 #if (AUTOCAL) 
-		if(getGroupState(n) == 3){
-			if(getCronoDir(n)==UP){
+		if(getGroupState(n) == 3 && end){
+			if(getCronoDir(n)==UP ){
 				//versione con correzzione continua della posizione escursione in base alla lettura dei due sensori H e L
 				//l'ampiezza dell'escursione attualmente non viene modificata ed è stimata solo in fase di calibrazione
 				if(getCronoCount(n) > (long) thaltp[n]*(1-fact) && getCronoCount(n) < (long) thaltp[n]*(1+fact)){
@@ -245,7 +245,7 @@ short secondPress(byte n, int delay){
 					//elastico parte alta (correzione ampiezza escursione)
 					//thaltp[n] = getCronoCount(n);	//elastico parte alta (correzione escursione)
 					rslt = 0;
-				}else if(getCronoCount(n) >= (long) thaltp[n]*(1+fact)){
+				}else{
 					//correzione posizione tetto escursione (necessaria all'avvio!)
 					setCronoCount(thaltp[n], n);
 					rslt = 2;
@@ -267,12 +267,24 @@ short secondPress(byte n, int delay){
 					//correzione posizione base escursione 
 					setCronoCount(app, n);
 					//resetCronoCount(n);
-				}else if(getCronoCount(n) <= (long) -thaltp[n]*fact){
+				}else{
 					//correzione posizione base escursione (necessaria all'avvio!)
 					resetCronoCount(n);
 					rslt = 3;
 					DEBUG_PRINTLN(F("Grande correzione della posizione della base escursione, può essere necessaria ricalibrazione"));
 				}
+			}
+		}else if(getGroupState(n) == 2 && end){
+			if(getCronoDir(n)==UP){
+					//correzione posizione tetto escursione (necessaria all'avvio!)
+					setCronoCount(thaltp[n], n);
+					rslt = 2;
+					DEBUG_PRINTLN(F("Correzione posizione tetto escursione. Prima escursione o forzatura...può essere necessaria ricalibrazione"));
+			}else{
+					//correzione posizione base escursione (necessaria all'avvio!)
+					resetCronoCount(n);
+					rslt = 3;
+					DEBUG_PRINTLN(F("Grande correzione della posizione della base escursione, può essere necessaria ricalibrazione"));
 			}
 		}
 #else		
@@ -292,6 +304,7 @@ short secondPress(byte n, int delay){
 #endif
 		DEBUG_PRINT(F("\nSecond press: motore fermo al tempo "));
 		DEBUG_PRINTLN(app);
+		setGroupState(0,n);
 	}else if(calibr == 1){
 		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
 		//blocca il motore

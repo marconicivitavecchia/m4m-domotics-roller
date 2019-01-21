@@ -1014,7 +1014,8 @@ inline void automaticStopManager(){
 						DEBUG_PRINT(0);
 						if(chk[0] == -1){
 							DEBUG_PRINTLN(F(") Stop: sottosoglia"));
-							blocked[0] = secondPress(0,40);
+							//fine dorsa raggiunto
+							blocked[0] = secondPress(0,40,true);
 							scriviOutDaStato();
 						}else if(chk[0] == 2){
 							DEBUG_PRINTLN(F(") Stop: soprasoglia"));
@@ -1075,13 +1076,17 @@ inline void automaticStopManager(){
 						DEBUG_PRINT(F("\n("));
 						DEBUG_PRINT(1);
 						if(chk[1] == -1){
-							blocked[1] = secondPress(40,1);
+							DEBUG_PRINTLN(F(") Stop: sottosoglia"));
+							//fine dorsa raggiunto
+							blocked[1] = secondPress(1,40,true);
 							scriviOutDaStato();
 						}else if(chk[1] == 2){
-							blocked[1] = secondPress(40,1);
+							DEBUG_PRINTLN(F(") Stop: soprasoglia"));
+							blocked[1] = secondPress(1,40);
 							scriviOutDaStato();
 							blocked[1] = 1;
 						}else if(chk[1] == 1){
+							DEBUG_PRINTLN(F(") Start: fronte di salita"));	
 							ex[1] = getAVG(1);
 							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(1);
@@ -1402,7 +1407,7 @@ void onElapse(byte n){
 #else
 			else if(getGroupState(n)==2){//se il motore è in moto a vuoto
 				DEBUG_PRINTLN(F("onElapse:  timer di check pressione su fine corsa scaduto"));
-				secondPress(n);
+				secondPress(n,0,true);
 				//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
 				scriviOutDaStato();
 			}
