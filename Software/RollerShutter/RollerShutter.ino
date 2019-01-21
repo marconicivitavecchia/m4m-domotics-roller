@@ -764,7 +764,9 @@ void httpSetup(){
   //ask server to track these headers
   server.collectHeaders(headerkeys, headerkeyssize );
   //avvia il responder mDNS
-  //setup_mDNS();
+#if(LARGEFW)
+  setup_mDNS();
+#endif
   //OTA web page handler linkage
   httpUpdater.setup(&server);
   //start HTTP server
@@ -904,6 +906,7 @@ inline void loop2() {
   //POST SCHEDULERS ACTIONS-----------------
 #if(LARGEFW)
   telnet.handle();
+  MDNS.update();
 #endif  
   yield();	// Give a time for ESP8266
 }//END loop

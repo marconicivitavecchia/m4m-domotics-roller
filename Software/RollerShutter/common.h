@@ -39,7 +39,7 @@ extern "C" {
 #define SSIDAP			"admin"
 #define PSWAP			"admin"
 #define MQTTSRV			"iot.eclipse.org"
-#define MQTTCLIENTID 	"NodeMCUtanzo2344378"
+#define MQTTCLIENTID 	"mytapparella"
 //END DEFAULTS
 
 //LARGE FW OTA UPLOAD---------------------
