@@ -812,6 +812,9 @@ inline void loop2() {
   aggiornaTimer(TMRHALT);
   aggiornaTimer(TMRHALT+TIMERDIM); 
   webSocket.loop();
+#if(LARGEFW)
+  MDNS.update();
+#endif  
   server.handleClient();  // Listen for HTTP requests from clients
   //FINE PRE SCHEDULERS ACTIONS -----------------------------------------  
   
@@ -906,7 +909,6 @@ inline void loop2() {
   //POST SCHEDULERS ACTIONS-----------------
 #if(LARGEFW)
   telnet.handle();
-  MDNS.update();
 #endif  
   yield();	// Give a time for ESP8266
 }//END loop
