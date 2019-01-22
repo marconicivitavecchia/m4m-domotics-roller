@@ -347,9 +347,11 @@ short secondPress(byte n, int delay, bool end){
 		//blocca il cronometro di DOWN
 		//addCronoCount(stopCrono(n), (short) getCronoDir(n),n);
 		//stopCrono(n);
-		unsigned int app = addCronoCount(stopCrono(n)-delay, (short) getCronoDir(n),n);
+		addCronoCount((long)stopCrono(n)-delay, (short) getCronoDir(n),n);
+		long app = (long) getCronoValue(n) - delay;
 		//unsigned int app = getCronoCount(n);
 		setCronoCount( app*(getCronoDir(n)==UP),n);
+		
 		if(app < CNTIME*1000)
 			app = CNTIME*1000;
 		//setCronoLimits(0,app,n);
