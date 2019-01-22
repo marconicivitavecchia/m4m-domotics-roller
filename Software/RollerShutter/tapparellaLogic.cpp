@@ -397,8 +397,7 @@ void firstPress(byte sw, byte n){
 		//Blocco di sicurezza in caso di rottura della sensoristica di fine corsa	
 		//target[n] = ENDFACT*(thaltp[n]) * (!sw);
 		//posizionamento agli estremi stabilito dai sensori fino ad un tetto massimo, dopo scatta il posizionamento col timer
-		target[n] = (1+fact)*thaltp[n] * (!sw);
-		//target[n] = thaltp[n] * (!sw);
+		target[n] = thaltp[n] * (!sw) + 2*fact*thaltp[n]*getCronoDir(n);
 #else
 		if(first[n] == true){
 			target[n] = 1.5*thaltp[n];
