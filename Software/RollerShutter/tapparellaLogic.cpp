@@ -152,6 +152,10 @@ void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, String  *paramsi, 
 	//nmax = ((double) sqrt((double) ((taplen-deltal)*tapthick)/TWO_PI + barrad*barrad) - barrad) / tapthick /2 + deltal/TWO_PI/barrad;		//100% of excursion
 }
 
+float getNmax(){
+	return nmax;
+}
+
 void setTapThalt(unsigned long thalt,byte n){
 	thaltp[n]=thalt;
 }

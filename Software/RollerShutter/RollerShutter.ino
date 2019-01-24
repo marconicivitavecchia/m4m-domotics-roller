@@ -470,6 +470,8 @@ void readStatesAndPub(bool all){
   s+=mqttJson[MQTTJSONDOWN2]+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+comma;    //down2
   s+= (String) "pr1"+twodot+String(round(calcLen(0)))+comma;		//pr1
   s+= (String) "pr2"+twodot+String(round(calcLen(1)))+comma;		//pr2
+  s+= (String) "tr1"+twodot+String(getCronoCount(0))+comma;			//tr1
+  s+= (String) "tr2"+twodot+String(getCronoCount(1))+comma;		//tr2
   if(blocked[0]>0){
 	  s+= (String) "blk1"+twodot+blocked[0]+comma;		//blk1
   }
