@@ -448,6 +448,7 @@ void firstPress(byte sw, byte n){
 		if(inp[BTN1IN+poffset+sw] <= 100){
 			p = inp[BTN1IN+poffset+sw] + posdelta;
 			if(p == posdelta){
+				//obbliga chiusura di lume porta + doghe
 				p = 0;
 			}
 		}else if(inp[BTN1IN+poffset+sw] <= 210){
@@ -506,3 +507,70 @@ double calcLen(byte n){
 float getPosdelta(){
 	return posdelta;
 }
+/*
+*******************************************************************
+* FORMULE ADOPERATE PER LA STIMA DELLA POSIZIONE DELLE TAPPARELLE *
+*******************************************************************
+l: 		lunghezza arrotolata = altezza percorsa dal suolo
+lmax: 	lunghezza tapparella 
+t: 		tempo di arrivo alla posizione finale
+tmax: 	tempo di escursione massimo della tapparella
+tf: 	spessore tapparella
+br: 	raggio tamburo
+n: 		numero di giri percorso fino al posizionamento
+nmax: 	numero di giri percorso da completamente aperto a completamente chiuso
+omega1: velocitàangolare tapparella 1
+omega2: velocitàangolare tapparella 1
+
+	lp = l/lmax = lp(%) / 100 		frazione della lunghezza di arrivo sulla lunghezza massima
+	tp = t/tmax	= tp(%) / 100 		frazione del tempo di arrivo sul tempo massimo di escursione della tapparella
+
+
+ipotesi di base (abbastanza vera): 
+
+n 	 = omega1 * t
+nmax = omega2 * tmax		
+
+
+calcTiming:  lp ---> tp(%)
+**************************
+
+n = (sqrt(l*tf/PI + br^2) - br) / tf --->  n = (sqrt(lp*lmax*tf/PI + br^2) - br) / tf
+
+se omega1 = omega2 --->   tp(%) = t/tmax = n/nmax * 100 
+
+
+calcLen:  t ---> lp(%)
+***********************
+                        n = t / tmax * nmax = tp * nmax
+						
+						l = PI*n*(n*tf + 2*br) 
+						
+						lp(%) = l/lmax * 100 
+*/
+/*
+*******************************************************************
+* FORMULE ADOPERATE PER LA GESTIONE DELLE TAPPARELLE A FISRMONICA *
+*******************************************************************
+Grandezze in gioco:
+hd: altezza di una stecca
+h1: altezza del lume della finestra (da terra a bordo superiore infisso)
+h2: misura calcolata (stimata) della lunghezza effettiva della tapprella nella sua massima lunghezza (fisarmonica aperta)
+dh: altezza massima fessura cioè della ceriera tra una stecca e l'altra
+r: rapporto di "allungamento" tra altezza fessura (cerniera tra stecche) e altezza stecca
+n: numero di stecche totali
+da: rapporto in percentuale tra allungamento della tapparella da fisarmonica completamente chiusa a fisarmonica tutta aperta
+
+Si sono usate le relazioni:
+
+def a)			h2 = h1 + n*dh
+
+def b)			dn = n * dh/h2
+
+def c)			r = dh/hd
+
+rel 1) 			h2 = h1 * (1 + r)  nell'ipotesi (approssimata) che h1 = n * hd , cioè che non ci siano stecche fuori dal lume della finestra
+
+rel 2)			da = r / (1 + r) * 100	
+
+*/
