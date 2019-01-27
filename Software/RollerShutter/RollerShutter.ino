@@ -122,7 +122,7 @@ String mqttJson[MQTTJSONDIM]={"up1","down1","up2","down2","temp","avgpwr","peakp
 unsigned int thalt1=5000;
 unsigned int thalt2=5000;
 
-String params[PARAMSDIM]={webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID,mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),"400","400","0.5","53","3.37","1.5","ip","false","false","false","false","false","false"};
+String params[PARAMSDIM]={webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID,mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),"400","400","0.5","53","3.37","1.5","0","ip","false","false","false","false","false","false"};
 ESP8266WebServer server(80);    	// Create a webserver object that listens for HTTP request on port 80
 WebSocketsServer webSocket(81);	    // create a websocket server on port 81
 ESP8266HTTPUpdateServer httpUpdater;
@@ -468,10 +468,10 @@ void readStatesAndPub(bool all){
   s+=mqttJson[MQTTJSONDOWN1]+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+comma;    //down1  DIRS=LOW
   s+=mqttJson[MQTTJSONUP2]+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+comma;	//up2 
   s+=mqttJson[MQTTJSONDOWN2]+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+comma;    //down2
-  s+= (String) "pr1"+twodot+String(round(calcLen(0)))+comma;		//pr1
-  s+= (String) "pr2"+twodot+String(round(calcLen(1)))+comma;		//pr2
+  s+= (String) "pr1"+twodot+String(percfdbck(0))+comma;		//pr1
+  s+= (String) "pr2"+twodot+String(percfdbck(1))+comma;		//pr2
   s+= (String) "tr1"+twodot+String(getCronoCount(0))+comma;			//tr1
-  s+= (String) "tr2"+twodot+String(getCronoCount(1))+comma;		//tr2
+  s+= (String) "tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
   if(blocked[0]>0){
 	  s+= (String) "blk1"+twodot+blocked[0]+comma;		//blk1
   }
@@ -490,6 +490,16 @@ void readStatesAndPub(bool all){
 		s+=enda;
   }
   publishStr(s);
+}
+
+inline byte percfdbck(byte n){
+	DEBUG_PRINT(F("Posdelta:"));
+	DEBUG_PRINTLN(getPosdelta());
+	if(getDelayedCmd(n) <= 100){
+		return round(calcLen(n) - getPosdelta());  
+	}else{
+		return round(calcLen(n));  
+	}
 }
 
 void readAvgPowerAndPub(){
@@ -915,6 +925,18 @@ inline void loop2() {
   yield();	// Give a time for ESP8266
 }//END loop
 
+//legge gli ingressi remoti e mette il loro valore sull'array val[]
+//inr: memoria tampone per l'evento asincrono scrittura da remoto
+//si deve mischiare con la lettura locale DOPO che questa venga scritta
+//al giro di loop() successivo in[] locale riporta a livello basso l'eccitazione remota
+//legge gli ingressi dei tasti già puliti dai rimbalzi	
+inline void leggiTastiLocaliRemoto(){
+	for(int i=0;i<4;i++){
+		(in[i]) && (in[i] = 255);
+		(inr[i]) && (in[i] = inr[i]);
+		inr[i]=LOW;
+	}
+}
 
 inline void leggiTastiRemoti(){
 	//gestione eventi MQTT sui sensori
@@ -1570,7 +1592,7 @@ void manualCalibration(byte btn){
 	//resetStatDelayCounter(btn);
 	disableUpThreshold(btn);
 #endif
-	inr[BTN2IN + btn*BTNDIM] = 201;			//codice comando attiva calibrazione
+	inr[BTN2IN + btn*BTNDIM] = 101;			//codice comando attiva calibrazione
 	
 	DEBUG_PRINTLN(F("-----------------------------"));
 	DEBUG_PRINT(F("FASE 1 CALIBRAZIONE MANUALE BTN "));

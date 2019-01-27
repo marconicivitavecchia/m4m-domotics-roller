@@ -24,6 +24,7 @@ byte nrun=0;
 byte moving[2]={false,false};
 bool first[2]={true,true};
 double nmax;
+float posdelta = 0;
 
 inline bool switchdfn(byte val, byte n){
 	//n: numero di pulsanti
@@ -134,6 +135,10 @@ void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, String  *paramsi, 
 	btndelay[0]=BTNDEL1;
 	btndelay[1]=BTNDEL2;
 	taplen=(paramsl[TLENGTH]).toFloat();
+	//correzzione per tapparelle a fisarmonica
+	float r = (paramsl[SLATSRATIO]).toFloat();
+	taplen = taplen*(1 + r);
+	posdelta = r / (1 + r)*100;
 	barrad=(paramsl[BARRELRAD]).toFloat();
 	tapthick=(paramsl[THICKNESS]).toFloat();
 	resetCronoCount(0);
@@ -155,6 +160,11 @@ void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, String  *paramsi, 
 float getNmax(){
 	return nmax;
 }
+
+float getTaplen(){
+	return taplen;
+}
+
 
 void setTapThalt(unsigned long thalt,byte n){
 	thaltp[n]=thalt;
@@ -321,7 +331,7 @@ short secondPress(byte n, int delay, bool end){
 		updateCnt(n);
 		setCronoDir((short)-getCronoDir(n),n);  //reverse direction
 		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index 
-		lastCmd[btn] = 201;
+		lastCmd[btn] = 101;
 		setGroupState(1,n);			//stato 1: il sitema va in stato di attesa		
 #if(AUTOCAL)
 		//tempo di ripartenza (non corto per far riposare il motore ed evitare spikes di corrente)
@@ -389,7 +399,7 @@ void firstPress(byte sw, byte n){
 	//DEBUG_PRINTLN(inp[BTN1IN+poffset]);
 		
 	//resetTimer(TMRHALT+toffset);			
-	if(inp[BTN1IN+poffset+sw] == 1 || inp[BTN1IN+poffset+sw] == 2){
+	if(inp[BTN1IN+poffset+sw] == 255){
 		//DEBUG_PRINT(F(" in moto verso "));
 		//DEBUG_PRINTLN(sw);
 		//LIST OF UP ACTIONSalt 
@@ -416,7 +426,7 @@ void firstPress(byte sw, byte n){
 		//DEBUG_PRINT(F("Target: in moto verso "));
 		//DEBUG_PRINTLN(target[n]);
 
-	}else if(inp[BTN1IN+poffset+sw] == 201){
+	}else if(inp[BTN1IN+poffset+sw] == 101){
 		DEBUG_PRINT(F("Calibrazione: in moto verso "));
 		DEBUG_PRINTLN(sw);
 		//imposta la DIRSezione
@@ -430,14 +440,21 @@ void firstPress(byte sw, byte n){
 			target[n] = 2*THALTMAX;
 		}
 		//target[n] = (long) THALTMAX;
-	}else if(inp[BTN1IN+poffset+sw] > 2){ //aperture percentuali
+	}else{
+		//aperture percentuali
+		unsigned short p = 0;
 		//DEBUG_PRINTLN(F(" in moto verso l'alto perc"));
-		if(inp[BTN1IN+poffset+sw] > 100){
-			inp[BTN1IN+poffset+sw] = 100;
-		}else if(inp[BTN1IN+poffset+sw] < 4){
-			inp[BTN1IN+poffset+sw] = 0;
+
+		if(inp[BTN1IN+poffset+sw] <= 100){
+			p = inp[BTN1IN+poffset+sw] + posdelta;
+			if(p == posdelta){
+				p = 0;
+			}
+		}else if(inp[BTN1IN+poffset+sw] <= 210){
+			p = inp[BTN1IN+poffset+sw] - 110;
 		}
-		target[n] = (unsigned long) (thaltp[n]*calcTiming(inp[BTN1IN+poffset+sw]))/100;
+		
+		target[n] = (unsigned long) (thaltp[n]*calcTiming(p))/100;
 		long delta = (long) (target[n] - getCronoCount(n));
 		if(delta > 0){
 			target[n] = delta;
@@ -484,4 +501,8 @@ inline double calcTiming(byte v){
 double calcLen(byte n){
 	double app = (double) getCronoCount(n)/thaltp[n]*nmax;
 	return  (double) PI*app*((double) app*tapthick + 2*barrad)*100/taplen;
+}
+
+float getPosdelta(){
+	return posdelta;
 }

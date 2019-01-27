@@ -83,7 +83,7 @@ extern "C" {
 //#define THRESHOLD2	13
 //#define RAMPDELAY1	1  		//n*20ms
 //#define RAMPDELAY2	1  		//n*20ms
-#define ONGAP		20			//divisioni ADC
+#define ONGAP		20			//divisioni ADC della soglia di ON motore
 #define ENDFACT		2	// (%) margine di posizionamento con i sensori in percentuale dell'escursione totale, dopo avviene col timer
 #define PUSHINTERV	 60 // in sec
 #define ONE_WIRE_BUS 2  // DS18B20 pin
@@ -189,9 +189,10 @@ extern "C" {
 #define	TLENGTHOFST				840
 #define	BARRELRADOFST			872
 #define	THICKNESSOFST			904
+#define SLATSRATIOFST			936
 //#define TRSHOLD1OFST			872
 //#define TRSHOLD2OFST			712
-#define EEPROMPARAMSLEN			936
+#define EEPROMPARAMSLEN			968
 //--------------------------Fine EEPROM offsets-------------------------------------------
 //--------------------------Inizio params array indexes-----------------------------------
 #define WEBUSR					0
@@ -216,14 +217,15 @@ extern "C" {
 #define	TLENGTH					19
 #define	BARRELRAD				20
 #define	THICKNESS				21
-#define LOCALIP					22
-#define WIFICHANGED				23
-#define CONFLOADED				24
-#define MQTTADDRMODFIED			25
-#define TOPICCHANGED			26
-#define MQTTCONNCHANGED			27
-#define	TIMINGCHANGED			28
-#define PARAMSDIM				29
+#define	SLATSRATIO				22
+#define LOCALIP					23
+#define WIFICHANGED				24
+#define CONFLOADED				25
+#define MQTTADDRMODFIED			26
+#define TOPICCHANGED			27
+#define MQTTCONNCHANGED			28
+#define	TIMINGCHANGED			29
+#define PARAMSDIM				30
 //--------------------------Inizio mqttJson array indexes-----------------------------------
 #define MQTTJSONUP1				0
 #define MQTTJSONDOWN1			1
@@ -261,17 +263,6 @@ extern "C" {
     in[BTN2IN] =!digitalRead(BTN1D);	\
     in[BTN1IN+BTNDIM] =!digitalRead(BTN2U); 	\
     in[BTN2IN+BTNDIM] =!digitalRead(BTN2D)
-//legge gli ingressi remoti e mette il loro valore sull'array val[]
-//inr: memoria tampone per l'evento asincrono scrittura da remoto
-//si deve mischiare con la lettura locale DOPO che questa venga scritta
-//al giro di loop() successivo in[] locale riporta a livello basso l'eccitazione remota
-//legge gli ingressi dei tasti già puliti dai rimbalzi	
-#define leggiTastiLocaliRemoto() in[BTN1IN] = in[BTN1IN] + inr[BTN1IN];	\
-    in[BTN2IN] = in[BTN2IN] + inr[BTN2IN];	\
-    in[BTN1IN+BTNDIM] = in[BTN1IN+BTNDIM] + inr[BTN1IN+BTNDIM];	  \
-    in[BTN2IN+BTNDIM] = in[BTN2IN+BTNDIM] + inr[BTN2IN+BTNDIM]; 	\
-	for(int i=0;i<4;i++)	\
-		inr[i]=LOW	
 
 #if (DEBUG)
  //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)

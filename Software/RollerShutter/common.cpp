@@ -165,6 +165,9 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 			"<div class=\"col-1-2\"><label for=\"thickness\">Roller shutter thickness</label>"
                  "<input type=\"text\" name=\"thickness\" value=\"{TN}\">"
             "</div>"
+			"<div class=\"col-1-2\"><label for=\"slatsratio\">Roller shutter slatsratio</label>"
+                 "<input type=\"text\" name=\"slatsratio\" value=\"{SR}\">"
+            "</div>"
             "<input type=\"submit\" value=\"Save\" formaction=\"/modify\" formmethod=\"post\">"
 			"<input type=\"submit\" value=\"Back\">"
         "</form>"
@@ -215,15 +218,15 @@ const char HTTP_FORM_CMD[] PROGMEM =
 			//"<p id='p'></p>"
 		"</div>"
 		"<div class='sldcont1'>"
-			"<input type='range' min='3' max='100' value='50' class='slider' id='rng1'>"
+			"<input type='range' min='0' max='100' value='50' class='slider' id='rng1'>"
 			"<p>Group 1: <span id='val1'></span></p>"
 		"</div>"
-		"<progress id='pr1' value='2' max='100'></progress>"
+		"<meter id='pr1' low='{PD}' min='0' max='100' ></meter>"
 		"<div class='sldcont2'>"
-			"<input type='range' min='3' max='100' value='50' class='slider' id='rng2'>"
+			"<input type='range' min='0' max='100' value='50' class='slider' id='rng2'>"
 			"<p>Group 2: <span id='val2'></span></p>"
 		"</div>"
-		"<progress id='pr2' value='2' max='100'></progress>"
+		"<meter id='pr2' low='{PD}' min='0' max='100'></meter>"
 	"</div>"
 	"<script>"
 		"var a=[0,0];"
@@ -238,7 +241,9 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		"o1.innerHTML = sld1.value;"
 		"sld1.ontouchend = function() {"
 			"o1.innerHTML = this.value;"
-			"var vl=vlsp[0].replace('N',(sld1.value).toString());"
+			"var pp=Number(sld1.value)+110;"
+			"var vl=vlsp[0].replace('N', pp.toString());"
+			"console.log(vl);"
 			"press(vl);"
 		"};"
 		"sld1.onmouseup=sld1.ontouchend;"
@@ -248,7 +253,9 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		"o2.innerHTML = sld2.value;"
 		"sld2.ontouchend = function() {"
 			"o2.innerHTML = this.value;"
-			"var vl=vlsp[1].replace('N',(sld2.value).toString());"
+			"var pp=Number(sld2.value)+110;"
+			"var vl=vlsp[1].replace('N', pp.toString());"
+			"console.log(vl);"
 			"press(vl);"
 		"};"
 		"sld2.onmouseup=sld2.ontouchend;"
@@ -322,8 +329,8 @@ const char HTTP_FORM_CMD[] PROGMEM =
 			"}"
 			"console.log('pr1:'+pr1.value+' p[0]:'+p[0]);" 
 			//"console.log('x:'+x);" 
-			"startPrgrBar(pr1,tr[0],p[0],100,10,0);"
-			"startPrgrBar(pr2,tr[1],p[1],100,10,1);"
+			"startPrgrBar(pr1,tr[0],p[0],100,5,0);"
+			"startPrgrBar(pr2,tr[1],p[1],100,5,1);"
 		"}"	
 		"function startPrgrBar(p,ti,l,k,delay,n) {"
 			"var t=ti;"
@@ -488,7 +495,7 @@ const char HTTP_FORM_HEAD[] PROGMEM =
         "border: 1px solid #0099cc;"
 		"font-size: 1.1rem;"
     "}"
-	"progress{"
+	"meter{"
         "width: 100%;"
     "}"
     "input[type=\"submit\"],input[type=\"button\"]{"
@@ -541,7 +548,7 @@ const char HTTP_FORM_HEAD[] PROGMEM =
 "</head>";
 
 const char HTTP_WEBSOCKET[] PROGMEM =
-		"var vls = ['{\"up1\":\"1\"}','{\"down1\":\"1\"}','{\"up2\":\"1\"}','{\"down2\":\"1\"}'];"
+		"var vls = ['{\"up1\":\"255\"}','{\"down1\":\"255\"}','{\"up2\":\"255\"}','{\"down2\":\"255\"}'];"
 		"var vlsp = ['{\"up1\":\"N\"}','{\"up2\":\"N\"}'];"
 		"var conn = new WebSocket('ws://{WS}:81/', ['arduino']);"
 		"conn.onopen = function () {"
@@ -817,6 +824,7 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 		page.replace(F("{TL}"), paramsp[TLENGTH] );
 		page.replace(F("{BR}"), paramsp[BARRELRAD] );
 		page.replace(F("{TN}"), paramsp[THICKNESS] );
+		page.replace(F("{SR}"), paramsp[SLATSRATIO] );
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -838,10 +846,12 @@ void handleCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
 	page.replace(F("{SH}"), HTTP_WEBSOCKET );
 	page.replace(F("{WS}"), paramsp[LOCALIP]);
-	page.replace(F("{TL}"), paramsp[TLENGTH]);
+	page.replace(F("{TL}"), String(getTaplen()));
 	page.replace(F("{BR}"), paramsp[BARRELRAD]);
 	page.replace(F("{TN}"), paramsp[THICKNESS]);
+	page.replace(F("{SR}"), paramsp[SLATSRATIO]);
 	page.replace(F("{NM}"), String(getNmax()));
+	page.replace(F("{PD}"), String(getPosdelta()));
 	page.replace(F("{WT}"), F("31.333333") );
 	//Body placeholders
 	//DEBUG_PRINTLN(page);
@@ -1111,6 +1121,14 @@ void handleModify(){
     DEBUG_PRINTLN(paramsp[THICKNESS]);
     paramsp[TIMINGCHANGED]="true";
   }
+   if(serverp.hasArg("slatsratio") && (paramsp[SLATSRATIO] != String(serverp.arg("slatsratio"))) ){
+	paramsp[SLATSRATIO] = serverp.arg("slatsratio");
+	EEPROMWriteStr(SLATSRATIOFST,(paramsp[SLATSRATIO]).c_str());
+	EEPROM.commit();
+    DEBUG_PRINT(F("Modified SLATSRATIO "));
+    DEBUG_PRINTLN(paramsp[SLATSRATIO]);
+    paramsp[TIMINGCHANGED]="true";
+  }
   EEPROM.end();
    
   DEBUG_PRINTLN(F("Disconnection"));
@@ -1308,6 +1326,11 @@ void loadConfig() {
 		paramsp[THICKNESS] = buf;
 		DEBUG_PRINTLN(F("barrel THICKNESS: "));
 		DEBUG_PRINTLN(paramsp[THICKNESS]);
+		
+		EEPROMReadStr(SLATSRATIOFST,buf);
+		paramsp[SLATSRATIO] = buf;
+		DEBUG_PRINTLN(F("barrel SLATSRATIO: "));
+		DEBUG_PRINTLN(paramsp[SLATSRATIO]);
 		
 		/*
 		EEPROMReadStr(TRSHOLD1OFST,buf);
@@ -1534,6 +1557,11 @@ void saveOnEEPROM(){
 	DEBUG_PRINT(F("Modified barrel THICKNESS "));
 	DEBUG_PRINTLN(paramsp[THICKNESS]);
 	
+	EEPROMWriteStr(SLATSRATIOFST,(paramsp[SLATSRATIO]).c_str());
+	EEPROM.commit();
+	DEBUG_PRINT(F("Modified barrel SLATSRATIO "));
+	DEBUG_PRINTLN(paramsp[SLATSRATIO]);
+	
 	/*
 	EEPROMWriteStr(TRSHOLD1OFST,(paramsp[TRSHOLD1]).c_str());
 	EEPROM.commit();
@@ -1641,4 +1669,7 @@ void printConfig(){
 		
 		DEBUG_PRINT(F("\nbarrel THICKNESS: "));
 		DEBUG_PRINT(paramsp[THICKNESS]);
+		
+		DEBUG_PRINT(F("\nbarrel SLATSRATIO: "));
+		DEBUG_PRINT(paramsp[SLATSRATIO]);
 }
