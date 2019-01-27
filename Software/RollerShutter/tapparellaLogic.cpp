@@ -526,10 +526,10 @@ omega2: velocitàangolare tapparella 1
 	tp = t/tmax	= tp(%) / 100 		frazione del tempo di arrivo sul tempo massimo di escursione della tapparella
 
 
-ipotesi di base (abbastanza vera): 
-
 n 	 = omega1 * t
-nmax = omega2 * tmax		
+nmax = omega2 * tmax	
+
+ipotesi di base (abbastanza vera):   	omega1 = omega2
 
 
 calcTiming:  lp ---> tp(%)
