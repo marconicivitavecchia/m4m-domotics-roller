@@ -519,8 +519,8 @@ tf: 	spessore tapparella
 br: 	raggio tamburo
 n: 		numero di giri percorso fino al posizionamento
 nmax: 	numero di giri percorso da completamente aperto a completamente chiuso
-omega1: velocitàangolare tapparella 1
-omega2: velocitàangolare tapparella 1
+omega1: velocitàangolare tapparella all'istante 1
+omega2: velocitàangolare tapparella all'istante 2
 
 	lp = l/lmax = lp(%) / 100 		frazione della lunghezza di arrivo sulla lunghezza massima
 	tp = t/tmax	= tp(%) / 100 		frazione del tempo di arrivo sul tempo massimo di escursione della tapparella
@@ -533,11 +533,11 @@ ipotesi di base (abbastanza vera):   	omega1 = omega2
 
 
 calcTiming:  lp ---> tp(%)
-**************************
+***************************
 
-n = (sqrt(l*tf/PI + br^2) - br) / tf --->  n = (sqrt(lp*lmax*tf/PI + br^2) - br) / tf
+n = (sqrt(l*tf/PI + br^2) - br) / tf   --->  n = (sqrt(lp*lmax*tf/PI + br^2) - br) / tf
 
-se omega1 = omega2 --->   tp(%) = t/tmax = n/nmax * 100 
+se omega1 = omega2   --->   tp(%) = t/tmax = n/nmax * 100 
 
 
 calcLen:  t ---> lp(%)

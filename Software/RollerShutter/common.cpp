@@ -218,12 +218,18 @@ const char HTTP_FORM_CMD[] PROGMEM =
 			//"<p id='p'></p>"
 		"</div>"
 		"<div class='sldcont1'>"
-			"<input type='range' min='0' max='100' value='50' class='slider' id='rng1'>"
+			"<input type='range' min='0' max='100' value='50' list='tickmarks' class='slider' id='rng1'>"
+			"<datalist id='tickmarks'>"
+				"<option>0</option>"
+				"<option>{PD}</option>"
+				"<option>50</option>"
+				"<option>100</option>"
+			"</datalist>"
 			"<p>Group 1: <span id='val1'></span></p>"
 		"</div>"
 		"<meter id='pr1' low='{PD}' min='0' max='100' ></meter>"
 		"<div class='sldcont2'>"
-			"<input type='range' min='0' max='100' value='50' class='slider' id='rng2'>"
+			"<input type='range' min='0' max='100' value='50' list='tickmarks' class='slider' id='rng2'>"
 			"<p>Group 2: <span id='val2'></span></p>"
 		"</div>"
 		"<meter id='pr2' low='{PD}' min='0' max='100'></meter>"
@@ -851,7 +857,7 @@ void handleCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{TN}"), paramsp[THICKNESS]);
 	page.replace(F("{SR}"), paramsp[SLATSRATIO]);
 	page.replace(F("{NM}"), String(getNmax()));
-	page.replace(F("{PD}"), String(getPosdelta()));
+	page.replace(F("{PD}"), String(round(getPosdelta())));
 	page.replace(F("{WT}"), F("31.333333") );
 	//Body placeholders
 	//DEBUG_PRINTLN(page);
