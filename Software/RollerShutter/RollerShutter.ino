@@ -170,7 +170,7 @@ inline bool switchdfn(byte val, byte n){
 
 inline bool gatedfn(float val, byte n, float rnd){
 	//n: numero di porte
-	bool changed = (val > asyncBuf[n] - rnd && val < asyncBuf[n] + rnd);
+	bool changed = (val < asyncBuf[n] - rnd || val > asyncBuf[n] + rnd);
 	asyncBuf[n] = val;            // valore di val campionato al loop precedente 
 	return changed;
 }
@@ -441,7 +441,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         IPAddress wip = webSocket.remoteIP(num);
 		sprintf(s,"[%u] Connected from %d.%d.%d.%d url: %s\n", num, wip[0], wip[1], wip[2], wip[3], payload);
 		DEBUG_PRINT(s);
-		readStatesAndPub();
+		readStatesAndPub(true);
 	}
     break;
     case WStype_TEXT:                     // if new text data is received 
@@ -1181,6 +1181,7 @@ inline void sensorStatePoll(){
 	//on events basis push of reports
 	if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
 		readTempAndPub();
+		DEBUG_PRINT(F("\nTemperatura cambiata"));
 	}
 	bool updatePwr = false;
 	if(gatedfn(getAmpRMS(getAVG(0)/2),GTMEANPWR1, MEANPWR1RND)){

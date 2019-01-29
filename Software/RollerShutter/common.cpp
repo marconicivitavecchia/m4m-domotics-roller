@@ -205,45 +205,50 @@ const char HTTP_FORM_CMD[] PROGMEM =
 	"<html>{HD}<body>"
 	"<div class='container'>"
 		"<div id='logo'><h1>MyTapparella</h1></div>"
-		"<div id='form'>"
-			"<form>"
-				"<input id='up1' type='button' value='Button 1 UP' onclick='press(vls[0])' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
-				"<br>"
-				"<input id='down1' type='button' value='Button 1 DOWN' onclick='press(vls[1])' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
-				"<br><br><br>"
-				"<input id='up2' type='button' value='Button 2 UP' onclick='press(vls[2])' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
-				"<br>"
-				"<input id='down2' type='button' value='Button 2 DOWN' onclick='press(vls[3])' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
-			"</form>"
-			//"<p id='p'></p>"
+		"<div class=\"col-1-2\" style='height:55%; display: inline-block; margin:auto 0; text-align:center;'><span id='temp' style='display:inline-block;margin: 38% 0px;'></span></div>"
+		"<div class=\"col-1-2\">"
+			"<div id='form'>"
+				"<form>"
+					"<input id='up1' type='button' value='Button 1 UP' onclick='press(vls[0])' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<br>"
+					"<input id='down1' type='button' value='Button 1 DOWN' onclick='press(vls[1])' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<br><br><br>"
+					"<input id='up2' type='button' value='Button 2 UP' onclick='press(vls[2])' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<br>"
+					"<input id='down2' type='button' value='Button 2 DOWN' onclick='press(vls[3])' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+				"</form>"
+				//"<p id='p'></p>"
+			"</div>"
 		"</div>"
-		"<div class='sldcont1'>"
+		"<div class='sldcont1' style='width:90%; clear:both; margin:0 auto'>"
+			"<p>Group 1: <span id='val1'></span></p>"
+			"<meter id='pr1' low='{PD}' min='0' max='100' ></meter>"
 			"<input type='range' min='0' max='100' value='50' list='tickmarks' class='slider' id='rng1'>"
 			"<datalist id='tickmarks'>"
 				"<option>0</option>"
 				"<option>{PD}</option>"
-				"<option>50</option>"
+				"<option id='mid'></option>"
 				"<option>100</option>"
 			"</datalist>"
-			"<p>Group 1: <span id='val1'></span></p>"
 		"</div>"
-		"<meter id='pr1' low='{PD}' min='0' max='100' ></meter>"
-		"<div class='sldcont2'>"
-			"<input type='range' min='0' max='100' value='50' list='tickmarks' class='slider' id='rng2'>"
+		"<div class='sldcont2' style='width:90%; margin:0 auto'>"
 			"<p>Group 2: <span id='val2'></span></p>"
+			"<meter id='pr2' low='{PD}' min='0' max='100'></meter>"
+			"<input type='range' min='0' max='100' value='50' list='tickmarks' class='slider' id='rng2'>"
 		"</div>"
-		"<meter id='pr2' low='{PD}' min='0' max='100'></meter>"
 	"</div>"
 	"<script>"
 		"var a=[0,0];"
 		"var updt=[0,0];"
 		"var p=[0,0];"
 		"var tr=[0,0];"
+		"(document.getElementById('mid')).innerHTML=50-{PD};"
 		//"var c=[0,0];"
 		"var dir=[0,0];"
 		"var ie=[0,0,0,0];"
 		"var sld1 = document.getElementById('rng1');"
 		"var o1 = document.getElementById('val1');"
+		"var tmp = document.getElementById('temp');"
 		"o1.innerHTML = sld1.value;"
 		"sld1.ontouchend = function() {"
 			"o1.innerHTML = this.value;"
@@ -322,6 +327,10 @@ const char HTTP_FORM_CMD[] PROGMEM =
 						"pr2.value=obj[x];"
 						//"startPrgrBar(pr2,p[1],100,1);"
 					"}"
+					"if(x=='{TP}'){"
+						"tmp.innerHTML=obj[x]+' &#176;'+'C';"
+						"tmp.style.backgroundColor = \"#333\";"
+					"}"
 				"}else{"	
 					"if(x=='sp1')"
 						"p[0]=Number(obj[x]);"						
@@ -347,13 +356,16 @@ const char HTTP_FORM_CMD[] PROGMEM =
 			//"console.log('e:'+e);"
 			//"console.log('----------------------------------');"
 			"clearInterval(updt[n]);"
-			"p.value=calcLen(t,l);"
-			"console.log('++++++++++++++');"
+			"var aa=Math.round(calcLen(t,l));"
+			"if(isNaN(aa))p.value=0; else p.value=aa;"
+			"console.log('aa: '+aa);"
 			"console.log('t:'+t+' p.value:'+p.value);"
 			"updt[n]=setInterval(function(){"
 				"if(dir[n]!=0){"
 					"t=t+e;"
-					"p.value=calcLen(t-delay*dir[n],l);"
+					"aa=Math.round(calcLen(t-delay*dir[n],l));"
+					"console.log('aa: '+aa);"
+					"if(isNaN(aa))p.value=0; else p.value=aa;"
 					"console.log('++++++++++++++');"
 					"console.log('t:'+(t-delay*dir[n])+' p.value:'+p.value+' dir:'+dir[n]);"
 				"}else{"
@@ -448,7 +460,7 @@ const char HTTP_FORM_HEAD[] PROGMEM =
     "* {"
         "box-sizing: border-box;"
     "}"
-    "html, body {"
+    "html, body, div {"
         "font-family: \"arial\", \"helvetica\", serif;"
         "font-size: 1.1rem;"
         "color: #fff;"
@@ -470,6 +482,16 @@ const char HTTP_FORM_HEAD[] PROGMEM =
         "align-items: center;"
         "align-self: center;"
         "align-content: center;"
+    "}"
+	"#temp {"
+		"font-size: 4.1rem;"
+		"height: 500px;"
+        "margin-top: auto;"
+		"margin-bottom: auto;"
+        "align-items: center;"
+        "align-self: center;"
+        "align-content: center;"
+		"background-color: #333;"
     "}"
     "#logo {"
         "text-align: center;"
@@ -772,23 +794,23 @@ void handleMQTTConf() {  // If a POST request is made to URI /login
 	
   if(ok) { 
 		//Head placeholders
-		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
+		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
 		page.replace(F("{WT}"), F("31.333333") );
 		//Body placeholders
-		page.replace(F("{MA}"), paramsp[MQTTADDR] );
-		page.replace(F("{MU}"), paramsp[MQTTUSR] );
-		page.replace(F("{MP}"), paramsp[MQTTPSW] );
-		page.replace(F("{MI}"), paramsp[MQTTID] );
-		page.replace(F("{MO}"), paramsp[MQTTOUTTOPIC] );
-		page.replace(F("{QI}"), paramsp[MQTTINTOPIC] );
-		page.replace(F("{J1}"), mqttJsonp[MQTTJSONUP1] );
-		page.replace(F("{J2}"), mqttJsonp[MQTTJSONDOWN1] );
-		page.replace(F("{J3}"), mqttJsonp[MQTTJSONUP2] );
-		page.replace(F("{J4}"), mqttJsonp[MQTTJSONDOWN2] );
-		page.replace(F("{J5}"), mqttJsonp[MQTTJSONTEMP] );
-		page.replace(F("{J6}"), mqttJsonp[MQTTJSONMEANPWR] );
-		page.replace(F("{J7}"), mqttJsonp[MQTTJSONPEAKPWR] );
-		page.replace(F("{J8}"), mqttJsonp[MQTTJSONALL] );
+		page.replace(F("{MA}"), paramsp[MQTTADDR]);
+		page.replace(F("{MU}"), paramsp[MQTTUSR]);
+		page.replace(F("{MP}"), paramsp[MQTTPSW]);
+		page.replace(F("{MI}"), paramsp[MQTTID]);
+		page.replace(F("{MO}"), paramsp[MQTTOUTTOPIC]);
+		page.replace(F("{QI}"), paramsp[MQTTINTOPIC]);
+		page.replace(F("{J1}"), mqttJsonp[MQTTJSONUP1]);
+		page.replace(F("{J2}"), mqttJsonp[MQTTJSONDOWN1]);
+		page.replace(F("{J3}"), mqttJsonp[MQTTJSONUP2]);
+		page.replace(F("{J4}"), mqttJsonp[MQTTJSONDOWN2]);
+		page.replace(F("{J5}"), mqttJsonp[MQTTJSONTEMP]);
+		page.replace(F("{J6}"), mqttJsonp[MQTTJSONMEANPWR]);
+		page.replace(F("{J7}"), mqttJsonp[MQTTJSONPEAKPWR]);
+		page.replace(F("{J8}"), mqttJsonp[MQTTJSONALL]);
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -825,12 +847,12 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
 		page.replace(F("{WT}"), F("31.333333") );
 		//Body placeholders
-		page.replace(F("{TU}"), paramsp[THALT1] );
-		page.replace(F("{TD}"), paramsp[THALT2] );
-		page.replace(F("{TL}"), paramsp[TLENGTH] );
-		page.replace(F("{BR}"), paramsp[BARRELRAD] );
-		page.replace(F("{TN}"), paramsp[THICKNESS] );
-		page.replace(F("{SR}"), paramsp[SLATSRATIO] );
+		page.replace(F("{TU}"), paramsp[THALT1]);
+		page.replace(F("{TD}"), paramsp[THALT2]);
+		page.replace(F("{TL}"), paramsp[TLENGTH]);
+		page.replace(F("{BR}"), paramsp[BARRELRAD]);
+		page.replace(F("{TN}"), paramsp[THICKNESS]);
+		page.replace(F("{SR}"), paramsp[SLATSRATIO]);
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -858,6 +880,7 @@ void handleCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{SR}"), paramsp[SLATSRATIO]);
 	page.replace(F("{NM}"), String(getNmax()));
 	page.replace(F("{PD}"), String(round(getPosdelta())));
+	page.replace(F("{TP}"), mqttJsonp[MQTTJSONTEMP] );
 	page.replace(F("{WT}"), F("31.333333") );
 	//Body placeholders
 	//DEBUG_PRINTLN(page);
