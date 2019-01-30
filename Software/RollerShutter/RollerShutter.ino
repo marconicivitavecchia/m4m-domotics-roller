@@ -320,6 +320,7 @@ void setup_wifi(int wifindx) {
 	//WiFi.enableAP(true);
   //}
 }
+
 #if (LARGEFW)
 void setup_mDNS() {
 	if (MDNS.begin((params[MQTTID]).c_str())) {              // Start the mDNS responder for esp8266.local
@@ -741,8 +742,12 @@ void setup() {
 
   Serial.print(":");
   Serial.print(500*cont);
-  Serial.print("\nStation connected, IP: ");
-  Serial.println(WiFi.localIP());
+  if(cont==30000/500){
+	Serial.print("\nStation not connected!");  
+  }else{
+	Serial.print("\nStation connected, IP: ");
+	Serial.println(WiFi.localIP());
+  }
   
   swcount = 0;
   DEBUG_PRINTLN(F(" OK"));
@@ -751,6 +756,7 @@ void setup() {
   
   if(WiFi.status() == WL_CONNECTED)
 		mqttReconnect();
+  boot = false;
 }
 
 void httpSetup(){
@@ -910,11 +916,11 @@ inline void loop2() {
 		//Finestra idle di riconnessione (necessaria se il loop è molto denso di eventi e il wifi non si aggancia!!!)
 		//------------------------------------------------------------------------------------------------------------
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
-		//if((wifiConn == false && !(isrun[0] || isrun[1]))){
-			//DEBUG_PRINTLN(F("to ESP stack... "));
-			//delay(30);//give 30ms to the ESP stack for wifi connect
-		//	wifiConn = (WiFi.status() == WL_CONNECTED);
-		//}
+		if((wifiConn == false && !(isrun[0] || isrun[1]))){
+			DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
+			delay(40);//give 30ms to the ESP stack for wifi connect
+			wifiConn = (WiFi.status() == WL_CONNECTED);
+		}
 		//------------------------------------------------------------------------------------------------------------
 	}//END 60ms scheduler------------------------------------------------------------------------------------
   }//END Time base (2 msec) main scheduler------------------------------------------------------------------------  
