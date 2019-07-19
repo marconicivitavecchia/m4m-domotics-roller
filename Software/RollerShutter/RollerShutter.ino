@@ -1,4 +1,4 @@
-   #include "common.h"
+#include "common.h"
 //End MQTT config------------------------------------------
 //inizio variabili e costanti dello schedulatore (antirimbalzo)
 #define time_base     	2            // periodo base in millisecondi
@@ -80,6 +80,7 @@ byte wsnconn = 0;
 IPAddress myip(192, 168, 43, 1);
 IPAddress mygateway(192, 168, 43, 1);
 IPAddress mysubnet(255, 255, 255, 0);
+bool roll[2] = {true, true};
 
 #if(LARGEFW)
 RemoteDebug telnet;
@@ -117,15 +118,25 @@ int ncifre=4;
 //e salvate in un array con indici a questo corrrispondenti
 //l'ordine di trasmissione da remoto dei campi è ininfluente
 //I comandi della tapparella devono essere  gli ultimi!
-String mqttJson[MQTTJSONDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all","mac","ip","time","mqttid"};
+String mqttJson[MQTTJSONDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all","mac","ip","time","mqttid","oncond1","oncond2","oncond3","oncond4","onaction"};
+String confJson[CONFJSONDIM]={"oncond1","oncond2","oncond3","oncond4","onaction"};
 //Valore iniziale: il suo contenuto viene poi caricato da EEPROM
 unsigned int thalt1=5000;
 unsigned int thalt2=5000;
+unsigned int thalt3=5000;
+unsigned int thalt4=5000;
 
-String params[PARAMSDIM]={webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID,mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),"400","400","0.5","53","3.37","1.5","0","ip","false","false","false","false","false","false"};
+String params[PARAMSDIM]={webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID,mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),String(thalt3),String(thalt4),"400","400","0.5","53","3.37","1.5","0","0","0","0","0","0","0","ip","false","false","false","false","false","false"};
 ESP8266WebServer server(80);    	// Create a webserver object that listens for HTTP request on port 80
 WebSocketsServer webSocket(81);	    // create a websocket server on port 81
 ESP8266HTTPUpdateServer httpUpdater;
+extern "C"
+{
+  #include <lwip/icmp.h> // needed for icmp packet definitions
+}
+
+// Set global to avoid object removing after setup() routine
+Pinger pinger;
 
 // fine variabili e costanti dello schedulatore
 // Update these with values suitabule for your network.
@@ -142,8 +153,11 @@ byte wifindx=0;
 unsigned int step;
 //bool extCmd=false;
 //vettori di ingresso, uscite e stato
-byte in[NBTN*BTNDIM], outPorts[NBTN*BTNDIM];
+byte in[NBTN*BTNDIM], outPorts[NBTN*BTNDIM], out[NBTN*BTNDIM];
 byte inr[MQTTJSONDIM];
+String confcmd[CONFJSONDIM];
+byte strFlagArr[CONFJSONDIM];
+byte acts[4];
 //numerazione porte
 byte outLogic[NBTN*STATUSDIM];
 //inizio variabili globali antirimbalzo----------------------------------------------
@@ -175,8 +189,14 @@ inline bool gatedfn(float val, byte n, float rnd){
 	return changed;
 }
 
-inline byte tapLogic(byte n){
-	return (switchLogic(0,n) + switchLogic(1,n));
+inline byte cmdLogic(byte n){
+	if(roll[n]){
+		//DEBUG_PRINTLN("\ncmdLogic: switchLogic");
+		return (switchLogic(0,n) + switchLogic(1,n));
+	}else{
+		//DEBUG_PRINTLN("\ncmdLogic: toggleLogic");
+		return (toggleLogic(0, n) + toggleLogic(1, n));
+	}
 }
 
 float getAmpRMS(float ACSVolt){
@@ -189,6 +209,19 @@ float getAmpRMS(float ACSVolt){
 	return AmpsRMS*vcosfi;
 }
 
+void setSWMode(byte mode,byte n){
+	roll[n] = mode;
+	isrun[n] = false;
+	//params[SWROLL1+n] = String(mode);
+	readModeAndPub(n);
+	DEBUG_PRINT("setSWMode: ");
+	DEBUG_PRINTLN(params[SWROLL1+n]);
+}
+
+byte inline getSWMode(byte n){
+	return roll[n];
+}
+
 float getTemperature(){
 	float temp = -127;
 #if(LARGEFW)
@@ -196,30 +229,189 @@ float getTemperature(){
 	unsigned short cnt = 0;
 	do{
 		temp = DS18B20.getTempCByIndex(0);
-		DEBUG_PRINT("Temperature: ");
-		DEBUG_PRINTLN(temp);
+		//DEBUG_PRINT("Temperature: ");
+		//DEBUG_PRINTLN(temp);
 		cnt++;		
 	}while((temp == 85.0 || temp == (-127.0)) && cnt < 3);
 #endif
 	return temp;
 }
 
+//parser actions callBack (assignements)
+float actions(char *key, float val)
+{	
+	byte n=-1;
+	if(key[0]=='t'){
+		if(roll[0] == false){
+			if(strcmp(key,"tsmpl1")==0){
+				n = 0;
+			}else if(strcmp(key,"tsmpl2")==0){
+				n = 1;
+			}
+		}
+		if(roll[1] == false){
+			if(strcmp(key,"tsmpl3")==0){
+				n = 2;
+			}else if(strcmp(key,"tsmpl4")==0){
+				n = 3;
+			}
+		}
+		if(n>=0){
+			startCnt(0,(unsigned long)val,SMPLCNT1+n);
+			DEBUG_PRINT("\nstartCnt: ");
+			DEBUG_PRINTLN(val);
+		}
+		if(key[1]=='d'){
+			if(roll[0] == false){
+				if(key[2]=='1'){
+					n = 0;
+				}else if(key[2]=='2'){
+					n = 1;
+				}
+			}
+			if(roll[1] == false){
+				if(key[2]=='3'){
+					n = 2;
+				}else if(key[2]=='4'){
+					n = 3;
+				}
+			}
+			if(n>=0){
+				writeHaltDelay(val,n);
+				setHaltDelay(val,n);
+				readActModeAndPub(n);
+			}
+		}
+	}else if(key[0]=='m'){
+		byte id = val;
+		val = val*1000;
+		byte act=0;
+		if(key[1]=='a'){
+			if(roll[0] == false){
+				if(key[2]=='1'){
+					n = 0;
+				}else if(key[2]=='2'){
+					n = 1;
+				}
+				act=val;
+			}
+			if(roll[1] == false){
+				if(key[2]=='3'){
+					n = 2;
+				}else if(key[2]=='4'){
+					n = 3;
+				}
+				act=val;
+			}
+			if(n>=0){
+				//writeOnOffAction(act,n);
+				setSWAction(act,n);
+				readActModeAndPub(n);
+			}
+		}else if(strcmp(key,"mode1")==0){
+			if(val==1){
+				setSWMode(1,0);
+				writeSWMode(1,0);
+			}else if(val==0){
+				setSWMode(0,0);
+				writeSWMode(0,0);
+			}
+		}else if(strcmp(key,"mode2")==0){
+			if(val==1){
+				setSWMode(1,1);
+				writeSWMode(1,1);
+			}else if(val==0){
+				setSWMode(0,1);
+				writeSWMode(0,1);
+			}
+		}
+		return 1;
+	}else if(key[0]=='r'){
+		unsigned long cnt = val;
+		if(strcmp(key,"r1")==0){
+			setCntValue(cnt,CNTIME1);
+		}else if(strcmp(key,"r2")==0){
+			setCntValue(cnt,CNTIME2);
+		}else if(strcmp(key,"r3")==0){
+			setCntValue(cnt,CNTIME3);
+		}else if(strcmp(key,"r4")==0){
+			setCntValue(cnt,CNTIME4);
+		}
+		return val;
+	}else if(key[0]=='o'){
+		bool oe = val;
+		if(strcmp(key,"oe1")==0){
+			setOE(oe,0);
+		}else if(strcmp(key,"oe2")==0){
+			setOE(oe,1);
+		}else if(strcmp(key,"oe3")==0){
+			setOE(oe,2);
+		}else if(strcmp(key,"oe4")==0){
+			setOE(oe,3);
+		}
+		return val;
+	}
+}
+
+//parser function calls
+float variables(char *key){
+	float result=1;
+	
+	if(strcmp(key,"temp")==0){
+		result = getTemperature();
+	}else if(strcmp(key,"wifi")==0){
+		result = wifiConn;
+	}else if(key[0]=='p'){
+		if(strcmp(key,"p1")==0){
+			result =getAmpRMS(getAVG(0)/2);
+		}else if(strcmp(key,"p2")==0){
+			result =getAmpRMS(getAVG(1)/2);
+		}
+	}else if(strcmp(key,"m")==0){
+		result = mqttConnected;
+	}else if(key[0]=='s'){
+		if(strcmp(key,"s1")==0){
+			IPAddress ip (192, 168, 0, 1); // The remote ip to ping
+			result = pinger.Ping(ip);
+		}else if(strcmp(key,"s2")==0){
+			IPAddress ip (192, 168, 0, 2); // The remote ip to ping
+			result = pinger.Ping(ip);
+		}
+	}else if(key[0]=='o'){
+		if(strcmp(key,"o1")==0){
+			result = outLogic[ENABLES];
+		}else if(strcmp(key,"o2")==0){
+			result = outLogic[DIRS];
+		}else if(strcmp(key,"o3")==0){
+			result = outLogic[ENABLES+STATUSDIM];
+		}else if(strcmp(key,"o4")==0){
+			result = outLogic[DIRS+STATUSDIM];
+		}else{
+			result = 0;
+		}
+	}else if(key[0]=='t'){
+		if(strcmp(key,"t1")==0){
+			result = getCntValue(CNTIME1);
+		}else if(strcmp(key,"t2")==0){
+			result = getCntValue(CNTIME2);
+		}else if(strcmp(key,"t3")==0){
+			result = getCntValue(CNTIME3);
+		}else if(strcmp(key,"t4")==0){
+			result = getCntValue(CNTIME4);
+		}else{
+			result = 0;
+		}
+	}
+	return result;
+}
+
 void scriviOutDaStato(){
-#if (SCR)
-	 digitalWrite(OUT1DD,(outLogic[ENABLES] && (outLogic[DIRS]==HIGH)));	
-	 digitalWrite(OUT1EU,(outLogic[ENABLES] && (outLogic[DIRS]==LOW)));		
-	 digitalWrite(OUT2DD,(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH)));	
-	 digitalWrite(OUT2EU,(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW)));		
-	 isrun[0] = (outLogic[ENABLES]==HIGH);					
-	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH);	
-#else		
-	 digitalWrite(OUT1EU,outLogic[ENABLES]);	
-	 digitalWrite(OUT1DD,outLogic[DIRS]);		
-	 digitalWrite(OUT2EU,outLogic[ENABLES+STATUSDIM]);		
-	 digitalWrite(OUT2DD,outLogic[DIRS+STATUSDIM]);			
-	 isrun[0] = (outLogic[ENABLES]==HIGH);					
-	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH);			 
-#endif
+	 digitalWrite(OUT1EU,out[0]);	
+	 digitalWrite(OUT1DD,out[1]);		
+	 digitalWrite(OUT2EU,out[2]);	
+	 digitalWrite(OUT2DD,out[3]);		
+	 isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0];					
+	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1];	
 }
 
 void setup_AP(bool apmode) {
@@ -411,7 +603,7 @@ void mqttCallback(String &topic, String &response) {
 	//applica la logica ricevuta da remoto sulle uscite locali (led)
     
 	int v;
-#if (DEBUG || DEBUGR)	
+#if defined (_DEBUG1) || defined (_DEBUGR)	
 	DEBUG_PRINT(F("Message arrived on topic: ["));
 	DEBUG_PRINT(topic);
 	DEBUG_PRINT(F("], "));
@@ -421,6 +613,7 @@ void mqttCallback(String &topic, String &response) {
 	//digitalWrite(OUTSLED, v); 
    
 	parseJsonFieldArrayToInt(response, inr, mqttJson, ncifre, MQTTJSONDIM,0);
+	parseJsonFieldArrayToStr(response, confcmd, confJson, ncifre+500, CONFJSONDIM,0);
     //inr: memoria tampone per l'evento asincrono scrittura da remoto
 }
 
@@ -503,6 +696,26 @@ inline byte percfdbck(byte n){
 	}
 }
 
+void readActModeAndPub(byte n){
+  //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
+  String s=openbrk;
+  //char sd[300];
+  s+="actmode"+String(n+1)+twodot+params[SWACTION1+n]+enda;
+  //sprintf(sd,"%s%s%s%f%s",openbrk,mqttJson[MQTTJSONTEMP].c_str(),twodot,asyncBuf[GTTEMP],closebrk);
+  //s=String(sd);
+  publishStr(s);
+}
+
+void readModeAndPub(byte n){
+  //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
+  String s=openbrk;
+  //char sd[300];
+  s+="mode"+String(n+1)+twodot+getSWMode(n)+enda;
+  //sprintf(sd,"%s%s%s%f%s",openbrk,mqttJson[MQTTJSONTEMP].c_str(),twodot,asyncBuf[GTTEMP],closebrk);
+  //s=String(sd);
+  publishStr(s);
+}
+
 void readAvgPowerAndPub(){
   //DEBUG_PRINTLN(F("\nreadPowerAndPub")); 
   String s=openbrk;
@@ -547,6 +760,11 @@ void readMQTTIdAndPub(){
   publishStr(s);
 }
 
+void inline readActionConfAndSet(){
+	DEBUG_PRINTLN(F("readActionConfAndSet."));
+	eval((confcmd[JSONACTIONEVAL]).c_str());
+}
+
 void publishStr(String &str){
   //pubblica sul broker la stringa JSON
   //informazioni mittente
@@ -576,7 +794,9 @@ void publishStr(String &str){
 void initIiming(bool first){
   edelay[0]=(params[STDEL1]).toInt();
   edelay[1]=(params[STDEL2]).toInt();
-  initTapparellaLogic(in,inr,outLogic,params,first);
+  roll[0] = (params[SWROLL1]).toInt();
+  roll[1] = (params[SWROLL2]).toInt();
+  initTapparellaLogic(in,out,inr,outLogic,params,first);
 #if (AUTOCAL)  
   resetAVGStats(0,0);
   resetAVGStats(0,1);
@@ -590,17 +810,25 @@ void setup() {
   mqttofst = 2;
   //inizializza la seriale
   Serial.begin(115200);
-  //importante per il debug del WIFI!
+  //importante per il _DEBUG1 del WIFI!
   //Serial.setDebugOutput(true);
   //WiFi.printDiag(Serial);
   //carica la configurazione dalla EEPROM
   //DEBUG_PRINTLN(F("Carico configurazione."));
-  initCommon(&server,params,mqttJson);
-  delay(100);
+  //for(int i=0;i<CONFJSONDIM;i++)
+  //	 confcmd[i]="bhocmd ";
+  confcmd[0]="-1";
+  confcmd[1]="-1";
+  confcmd[2]="-1";
+  confcmd[3]="-1";
+  confcmd[4]="(td1=4000)|(ma1=0)|(ma4=2)|(tsmpl4=4)|(oe1=1)";
+  initCommon(&server,params,mqttJson,confJson,confcmd);
+  delay(10000);
   //WiFi.mode(WIFI_AP);
   //setup_AP(true);
   loadConfig();
   delay(100);
+  //init the sampling rate of event condition parser to lowest (1 sample/sec)
   //WiFi.softAPdisconnect(false);
   //WiFi.persistent(true);
   delay(100);
@@ -631,7 +859,7 @@ void setup() {
   telnet.begin((params[MQTTID]).c_str()); // Initiaze the telnet server
   telnet.setResetCmdEnabled(true); // Enable the reset command
   telnet.setCallBackProjectCmds(&processCmdRemoteDebug);
-  DEBUG_PRINTLN(F("Activated remote debug"));
+  DEBUG_PRINTLN(F("Activated remote _DEBUG1"));
 #endif  
   DEBUG_PRINTLN(F("Inizializzo i pulsanti."));
   initdfn(LOW, 0);  //pull DOWN init (in realtà è un pull up, c'è un not in ogni ingresso sui pulsanti)
@@ -640,6 +868,7 @@ void setup() {
   initdfn(LOW, 3);
   initdfn(LOW, 4);
   //initdfn((byte) WL_DISCONNECTED, CONNSTATSW);
+
   //Timing init
   setupTimer((params[THALT1]).toInt(),TMRHALT);				//function timer switch1
   setupTimer((params[THALT2]).toInt(),TMRHALT+TIMERDIM);	//function timer switch2 
@@ -665,7 +894,12 @@ void setup() {
   delay(100);
   httpSetup();
   delay(100);
-   
+  for(int i=0; i<4;i++){
+	startCnt(0,0,SMPLCNT1+i);
+  }
+  //read and set dynamic configurations
+  readActionConfAndSet(); 
+  
   outPorts[0]=OUT1EU;
   outPorts[1]=OUT1DD;
   outPorts[2]=OUT2EU;
@@ -697,7 +931,12 @@ void setup() {
   for(int i=0;i<NBTN*STATUSDIM;i++)
 	  outLogic[i]=LOW;
   for(int i=0;i<MQTTJSONDIM;i++)
-		inr[i]=LOW;
+	  inr[i]=LOW;
+  for(int i=0;i<4;i++)
+	  acts[i]=LOW;
+  for(int i=0;i<4;i++)
+	  strFlagArr[i]=LOW;
+	
   initIiming(true);
   // Register event handlers.
   // Callback functions will be called as long as these handler objects exist.
@@ -727,7 +966,7 @@ void setup() {
 */
   //initTapparellaLogic(in,inr,outLogic,(params[THALT1]).toInt(),(params[THALT2]).toInt(),(params[STDEL1]).toInt(),(params[STDEL2]).toInt());
   //esp_log_set_vprintf(_log_vprintf);
-#if (DEBUG || DEBUGR)  
+#if defined (_DEBUG1) || defined (_DEBUGR)  
   testFlash();
 #endif
 #if (AUTOCAL)  
@@ -757,6 +996,13 @@ void setup() {
   if(WiFi.status() == WL_CONNECTED)
 		mqttReconnect();
   boot = false;
+/*  
+  DEBUG_PRINTLN(F("Updating NTP Time"));
+  updateNTP();
+  DEBUG_PRINT(F("Local time is "));
+  char buf[50];
+  DEBUG_PRINTLN(printUNIXTime(buf));
+  */
 }
 
 void httpSetup(){
@@ -770,6 +1016,7 @@ void httpSetup(){
   server.on("/wificonf", HTTP_POST, handleWifiConf);
   server.on("/mqttconf", HTTP_POST, handleMQTTConf);
   server.on("/logicconf", HTTP_POST, handleLogicConf);
+  server.on("/eventconf", HTTP_POST, handleEventConf);
   server.on("/cmd", HTTP_GET, handleCmd);
   //server.on("/cmdjson", handleCmdJsonExt);
   //DEBUG_PRINTLN(F("Registro handleNotFoundExt."));
@@ -829,6 +1076,8 @@ inline void loop2() {
   //funzioni eseguite ad ogni loop (istante di esecuzione dipendente dal clock della CPU)
   aggiornaTimer(TMRHALT);
   aggiornaTimer(TMRHALT+TIMERDIM); 
+  aggiornaTimer(TMRHALT2);
+  aggiornaTimer(TMRHALT2+TIMERDIM); 
   webSocket.loop();
 #if(LARGEFW)
   MDNS.update();
@@ -869,26 +1118,35 @@ inline void loop2() {
 	//---------------------------------------------------------------------
 	// 1 sec scheduler
 	//---------------------------------------------------------------------
-	if(!(step % 500)){	
+	if(!(step % 500)){
+		updateCounters();
 		if(!(isrun[0] || isrun[1])){//solo a motore fermo! Per evitare contemporaneità col currentPeakDetector
 			aggiornaTimer(RESETTIMER);
 			aggiornaTimer(APOFFTIMER);
 			pushCnt++;
-			DEBUG_PRINT(F("\n------------------------------------------"));
-			DEBUG_PRINT(F("\nMean sensor: "));
-			DEBUG_PRINT(m);
-			DEBUG_PRINT(F(" - Conn stat: "));
+			//DEBUG_PRINT(F("\n------------------------------------------"));
+			//DEBUG_PRINT(F("\nMean sensor: "));
+			//DEBUG_PRINT(m);
+			//DEBUG_PRINT(F(" - Conn stat: "));
 			stat = WiFi.status();
-			DEBUG_PRINT(stat);
+			//DEBUG_PRINT(stat);
 			wifiConn = (stat == WL_CONNECTED);	
-			DEBUG_PRINT(F(" - Wifi mode: "));
-			DEBUG_PRINTLN(WiFi.getMode());
+			//DEBUG_PRINT(F(" - Wifi mode: "));
+			//DEBUG_PRINTLN(WiFi.getMode());
 			
 			sensorStatePoll();
 			wifiFailoverManager();
 			MQTTReconnectManager();
-		}	
-		paramsModificationPoll();
+			paramsModificationPoll();
+		}
+		leggiTastiLocaliDaExp();
+		/*
+		DEBUG_PRINTLN(F("Updating NTP Time"));
+		updateNTP();
+		DEBUG_PRINT(F("Local time is "));
+		char buf[50];
+		DEBUG_PRINTLN(printUNIXTime(buf));
+		*/
 	}//END 1 sec scheduler-----------------------------------------------------
 	
 	//---------------------------------------------------------------------
@@ -899,13 +1157,13 @@ inline void loop2() {
 		leggiTastiLocali();
 		leggiTastiLocaliRemoto();
 		//se uno dei tasti delle tapparelle è stato premuto
-		//o se è arrivato un comando dala mqttCallback
-		if(tapLogic(TAP1) == 1 ||  tapLogic(TAP2) == 1){ 
+		//o se è arrivato un comando dalla mqttCallback
+		if(cmdLogic(TAP1) == 1 ||  cmdLogic(TAP2) == 1){ 
 			//once any button is pressed
 			//legge lo stato finale e lo scrive sulle uscite
 			scriviOutDaStato();
 			//legge lo stato finale e lo pubblica su MQTT
-			readStatesAndPub();
+			//readStatesAndPub();
 			//DEBUG_PRINTLN("Fine callback MQTT.");
 			blocked[0]=blocked[1]=false;
 		}
@@ -918,7 +1176,7 @@ inline void loop2() {
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
 		if((wifiConn == false && !(isrun[0] || isrun[1]))){
 			DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
-			delay(40);//give 30ms to the ESP stack for wifi connect
+			delay(30);//give 30ms to the ESP stack for wifi connect
 			wifiConn = (WiFi.status() == WL_CONNECTED);
 		}
 		//------------------------------------------------------------------------------------------------------------
@@ -931,6 +1189,19 @@ inline void loop2() {
   yield();	// Give a time for ESP8266
 }//END loop
 
+inline void updateCounters(){
+	 incCnt(CNTIME1);
+	 incCnt(CNTIME2);
+	 incCnt(CNTIME3);
+	 incCnt(CNTIME4);
+	 incCnt(SMPLCNT1);
+	 incCnt(SMPLCNT2);
+	 incCnt(SMPLCNT3);
+	 incCnt(SMPLCNT4);
+	 DEBUG_PRINT("\nincCnt(SMPLCNT4): ");
+	 DEBUG_PRINTLN(getCntValue(SMPLCNT4));
+}
+
 //legge gli ingressi remoti e mette il loro valore sull'array val[]
 //inr: memoria tampone per l'evento asincrono scrittura da remoto
 //si deve mischiare con la lettura locale DOPO che questa venga scritta
@@ -941,6 +1212,44 @@ inline void leggiTastiLocaliRemoto(){
 		(in[i]) && (in[i] = 255);
 		(inr[i]) && (in[i] = inr[i]);
 		inr[i]=LOW;
+	}
+}
+//legge PERIODICAMENTE il parser delle condizioni sui sensori
+inline void leggiTastiLocaliDaExp(){
+	if(roll[0] == false){
+		//modalità switch generico
+		if(testUpCntEvnt(0,true,SMPLCNT1))
+			setActionLogic(eval((confcmd[0]).c_str()),0);
+		if(testUpCntEvnt(0,true,SMPLCNT2))
+			setActionLogic(eval((confcmd[1]).c_str()),1);
+		//legge lo stato finale e lo scrive sulle uscite
+		scriviOutDaStato();
+		//legge lo stato finale e lo pubblica su MQTT
+		//readStatesAndPub();
+	}else{
+		//modalità tapparella
+		//simula pressione di un tasto locale
+		in[0] = eval((confcmd[0]).c_str());
+		in[1] = eval((confcmd[1]).c_str());
+	}
+	if(roll[1] == false){
+		//modalità switch generico
+		if(testUpCntEvnt(0,true,SMPLCNT3))
+			setActionLogic(eval((confcmd[2]).c_str()),2);
+		if(testUpCntEvnt(1,true,SMPLCNT4)){
+			setActionLogic(eval((confcmd[3]).c_str()),3);
+			DEBUG_PRINTLN(F("\nSMPLCNT4: "));
+			DEBUG_PRINTLN(getCntValue(SMPLCNT4));
+		}
+		//legge lo stato finale e lo scrive sulle uscite
+		scriviOutDaStato();
+		//legge lo stato finale e lo pubblica su MQTT
+		//readStatesAndPub();
+	}else{
+		//modalità tapparella
+		//simula pressione di un tasto locale
+		in[2] = eval((confcmd[2]).c_str());
+		in[3] = eval((confcmd[3]).c_str());
 	}
 }
 
@@ -974,6 +1283,37 @@ inline void leggiTastiRemoti(){
 		inr[MQTTJSONMQTTID] = LOW;
 		readMQTTIdAndPub();
 	}
+	if(inr[JSONACTIONFLAG]){
+		inr[JSONACTIONFLAG] = LOW;
+		//save confs and actions on new action received event
+		writeOnOffConditions();
+		//run actions one time on new action received event
+		readActionConfAndSet();
+	}
+	if(inr[JSONCONFFLAG1]){
+		inr[JSONCONFFLAG1] = LOW;
+		//save confs and actions on new config received event
+		writeOnOffConditions();
+		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
+	}
+	if(inr[JSONCONFFLAG2]){
+		inr[JSONCONFFLAG2] = LOW;
+		//save confs and actions on new config received event
+		writeOnOffConditions();
+		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
+	}
+	if(inr[JSONCONFFLAG3]){
+		inr[JSONCONFFLAG3] = LOW;
+		//save confs and actions on new config received event
+		writeOnOffConditions();
+		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
+	}
+	if(inr[JSONCONFFLAG4]){
+		inr[JSONCONFFLAG4] = LOW;
+		//save confs and actions on new config received event
+		writeOnOffConditions();
+		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
+	}
 }
 
 inline void currentPeakDetector(){
@@ -998,6 +1338,40 @@ inline void currentPeakDetector(){
 		interrupts();
         ets_intr_unlock(); //open interrupt
         system_soft_wdt_restart();
+}
+
+inline void sensorStatePoll(){
+	//sensor variation polling management
+	//on events basis push of reports
+	if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
+		readTempAndPub();
+		DEBUG_PRINT(F("\nTemperatura cambiata"));
+	}
+	bool updatePwr = false;
+	if(gatedfn(getAmpRMS(getAVG(0)/2),GTMEANPWR1, MEANPWR1RND)){
+		updatePwr == true;
+	}
+	if(gatedfn(getAmpRMS(getAVG(1)/2),GTMEANPWR2, MEANPWR2RND)){
+		updatePwr == true;
+	}
+	if(updatePwr){
+		readAvgPowerAndPub();
+		updatePwr = false;
+	}
+	if(gatedfn(getAmpRMS(getAVG(0)+getThresholdUp(0)/2),GTPEAKPWR1, PEAKPWR1RND)){
+		updatePwr == true;
+	}
+	if(gatedfn(getAmpRMS(getAVG(1)+getThresholdUp(1)/2),GTPEAKPWR2, PEAKPWR2RND)){
+		updatePwr == true;
+	}
+	if(updatePwr){
+		readPeakPowerAndPub();
+	}
+	//periodic push of all reports
+	if(pushCnt == PUSHINTERV){
+		pushCnt = 0;
+		readStatesAndPub(true);
+	}
 }
 
 inline void automaticStopManager(){
@@ -1130,20 +1504,20 @@ inline void automaticStopManager(){
 						yield();
 					}
 				}else{
-					DEBUG_PRINT(F("\n("));
-					DEBUG_PRINT(1);
-					DEBUG_PRINT(F(") aspetto: "));
-					DEBUG_PRINT(isrundelay[1]);
-					DEBUG_PRINT(F(" - minx sensor: "));
-					DEBUG_PRINT(minx);
-					DEBUG_PRINT(F(" - maxx sensor: "));
-					DEBUG_PRINT(maxx);
-					DEBUG_PRINT(F(" - Peak: "));
-					DEBUG_PRINT(ex[1]);
+					//DEBUG_PRINT(F("\n("));
+					//DEBUG_PRINT(1);
+					//DEBUG_PRINT(F(") aspetto: "));
+					//DEBUG_PRINT(isrundelay[1]);
+					//DEBUG_PRINT(F(" - minx sensor: "));
+					//DEBUG_PRINT(minx);
+					//DEBUG_PRINT(F(" - maxx sensor: "));
+					//DEBUG_PRINT(maxx);
+					//DEBUG_PRINT(F(" - Peak: "));
+					//DEBUG_PRINT(ex[1]);
 					isrundelay[1]--;
 					ex[1] = dd;
-					DEBUG_PRINT(F(" - dd: "));
-					DEBUG_PRINT(dd);
+					//DEBUG_PRINT(F(" - dd: "));
+					//DEBUG_PRINT(dd);
 				}
 			}else{
 				isrundelay[1] = RUNDELAY;
@@ -1155,7 +1529,7 @@ inline void automaticStopManager(){
 			minx = 1024;
 			maxx = 0;
 			dosmpl = true;
-			DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
+			//DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}else{
 			//zero detection manager
 			//zero detection scheduler
@@ -1174,46 +1548,12 @@ inline void automaticStopManager(){
 				//running mean calculation
 				smplcnt++;
 				smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
-				DEBUG_PRINT(F("\nZero peak sensor: "));
-				DEBUG_PRINT(x);
-				DEBUG_PRINT(F(" - Zero mean sensor: "));
-				DEBUG_PRINT(m);
+				//DEBUG_PRINT(F("\nZero peak sensor: "));
+				//DEBUG_PRINT(x);
+				//DEBUG_PRINT(F(" - Zero mean sensor: "));
+				//DEBUG_PRINT(m);
 			}
 		}	
-}
-
-inline void sensorStatePoll(){
-	//sensor variation polling management
-	//on events basis push of reports
-	if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
-		readTempAndPub();
-		DEBUG_PRINT(F("\nTemperatura cambiata"));
-	}
-	bool updatePwr = false;
-	if(gatedfn(getAmpRMS(getAVG(0)/2),GTMEANPWR1, MEANPWR1RND)){
-		updatePwr == true;
-	}
-	if(gatedfn(getAmpRMS(getAVG(1)/2),GTMEANPWR2, MEANPWR2RND)){
-		updatePwr == true;
-	}
-	if(updatePwr){
-		readAvgPowerAndPub();
-		updatePwr = false;
-	}
-	if(gatedfn(getAmpRMS(getAVG(0)+getThresholdUp(0)/2),GTPEAKPWR1, PEAKPWR1RND)){
-		updatePwr == true;
-	}
-	if(gatedfn(getAmpRMS(getAVG(1)+getThresholdUp(1)/2),GTPEAKPWR2, PEAKPWR2RND)){
-		updatePwr == true;
-	}
-	if(updatePwr){
-		readPeakPowerAndPub();
-	}
-	//periodic push of all reports
-	if(pushCnt == PUSHINTERV){
-		pushCnt = 0;
-		readStatesAndPub(true);
-	}
 }
 
 inline void wifiFailoverManager(){
@@ -1265,15 +1605,15 @@ inline void MQTTReconnectManager(){
 				//noInterrupts ();
 				//mqttStat = mqttClient->isConnected();
 				//interrupts ();
-				DEBUG_PRINT(F("MQTT check : "));
-				DEBUG_PRINT(mqttStat);
+				//DEBUG_PRINT(F("MQTT check : "));
+				//DEBUG_PRINT(mqttStat);
 				if(!mqttStat){
 					DEBUG_PRINT(F("\nMQTT dice non sono connesso."));
 					mqttConnected=false;
 				}	
 				else{
-					DEBUG_PRINT(F("\nMQTT  dice sono connesso. Local IP: "));
-					DEBUG_PRINT(WiFi.localIP());
+					//DEBUG_PRINT(F("\nMQTT  dice sono connesso. Local IP: "));
+					//DEBUG_PRINT(WiFi.localIP());
 					mqttConnected=true;
 					mqttcnt = 0;
 					mqttofst = 2;
@@ -1355,7 +1695,7 @@ inline void paramsModificationPoll(){
 			}
 			else
 			{
-			#if (DEBUG || DEBUGR)	
+			#if defined (_DEBUG1) || defined (_DEBUGR)	
 				DEBUG_PRINTLN(F("MQTTCONNCHANGED! Eseguo la setUserPwd() con usr "));
 				DEBUG_PRINTLN(params[MQTTUSR]);
 				DEBUG_PRINTLN(F(" e psw "));
@@ -1364,13 +1704,13 @@ inline void paramsModificationPoll(){
 				mqttClient->setUserPwd((params[MQTTUSR]).c_str(), (params[MQTTPSW]).c_str());
 				DEBUG_PRINTLN(F("MQTTCONNCHANGED! Eseguo la connect() ..."));
 				mqttClient->connect();
-			#if (DEBUG || DEBUGR)	
+			#if defined (_DEBUG1) || defined (_DEBUGR)	
 				DEBUG_PRINTLN(F("MQTTCONNCHANGED! Eseguo la subscribe() con "));
 				DEBUG_PRINTLN(params[MQTTINTOPIC]);
 				DEBUG_PRINTLN(F("..."));
 			#endif	
 				mqttClient->subscribe(params[MQTTINTOPIC]);
-			#if (DEBUG || DEBUGR)	
+			#if defined (_DEBUG1) || defined (_DEBUGR)	
 				DEBUG_PRINTLN(F("MQTTCONNCHANGED! publish(): "));
 				DEBUG_PRINTLN(params[MQTTOUTTOPIC]);
 				DEBUG_PRINTLN(F(" Intopic: "));
@@ -1386,7 +1726,7 @@ inline void paramsModificationPoll(){
 			}
 			else
 			{
-			#if (DEBUG || DEBUGR)	
+			#if defined (_DEBUG1) || defined (_DEBUGR)	
 				DEBUG_PRINTLN(F("TOPICCHANGED! Outtopic: "));
 				DEBUG_PRINTLN(params[MQTTOUTTOPIC]);
 				DEBUG_PRINTLN(F(" Intopic: "));
@@ -1396,7 +1736,7 @@ inline void paramsModificationPoll(){
 				DEBUG_PRINTLN(F("..."));
 			#endif		
 				mqttClient->subscribe(params[MQTTINTOPIC]);
-			#if (DEBUG || DEBUGR)	
+			#if defined (_DEBUG1) || defined (_DEBUGR)	
 				DEBUG_PRINTLN(F("TOPICCHANGED! Eseguo la publish() con "));
 				DEBUG_PRINTLN(params[MQTTOUTTOPIC]);
 				DEBUG_PRINTLN(F(" ..."));
@@ -1408,50 +1748,72 @@ inline void paramsModificationPoll(){
 
 //-----------------------------------------------INIZIO TIMER----------------------------------------------------------------------
 //azione da compiere allo scadere di uno dei timer dell'array	
-void onElapse(byte n){
+void onElapse(byte nn){
+	int n = nn / TIMERDIM;
+	int sw = nn % TIMERDIM;
+	
 	DEBUG_PRINT(F("\nElapse timer n: "));
-	DEBUG_PRINT(n);
+	DEBUG_PRINT(nn);
 	DEBUG_PRINT(F("  con stato: "));
-	DEBUG_PRINTLN(getGroupState(n));
-	if(n == TMRHALT || n == TMRHALT+TIMERDIM) //se è scaduto il timer di attesa o di blocco  (0,1) --> state n
+	DEBUG_PRINTLN(getGroupState(nn));
+	DEBUG_PRINT(F("  con n: "));
+	DEBUG_PRINTLN(n);
+	DEBUG_PRINT(F("  con sw: "));
+	DEBUG_PRINTLN(sw);
+	
+	if(nn != RESETTIMER || nn != APOFFTIMER) //se è scaduto il timer di attesa o di blocco  (0,1) --> state n
 	{   
 		DEBUG_PRINT(F("\nCount value: "));
-		DEBUG_PRINTLN(getCntValue(n));
-		if(getCntValue(n) == 1){
-			int toffset=n*TIMERDIM;
-			if(getGroupState(n)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
-				DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
-				secondPress(n);
+		DEBUG_PRINTLN(getCntValue(nn));
+		if(getCntValue(nn) == 1){ 
+			if(roll[n]){//se è in modalità tapparella!
+				if(getGroupState(nn)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
+					DEBUG_PRINTLN(F("stato 0 roll mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
+					secondPress(n);
+					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
+					scriviOutDaStato();
+					//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
+					readStatesAndPub();
+				}else if(getGroupState(nn)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
+					DEBUG_PRINTLN(F("onElapse roll mode:  timer di attesa scaduto"));
+					startEngineDelayTimer(n);
+					//adesso parte...
+					scriviOutDaStato();
+				}
+	#if (!AUTOCAL)	
+				else if(getGroupState(nn)==2){//se il motore è in moto a vuoto
+					DEBUG_PRINTLN(F("onElapse roll mode manual:  timer di corsa a vuoto scaduto"));
+					///setGroupState(3,n);	//il motore va in moto cronometrato
+					startEndOfRunTimer(n);
+					//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
+					readStatesAndPub();
+				}
+	#else
+				else if(getGroupState(nn)==2){//se il motore è in moto a vuoto
+					DEBUG_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
+					secondPress(n,0,true);
+					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
+					scriviOutDaStato();
+				}
+#endif
+			}else{//se è in modalità switch
+				if(getGroupState(nn)==1){//se lo switch era inibito (timer di attesa scaduto)
+					DEBUG_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
+					startSimpleSwitchDelayTimer(nn);
+					//adesso commuta...
+				}else if(getGroupState(nn)==2){ //se lo switch è monostabile (timer di eccitazione scaduto)
+					DEBUG_PRINTLN(F("stato 0 switch mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
+					endPress(nn);
+				}
 				//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
 				scriviOutDaStato();
 				//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 				readStatesAndPub();
-			}else if(getGroupState(n)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
-				DEBUG_PRINTLN(F("onElapse:  timer di attesa scaduto"));
-				startEngineDelayTimer(n);
-				//adesso parte...
-				scriviOutDaStato();
 			}
-#if (!AUTOCAL)	
-			else if(getGroupState(n)==2){//se il motore è in moto a vuoto
-				DEBUG_PRINTLN(F("onElapse:  timer di corsa a vuoto scaduto"));
-				///setGroupState(3,n);	//il motore va in moto cronometrato
-				startEndOfRunTimer(n);
-				//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
-				readStatesAndPub();
-			}
-#else
-			else if(getGroupState(n)==2){//se il motore è in moto a vuoto
-				DEBUG_PRINTLN(F("onElapse:  timer di check pressione su fine corsa scaduto"));
-				secondPress(n,0,true);
-				//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
-				scriviOutDaStato();
-			}
-#endif
-		}else if(getCntValue(n) > 1){
+		}else if(getCntValue(nn) > 1){ //in tutte le modalità
 			if(n == 0){
 				DEBUG_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
-				if(testCntEvnt(3,CNTSERV1)){
+				if(getCntValue(CNTSERV1)==3){
 					wifiState = WIFIAP;
 					//wifi_station_dhcpc_stop();
 					//WiFi.enableAP(true);
@@ -1494,45 +1856,45 @@ void onElapse(byte n){
 					//WiFi.printDiag(Serial);
 					//MDNS.update();
 					setGroupState(0,n%2);
-				}else if(testCntEvnt(4,CNTSERV1)){
+				}else if(getCntValue(CNTSERV1)==4){
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("Rebooting ESP without reset of configuration"));
 					DEBUG_PRINTLN(F("-----------------------------"));
 					ESP.eraseConfig(); //do the erasing of wifi credentials
 					ESP.restart();
-				}else if(testCntEvnt(5,CNTSERV1)){
+				}else if(getCntValue(CNTSERV1)==5 && roll[n]){ //solo in modalità tapparella!
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
 					DEBUG_PRINTLN(F("-----------------------------"));
 					manualCalibration(0); //BTN1
-				}else if(testCntEvnt(8,CNTSERV1)){
+				}else if(getCntValue(CNTSERV1)==8){
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("Reboot ESP with reset of configuration"));
 					DEBUG_PRINTLN(F("-----------------------------"));
 					rebootSystem();
 				}else{
-					setGroupState(0,n%2);
+					setGroupState(0,nn);
 				}
 				//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
 				resetCnt(CNTSERV1);
-			}else{
+			}else if(roll[n]){ //solo in modalità tapparella!
 				DEBUG_PRINTLN(F("onElapse:  timer 2 dei servizi a conteggio scaduto"));
-				if(testCntEvnt(5,CNTSERV2)){
+				if(getCntValue(CNTSERV2)==5){
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 2"));
 					DEBUG_PRINTLN(F("-----------------------------"));
 					manualCalibration(1); //BTN2
 				}else{
-					setGroupState(0,n%2);
+					setGroupState(0,nn);
 				}
 				//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
 				resetCnt(CNTSERV2);
 			}
 		}
-	}else if(n == RESETTIMER)
+	}else if(nn == RESETTIMER)
 		{
 			rebootSystem();
-	}else if(n == APOFFTIMER){
+	}else if(nn == APOFFTIMER){
 		if(WiFi.softAPgetStationNum() == 0){
 			DEBUG_PRINTLN(F("WIFI: reconnecting to AP"));
 			byte stat = WiFi.status();
@@ -1573,7 +1935,7 @@ void onCalibrEnd(unsigned long app, byte n){
 	//params[TRSHOLD1 + n] = String(getThresholdUp(n));
 	//setThresholdUp((params[TRSHOLD1 + n]).toFloat(), n);
 #endif
-	EEPROM.begin(EEPROMPARAMSLEN);
+	EEPROM.begin(FIXEDPARAMSLEN);
 	
 	EEPROMWriteStr(VALWEIGHTOFST,(params[VALWEIGHT]).c_str());
 	EEPROM.commit();
@@ -1613,7 +1975,7 @@ void manualCalibration(byte btn){
 }
 
 void rebootSystem(){
-	EEPROM.begin(EEPROMPARAMSLEN);
+	EEPROM.begin(FIXEDPARAMSLEN);
 	alterEEPROM();
 	EEPROM.end();
 	DEBUG_PRINTLN(F("Resetting ESP"));
@@ -1727,7 +2089,7 @@ void processCmdRemoteDebug() {
 #endif
 
 
-#if (DEBUG || DEBUGR)	
+#if defined (_DEBUG1) || defined (_DEBUGR)	
 const char* wl_status_to_string(wl_status_t status) {
   switch (status) {
     case WL_NO_SHIELD: return "WL_NO_SHIELD";
@@ -1742,7 +2104,7 @@ const char* wl_status_to_string(wl_status_t status) {
 }
 #endif
 
-#if (DEBUG || DEBUGR)	
+#if defined (_DEBUG1) || defined (_DEBUGR)	
 void testFlash(){
   uint32_t realSize = ESP.getFlashChipRealSize();
   uint32_t ideSize = ESP.getFlashChipSize();

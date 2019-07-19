@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "common.h"
 
-void initTapparellaLogic(byte *, byte *, byte *, String  *, bool);
+void initTapparellaLogic(byte *, byte *, byte *, byte *, String  *, bool);
 byte tapparellaLogic(byte *, byte *, byte*, unsigned long , byte n);
 //byte tapparellaLogic(byte);
 void setTapThalt(unsigned long, byte);
@@ -22,6 +22,7 @@ void setGroupState(byte, byte);
 byte getDelayedCmd(byte);
 void setDelayedCmd(byte, byte);
 void setBtnDelay(byte, byte);
+void setHaltDelay(unsigned int, byte);
 void startEndOfRunTimer(byte);
 bool startEngineDelayTimer(byte);
 bool isRunning(byte);
@@ -35,6 +36,15 @@ double calcLen(byte n);
 float getNmax();
 float getPosdelta();
 float getTaplen();
+byte toggleLogic(byte, byte);
+bool startSimpleSwitchDelayTimer(byte);
+void startPress(byte, byte);
+void endPress(byte);
+void setTarget(long, byte);
+void setLogic(byte, byte);
+void setSWAction(byte in, byte nn);
+void setActionLogic(int, byte);
+void setOE(bool, byte);
 //bool inline initdfn(byte,  byte);
 //extern void onBtnPress(n)
 //extern void onDownPressed(byte);

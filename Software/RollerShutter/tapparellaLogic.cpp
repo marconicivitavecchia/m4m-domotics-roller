@@ -1,23 +1,30 @@
 #include "tapparellaLogic.h"
 
 int count1 = 0;
-unsigned long target[2];
-byte groupState[2];
+byte groupState[4];
 byte *inp;
+byte *outp;
 byte *inrp;
 byte *outlogicp;
 String  *paramsl;
+byte act[4] = {0,0,0,0};
 float taplen, deltal;
 float barrad;
 float tapthick; 
 long thaltp[2]={THALTMAX/2,THALTMAX/2};
 long base[2]={0,0};
+bool oe[4];  //output enable
 #if (AUTOCAL) 
 float fact;
 #endif
-unsigned long engdelay[2]={0,0};
-unsigned long btndelay[2]={0,0};
-byte lastCmd[4];
+byte lastCmd[4]; //{sw1,sw2,sw3,sw4}
+unsigned long target[4];			 //allineati con i timers corrispondenti
+unsigned long engdelay[4]={0,0,0,0}; //allineati con i timers corrispondenti
+unsigned long btndelay[4]={0,0,0,0}; //allineati con i timers corrispondenti
+unsigned long haltdelay[4]={0,0,0,0}; //allineati con i timers corrispondenti
+//int timermap[4]={TMRHALT,AUX1TIMER,1,AUX2TIMER}; //mappa timers
+int outmap[4]={ENABLES,DIRS,4,5}; 	 //mappa uscite
+//int groupmap[4]={0,2,1,3}; 	 		 //mappa gruppi
 short upmap[2]={1,-1};
 byte calibr=0;
 byte nrun=0;
@@ -25,6 +32,7 @@ byte moving[2]={false,false};
 bool first[2]={true,true};
 double nmax;
 float posdelta = 0;
+//bool rollmode[2] = {true,true};
 
 inline bool switchdfn(byte val, byte n){
 	//n: numero di pulsanti
@@ -32,6 +40,20 @@ inline bool switchdfn(byte val, byte n){
 	bool changed = (val != dprecval2[n]);
 	dprecval2[n] = val;            // valore di val campionato al loop precedente 
 	return changed;
+}
+
+inline void copytout(){
+#if (SCR)
+	 outp[0]=(outlogicp[ENABLES] && (outlogicp[DIRS]==HIGH));	
+	 outp[1]=(outlogicp[ENABLES] && (outlogicp[DIRS]==LOW));		
+	 outp[2]=(outlogicp[ENABLES+STATUSDIM] && (outlogicp[DIRS+STATUSDIM]==HIGH));	
+	 outp[3]=(outlogicp[ENABLES+STATUSDIM] && (outlogicp[DIRS+STATUSDIM]==LOW));		
+#else		
+	 outp[0]=outlogicp[ENABLES];	
+	 outp[1]=outlogicp[DIRS];		
+	 outp[2]=outlogicp[ENABLES+STATUSDIM];		
+	 outp[3]=outlogicp[DIRS+STATUSDIM];					 
+#endif
 }
 
 byte switchLogic(byte sw, byte n){
@@ -46,9 +68,9 @@ byte switchLogic(byte sw, byte n){
 		DEBUG_PRINT(F("fronte di SW: "));
 		DEBUG_PRINTLN(BTN1IN+poffset+sw+1);
 		DEBUG_PRINT(F("stato switch:  "));
-		DEBUG_PRINTLN(getGroupState(n));
+		DEBUG_PRINTLN(getGroupState(toffset));
 		
-		byte s = getGroupState(n);
+		byte s = getGroupState(toffset);
 		//siamo su uno dei fronti del pulsante 
 		if(inp[BTN1IN+poffset+sw]>0)  
 		{			
@@ -58,6 +80,7 @@ byte switchLogic(byte sw, byte n){
 			outlogicp[SW1ONS+offset+sw]=true;
 			if(!outlogicp[SW1ONS+offset+!sw]){  //evita attivazioni con pressione contemporanea di due tasti (interblocco)
 				DEBUG_PRINTLN(F("dopo interblocco "));
+				//modalità tapparella
 				//effettuata prima pressione
 				if(s==0)
 				{ 	
@@ -65,22 +88,23 @@ byte switchLogic(byte sw, byte n){
 					setCronoDir(upmap[sw],n);  //in base a questo viene decisa la direzione della partenza differita
 					lastCmd[BTN1IN + poffset+sw] = inp[BTN1IN+poffset+sw];
 					DEBUG_PRINTLN(F("tapparellaLogic: stato 1: il motore va in attesa da stato 0 (fermo)"));
+					//stato 1: il motore va in attesa del moto a vuoto
 					startTimer(btndelay[n],TMRHALT+toffset);	
-					setGroupState(1,n);	
-					//stato 1: il motore va in attesa
-					updateCnt(n);
+					setGroupState(1,toffset);	
+					incCnt(toffset);
 					changed = 0;
 				}else if(s==1)
 				{//se il motore è in attesa
 					//sono pressioni di configurazione
+					//faccio ripartire il timer di attesa del moto a vuoto
 					resetTimer(TMRHALT+toffset);
 					startTimer(btndelay[n],TMRHALT+toffset);	
-					updateCnt(n);
+					incCnt(toffset);
 					changed = 0;
 				}else  if(s==2 || s==3)//se il motore è in moto a vuoto o in moto cronometrato
 				{
 					secondPress(n);
-					changed = 1;
+					changed = 1; //solo adesso il loop deve intervenire!
 					DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo "));
 				}
 			}
@@ -114,6 +138,12 @@ void setDelayedCmd(byte in, byte i){
 void setBtnDelay(byte dly, byte i){
 	btndelay[i]=dly;
 }
+
+void setHaltDelay(unsigned int dly, byte n){
+	DEBUG_PRINT(F("setHaltDelay: "));
+	DEBUG_PRINTLN(dly);
+	haltdelay[n]=dly;
+}
 /*
 byte tapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt, byte n){
 	inp=in;
@@ -123,17 +153,26 @@ byte tapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt, b
 	tapparellaLogic(n);
 }
 */
-void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, String  *paramsi, bool firstTime=false){
+void initTapparellaLogic(byte *in, byte *out, byte *inr, byte *outlogic, String  *paramsi, bool firstTime=false){
 	paramsl=paramsi;
 	inp=in;
+	outp=out;
 	inrp=inr;
 	outlogicp=outlogic;
 	thaltp[0]=(paramsl[THALT1]).toInt();
-	thaltp[1]=(paramsl[THALT2]).toInt();
+	thaltp[1]=(paramsl[THALT3]).toInt();
 	engdelay[0]=(paramsl[STDEL1]).toInt();
 	engdelay[1]=(paramsl[STDEL2]).toInt();
 	btndelay[0]=BTNDEL1;
 	btndelay[1]=BTNDEL2;
+	btndelay[2]=BTNDEL1;
+	btndelay[3]=BTNDEL2;
+	haltdelay[0]=(paramsl[THALT1]).toInt();
+	haltdelay[1]=(paramsl[THALT2]).toInt();
+	haltdelay[2]=(paramsl[THALT3]).toInt();
+	haltdelay[3]=(paramsl[THALT4]).toInt();
+	engdelay[2]=(paramsl[STDEL1]).toInt();
+	engdelay[3]=(paramsl[STDEL2]).toInt();
 	taplen=(paramsl[TLENGTH]).toFloat();
 	//correzzione per tapparelle a fisarmonica
 	float r = (paramsl[SLATSRATIO]).toFloat();
@@ -145,9 +184,11 @@ void initTapparellaLogic(byte *in, byte *inr, byte *outlogic, String  *paramsi, 
 	resetCronoCount(1);
 	setCronoLimits(-THALTMAX,THALTMAX,0);
 	setCronoLimits(-THALTMAX,THALTMAX,1);
+	//rollmode[0] = (paramsl[SWROLL1]).toInt();
+	//rollmode[1] = (paramsl[SWROLL2]).toInt();
 #if (!AUTOCAL) 
 	//thaltp[0]=(paramsl[THALT1]).toInt();
-	//thaltp[1]=(paramsl[THALT2]).toInt();
+	//thaltp[1]=(paramsl[THALT3]).toInt();
 	first[0] = first[1] = firstTime;
 #else
 	fact = (float) ENDFACT/100.0;
@@ -165,7 +206,6 @@ float getTaplen(){
 	return taplen;
 }
 
-
 void setTapThalt(unsigned long thalt,byte n){
 	thaltp[n]=thalt;
 }
@@ -178,6 +218,10 @@ long getTarget(byte n){
 	return target[n];
 }
 
+void setTarget(long val, byte n){
+	target[n] = val;
+}
+
 byte getGroupState(byte n){
 	return groupState[n];
 }
@@ -187,24 +231,29 @@ void setGroupState(byte tstate, byte n){
 }
 
 void startEndOfRunTimer(byte n){
+	int toffset=n*TIMERDIM;
+	
 	if(calibr==1)
 		resetCronoCount(n);
 	//il motore è in moto libero
 	moving[n]=true;	
-	//decide il tempo di corsa ovvero la posizione di arrivo	
-	startTimer(target[n],TMRHALT+n*TIMERDIM);
+	//faccio partire il timer di attesa dell'arrivo nella posizione finale
+	//il motore va in moto cronometrato
+	startTimer(target[toffset],TMRHALT+toffset);
 	//comincia a cronometrare la corsa
 	startCrono(n); 
-	setGroupState(3,n);	//														stato 3: il motore va in moto cronometrato
+	setGroupState(3,toffset);	//														stato 3: il motore va in moto cronometrato
 	DEBUG_PRINT(F("stato 3: il motore " ));
 	DEBUG_PRINT(n);
 	DEBUG_PRINT(F(" al tempo  " ));
 	DEBUG_PRINT(getCronoCount(n));
 	DEBUG_PRINT(F(" è cronometrato verso "));
-	DEBUG_PRINTLN(target[n]);	
+	DEBUG_PRINTLN(target[toffset]);	
 }
 
 bool startEngineDelayTimer(byte n){
+	    int toffset=n*TIMERDIM;
+		
 		moving[n]=false;	
 		setGroupState(2,n);												//stato 2: il motore va in moto a vuoto (o libero)
 		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index
@@ -214,7 +263,8 @@ bool startEngineDelayTimer(byte n){
 		//DEBUG_PRINTLN(inp[btn]);
 		inp[btn] = lastCmd[btn];
 		firstPress((getCronoDir(n)==DOWN), n);
-		startTimer(engdelay[n],TMRHALT+n*TIMERDIM);
+		//parte il timer di attesa del moto cronometrato
+		startTimer(engdelay[toffset],TMRHALT+toffset);
 		
 		DEBUG_PRINTLN(F("stato 2: il motore va in moto a vuoto"));
 		return true;
@@ -231,7 +281,7 @@ short secondPress(byte n, int delay, bool end){
 	
 	moving[n] = false;
 	//reset service count
-	resetCnt(n);
+	resetCnt(toffset);
 	if(calibr == 0){
 		//either UP or DOWN
 		//da effettuare solo se il motore è inp moto
@@ -328,7 +378,7 @@ short secondPress(byte n, int delay, bool end){
 		DEBUG_PRINTLN(F("2)reset del cronometro immediatamente prima della salita"));
 		//Tapparella completamente abbassata: imposto a zero il contatore di stato
 		resetCronoCount(n);
-		updateCnt(n);
+		incCnt(toffset);
 		setCronoDir((short)-getCronoDir(n),n);  //reverse direction
 		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index 
 		lastCmd[btn] = 101;
@@ -384,6 +434,8 @@ short secondPress(byte n, int delay, bool end){
 		calibr = 0;
 	}
 	onTapStop(n);
+	
+	copytout();
 	return rslt;
 }
 
@@ -411,15 +463,15 @@ void firstPress(byte sw, byte n){
 		//Blocco di sicurezza in caso di rottura della sensoristica di fine corsa	
 		//target[n] = ENDFACT*(thaltp[n]) * (!sw);
 		//posizionamento agli estremi stabilito dai sensori fino ad un tetto massimo, dopo scatta il posizionamento col timer
-		target[n] = thaltp[n] * (!sw) + 2*fact*thaltp[n]*getCronoDir(n);
+		target[toffset] = thaltp[n] * (!sw) + 2*fact*thaltp[n]*getCronoDir(n);
 #else
 		if(first[n] == true){
-			target[n] = 1.5*thaltp[n];
+			target[toffset] = 1.5*thaltp[n];
 		}else{
-			target[n] = (thaltp[n]) * (!sw);
+			target[toffset] = (thaltp[n]) * (!sw);
 		}
 #endif			
-		target[n] = (long) (target[n]-getCronoCount(n))*getCronoDir(n);
+		target[toffset] = (long) (target[toffset]-getCronoCount(n))*getCronoDir(n);
 		
 		//DEBUG_PRINT(F("first: "));
 		//DEBUG_PRINTLN(first[n]);
@@ -437,7 +489,7 @@ void firstPress(byte sw, byte n){
 			calibr = 1;
 		}
 		if(calibr == 1 || calibr == 2){
-			target[n] = 2*THALTMAX;
+			target[toffset] = 2*THALTMAX;
 		}
 		//target[n] = (long) THALTMAX;
 	}else{
@@ -455,16 +507,16 @@ void firstPress(byte sw, byte n){
 			p = inp[BTN1IN+poffset+sw] - 110;
 		}
 		
-		target[n] = (unsigned long) (thaltp[n]*calcTiming(p))/100;
-		long delta = (long) (target[n] - getCronoCount(n));
+		target[toffset] = (unsigned long) (thaltp[n]*calcTiming(p))/100;
+		long delta = (long) (target[toffset] - getCronoCount(n));
 		if(delta > 0){
-			target[n] = delta;
+			target[toffset] = delta;
 			//LIST OF UP ACTIONS (TARGET ABOVE CURRENT POS)
 			outlogicp[DIRS+offset]=sw;
 			setCronoDir(upmap[sw],n);
 		}else
 		{ 	//TARGET UNDER CURRENT POS
-			target[n] = -delta;
+			target[toffset] = -delta;
 			outlogicp[DIRS+offset]=!sw;
 			setCronoDir(upmap[!sw],n);
 		}
@@ -472,6 +524,7 @@ void firstPress(byte sw, byte n){
 	//abilita il motore
 	outlogicp[ENABLES+offset]=HIGH;
 	nrun++;
+	copytout();
 }
 
 bool isRunning(byte n){
@@ -507,6 +560,181 @@ double calcLen(byte n){
 float getPosdelta(){
 	return posdelta;
 }
+
+byte toggleLogic(byte sw, byte nn){
+	int n=sw+nn*TIMERDIM;
+	byte changed = 0;
+	
+	if(switchdfn(inp[n],n))
+	{
+		byte s = getGroupState(n);
+		
+		DEBUG_PRINT(F("\nSwitchLogic: fronte di SWOnOff tasto "));
+		DEBUG_PRINT(n+1);
+		DEBUG_PRINT(F(" stato "));
+		DEBUG_PRINT(s);
+		
+		//siamo su uno dei fronti del pulsante 
+		if(inp[n]>0)  
+		{	//fronte di salita
+			changed = 0;
+			//fronte di salita
+			startTimer(RESETTIMER);
+			if(s==0)
+				{ 	
+					//se il pulsante è aperto
+					DEBUG_PRINTLN(F("\nSwitchLogic: stato 0: lo switch è inibito e va in attesa da stato 0 (inibito)"));
+					DEBUG_PRINT(F("n: "));
+					DEBUG_PRINTLN(n);
+					//stato 0: lo switch va in stato inibito
+					//cambio lo stato dell'uscita (TOGGLE)
+					lastCmd[n] = !outp[n];
+					startTimer(btndelay[n],n);		
+					setGroupState(1,n);	
+					incCnt(n);
+					changed = 0;
+				}else if(s==1)
+				{	
+					DEBUG_PRINTLN(F("\nSwitchLogic: stato 1: lo switch è inibito e va in attesa da stato 1 (inibito)"));
+					DEBUG_PRINT(F("n: "));
+					DEBUG_PRINTLN(n);
+					//se lo switch è inibito
+					//sono pressioni di configurazione
+					//faccio ripartire il timer di attesa di abilitazione
+					resetTimer(n);
+					startTimer(btndelay[n],n);	
+					incCnt(n);
+					changed = 0;
+				}
+		}else{
+			DEBUG_PRINTLN(F("\nSwitchLogic: fronte di discesa onOff"));
+			//fronte di discesa
+			changed=255;
+			//ferma il timer di reset
+			//Tasto rilasciato: blocca il timer di reset
+			resetTimer(RESETTIMER);
+		}
+	}
+	return changed;
+}
+
+void setLogic(byte in, byte n){
+	outp[n] = in;
+	DEBUG_PRINT(F("outp: "));
+	DEBUG_PRINT(n);
+	DEBUG_PRINT(F(" val: "));
+	DEBUG_PRINTLN(outp[n]);
+}
+
+void setOE(bool in, byte n){
+	oe[n] = in;
+	DEBUG_PRINT(F("OE: "));
+	DEBUG_PRINT(n);
+	DEBUG_PRINT(F(" val: "));
+	DEBUG_PRINTLN(oe[n]);
+}
+
+void setActionLogic(int in, byte n){
+	//0: setReset
+	//1: nessuna azione
+	//2: normalmente aperto, chiuso per un haltdelay alla pressione
+	//3: normalmente chiuso, aperto per un haltdelay alla pressione
+	if(act[n]==0){
+		DEBUG_PRINT(F("setActionLogic setReset: "));
+		DEBUG_PRINTLN(in);
+		if(in>=LOW && oe[n])
+			setLogic(in,n);
+	}else if(act[n]==1){
+		DEBUG_PRINT(F("setActionLogic doNothing: "));
+		DEBUG_PRINTLN(in);	
+	}else if(act[n]==2){
+		DEBUG_PRINT(F("setActionLogic monoNormalAperto: "));
+		DEBUG_PRINTLN(in);
+		lastCmd[n] = HIGH;
+		if(in>=LOW && oe[n])
+			if(in==HIGH)
+				startSimpleSwitchDelayTimer(n);	
+			else
+				setLogic(LOW,n);
+	}else if(act[n]==3){
+		DEBUG_PRINT(F("setActionLogic monoNormalChiuso: "));
+		DEBUG_PRINTLN(in);
+		lastCmd[n] = LOW; 
+		if(in>=LOW && oe[n])
+			if(in==HIGH)
+				startSimpleSwitchDelayTimer(n);	
+			else
+				setLogic(HIGH,n);
+	}
+}
+
+void setSWAction(byte in, byte n){
+	act[n] = in;
+	//0: toggleLogic
+	//1: condition output disabled
+	//2: normalmente aperto, chiuso per un haltdelay alla pressione
+	//3: normalmente chiuso, aperto per un haltdelay alla pressione
+	if(in==0){
+		oe[n]=true;
+		haltdelay[n] = 0;
+	}else if(in==1){
+		haltdelay[n] = 0;
+		DEBUG_PRINT(F("act==1: "));
+	}else if(in==2){
+		oe[n]=true;
+		haltdelay[n]=(paramsl[THALT1+n]).toInt();
+		setLogic(LOW,n);
+		DEBUG_PRINT(F("act==2: "));
+	}else if(in==3){
+		oe[n]=true;
+		haltdelay[n]=(paramsl[THALT1+n]).toInt();
+		setLogic(HIGH,n);
+		DEBUG_PRINT(F("act==3: "));
+	}
+}
+	
+bool startSimpleSwitchDelayTimer(byte n){	
+	//moving[n]=false;
+	//stato 5: switch in contatto chiuso		
+	setGroupState(0,n);	
+	DEBUG_PRINTLN(F("startSimpleSwitchDelayTimer: getGroupState(n), n, lastCmd[n]"));
+	DEBUG_PRINTLN(getGroupState(n));
+	DEBUG_PRINTLN(n);
+	DEBUG_PRINTLN(lastCmd[n]);
+	setLogic(lastCmd[n],n);
+	//il timer di inversione contatto parte solo se il tempo è > 0
+	if(haltdelay[n]>0){
+		startTimer(haltdelay[n],n);
+		setGroupState(2,n);	
+		setCntValue(1,n);
+	}else{
+		resetCnt(n);
+	}
+	DEBUG_PRINTLN(F("\nstartSimpleSwitchDelayTimer switch mode: il contatto va in stato modifica abilitata"));
+	return true;
+}
+
+void startPress(byte state,byte n){
+	//cambio lo stato dell'uscita (SET)
+	lastCmd[n]=state;
+	startTimer(haltdelay[n],n);	
+	setGroupState(1,n);	
+	DEBUG_PRINTLN(F("startPress: getGroupState(n), n, lastCmd[n]"));
+	DEBUG_PRINTLN(getGroupState(n));
+	DEBUG_PRINTLN(n);
+	DEBUG_PRINTLN(lastCmd[n]);
+}
+
+void endPress(byte n){
+	setLogic(!lastCmd[n],n);
+	setGroupState(0,n);	
+	resetCnt(n);
+	DEBUG_PRINTLN(F("endPress: getGroupState(n), n, lastCmd[n]"));
+	DEBUG_PRINTLN(getGroupState(n));
+	DEBUG_PRINTLN(n);
+	DEBUG_PRINTLN(!lastCmd[n]);
+	DEBUG_PRINTLN(haltdelay[n]);
+}
 /*
 *******************************************************************
 * FORMULE ADOPERATE PER LA STIMA DELLA POSIZIONE DELLE TAPPARELLE *
@@ -519,8 +747,8 @@ tf: 	spessore tapparella
 br: 	raggio tamburo
 n: 		numero di giri percorso fino al posizionamento
 nmax: 	numero di giri percorso da completamente aperto a completamente chiuso
-omega1: velocitàangolare tapparella all'istante 1
-omega2: velocitàangolare tapparella all'istante 2
+omega1: velocità angolare tapparella all'istante 1
+omega2: velocità angolare tapparella all'istante 2
 
 	lp = l/lmax = lp(%) / 100 		frazione della lunghezza di arrivo sulla lunghezza massima
 	tp = t/tmax	= tp(%) / 100 		frazione del tempo di arrivo sul tempo massimo di escursione della tapparella

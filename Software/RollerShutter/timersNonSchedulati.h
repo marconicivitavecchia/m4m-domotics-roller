@@ -10,25 +10,9 @@
 //#define TIMERN  0
 //------------------------------------------------------------------------------------------------------------------
 //  
-/*                                                Timer singolo
-//-------------------------------------------------------------------------------------------------------------------
-//fisssa l'intervallo tra l'istante iniziale e quello finale del timer (lascia il time inattivo)
-void setupTimer(unsigned long);
-//fissa l'istante iniziale da cui far partire il timer
-void startTimer();
-//verifica se è arrivato il tempo di far scattare il timer
-void aggiornaTimer();
-byte getTimerState();
-void setTimerState(byte);
-void resetTimer();
-//azione da compiere allo scadere del timer
-//void onElapse();
-//-------------------------------------------------------------------------------------------------------------*/
+//-------------------------------------------------------------------------------------------------------------
 //                                                  Timer vettoriale
 //-------------------------------------------------------------------------------------------------------------------
-//fisssa l'intervallo tra l'istante iniziale e quello finale del timer (lascia il time inattivo)
-void setupTimer(unsigned long, byte);
-//fissa l'istante iniziale da cui far partire il timer
 void startTimer(byte);
 void startTimer(unsigned long, byte n);
 //verifica se è arrivato il tempo di far scattare il timer
@@ -39,6 +23,8 @@ void initTimers();
 byte getTimerState(byte n);
 void setTimerState(byte,byte n);
 void resetTimer(byte n);
+//fisssa l'intervallo tra l'istante iniziale e quello finale del timer (lascia il time inattivo)
+void setupTimer(unsigned long, byte);
 //---------------------------------------------------------------------------------------------------------
 //                                       Cronometro vettoriale
 //---------------------------------------------------------------------------------------------------------
@@ -63,5 +49,3 @@ long getUpLimit(byte n);
 //azione da compiere all'attivazione del cronometro
 //extern void onCronoStart(byte);
 #endif //TIMERS_NO_SCHED
-
-

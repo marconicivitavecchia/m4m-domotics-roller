@@ -3,15 +3,15 @@
 //#if ARDUINO_VERSION <= 106
 //-#pragma "test is true"
 //-#endif
-//--------------------------DEBUG SWITCH-------------------------------------------------------
+//--------------------------_DEBUG1 SWITCH-------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------------------
 //  FILE DI DEFINIZIONI COMUNI VISIBILI A TUTTE  LE LIBRERIE INCLUSE CON LA DIRETTIVA #include
 //  DEVE ESSERE INCLUSO CON  #include "common.h"  IN TUTTI GLI HEADERS FILES DELLE LIBRERIE
 //----------------------------------------------------------------------------------------------------------------------------------
 //libreria col codice del client wifi
-extern "C" {
-    #include "user_interface.h"
-}
+//extern "C" {
+//    #include "user_interface.h"
+//}
 
 #include <Arduino.h>
 #include <EEPROM.h>
@@ -21,18 +21,18 @@ extern "C" {
 #include <WebSocketsServer.h>             //  https://github.com/Links2004/arduinoWebSockets
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
-//#include <WiFiUdp.h>
 
 //#include <ArduinoOTA.h>
 #include "eepromUtils.h"
 #include "timersNonSchedulati.h"
 #include "schedservices.h"
+#include "abparser.h"
 
 //DEFAULT CONFIGURATIONS
 //wifi config----------------------------------------------
 #define OUTTOPIC		"sonoff17/out"
 #define INTOPIC			"sonoff17/in"
-#define SSID1			"OpenWrt"
+#define SSID1			"WebPocket-E280"
 #define PSW1			"dorabino.7468!"
 #define SSID2			"AndroidAP1"
 #define PSW2			"pippo2503"
@@ -41,7 +41,9 @@ extern "C" {
 #define MQTTSRV			"iot.eclipse.org"
 #define MQTTCLIENTID 	"mytapparella"
 //END DEFAULTS
-
+//_DEBUG1 LEVELS---------------------
+#define _DEBUG1   	1		//ACTIVATE LOCAL AND REMOTE _DEBUG1 MODE
+#define _DEBUGR   	0		//ACTIVATE ONLY REMOTE _DEBUG1 MODE
 //LARGE FW OTA UPLOAD---------------------
 #define LARGEFW 		1
 //----------------------------------------
@@ -93,8 +95,6 @@ extern "C" {
 #define NSIGMA 		3
 #define EMA  		0.8
 #define THALTMAX   	90000 
-#define DEBUG   	0		//ACTIVATE LOCAL AND REMOTE DEBUG MODE
-#define DEBUGR   	1		//ACTIVATE ONLY REMOTE DEBUG MODE
 #define	TCOUNT		5		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
 #define RSTTIME		20		//DEFINE HOW MANY SECONDS BUTTON1 MUST BE PRESSED UNTIL A RESET OCCUR 
 #define CNTIME		4		//DEFINE HOW MANY SECONDS HAVE TO LAST THALT PARAMETER AT LEAST
@@ -109,8 +109,7 @@ extern "C" {
 #define DOWN		-1
 //Dimensione dei vettori di switch, timers e counters
 #define CHRN	 	2		//OVERALL NUMBER OF CHRONOMETERS (FUNCTION COUNTERS + SPECIAL COUNTERS) 
-#define NCNT	 	2		//OVERALL NUMBER OF COUNTERS (FUNCTION COUNTERS + SPECIAL COUNTERS)  
-#define TIMERN  	4		//OVERALL NUMBER OF TIMERS (FUNCTION TIMERS + SPECIAL TIMERS)      
+#define TIMERN  	6		//OVERALL NUMBER OF TIMERS (FUNCTION TIMERS + SPECIAL TIMERS)      
 #define SWITCHND 	4		//OVERALL NUMBER OF SWITCHES (FUNCTION SWITCHES + SPECIAL SWITCHES) 
 #define JSONN   	4		//JSON ARRAY DIMENSION 
 //INIZIO COSTANTI LOGICA DI COMANDO---------------------------------------------------
@@ -124,7 +123,8 @@ extern "C" {
 #define SW2ONS     	3		//SWITCH 2 (DOWN) ON STATE
 #define STATUSDIM  	4		//STATUS ARRAY DIMENSION (NUMBER OF STATES FOR BUTTON GROUPS)
 #define TMRHALT   	0		//INDICE TIMER DI FINE CORSA
-#define TIMERDIM  	1		//FUNCTION TIMERS ARRAY DIMENSION (NUMBER OF FUNCTION TIMERS FOR BUTTON GROUPS)
+#define TMRHALT2 	1		//INDEX OF 
+#define TIMERDIM  	2		//FUNCTION TIMERS ARRAY DIMENSION (NUMBER OF FUNCTION TIMERS FOR BUTTON GROUPS)
 #define BTN1IN      0       //UP BUTTON INDEX
 #define BTN2IN     	1		//DOWN BUTTON INDEX
 #define BTNDIM     	2     	//FUNCTION SWITCH ARRAY DIMENSION (NUMBER OF FUNCTION SWITCHES FOR BUTTON GROUPS)
@@ -135,10 +135,21 @@ extern "C" {
 #define STATBTNNDX  0  	    //STATUS BUTTON INDEX
 //special array elements (not used for normal functions in all button groups, are always after normal elements)
 //#define CONNSTATSW  4		//INDEX OF CONNECTION SWITCH (DETECTS WIFI STATUS RISE FRONTS)
-#define RESETTIMER  2		//INDEX OF RESET TIMER (DETECTS IF A RESET COMMAND OCCUR)
-#define APOFFTIMER	3		//INDEX OF AP TIMER (DETECTS IF A AP ACTIVATION COMMAND OCCUR)
+#define RESETTIMER  4		//INDEX OF RESET TIMER (DETECTS IF A RESET COMMAND OCCUR)
+#define APOFFTIMER	5		//INDEX OF AP TIMER (DETECTS IF A AP ACTIVATION COMMAND OCCUR)
 #define CNTSERV1	0		//INDEX OF SERVICE COUNTER GROUP 1 (DETECTS AND COUNT MAIN BUTTON CLICKS)
 #define CNTSERV2	1		//INDEX OF SERVICE COUNTER GROUP 2 (DETECTS AND COUNT MAIN BUTTON CLICKS)
+#define CNTSERV3	2		//INDEX OF SERVICE COUNTER GROUP 1 (DETECTS AND COUNT MAIN BUTTON CLICKS)
+#define CNTSERV4	3		//INDEX OF SERVICE COUNTER GROUP 2 (DETECTS AND COUNT MAIN BUTTON CLICKS)
+#define CNTIME1		4		//INDEX OF
+#define CNTIME2		5		//INDEX OF
+#define CNTIME3		6		//INDEX OF
+#define CNTIME4		7		//INDEX OF
+#define SMPLCNT1	8		//INDEX OF
+#define SMPLCNT2	9		//INDEX OF
+#define SMPLCNT3	10		//INDEX OF
+#define SMPLCNT4	11		//INDEX OF
+#define NCNT	 	12		//OVERALL NUMBER OF COUNTERS (FUNCTION COUNTERS + SPECIAL COUNTERS) 
 #define BTNUP		0		//INDEX OF CALIBRATION CRONO (DETECTS UP TIME AND DOWN TIME)
 #define BTNDOWN		1		//INDEX OF CALIBRATION CRONO (DETECTS UP TIME AND DOWN TIME)
 #define WIFISTA		0
@@ -158,41 +169,64 @@ extern "C" {
 #define PEAKPWR1RND		1
 #define PEAKPWR2RND		1
 //--------------------------EEPROM offsets-------------------------------------------
-#define NAMEOFST				0
-#define THALT1OFST             	8
-#define THALT2OFST				24
-#define MQTTADDROFST			40
-#define MQTTIDOFST				72
-#define OUTTOPICOFST			104
-#define INTOPICOFST				136
-#define MQTTJSONUP1OFST			168
-#define MQTTJSONDOWN1OFST		200
-#define MQTTJSONUP2OFST			232
-#define MQTTJSONDOWN2OFST		264
-#define MQTTJSONTEMPOFST		296
-#define MQTTJSONMEANPWROFST		328
-#define MQTTJSONPEAKPWROFST		360
-#define MQTTJSONALLOFST			392
-#define WIFICLIENTSSIDOFST1		424
-#define WIFICLIENTPSWOFST1		456
-#define WIFICLIENTSSIDOFST2		488
-#define WIFICLIENTPSWOFST2		520
-#define WIFIAPSSIDOFST			552
-#define WIFIAPPPSWOFST			584
-#define WEBUSROFST      		616
-#define WEBPSWOFST				648
-#define MQTTUSROFST				680
-#define MQTTPSWOFST				712
-#define STDEL1OFST				744
-#define STDEL2OFST				776
-#define VALWEIGHTOFST			808
-#define	TLENGTHOFST				840
-#define	BARRELRADOFST			872
-#define	THICKNESSOFST			904
-#define SLATSRATIOFST			936
-//#define TRSHOLD1OFST			872
-//#define TRSHOLD2OFST			712
-#define EEPROMPARAMSLEN			968
+//First two byte reserved for EEPROM check
+//1 byte offets (char)
+#define RESERVEBYTE1OFST		2
+#define RESERVEBYTE2OFST		3
+#define RESERVEBYTE3OFST		4
+#define RESERVEBYTE4OFST		5
+#define SWROLL1OFST				6
+#define SWROLL2OFST				7
+#define RESERVEBYTE5OFST		8
+#define RESERVEBYTE6OFST		9
+//2 byte offets (int)
+#define EEPROMLENOFST			10
+#define THALT1OFST             	12
+#define THALT2OFST				14
+#define THALT3OFST				16
+#define THALT4OFST				18   
+//4 byte offets (float)
+#define RESERVEFLOAT1OFST		20
+#define STDEL1OFST				24
+#define STDEL2OFST				28
+#define VALWEIGHTOFST			32
+#define	TLENGTHOFST				36
+#define	BARRELRADOFST			40
+#define	THICKNESSOFST			44
+#define SLATSRATIOFST			48
+//8 byte offsets (fixed short String)
+#define NAMEOFST				52
+//32 byte offsets (fixed medium String)
+#define	MQTTIDOFST				60
+#define	OUTTOPICOFST			92
+#define	INTOPICOFST				124
+#define	MQTTJSONUP1OFST			156
+#define	MQTTJSONDOWN1OFST		188
+#define	MQTTJSONUP2OFST			220
+#define	MQTTJSONDOWN2OFST		252
+#define	MQTTJSONTEMPOFST		284
+#define	MQTTJSONMEANPWROFST		316
+#define	MQTTJSONPEAKPWROFST		348
+#define	MQTTJSONALLOFST			380
+#define	WIFICLIENTSSIDOFST1		412
+#define	WIFICLIENTPSWOFST1		444
+#define	WIFICLIENTSSIDOFST2		476
+#define	WIFICLIENTPSWOFST2		508
+#define	WIFIAPSSIDOFST			540
+#define	WIFIAPPPSWOFST			572
+#define	WEBUSROFST				604
+#define	WEBPSWOFST				636
+#define	MQTTUSROFST				668
+#define	MQTTPSWOFST				700
+//64 byte offsets (fixed long String)
+#define MQTTADDROFST			732
+#define NTPADDROFST				796
+#define RESERVEADDROFST			860
+//end fixed lenght params
+#define FIXEDPARAMSLEN			924
+//x byte offsets (variable String)
+
+
 //--------------------------Fine EEPROM offsets-------------------------------------------
 //--------------------------Inizio params array indexes-----------------------------------
 #define WEBUSR					0
@@ -211,21 +245,29 @@ extern "C" {
 #define MQTTPSW					13
 #define THALT1					14
 #define THALT2					15
-#define STDEL1					16
-#define STDEL2					17
-#define VALWEIGHT				18
-#define	TLENGTH					19
-#define	BARRELRAD				20
-#define	THICKNESS				21
-#define	SLATSRATIO				22
-#define LOCALIP					23
-#define WIFICHANGED				24
-#define CONFLOADED				25
-#define MQTTADDRMODFIED			26
-#define TOPICCHANGED			27
-#define MQTTCONNCHANGED			28
-#define	TIMINGCHANGED			29
-#define PARAMSDIM				30
+#define THALT3					16
+#define THALT4					17
+#define STDEL1					18
+#define STDEL2					19
+#define VALWEIGHT				20
+#define	TLENGTH					21
+#define	BARRELRAD				22
+#define	THICKNESS				23
+#define	SLATSRATIO				24
+#define SWROLL1					25
+#define SWROLL2					26
+#define SWACTION1				27
+#define SWACTION2				28
+#define SWACTION3				29
+#define SWACTION4				30
+#define LOCALIP					31
+#define WIFICHANGED				32
+#define CONFLOADED				33
+#define MQTTADDRMODFIED			34
+#define TOPICCHANGED			35
+#define MQTTCONNCHANGED			36
+#define	TIMINGCHANGED			37
+#define PARAMSDIM				38
 //--------------------------Inizio mqttJson array indexes-----------------------------------
 #define MQTTJSONUP1				0
 #define MQTTJSONDOWN1			1
@@ -239,22 +281,37 @@ extern "C" {
 #define MQTTJSONIP				9
 #define MQTTJSONTIME			10
 #define MQTTJSONMQTTID			11
-#define MQTTJSONDIM				12
+#define JSONCONFFLAG1			12
+#define JSONCONFFLAG2			13
+#define JSONCONFFLAG3			14
+#define JSONCONFFLAG4			15
+#define JSONACTIONFLAG			16
+#define MQTTJSONDIM				17
+//--------------------------Inizio mqttJson config array indexes-----------------------------------
+#define JSONCONFEVAL1			0
+#define JSONCONFEVAL2			1
+#define JSONCONFEVAL3			2
+#define JSONCONFEVAL4			3
+#define JSONACTIONEVAL			4
+#define CONFJSONDIM				5
 //--------------------------Fine array indexes-----------------------------------
 
 #if (LARGEFW)
+	//#include <WiFiUdp.h>
 	#include <ESP8266mDNS.h>
 	#include <RemoteDebug.h>                  // https://github.com/JoaoLopesF/RemoteDebug
 	#include <OneWire.h>                      //  https://www.pjrc.com/teensy/td_libs_OneWire.html
 	#include <DallasTemperature.h>            //  https://github.com/milesburton/Arduino-Temperature-Control-Library
+	#include <Pinger.h>
+	//#include "ntp.h"
 	extern RemoteDebug telnet;
 	void setup_mDNS();
 #else
-	#define DEBUGR			0	
-	#define DEBUG   	    0		
+	#define _DEBUGR			0	
+	#define _DEBUG1   	    0		
 #endif
 
-//-----------------------DEBUG MACRO------------------------------------------------------------
+//-----------------------_DEBUG1 MACRO------------------------------------------------------------
 //#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
 //#define PGMT( pgm_ptr ) ( reinterpret_cast< const __FlashStringHelper * >( pgm_ptr ) )
 
@@ -264,12 +321,12 @@ extern "C" {
     in[BTN1IN+BTNDIM] =!digitalRead(BTN2U); 	\
     in[BTN2IN+BTNDIM] =!digitalRead(BTN2D)
 
-#if (DEBUG)
+#if (_DEBUG1)
  //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
- #define DEBUG_PRINT(x)   Serial.print (x); telnet.print(x)	
+ #define DEBUG_PRINT(x)   Serial.print (x);telnet.print(x)	
  //#define DEBUG_PRINTDEC(x)     Serial.print (x, DEC);  telnet.print(x)
- #define DEBUG_PRINTLN(x)   Serial.println (x);  telnet.println(x)
-#elif (DEBUGR)
+ #define DEBUG_PRINTLN(x)   Serial.println (x);telnet.println(x)
+#elif (_DEBUGR)
   #define DEBUG_PRINT(x)   telnet.print(x)
   #define DEBUG_PRINTLN(x) telnet.println(x)
 #else 
@@ -305,7 +362,7 @@ float getAmpRMS(float);
 float getTemperature();
 //void leggiTasti();
 void scriviOutDaStato();
-void saveOnEEPROM();
+void saveOnEEPROM(int);
 void loadConfig();
 void rebootSystem();
 void onStationConnected(const WiFiEventSoftAPModeStationConnected&);
@@ -315,6 +372,8 @@ void initIiming(bool);
 void printConfig();
 void processCmdRemoteDebug();
 void webSocketEvent(uint8_t, WStype_t, uint8_t *, size_t);
+void setSWMode(byte, byte);
+
 /*
 //http server callback function prototypes
 void handleRoot(ESP8266WebServer (&), String const (&)[PARAMSDIM]);        // function prototypes for HTTP handlers
@@ -330,7 +389,7 @@ void handleCmd(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const 
 //void handleCmdJson(ESP8266WebServer (&), String&);
 bool is_authentified(ESP8266WebServer&);
 // function prototypes for HTTP handlers
-void initCommon(ESP8266WebServer *,  String  *, String  *);
+void initCommon(ESP8266WebServer *,  String  *, String  *, String  *, String  *);
 
 void handleRoot();              
 void handleLogin();
@@ -342,6 +401,12 @@ void handleMQTTConf();
 void handleCmd();
 void handleLogicConf();
 void handleModify();
+void handleEventConf();
+void writeOnOffConditions();
+void writeOnOffAction(byte, byte);
+void writeSWMode(byte, byte);
+void writeHaltDelay(unsigned int, byte);
+//void readMqttConfAndSet(int);
 #endif
 /*
 { "Sonoff 4CH",      // Sonoff 4CH (ESP8285)

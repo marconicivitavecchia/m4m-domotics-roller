@@ -7,17 +7,18 @@
 #define NCNT  	0
 #endif
 //#define TIMERN  0
-//-------------------------------------------------------------------------------------------------------------*/
+//-------------------------------------------------------------------------------------------------------------
 //                                                  Counter vettoriale
-//-------------------------------------------------------------------------------------------------------------------
-bool testCntEvnt(unsigned long, byte);
-unsigned long getAndRstCnt(byte);
-void updateCnt(byte);
+//--------------------------------------------------------------------------------------------------------
+bool testUpCntEvnt(unsigned long, bool, byte);
+bool testDownCntEvnt(unsigned long, bool, byte);
+void incCnt(byte);
+void decCnt(byte);
 unsigned long getCntValue(byte);
-void resetCnt(byte);
-void stopCnt(byte);
-void startCnt(byte n);
 void setCntValue(unsigned long, byte);
+void startCnt(unsigned long, unsigned long, byte);
+void stopCnt(byte);
+void resetCnt(byte);
 #endif //COUNTERS_SCHED
 
 

@@ -1,3 +1,4 @@
+
 /*
 Timers non schedulati
 Due tipi:
@@ -27,40 +28,7 @@ long crnCount[CHRN];
 long prcCount[CHRN];
 long highLim[CHRN];
 long lowLim[CHRN];
-/*
-//--------------------------------------------Timers singoli-------------------------------------------------------------------
-//fisssa l'intervallo tra l'istante iniziale e quello finale del timer (lascia il time inattivo)
-void setupTimer(unsigned long duration){
-	timerState1=0;
-	timelapse1=duration;
-}
 
-//fissa l'istante iniziale da cui far partire il timer
-void startTimer(){
-	timerState1=1;
-	startTime1=millis();
-}
-
-//verifica se è arrivato il tempo di far scattare il timer
-void aggiornaTimer(){
-	if((millis()-startTime1 >= timelapse1) && timerState1>0){
-		timerState1=0;
-		onElapse();
-	}
-}	
-
-byte getTimerState(){
-	return timerState1;
-}
-
-void setTimerState(byte tstate){
-	timerState1=tstate;
-}
-
-void resetTimer(){
-	timerState1=0;
-}
-*/
 //------------------------------------------------------------------------------------------------------------------
 //                                                  Timers vettoriali
 //-------------------------------------------------------------------------------------------------------------------
@@ -70,16 +38,16 @@ void setupTimer(unsigned long duration, byte n){
 	timelapseN[n]=duration;
 }
 
+void startTimer(byte n){
+	//n: numero del timer
+	timerStateN[n]=1;
+	startTimeN[n]=millis();
+}
+
 //fissa l'istante iniziale da cui far partire il timer
 void startTimer(unsigned long duration, byte n){
 	timerStateN[n]=1;
 	timelapseN[n]=duration;
-	startTimeN[n]=millis();
-}
-
-void startTimer(byte n){
-	//n: numero del timer
-	timerStateN[n]=1;
 	startTimeN[n]=millis();
 }
 

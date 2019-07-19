@@ -10,46 +10,59 @@ N) vettoriali
 //inizio variabili counter vettoriali
 //da impostare con dimensione pari al numero di timer previsti (ad es. N)
 unsigned long countn[NCNT];
-unsigned long staten[NCNT];
+unsigned long targetn[NCNT];
+bool staten[NCNT];
 //------------------------------------------------------------------------------------------------------------------
-//                                                  Timers vettoriali
+//                                                  Contatori vettoriali
 //-------------------------------------------------------------------------------------------------------------------
-bool testCntEvnt(unsigned long limit, byte n){
-	if(countn[n] == limit){
+bool testUpCntEvnt(unsigned long cnt, bool repeat, byte n){
+	if(countn[n] >= targetn[n] && staten[n]){
+		staten[n] = repeat;
+		countn[n] = cnt;
 		return true;	
 	}
 	return false;	
 }
 
-unsigned long getAndRstCnt(byte n){
-	unsigned long val = countn[n];
-	countn[n] = staten[n] = 0;
-	return val;
+bool testDownCntEvnt(unsigned long cnt, bool repeat, byte n){
+	if(countn[n] <= targetn[n] && staten[n]){
+		staten[n] = repeat;
+		countn[n] = cnt;
+		return true;	
+	}
+	return false;	
 }
 
-void updateCnt(byte n){
+void incCnt(byte n){
 	//n: numero del counter
 	countn[n]++;
+}
+
+void decCnt(byte n){
+	//n: numero del counter
+	countn[n]--;
 }
 
 unsigned long getCntValue(byte n){
 	return countn[n];
 }
 
-void resetCnt(byte n){
-	countn[n] = staten[n] = 0;
-}
-
 void stopCnt(byte n){
-	staten[n] = countn[n];
+	staten[n] = false;
 }
 
-void startCnt(byte n){
-	 countn[n] = staten[n];
+void startCnt(unsigned long cnt, unsigned long target, byte n){
+	 countn[n] = cnt;
+	 targetn[n]= target;
+	 staten[n] = true;
 }
 
 void setCntValue(unsigned long val, byte n){
 	countn[n] = val;
+}
+
+void resetCnt(byte n){
+	countn[n] = 0;
 }
 
 
