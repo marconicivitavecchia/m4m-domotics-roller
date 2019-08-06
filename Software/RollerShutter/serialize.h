@@ -3,6 +3,6 @@
 #include <Arduino.h>
 #include "common.h"
 
-void parseJsonFieldArrayToInt(String, byte [], String (&)[MQTTJSONDIM], int, int,int);
-void parseJsonFieldArrayToStr(String , String (&)[CONFJSONDIM], String (&)[CONFJSONDIM], int, int, int);
+void parseJsonFieldArrayToInt(String, byte [], String (&)[MQTTDIM], int, int,int);
+void parseJsonFieldArrayToStr(String , String (&)[CONFDIM], String (&)[EXTCONFDIM], int, int, int, char, String);
 #endif //__SERIALIZE__

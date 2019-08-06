@@ -149,6 +149,7 @@
 #define SMPLCNT2	9		//INDEX OF
 #define SMPLCNT3	10		//INDEX OF
 #define SMPLCNT4	11		//INDEX OF
+//#define TIMECNT		12		//INDEX OF
 #define NCNT	 	12		//OVERALL NUMBER OF COUNTERS (FUNCTION COUNTERS + SPECIAL COUNTERS) 
 #define BTNUP		0		//INDEX OF CALIBRATION CRONO (DETECTS UP TIME AND DOWN TIME)
 #define BTNDOWN		1		//INDEX OF CALIBRATION CRONO (DETECTS UP TIME AND DOWN TIME)
@@ -177,123 +178,161 @@
 #define RESERVEBYTE4OFST		5
 #define SWROLL1OFST				6
 #define SWROLL2OFST				7
-#define RESERVEBYTE5OFST		8
-#define RESERVEBYTE6OFST		9
+#define NTPSDTOFST				8
+#define NTPZONEOFST				9
 //2 byte offets (int)
 #define EEPROMLENOFST			10
 #define THALT1OFST             	12
 #define THALT2OFST				14
 #define THALT3OFST				16
-#define THALT4OFST				18   
+#define THALT4OFST				18
+#define NTPADJUSTOFST  			20
 //4 byte offets (float)
-#define RESERVEFLOAT1OFST		20
-#define STDEL1OFST				24
-#define STDEL2OFST				28
-#define VALWEIGHTOFST			32
-#define	TLENGTHOFST				36
-#define	BARRELRADOFST			40
-#define	THICKNESSOFST			44
-#define SLATSRATIOFST			48
+#define RESERVEFLOAT1OFST		22
+#define STDEL1OFST				26
+#define STDEL2OFST				30
+#define VALWEIGHTOFST			34
+#define	TLENGTHOFST				38
+#define	BARRELRADOFST			42
+#define	THICKNESSOFST			46
+#define SLATSRATIOFST			50
+#define NTPSYNCINTOFST			54
 //8 byte offsets (fixed short String)
-#define NAMEOFST				52
+#define NAMEOFST				58
 //32 byte offsets (fixed medium String)
-#define	MQTTIDOFST				60
-#define	OUTTOPICOFST			92
-#define	INTOPICOFST				124
-#define	MQTTJSONUP1OFST			156
-#define	MQTTJSONDOWN1OFST		188
-#define	MQTTJSONUP2OFST			220
-#define	MQTTJSONDOWN2OFST		252
-#define	MQTTJSONTEMPOFST		284
-#define	MQTTJSONMEANPWROFST		316
-#define	MQTTJSONPEAKPWROFST		348
-#define	MQTTJSONALLOFST			380
-#define	WIFICLIENTSSIDOFST1		412
-#define	WIFICLIENTPSWOFST1		444
-#define	WIFICLIENTSSIDOFST2		476
-#define	WIFICLIENTPSWOFST2		508
-#define	WIFIAPSSIDOFST			540
-#define	WIFIAPPPSWOFST			572
-#define	WEBUSROFST				604
-#define	WEBPSWOFST				636
-#define	MQTTUSROFST				668
-#define	MQTTPSWOFST				700
+#define	MQTTIDOFST				66
+#define	OUTTOPICOFST			98
+#define	INTOPICOFST				130
+#define	MQTTUP1OFST				162
+#define	MQTTDOWN1OFST			194
+#define	MQTTUP2OFST				226
+#define	MQTTDOWN2OFST			258
+#define	MQTTTEMPOFST			290
+#define	MQTTMEANPWROFST			322
+#define	MQTTPEAKPWROFST			354
+#define	MQTTALLOFST				386
+#define	WIFICLIENTSSIDOFST1		418
+#define	WIFICLIENTPSWOFST1		450
+#define	WIFICLIENTSSIDOFST2		482
+#define	WIFICLIENTPSWOFST2		514
+#define	WIFIAPSSIDOFST			546
+#define	WIFIAPPPSWOFST			578
+#define	WEBUSROFST				610
+#define	WEBPSWOFST				642
+#define	MQTTUSROFST				674
+#define	MQTTPSWOFST				706
 //64 byte offsets (fixed long String)
-#define MQTTADDROFST			732
-#define NTPADDROFST				796
-#define RESERVEADDROFST			860
+#define MQTTADDROFST			738
+#define NTP1ADDROFST			802
+#define NTP2ADDROFST			866
+#define NTP3ADDROFST			930
 //end fixed lenght params
-#define FIXEDPARAMSLEN			924
+#define FIXEDPARAMSLEN			994
 //x byte offsets (variable String)
-
-
 //--------------------------Fine EEPROM offsets-------------------------------------------
-//--------------------------Inizio params array indexes-----------------------------------
-#define WEBUSR					0
-#define WEBPSW					1
-#define APPSSID					2
-#define APPPSW					3
-#define CLNTSSID1				4
-#define CLNTPSW1				5
-#define CLNTSSID2				6
-#define CLNTPSW2				7
-#define MQTTADDR				8
-#define MQTTID					9
-#define MQTTOUTTOPIC			10
-#define MQTTINTOPIC				11
-#define MQTTUSR					12
-#define MQTTPSW					13
-#define THALT1					14
-#define THALT2					15
-#define THALT3					16
-#define THALT4					17
-#define STDEL1					18
-#define STDEL2					19
-#define VALWEIGHT				20
-#define	TLENGTH					21
-#define	BARRELRAD				22
-#define	THICKNESS				23
-#define	SLATSRATIO				24
-#define SWROLL1					25
-#define SWROLL2					26
-#define SWACTION1				27
-#define SWACTION2				28
-#define SWACTION3				29
-#define SWACTION4				30
-#define LOCALIP					31
-#define WIFICHANGED				32
-#define CONFLOADED				33
-#define MQTTADDRMODFIED			34
-#define TOPICCHANGED			35
-#define MQTTCONNCHANGED			36
-#define	TIMINGCHANGED			37
-#define PARAMSDIM				38
-//--------------------------Inizio mqttJson array indexes-----------------------------------
-#define MQTTJSONUP1				0
-#define MQTTJSONDOWN1			1
-#define MQTTJSONUP2				2
-#define MQTTJSONDOWN2			3
-#define MQTTJSONTEMP			4
-#define MQTTJSONMEANPWR			5
-#define MQTTJSONPEAKPWR			6
-#define MQTTJSONALL				7
-#define MQTTJSONMAC				8
-#define MQTTJSONIP				9
-#define MQTTJSONTIME			10
-#define MQTTJSONMQTTID			11
-#define JSONCONFFLAG1			12
-#define JSONCONFFLAG2			13
-#define JSONCONFFLAG3			14
-#define JSONCONFFLAG4			15
-#define JSONACTIONFLAG			16
-#define MQTTJSONDIM				17
-//--------------------------Inizio mqttJson config array indexes-----------------------------------
-#define JSONCONFEVAL1			0
-#define JSONCONFEVAL2			1
-#define JSONCONFEVAL3			2
-#define JSONCONFEVAL4			3
-#define JSONACTIONEVAL			4
-#define CONFJSONDIM				5
+
+//--------------------------Inizio MQTT array indexes-----------------------------------
+//Indici array MQTT[MQTTDIM] dei NOMI dei campi json --> array inr[MQTTDIM] dei VALORI numerici di input (valori numerici di ingresso, 
+//flag di segnalazione arrivo configurazioni e richieste), segnalano: 
+//ingresso comandi
+#define MQTTUP1				0
+#define MQTTDOWN1			1
+#define MQTTUP2				2
+#define MQTTDOWN2			3
+//richiesta parametri
+#define MQTTTEMP			4
+#define MQTTDATE			5
+#define MQTTMEANPWR			6
+#define MQTTPEAKPWR			7
+#define MQTTALL				8
+//end user modificable flags
+#define MQTTMAC				9
+#define MQTTIP				10
+#define MQTTTIME			11
+#define MQTTMQTTID			12
+//ingresso configurazioni
+#define CONFFLAG1			13
+#define CONFFLAG2			14
+#define CONFFLAG3			15
+#define CONFFLAG4			16
+#define CONFFLAG5			17
+#define ACTIONFLAG			18
+#define UTCFLAG				19
+#define UTCSYNCFLAG			20
+#define UTCADJFLAG			21
+#define UTCSDTFLAG			22
+#define UTCZONEFLAG			23
+#define WEBUSERFLAG			24
+#define WEBPSWFLAG			25
+#define MQTTDIM				26
+#define USRMODIFICABLEFLAGS 4
+//--------------------------Inizio MQTT config array indexes-----------------------------------------------------
+//Indici array confJson[CONFDIM] dei NOMI dei campi json dei valori di configurazione --> array confcmd[CONFDIM] 
+//dei VALORI stringa di configurazione corrispondenti a flags attivi
+//---------------------------------------------------------------------------------------------------------------
+//Parametri da esporre in in e out via MQTT (hanno corrispettivo in array dei flag)
+//---------------------------------------------------------------------------------------------------------------
+//parametri di lunghezza variabile (vanno prima sempre)
+#define ONCOND1				0
+#define ONCOND2				1
+#define ONCOND3				2
+#define ONCOND4				3
+#define ONCOND5				4
+#define ACTIONEVAL			5
+//parametri di lunghezza fissa (vanno subito dopo sempre)
+#define UTCVAL				6
+#define UTCSYNC				7
+#define UTCADJ				8
+#define UTCSDT				9
+#define UTCZONE				10
+#define WEBUSR				11
+#define WEBPSW				12
+//-------------------------------------------------------------------------------------------------------
+//Parametri di stato da non eporre (non hanno corrispettivo in array dei flag, vanno subito dopo sempre)
+//-------------------------------------------------------------------------------------------------------
+#define APPSSID				13
+#define APPPSW				14
+#define CLNTSSID1			15
+#define CLNTPSW1			16
+#define CLNTSSID2			17
+#define CLNTPSW2			18
+#define MQTTADDR			19
+#define MQTTID				20
+#define MQTTOUTTOPIC		21
+#define MQTTINTOPIC			22
+#define MQTTUSR				23
+#define MQTTPSW				24
+#define THALT1				25
+#define THALT2				26
+#define THALT3				27
+#define THALT4				28
+#define STDEL1				29
+#define STDEL2				30
+#define VALWEIGHT			31
+#define	TLENGTH				32
+#define	BARRELRAD			33
+#define	THICKNESS			34
+#define	SLATSRATIO			35
+#define SWROLL1				36
+#define SWROLL2				37
+#define LOCALIP				38
+#define NTPADDR1			39
+#define NTPADDR2			40
+//parametri di stato (da non esporre)
+#define WIFICHANGED			41
+#define CONFLOADED			42
+#define MQTTADDRMODFIED		43
+#define TOPICCHANGED		44
+#define MQTTCONNCHANGED		45
+#define	TIMINGCHANGED		46
+#define SWACTION1			47
+#define SWACTION2			48
+#define SWACTION3			49
+#define SWACTION4			50
+#define CONFDIM				51
+#define VARCONFDIM			6
+#define EXTCONFDIM			13
+#define TOSAVEPARAMS		41
 //--------------------------Fine array indexes-----------------------------------
 
 #if (LARGEFW)
@@ -302,8 +341,9 @@
 	#include <RemoteDebug.h>                  // https://github.com/JoaoLopesF/RemoteDebug
 	#include <OneWire.h>                      //  https://www.pjrc.com/teensy/td_libs_OneWire.html
 	#include <DallasTemperature.h>            //  https://github.com/milesburton/Arduino-Temperature-Control-Library
+	//#include "AsyncPing.h"
 	#include <Pinger.h>
-	//#include "ntp.h"
+	#include "ntp.h"
 	extern RemoteDebug telnet;
 	void setup_mDNS();
 #else
@@ -344,10 +384,107 @@
 #include "statistics.h"
 #endif
 
+class Par{
+	public:
+		char* parname;
+		unsigned eprom;
+		char formfield;
+		char partype;
+		
+		Par(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n');
+		
+		virtual String getParam();
+		void writeParam(String &);
+};
+
+class ParByte : public Par{
+	
+	public:
+		char* parname;
+		unsigned eprom;
+		char formfield;
+		char partype;
+		
+		ParByte(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		
+		String getParam();
+		void writeParam(String &);
+};
+
+class ParInt : public Par{
+	
+	public:
+		char* parname;
+		unsigned eprom;
+		char formfield;
+		char partype;
+		
+		ParInt(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		
+		String getParam();
+		void writeParam(String &);
+};
+
+class ParLong : public Par{
+	
+	public:
+		char* parname;
+		unsigned eprom;
+		char formfield;
+		char partype;
+		
+		ParLong(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		
+		String getParam();
+		void writeParam(String &);
+};
+
+class ParFloat : public Par{
+	
+	public:
+		char* parname;
+		unsigned eprom;
+		char formfield;
+		char partype;
+		
+		ParFloat(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		
+		String getParam();
+		void writeParam(String &);
+};
+
+class ParStr32 : public Par{
+	
+	public:
+		char* parname;
+		unsigned eprom;
+		char formfield;
+		char partype;
+		
+		ParStr32(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		
+		String getParam();
+		void writeParam(String &);
+};
+
+class ParStr64 : public Par{
+	
+	public:
+		char* parname;
+		unsigned eprom;
+		char formfield;
+		char partype;
+		
+		ParStr64(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		
+		String getParam();
+		void writeParam(String &);
+};
+
 void setup_AP(bool);
 void setup_wifi();
 void mqttReconnect();
-//void mqttCallback(String (&)[PARAMSDIM], String (&)[MQTTJSONDIM]);
+//void mqttCallback(String (&)[PARAMSDIM], String (&)[MQTTDIM]);
 void mqttCallback(String &, String &);
 void readStatesAndPub(bool all = false);
 void readAvgPowerAndPub();
@@ -357,6 +494,7 @@ void readMacAndPub();
 void readIpAndPub();
 void readTimeAndPub();
 void readMQTTIdAndPub();
+void readParamAndPub(byte, char*);
 void publishStr(String &);
 float getAmpRMS(float);
 float getTemperature();
@@ -373,23 +511,35 @@ void printConfig();
 void processCmdRemoteDebug();
 void webSocketEvent(uint8_t, WStype_t, uint8_t *, size_t);
 void setSWMode(byte, byte);
+void saveConf(unsigned);
+void loadConf(unsigned);
+void saveSingleParam(unsigned);
+void printFixedParam(unsigned);
+void saveParamFromForm(unsigned);
+void setParProps(unsigned, unsigned, char, char, char);
+float writeFloatConf(unsigned, float);
+float saveFloatConf(unsigned);
+long saveLongConf(unsigned);
+int saveIntConf(unsigned);
+byte saveByteConf(unsigned);
+void updtConf(unsigned, String);
 
 /*
 //http server callback function prototypes
 void handleRoot(ESP8266WebServer (&), String const (&)[PARAMSDIM]);        // function prototypes for HTTP handlers
-void handleLogin(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTJSONDIM]);
+void handleLogin(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTDIM]);
 void handleNotFound(ESP8266WebServer (&));
-void handleModify(ESP8266WebServer (&), String (&)[PARAMSDIM], String (&)[MQTTJSONDIM]);
-void handleWifiConf(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTJSONDIM]);
-void handleSystemConf(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTJSONDIM]);
-void handleMQTTConf(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTJSONDIM]);
-void handleLogicConf(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTJSONDIM]);
-void handleCmd(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTJSONDIM]);
+void handleModify(ESP8266WebServer (&), String (&)[PARAMSDIM], String (&)[MQTTDIM]);
+void handleWifiConf(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTDIM]);
+void handleSystemConf(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTDIM]);
+void handleMQTTConf(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTDIM]);
+void handleLogicConf(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTDIM]);
+void handleCmd(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const (&)[MQTTDIM]);
 */
 //void handleCmdJson(ESP8266WebServer (&), String&);
 bool is_authentified(ESP8266WebServer&);
 // function prototypes for HTTP handlers
-void initCommon(ESP8266WebServer *,  String  *, String  *, String  *, String  *);
+void initCommon(ESP8266WebServer *,  Par**, String  *, String  *, String  *);
 
 void handleRoot();              
 void handleLogin();

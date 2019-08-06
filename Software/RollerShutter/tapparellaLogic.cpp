@@ -6,7 +6,7 @@ byte *inp;
 byte *outp;
 byte *inrp;
 byte *outlogicp;
-String  *paramsl;
+String  *confcmdl;
 byte act[4] = {0,0,0,0};
 float taplen, deltal;
 float barrad;
@@ -153,42 +153,42 @@ byte tapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt, b
 	tapparellaLogic(n);
 }
 */
-void initTapparellaLogic(byte *in, byte *out, byte *inr, byte *outlogic, String  *paramsi, bool firstTime=false){
-	paramsl=paramsi;
+void initTapparellaLogic(byte *in, byte *out, byte *inr, byte *outlogic, String  *confcmdi, bool firstTime=false){
+	confcmdl=confcmdi;
 	inp=in;
 	outp=out;
 	inrp=inr;
 	outlogicp=outlogic;
-	thaltp[0]=(paramsl[THALT1]).toInt();
-	thaltp[1]=(paramsl[THALT3]).toInt();
-	engdelay[0]=(paramsl[STDEL1]).toInt();
-	engdelay[1]=(paramsl[STDEL2]).toInt();
+	thaltp[0]=(confcmdl[THALT1]).toInt();
+	thaltp[1]=(confcmdl[THALT3]).toInt();
+	engdelay[0]=(confcmdl[STDEL1]).toInt();
+	engdelay[1]=(confcmdl[STDEL2]).toInt();
 	btndelay[0]=BTNDEL1;
 	btndelay[1]=BTNDEL2;
 	btndelay[2]=BTNDEL1;
 	btndelay[3]=BTNDEL2;
-	haltdelay[0]=(paramsl[THALT1]).toInt();
-	haltdelay[1]=(paramsl[THALT2]).toInt();
-	haltdelay[2]=(paramsl[THALT3]).toInt();
-	haltdelay[3]=(paramsl[THALT4]).toInt();
-	engdelay[2]=(paramsl[STDEL1]).toInt();
-	engdelay[3]=(paramsl[STDEL2]).toInt();
-	taplen=(paramsl[TLENGTH]).toFloat();
+	haltdelay[0]=(confcmdl[THALT1]).toInt();
+	haltdelay[1]=(confcmdl[THALT2]).toInt();
+	haltdelay[2]=(confcmdl[THALT3]).toInt();
+	haltdelay[3]=(confcmdl[THALT4]).toInt();
+	engdelay[2]=(confcmdl[STDEL1]).toInt();
+	engdelay[3]=(confcmdl[STDEL2]).toInt();
+	taplen=(confcmdl[TLENGTH]).toFloat();
 	//correzzione per tapparelle a fisarmonica
-	float r = (paramsl[SLATSRATIO]).toFloat();
+	float r = (confcmdl[SLATSRATIO]).toFloat();
 	taplen = taplen*(1 + r);
 	posdelta = r / (1 + r)*100;
-	barrad=(paramsl[BARRELRAD]).toFloat();
-	tapthick=(paramsl[THICKNESS]).toFloat();
+	barrad=(confcmdl[BARRELRAD]).toFloat();
+	tapthick=(confcmdl[THICKNESS]).toFloat();
 	resetCronoCount(0);
 	resetCronoCount(1);
 	setCronoLimits(-THALTMAX,THALTMAX,0);
 	setCronoLimits(-THALTMAX,THALTMAX,1);
-	//rollmode[0] = (paramsl[SWROLL1]).toInt();
-	//rollmode[1] = (paramsl[SWROLL2]).toInt();
+	//rollmode[0] = (confcmdl[SWROLL1]).toInt();
+	//rollmode[1] = (confcmdl[SWROLL2]).toInt();
 #if (!AUTOCAL) 
-	//thaltp[0]=(paramsl[THALT1]).toInt();
-	//thaltp[1]=(paramsl[THALT3]).toInt();
+	//thaltp[0]=(confcmdl[THALT1]).toInt();
+	//thaltp[1]=(confcmdl[THALT3]).toInt();
 	first[0] = first[1] = firstTime;
 #else
 	fact = (float) ENDFACT/100.0;
@@ -675,19 +675,27 @@ void setSWAction(byte in, byte n){
 	//2: normalmente aperto, chiuso per un haltdelay alla pressione
 	//3: normalmente chiuso, aperto per un haltdelay alla pressione
 	if(in==0){
+		DEBUG_PRINT(F("setSWAction toggleLogic: "));
+		DEBUG_PRINTLN(in);
 		oe[n]=true;
 		haltdelay[n] = 0;
 	}else if(in==1){
+		DEBUG_PRINT(F("setSWAction output disabled: "));
+		DEBUG_PRINTLN(in);
 		haltdelay[n] = 0;
 		DEBUG_PRINT(F("act==1: "));
 	}else if(in==2){
+		DEBUG_PRINT(F("setSWAction normalmente aperto: "));
+		DEBUG_PRINTLN(in);
 		oe[n]=true;
-		haltdelay[n]=(paramsl[THALT1+n]).toInt();
+		haltdelay[n]=(confcmdl[THALT1+n]).toInt();
 		setLogic(LOW,n);
 		DEBUG_PRINT(F("act==2: "));
 	}else if(in==3){
+		DEBUG_PRINT(F("setSWAction normalmente chiuso: "));
+		DEBUG_PRINTLN(in);
 		oe[n]=true;
-		haltdelay[n]=(paramsl[THALT1+n]).toInt();
+		haltdelay[n]=(confcmdl[THALT1+n]).toInt();
 		setLogic(HIGH,n);
 		DEBUG_PRINT(F("act==3: "));
 	}
@@ -697,13 +705,14 @@ bool startSimpleSwitchDelayTimer(byte n){
 	//moving[n]=false;
 	//stato 5: switch in contatto chiuso		
 	setGroupState(0,n);	
-	DEBUG_PRINTLN(F("startSimpleSwitchDelayTimer: getGroupState(n), n, lastCmd[n]"));
+	DEBUG_PRINTLN(F("startSimpleSwitchDelayTimer: getGroupState(n), n, lastCmd[n], act[n]"));
 	DEBUG_PRINTLN(getGroupState(n));
 	DEBUG_PRINTLN(n);
 	DEBUG_PRINTLN(lastCmd[n]);
+	DEBUG_PRINTLN(act[n]);
 	setLogic(lastCmd[n],n);
 	//il timer di inversione contatto parte solo se il tempo è > 0
-	if(haltdelay[n]>0){
+	if((act[n]==2 || act[n]==3) && haltdelay[n]>0){
 		startTimer(haltdelay[n],n);
 		setGroupState(2,n);	
 		setCntValue(1,n);

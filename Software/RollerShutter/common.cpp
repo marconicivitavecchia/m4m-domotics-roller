@@ -2,29 +2,31 @@
 #define serverp (*serveru)
 
 ESP8266WebServer *serveru; 
-String  *paramsp;
 String  *mqttJsonp;
 String  *confJsonp;
 String  *confcmdp;
+
+Par **parsp;
+
 int EEaddress = FIXEDPARAMSLEN;
-int varStrOfst[CONFJSONDIM+1];
-bool rollmode[2] = {true, true};
+int varStrOfst[VARCONFDIM+1];
+//bool rollmode[2] = {true, true};
 
 inline void eepromBegin(){
 	int i, len;
-	for(i=0,len=0;i<CONFJSONDIM;++i){
+	for(i=0,len=0;i<VARCONFDIM;++i){
 		len += confcmdp[i].length();
 	}
 	EEPROM.begin(FIXEDPARAMSLEN + len + i);
 }
 
-void initCommon(ESP8266WebServer *serveri,  String  *paramsi, String  *mqttJsoni, String  *confJsoni, String  *confcmdi){
+void initCommon(ESP8266WebServer *serveri, Par **parsi, String  *mqttJsoni, String  *confJsoni, String  *confcmdi){
 	serveru=serveri; 
-	paramsp=paramsi;
 	mqttJsonp=mqttJsoni;
 	confJsonp=confJsoni;
 	confcmdp=confcmdi;
-	for(int i=0; i<CONFJSONDIM+1; ++i){
+	parsp=parsi;
+	for(int i=0; i<VARCONFDIM+1; ++i){
 		varStrOfst[i] = 0;
 	}
 }
@@ -35,11 +37,11 @@ const char HTTP_FORM_ROOT[] PROGMEM =
 		"<form action='login' method='POST'>"
 			"<div class='grid-container'>"
 				"<div class='col-6 col-s-12'>"
-					"<label for='username'>Configuration web client username:</label>"
-					"<input type='text' name='username' value='{WU}'>"
+					"<label for='webusr'>Configuration web client webusr:</label>"
+					"<input type='text' name='webusr' value='{WU}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='password'>Configuration web client password:</label>"
-					 "<input type='password' name='password' placeholder='**********'>"
+				"<div class='col-6 col-s-12'><label for='webpsw'>Configuration web client webpsw:</label>"
+					 "<input type='webpsw' name='webpsw' placeholder='**********'>"
 				"</div>"
 			"</div>"
 			"<div class='footer'>"
@@ -54,23 +56,23 @@ const char HTTP_FORM_WIFI[] PROGMEM =
 	"<div id='form'>"
         "<form action='/login' method='POST'>"
 			"<div class='grid-container'>"
-				"<div class='col-6 col-s-12'><label for='wificlientssid'>Wifi instructure 1 SSID:</label>"
-					 "<input type='text' name='wificlientssid1' value='{S1}'>"
+				"<div class='col-6 col-s-12'><label for='clntssid1'>Wifi instructure 1 SSID:</label>"
+					 "<input type='text' name='clntssid1' value='{S1}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='wificlientpsw'>Wifi instructure 1 password:</label>"
-					 "<input type='password' name='wificlientpsw1' value='{P1}'>"
+				"<div class='col-6 col-s-12'><label for='clntpsw1'>Wifi instructure 1 webpsw:</label>"
+					 "<input type='webpsw' name='clntpsw1' value='{P1}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='wificlientssid'>Wifi instructure 2 SSID:</label>"
-					 "<input type='text' name='wificlientssid2' value='{S2}'>"
+				"<div class='col-6 col-s-12'><label for='clntssid2'>Wifi instructure 2 SSID:</label>"
+					 "<input type='text' name='clntssid2' value='{S2}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='wificlientpsw'>Wifi instructure 2 password:</label>"
-					 "<input type='password' name='wificlientpsw2' value='{P2}'>"
+				"<div class='col-6 col-s-12'><label for='clntpsw2'>Wifi instructure 2 webpsw:</label>"
+					 "<input type='webpsw' name='clntpsw2' value='{P2}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='wifiapusr'>Wifi local AP SSID:</label>"
-					 "<input type='text' name='wifiapssid' value='{AS}'>"
+				"<div class='col-6 col-s-12'><label for='appssid'>Wifi local AP SSID:</label>"
+					 "<input type='text' name='appssid' value='{AS}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='wifiappsw'>Wifi local AP password:</label>"
-					 "<input type='password' name='wifiAPPPSW' value='{AP}'>"
+				"<div class='col-6 col-s-12'><label for='apppsw'>Wifi local AP webpsw:</label>"
+					 "<input type='webpsw' name='apppsw' value='{AP}'>"
 				"</div>"
 				"<div class='col-2'></div>"
 				"<div class='col-2 col-s-12'>"
@@ -85,17 +87,38 @@ const char HTTP_FORM_WIFI[] PROGMEM =
 	"</div></div></body></html>";
 	
 const char HTTP_FORM_SYSTEM[] PROGMEM =	
-	"<html>{HD}<body>"
+	"<html>{HD}<body onload='loadTimeZoneList();showLoaded();'>"
 	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
 	"<div id='form'>"
         "<form action='/login' method='POST'>"
 			"<div class='grid-container'>"
 				"<div class='col-6 col-s-12'>"
-					"<label for='username'>Configuration web client username:</label>"
-					 "<input type='text' name='username' value='{WU}'>"
+					"<label for='webusr'>Configuration web client webusr:</label>"
+					 "<input type='text' name='webusr' value='{WU}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='password'>Configuration web client password:</label>"
-					 "<input type='password' name='password' value='{WP}'>"
+				"<div class='col-6 col-s-12'><label for='webpsw'>Configuration web client webpsw:</label>"
+					 "<input type='webpsw' name='webpsw' value='{WP}'>"
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='ntpaddr1'>NTP server 1:</label>"
+					 "<input type='text' name='ntpaddr1' value='{N1}'>"
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='ntpaddr2'>NTP server 2:</label>"
+					 "<input type='text' name='ntpaddr2' value='{N2}'>"
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='utcsync'>NTP sync interval (sec):</label>"
+					 "<input type='text' name='utcsync' value='{N3}'>"
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='utcadj'>NTP error adjust (msec):</label>"
+					 "<input type='text' name='utcadj' value='{N4}'>"
+				"</div>"	
+				"<div class='col-6 col-s-12'><label for='utczone'>NTP SDT time zones (hour):</label>"
+					 "<select id='utczone' name='utczone'  onchange='showSelected()'></select><br>"
+				"</div>"	
+				"<div class='col-6 col-s-12'><label for='report'>Selected time zone</label>"
+					"<input type='text' id='report' name='report' disabled='disabled' />"
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='utcsdt'>Set daylight save (legal time)</label>"
+					 "<input type='checkbox' name='utcsdt' value='y' {N6}>"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='reboot'>Reboot the system with default config</label>"
 					 "<input type='checkbox' name='rebootd' value='y'>"
@@ -105,12 +128,12 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 				"</div>"
 #if (!AUTOCAL) 
 				"<div class='col-6 col-s-12'>"
-					"<label for=\startdelay'>Start delay on click of group 1:</label>"
-					 "<input type='text' name='startdelay1' value='{S1}'>"
+					"<label for=\stdel1'>Start delay on click of group 1:</label>"
+					 "<input type='text' name='stdel1' value='{S1}'>"
 				"</div>"
 				"<div class='col-6 col-s-12'>"
-					"<label for=\startdelay'>Start delay on click of group 2:</label>"
-					 "<input type='text' name='startdelay2' value='{S2}'>"
+					"<label for=\stdel2'>Start delay on click of group 2:</label>"
+					 "<input type='text' name='stdel2' value='{S2}'>"
 				"</div>"
 #endif		
 				"<div class='col-2'></div>"
@@ -123,7 +146,32 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 				"</div>"
 			"</div>"
         "</form>"
-	"</div></div></body></html>";
+	"</div></div>"
+	"<script>"
+		"function loadTimeZoneList(){" 
+			"var d = new Date();"
+			"var n = -d.getTimezoneOffset()/60;"
+			"var select = document.getElementById('utczone');"
+			"select.innerHTML = '';" 
+			"for(i=-11; i<13; i++){"
+				"option = document.createElement('option');"      
+				"option.textContent = '(GMT '+(i<0?'':'+') + i +':00)';"  
+				"option.value = i;"
+				"if (n == i){"
+					"option.selected = true;"
+				"}"
+				"select.appendChild(option);"
+			"}"
+			"showSelected();"
+		"};"
+		"function showSelected(){"
+			"document.getElementById('report').value=document.getElementById('utczone').value;"
+		"}"
+		"function showLoaded(){"
+			"document.getElementById('report').value={N5};"
+		"}"
+	"</script>"
+	"</body></html>";
 	
 const char HTTP_FORM_MQTT[] PROGMEM =	
 	"<html>{HD}<body>"
@@ -131,23 +179,23 @@ const char HTTP_FORM_MQTT[] PROGMEM =
 	"<div id='form'>"
 		"<form action='/login' method='POST'>"
 			"<div class='grid-container'>"
-				"<div class='col-6 col-s-12'><label for='mqttserver'>MQTT server:</label>"
-					 "<input type='text' name='mqttserver' value='{MA}'>"
+				"<div class='col-6 col-s-12'><label for='mqttaddr'>MQTT server:</label>"
+					 "<input type='text' name='mqttaddr' value='{MA}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='mqttclientid'>MQTT Client ID:</label>"
-					 "<input type='text' name='mqttclientid' value='{MI}'>"
+				"<div class='col-6 col-s-12'><label for='mqttid'>MQTT Client ID:</label>"
+					 "<input type='text' name='mqttid' value='{MI}'>"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='mqttusr'>MQTT user name:</label>"
 					 "<input type='text' name='mqttusr' value='{MU}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='mqttpsw'>MQTT user password:</label>"
+				"<div class='col-6 col-s-12'><label for='mqttpsw'>MQTT user webpsw:</label>"
 					 "<input type='text' name='mqttpsw' value='{MP}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='intopic'>In topic:</label>"
-					 "<input type='text' name='intopic' value='{QI}'>"
+				"<div class='col-6 col-s-12'><label for='mqttintopic'>In topic:</label>"
+					 "<input type='text' name='mqttintopic' value='{QI}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='outtopic'>Out topic:</label>"
-					 "<input type='text' name='outtopic' value='{MO}'>"
+				"<div class='col-6 col-s-12'><label for='mqttouttopic'>Out topic:</label>"
+					 "<input type='text' name='mqttouttopic' value='{MO}'>"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='btnup1'>MQTT message button 1 UP:</label>"
 					 "<input type='text' name='btnup1' value='{J1}'>"
@@ -160,7 +208,7 @@ const char HTTP_FORM_MQTT[] PROGMEM =
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='btndown2'>MQTT message button 2 DOWN:</label>"
 					 "<input type='text' name='btndown2' value='{J4}'>"
-				"</div>"
+				"</div>"/*
 				"<div class='col-6 col-s-12'><label for='btntemp'>Temperature request button:</label>"
 					 "<input type='text' name='btntemp' value='{J5}'>"
 				"</div>"
@@ -172,7 +220,7 @@ const char HTTP_FORM_MQTT[] PROGMEM =
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='btnall'>All states request button:</label>"
 					 "<input type='text' name='btnall' value='{J8}'>"
-				"</div>"				
+				"</div>"*/				
 				"<div class='col-2'></div>"
 				"<div class='col-2 col-s-12'>"
 					"<input type='submit' value='Save' formaction='/modify' formmethod='post'>"
@@ -191,11 +239,11 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 	"<div id='form'>"
         "<form action='/login' method='POST'>"
 			"<div class='grid-container'>"
-				"<div class='col-6 col-s-12'><label for='swmode1'>Mode switch 1 and 2 (Switch if checked, Roller Shutter if unchecked)</label>"
-					 "<input type='checkbox' name='swmode1' value='0' {H1}>"
+				"<div class='col-6 col-s-12'><label for='swroll1'>Mode switch 1 and 2 (Switch if checked, Roller Shutter if unchecked)</label>"
+					 "<input type='checkbox' name='swroll1' value='1' {H1}>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='swmode2'>Mode switch 3 and 4 (Switch if checked, Roller Shutter if unchecked)</label>"
-					 "<input type='checkbox' name='swmode2' value='0' {H2}>"
+				"<div class='col-6 col-s-12'><label for='swroll2'>Mode switch 3 and 4 (Switch if checked, Roller Shutter if unchecked)</label>"
+					 "<input type='checkbox' name='swroll2' value='1' {H2}>"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='thalt1'>End-of-stroke time switch 1:</label>"
 					 "<input type='text' name='thalt1' value='{TU}'>"
@@ -209,8 +257,8 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 				"<div class='col-6 col-s-12'><label for='thalt4'>End-of-stroke time switch 4:</label>"
 					 "<input type='text' name='thalt4' value='{DD}'  {H4}>"
 				"</div>"
-				"<div class='col-6 col-s-12'><label for='taplength'>Rollershutter excursion:</label>"
-					 "<input type='text' name='taplength' value='{TL}'>"
+				"<div class='col-6 col-s-12'><label for='tlength'>Rollershutter excursion:</label>"
+					 "<input type='text' name='tlength' value='{TL}'>"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='barrelrad'>Barrel radius:</label>"
 					 "<input type='text' name='barrelrad' value='{BR}'>"
@@ -243,15 +291,17 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 				"<div class='col-6 col-s-12 boxed'>"
 					"<label for='c1'>Switch 1 condition:</label>"
 					"<textarea id='c1' name='c1' cols='100' rows='4' {H3}>{C1}</textarea>"
-					"<label for='a1'>Switch 1 action</label>"
-					 "<select id='a1' name='a1'>"
-						  "<option value='0'>SetReset</option>"
-						  "<option value='1'>No action</option>"
-						  "<option value='2'>Monostable normally open</option>"
-						  "<option value='3'>Monostable normally close</option>"
-					 "</select><br>"
-					 "<label for='haltdelay1'>Delay for timer SW 1</label>"
-					 "<input type='text' id='haltdelay1' name='haltdelay1' value='{D1}'>"
+					"<div id='sw1' {V1}>"
+						"<label for='a1'>Switch 1 action</label>"
+						 "<select id='a1' name='a1'>"
+							  "<option value='0'>SetReset</option>"
+							  "<option value='1'>No action</option>"
+							  "<option value='2'>Monostable normally open</option>"
+							  "<option value='3'>Monostable normally close</option>"
+						 "</select><br>"
+						 "<label for='haltdelay1'>Delay for timer SW 1</label>"
+						 "<input type='text' id='haltdelay1' name='haltdelay1' value='{D1}'>"
+					 "</div>"
 					 "<label for='smplt1'>Sample time SW 1</label>"
 					 "<input type='text' id='smplt1' name='smplt1' value='{S1}'>"
 					 "<label for='oe1'>Output enable SW 1</label>"
@@ -260,15 +310,17 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 				"<div class='col-6 col-s-12 boxed'>"
 					"<label for='c2'>Switch 2 condition:</label>"
 					"<textarea id='c2' name='c2' cols='100' rows='4' {H3}>{C2}</textarea>"
-					"<label for='a2'>Switch 2 action</label>"
-					"<select id='a2' name='a2'>"
-						  "<option value='0'>SetReset</option>"
-						  "<option value='1'>No action</option>"
-						  "<option value='2'>Monostable normally open</option>"
-						  "<option value='3'>Monostable normally close</option>"
-					"</select><br>"
-					"<label for='haltdelay2'>Delay for timer SW 2</label>"
-					"<input type='text' id='haltdelay2' name='haltdelay2' value='{D2}'>"
+					"<div id='sw2' {V1}>"
+						"<label for='a2'>Switch 2 action</label>"
+						"<select id='a2' name='a2'>"
+							  "<option value='0'>SetReset</option>"
+							  "<option value='1'>No action</option>"
+							  "<option value='2'>Monostable normally open</option>"
+							  "<option value='3'>Monostable normally close</option>"
+						"</select><br>"
+						"<label for='haltdelay2'>Delay for timer SW 2</label>"
+						"<input type='text' id='haltdelay2' name='haltdelay2' value='{D2}'>"
+					"</div>"
 					"<label for='smplt2'>Sample time SW 2</label>"
 					"<input type='text' id='smplt2' name='smplt2' value='{S2}'>"
 					"<label for='oe2'>Output enable SW 2</label>"
@@ -277,15 +329,17 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 				"<div class='col-6 col-s-12 boxed'>"
 					"<label for='c3'>Switch 3 condition:</label>"
 					"<textarea id='c3' name='c3' cols='100' rows='4' {H4}>{C3}</textarea>"
-					"<label for='a3'>Switch 3 action</label>"
-					"<select id='a3' name='a3'>"
-						  "<option value='0'>SetReset</option>"
-						  "<option value='1'>No action</option>"
-						  "<option value='2'>Monostable normally open</option>"
-						  "<option value='3'>Monostable normally close</option>"
-					"</select><br>"
-					"<label for='haltdelay3'>Delay for timer SW 3</label>"
-					"<input type='text' id='haltdelay3' name='haltdelay3' value='{D3}'>"
+					"<div id='sw3' {V2}>"
+						"<label for='a3'>Switch 3 action</label>"
+						"<select id='a3' name='a3'>"
+							  "<option value='0'>SetReset</option>"
+							  "<option value='1'>No action</option>"
+							  "<option value='2'>Monostable normally open</option>"
+							  "<option value='3'>Monostable normally close</option>"
+						"</select><br>"
+						"<label for='haltdelay3'>Delay for timer SW 3</label>"
+						"<input type='text' id='haltdelay3' name='haltdelay3' value='{D3}'>"
+					"</div>"
 					"<label for='smplt3'>Sample time SW 3</label>"
 					"<input type='text' id='smplt3' name='smplt3' value='{S3}'>"
 					"<label for='oe3'>Output enable SW 3</label>"
@@ -294,24 +348,29 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 				"<div class='col-6 col-s-12 boxed'>"
 					"<label for='c4'>Switch 4 condition:</label>"
 					"<textarea id='c4' name='c4' cols='100' rows='4' {H4}>{C4}</textarea>"
-					"<label for='a4'>Switch 4 action</label>"
-					"<select id='a4' name='a4'>"
-						  "<option value='0'>SetReset</option>"
-						  "<option value='1'>No action</option>"
-						  "<option value='2'>Monostable normally open</option>"
-						  "<option value='3'>Monostable normally close</option>"
-					"</select><br>"
-					"<label for='haltdelay4'>Delay for timer SW 4</label>"
-					"<input type='text' id='haltdelay4' name='haltdelay4' value='{D4}'>"
+					"<div id='sw4' {V2}>"
+						"<label for='a4'>Switch 4 action</label>"
+						"<select id='a4' name='a4'>"
+							  "<option value='0'>SetReset</option>"
+							  "<option value='1'>No action</option>"
+							  "<option value='2'>Monostable normally open</option>"
+							  "<option value='3'>Monostable normally close</option>"
+						"</select><br>"
+						"<label for='haltdelay4'>Delay for timer SW 4</label>"
+						"<input type='text' id='haltdelay4' name='haltdelay4' value='{D4}'>"
+					"</div>"
 					"<label for='smplt4'>Sample time SW 4</label>"
 					"<input type='text' id='smplt4' name='smplt4' value='{S4}'>"
 					"<label for='oe2'>Output enable SW 4</label>"
 					"<input type='checkbox' id='oe4' name='oe4' value='0' {O4}>"
 				"</div>"
-	
 				"<div class='col-12 col-s-12 boxed'>"
 					"<label for='act'>Switches action commands:</label>"
 					"<textarea id='act' name='act' cols='100' rows='4' {H4}>{AC}</textarea>"
+				"</div>"
+				"<div class='col-12 col-s-12 boxed'>"
+					"<label for='call'>General action commands:</label>"
+					"<textarea id='call' name='call' cols='100' rows='4' {H5}>{AD}</textarea>"
 				"</div>"
 				"<div class='col-12 col-s-12'>"
 					"<input type='submit' value='Back'>"
@@ -332,6 +391,7 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 		"oe4.addEventListener('change', function(){condsend(3,'c4')}, false);"
 		"var act=document.getElementById('act');"
 		"act.addEventListener('change', function(){actsend(act.value);}, false);"
+		"call.addEventListener('change', function(){actsend(call.value);}, false);"
 		"function setfield(str,field,val){"
 			"if(str.search(field)>=0){"
 				"var digit = '=[0-9]+';"
@@ -378,6 +438,34 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 				"act.value=setfield(act.value,cmd+n,inp.value);"
 				//"actsend(act.value);"
 			"});"
+		"}"
+		"function onRcv(f) {"
+			//"document.getElementById('p').innerHTML = f.data;\n"
+			"var obj = JSON.parse(f.data);"
+			"for(x in obj){"
+				"if(x=='mode1'){"
+					"var el1 = document.getElementById('sw1');"
+					"var el2 = document.getElementById('sw2');"
+					"if(obj[x] == \"1\"){"
+						"el1.style.display = 'none';"
+						"el2.style.display = 'none';"
+					"}else{"
+						"el1.style.display = 'block';"
+						"el2.style.display = 'block';"
+					"}"
+				"}"
+				"if(x=='mode2'){"
+					"var el3 = document.getElementById('sw3');"
+					"var el4 = document.getElementById('sw4');"
+					"if(obj[x] == \"1\"){"
+						"el3.style.display = 'none';"
+						"el4.style.display = 'none';"
+					"}else{"
+						"el3.style.display = 'block';"
+						"el4.style.display = 'block';"
+					"}"
+				"}"
+			"}"
 		"}"
 		"addCheck('oe1',act);"
 		"addCheck('oe2',act);"
@@ -441,9 +529,17 @@ const char HTTP_FORM_CMD[] PROGMEM =
 	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
 	"<div class='grid-container'>"
 		"<div class='col-4 col-s-12'>"
+			"<div class='asidetop'></div>"
 			"<div class='aside'>"
 				"<span id='temp'></span>"
 			"</div>"
+			"<div class='aside'>"
+				"<span id='time'></span>"
+			"</div>"
+			"<div class='aside'>"
+				"<span id='date'></span>"
+			"</div>"
+			"<div class='asidebottom'></div>"
 		"</div>"
 		"<div class='col-6 col-s-12 col-s-12'>"
 			"<div id='form'>"
@@ -493,6 +589,8 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		"var sld1 = document.getElementById('rng1');"
 		"var o1 = document.getElementById('val1');"
 		"var tmp = document.getElementById('temp');"
+		"var dt = document.getElementById('date');"
+		"var tm = document.getElementById('time');"
 		"o1.innerHTML = sld1.value;"
 		"sld1.ontouchend = function() {"
 			"o1.innerHTML = this.value;"
@@ -571,6 +669,14 @@ const char HTTP_FORM_CMD[] PROGMEM =
 					"if(x=='{TP}'){"
 						"tmp.innerHTML=obj[x]+' &#176;'+'C';"
 						"tmp.style.backgroundColor = \"#333\";"
+					"}"
+					"if(x=='{DT}'){"
+						"var res = obj[x].split('-');"
+						"dt.innerHTML=res[0];"
+						"tm.innerHTML=res[1];"
+						"console.log('date:'+res[0]+' Time:'+res[1]);" 
+						"dt.style.backgroundColor = \"#333\";"
+						"tm.style.backgroundColor = \"#333\";"
 					"}"
 				"}else{"	
 					"if(x=='sp1')"
@@ -653,12 +759,12 @@ const char HTTP_FORM_HEAD[] PROGMEM =
 	"box-sizing: border-box;"
 "}"
 
-"[class*='col-'] {"
+"[class*='col-']{"
 	"padding: 0 15px;"
 	"margin:0;"
 "}"
 
-"html, body, div {"
+"html, body, div{"
 	"font-family: \"arial\", \"helvetica\", serif;"
 	"font-size: 1.1rem;"
 	"color: #fff;"
@@ -687,7 +793,7 @@ const char HTTP_FORM_HEAD[] PROGMEM =
 	//"border 5px solid yellow;"
 "}"
 
-"input, textarea, select {"
+"input, textarea, select{"
 	"width: 100%;"
 	"min-height: 2.4rem;"
 	"border-radius: 25px;"
@@ -724,20 +830,31 @@ const char HTTP_FORM_HEAD[] PROGMEM =
 	"transition: 0.3s;"
 "}"
 
-".aside {"
-	"text-align: center;"
-	"font-size: 4.1rem;"
-	"height: 500px;"
+".asidetop, .asidebottom{"
+	"height: 10%;"
 	"margin-top: auto;"
 	"margin-bottom: auto;"
 	"background-color: #333;"
 "}"
 
-"#temp {"
-	"display:inline-block;"
-	"margin: 38% 0px;"
-	"font-size: 4.1rem;"
-	"height: 500px;"
+".aside{"
+	//"display:inline-block;"
+	"margin: 18% 1%;"
+	"background-color: #333;"
+"}"
+
+"#temp{"
+	"font-size: 3rem;"
+	"background-color: #333;"
+"}"
+
+"#time{"
+	"font-size: 2.6rem;"
+	"background-color: #333;"
+"}"
+
+"#date{"
+	"font-size: 2rem;"
 	"background-color: #333;"
 "}"
 
@@ -756,7 +873,7 @@ const char HTTP_FORM_HEAD[] PROGMEM =
 	"grid-column-gap: 2%;"
 "}"
 
-"@media only screen and (min-width: 600px) {"
+"@media only screen and (min-width: 600px){"
 	"/* For tablets: */"
 	".grid-container {"
 	  "grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;"
@@ -775,7 +892,7 @@ const char HTTP_FORM_HEAD[] PROGMEM =
 	".col-s-12 {grid-column:  span 12;}"
 "}"
 
-"@media only screen and (min-width: 768px) {"
+"@media only screen and (min-width: 768px){"
 	"/* For desktop: */"
 	".grid-container {"
 	  "grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;"
@@ -861,8 +978,7 @@ void handleRoot() {   // When URI / is requested, send a web page with a button 
 	
 	String page = FPSTR(HTTP_FORM_ROOT);
 	page.replace(F("{HD}"),  FPSTR(HTTP_FORM_HEAD) );
-	page.replace(F("{WU}"),  paramsp[WEBUSR] ); 
-	page.replace(F("{WT}"),  F("48") );
+	page.replace(F("{WU}"),  confcmdp[WEBUSR] ); 
 	DEBUG_PRINTLN(F("Enter handleRoot"));
 	//String header;
 	if (!is_authentified(serverp)) {
@@ -873,6 +989,7 @@ void handleRoot() {   // When URI / is requested, send a web page with a button 
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=0");
 		serverp.send(301);
+		
 	}
 }
 
@@ -899,26 +1016,26 @@ void handleLogin() {  // If a POST request is made to URI /login
 #endif
 	ok=true;
   }
-  else if(!serverp.hasArg("username")||!serverp.hasArg("password")||serverp.arg("username")==NULL||serverp.arg("password")==NULL)
-  { // If the POST request doesn't have username and password data
+  else if(!serverp.hasArg("webusr")||!serverp.hasArg("webpsw")||serverp.arg("webusr")==NULL||serverp.arg("webpsw")==NULL)
+  { // If the POST request doesn't have webusr and webpsw data
      DEBUG_PRINTLN(F("Userneme "));
-	 DEBUG_PRINTLN(serverp.arg("username"));
-	 DEBUG_PRINTLN(F(" o password "));
-	 DEBUG_PRINTLN(serverp.arg("password"));
+	 DEBUG_PRINTLN(serverp.arg("webusr"));
+	 DEBUG_PRINTLN(F(" o webpsw "));
+	 DEBUG_PRINTLN(serverp.arg("webpsw"));
 	 DEBUG_PRINTLN(F(" assenti "));
 	 ok=false;
   }
-  else if(serverp.arg("username") == paramsp[WEBUSR] && serverp.arg("password") == paramsp[WEBPSW])
+  else if(serverp.arg("webusr") == confcmdp[WEBUSR] && serverp.arg("webpsw") == confcmdp[WEBPSW])
   {
 	DEBUG_PRINTLN(F("Login di "));
-	DEBUG_PRINTLN(serverp.arg("username"));
+	DEBUG_PRINTLN(serverp.arg("webusr"));
 	DEBUG_PRINTLN(F(" effettuato con successo "));
 	ok=true;
   }else{
 	DEBUG_PRINTLN(F("Userneme "));
-	DEBUG_PRINTLN(serverp.arg("username"));
-	DEBUG_PRINTLN(F(" o password "));
-	DEBUG_PRINTLN(serverp.arg("username"));
+	DEBUG_PRINTLN(serverp.arg("webusr"));
+	DEBUG_PRINTLN(F(" o webpsw "));
+	DEBUG_PRINTLN(serverp.arg("webusr"));
 	DEBUG_PRINTLN(F(" scorretti"));
 	ok=false;  
   }
@@ -926,10 +1043,9 @@ void handleLogin() {  // If a POST request is made to URI /login
   String page = FPSTR(HTTP_FORM_LOGIN);
 	
   if(ok) { 
-		// If both the username and the password are correct
+		// If both the webusr and the webpsw are correct
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
-		//page.replace(F("{WT}"), F("31.333333") );
 		//set cookies OK
 		//DEBUG_PRINTLN(F("Scrittura cookie login "));
 		//DEBUG_PRINTLN(page);
@@ -964,14 +1080,13 @@ void handleWifiConf() {  // If a POST request is made to URI /login
   if(ok) { 
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
-		page.replace(F("{WT}"), F("31.333333") );
 		//Body placeholders
-		page.replace(F("{S1}"), paramsp[CLNTSSID1] );
-		page.replace(F("{P1}"), paramsp[CLNTPSW1] );
-		page.replace(F("{S2}"), paramsp[CLNTSSID2] );
-		page.replace(F("{P2}"), paramsp[CLNTPSW2] );
-		page.replace(F("{AS}"), paramsp[APPSSID] );
-		page.replace(F("{AP}"), paramsp[APPPSW] );
+		page.replace(F("{S1}"), confcmdp[CLNTSSID1] );
+		page.replace(F("{P1}"), confcmdp[CLNTPSW1] );
+		page.replace(F("{S2}"), confcmdp[CLNTSSID2] );
+		page.replace(F("{P2}"), confcmdp[CLNTPSW2] );
+		page.replace(F("{AS}"), confcmdp[APPSSID] );
+		page.replace(F("{AP}"), confcmdp[APPPSW] );
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -1006,13 +1121,18 @@ void handleSystemConf() {  // If a POST request is made to URI /login
   if(ok) { 
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
-		page.replace(F("{WT}"), F("31.333333") );
 		//Body placeholders
-		page.replace(F("{WU}"), paramsp[WEBUSR] ) ;
-		page.replace(F("{WP}"), paramsp[WEBPSW] );
+		page.replace(F("{WU}"), confcmdp[WEBUSR]) ;
+		page.replace(F("{WP}"), confcmdp[WEBPSW]);
+		page.replace(F("{N1}"), confcmdp[NTPADDR1]);
+		page.replace(F("{N2}"), confcmdp[NTPADDR2]);
+		page.replace(F("{N3}"), confcmdp[UTCSYNC]);
+		page.replace(F("{N4}"), confcmdp[UTCADJ]);
+		page.replace(F("{N5}"), confcmdp[UTCZONE]);
+		page.replace(F("{N6}"), ((confcmdp[UTCSDT]).toInt()==1)?"checked":"");
 #if (!AUTOCAL) 
-		page.replace(F("{S1}"), paramsp[STDEL1] );
-		page.replace(F("{S2}"), paramsp[STDEL2] );
+		page.replace(F("{S1}"), confcmdp[STDEL1]);
+		page.replace(F("{S2}"), confcmdp[STDEL2]);
 #endif
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
@@ -1048,22 +1168,21 @@ void handleMQTTConf() {  // If a POST request is made to URI /login
   if(ok) { 
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
-		page.replace(F("{WT}"), F("31.333333") );
 		//Body placeholders
-		page.replace(F("{MA}"), paramsp[MQTTADDR]);
-		page.replace(F("{MU}"), paramsp[MQTTUSR]);
-		page.replace(F("{MP}"), paramsp[MQTTPSW]);
-		page.replace(F("{MI}"), paramsp[MQTTID]);
-		page.replace(F("{MO}"), paramsp[MQTTOUTTOPIC]);
-		page.replace(F("{QI}"), paramsp[MQTTINTOPIC]);
-		page.replace(F("{J1}"), mqttJsonp[MQTTJSONUP1]);
-		page.replace(F("{J2}"), mqttJsonp[MQTTJSONDOWN1]);
-		page.replace(F("{J3}"), mqttJsonp[MQTTJSONUP2]);
-		page.replace(F("{J4}"), mqttJsonp[MQTTJSONDOWN2]);
-		page.replace(F("{J5}"), mqttJsonp[MQTTJSONTEMP]);
-		page.replace(F("{J6}"), mqttJsonp[MQTTJSONMEANPWR]);
-		page.replace(F("{J7}"), mqttJsonp[MQTTJSONPEAKPWR]);
-		page.replace(F("{J8}"), mqttJsonp[MQTTJSONALL]);
+		page.replace(F("{MA}"), confcmdp[MQTTADDR]);
+		page.replace(F("{MU}"), confcmdp[MQTTUSR]);
+		page.replace(F("{MP}"), confcmdp[MQTTPSW]);
+		page.replace(F("{MI}"), confcmdp[MQTTID]);
+		page.replace(F("{MO}"), confcmdp[MQTTOUTTOPIC]);
+		page.replace(F("{QI}"), confcmdp[MQTTINTOPIC]);
+		page.replace(F("{J1}"), mqttJsonp[MQTTUP1]);
+		page.replace(F("{J2}"), mqttJsonp[MQTTDOWN1]);
+		page.replace(F("{J3}"), mqttJsonp[MQTTUP2]);
+		page.replace(F("{J4}"), mqttJsonp[MQTTDOWN2]);
+		//page.replace(F("{J5}"), mqttJsonp[MQTTTEMP]);
+		//page.replace(F("{J6}"), mqttJsonp[MQTTMEANPWR]);
+		//page.replace(F("{J7}"), mqttJsonp[MQTTPEAKPWR]);
+		//page.replace(F("{J8}"), mqttJsonp[MQTTALL]);
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -1098,28 +1217,27 @@ void handleLogicConf() {  // If a POST request is made to URI /login
   if(ok) { 
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
-		page.replace(F("{WT}"), F("31.333333") );
 		//Body placeholders
-		page.replace(F("{TU}"), paramsp[THALT1]);
-		page.replace(F("{TD}"), paramsp[THALT2]);
-		page.replace(F("{DU}"), paramsp[THALT3]);
-		page.replace(F("{DD}"), paramsp[THALT4]);
-		if(rollmode[0]==0){
+		page.replace(F("{TU}"), confcmdp[THALT1]);
+		page.replace(F("{TD}"), confcmdp[THALT2]);
+		page.replace(F("{DU}"), confcmdp[THALT3]);
+		page.replace(F("{DD}"), confcmdp[THALT4]);
+		if(confcmdp[SWROLL1]=="0"){
 			page.replace(F("{H3}"), "disabled");
 		}else{
 			page.replace(F("{H3}"), "");
 		}
-		if(rollmode[1]==0){
+		if(confcmdp[SWROLL2]=="0"){
 			page.replace(F("{H4}"), "disabled");
 		}else{
 			page.replace(F("{H4}"), "");
 		}
-		page.replace(F("{TL}"), paramsp[TLENGTH]);
-		page.replace(F("{BR}"), paramsp[BARRELRAD]);
-		page.replace(F("{TN}"), paramsp[THICKNESS]);
-		page.replace(F("{SR}"), paramsp[SLATSRATIO]);
-		page.replace(F("{H1}"), ((paramsp[SWROLL1]).toInt()==0)?"checked":"");
-		page.replace(F("{H2}"), ((paramsp[SWROLL2]).toInt()==0)?"checked":"");
+		page.replace(F("{TL}"), confcmdp[TLENGTH]);
+		page.replace(F("{BR}"), confcmdp[BARRELRAD]);
+		page.replace(F("{TN}"), confcmdp[THICKNESS]);
+		page.replace(F("{SR}"), confcmdp[SLATSRATIO]);
+		page.replace(F("{H1}"), ((confcmdp[SWROLL1]).toInt()==0)?"checked":"");
+		page.replace(F("{H2}"), ((confcmdp[SWROLL2]).toInt()==0)?"checked":"");
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -1157,26 +1275,36 @@ void handleEventConf() {  // If a POST request is made to URI /login
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
 		page.replace(F("{SH}"), HTTP_WEBSOCKET );
-		page.replace(F("{WT}"), F("48") );
-		page.replace(F("{WS}"), paramsp[LOCALIP]);
+		page.replace(F("{WS}"), confcmdp[LOCALIP]);
 		//Body placeholders
-		//page.replace(F("{A1}"), paramsp[SWACTION1]);
-		//page.replace(F("{A2}"), paramsp[SWACTION2]);
-		//page.replace(F("{A3}"), paramsp[SWACTION3]);
-		//page.replace(F("{A4}"), paramsp[SWACTION4]);
-		page.replace(F("{C1}"), confcmdp[JSONCONFEVAL1]);
-		page.replace(F("{C2}"), confcmdp[JSONCONFEVAL2]);
-		page.replace(F("{C3}"), confcmdp[JSONCONFEVAL3]);
-		page.replace(F("{C4}"), confcmdp[JSONCONFEVAL4]);
-		page.replace(F("{AC}"), confcmdp[JSONACTIONEVAL]);
-		page.replace(F("{D1}"), paramsp[THALT1]);
-		page.replace(F("{D2}"), paramsp[THALT2]);
-		page.replace(F("{D3}"), paramsp[THALT3]);
-		page.replace(F("{D4}"), paramsp[THALT4]);
+		//page.replace(F("{A1}"), confcmdp[SWACTION1]);
+		//page.replace(F("{A2}"), confcmdp[SWACTION2]);
+		//page.replace(F("{A3}"), confcmdp[SWACTION3]);
+		//page.replace(F("{A4}"), confcmdp[SWACTION4]);
+		page.replace(F("{C1}"), confcmdp[ONCOND1]);
+		page.replace(F("{C2}"), confcmdp[ONCOND2]);
+		page.replace(F("{C3}"), confcmdp[ONCOND3]);
+		page.replace(F("{C4}"), confcmdp[ONCOND4]);
+		page.replace(F("{AC}"), confcmdp[ACTIONEVAL]);
+		page.replace(F("{AD}"), confcmdp[ONCOND5]);
+		page.replace(F("{D1}"), confcmdp[THALT1]);
+		page.replace(F("{D2}"), confcmdp[THALT2]);
+		page.replace(F("{D3}"), confcmdp[THALT3]);
+		page.replace(F("{D4}"), confcmdp[THALT4]);
 		page.replace(F("{S1}"), String(getCntValue(1)));
 		page.replace(F("{S2}"), String(getCntValue(2)));
 		page.replace(F("{S3}"), String(getCntValue(3)));
 		page.replace(F("{S4}"), String(getCntValue(4)));
+		if(confcmdp[SWROLL1]=="0"){
+			page.replace(F("{V1}"), "style=\"display:block\"");
+		}else{
+			page.replace(F("{V1}"), "style=\"display:none\"");
+		}
+		if(confcmdp[SWROLL2]=="0"){
+			page.replace(F("{V2}"), "style=\"display:block\"");
+		}else{
+			page.replace(F("{V2}"), "style=\"display:none\"");
+		}
 		/*if(rollmode[0]==1){
 			page.replace(F("{H3}"), "disabled");
 		}else{
@@ -1208,15 +1336,15 @@ void handleCmd() {  // If a POST request is made to URI /login
 	//Head placeholders
 	page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
 	page.replace(F("{SH}"), HTTP_WEBSOCKET );
-	page.replace(F("{WS}"), paramsp[LOCALIP]);
+	page.replace(F("{WS}"), confcmdp[LOCALIP]);
 	page.replace(F("{TL}"), String(getTaplen()));
-	page.replace(F("{BR}"), paramsp[BARRELRAD]);
-	page.replace(F("{TN}"), paramsp[THICKNESS]);
-	page.replace(F("{SR}"), paramsp[SLATSRATIO]);
+	page.replace(F("{BR}"), confcmdp[BARRELRAD]);
+	page.replace(F("{TN}"), confcmdp[THICKNESS]);
+	page.replace(F("{SR}"), confcmdp[SLATSRATIO]);
 	page.replace(F("{NM}"), String(getNmax()));
 	page.replace(F("{PD}"), String(round(getPosdelta())));
-	page.replace(F("{TP}"), mqttJsonp[MQTTJSONTEMP] );
-	page.replace(F("{WT}"), F("31.333333") );
+	page.replace(F("{TP}"), mqttJsonp[MQTTTEMP]);
+	page.replace(F("{DT}"), mqttJsonp[MQTTDATE]);
 	//Body placeholders
 	//DEBUG_PRINTLN(page);
 	//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -1224,29 +1352,7 @@ void handleCmd() {  // If a POST request is made to URI /login
 	serverp.sendHeader("Set-Cookie", "ESPSESSIONID=0");
 	serverp.send(200, "text/html", page);
 }
-/*
-void handleCmdJson(ESP8266WebServer (&serverp), String &s) {  // If a POST request is made to URI /login
 
-//is_authentified(serverp);
-if(server.hasArg("cmds")){
-	String str = server.arg("cmds");
-	String str2 = String("");
-	
-	DEBUG_PRINT(F("cmds: "));
-	DEBUG_PRINTLN(str);
-	
-	if (str == ""){
-		readStatesAndPub();
-	}else{
-		mqttCallback(str2, str);
-	}
-	
-	server.sendHeader("Cache-Control", "no-cache");
-	server.sendHeader("Set-Cookie", "ESPSESSIONID=0");
-	server.send(200, "text/html", s);
-  } 
-}
-*/
 void handleModify(){
   
   if (!is_authentified(serverp)) {
@@ -1256,264 +1362,13 @@ void handleModify(){
 		return;
   }
   
+  //manage only input and textarea elements
   eepromBegin();
-  
-  if(serverp.hasArg("mqttserver") && paramsp[MQTTADDR] != serverp.arg("mqttserver") ){
-	paramsp[MQTTADDR]=serverp.arg("mqttserver");
-	EEPROMWriteStr(MQTTADDROFST,(paramsp[MQTTADDR]).c_str(),64);
-	
-	DEBUG_PRINT(F("Modified mqttAddr "));
-	DEBUG_PRINTLN(paramsp[MQTTADDR]);
-	//indirizzo MQTT cambiato!
-	paramsp[MQTTADDRMODFIED]="true";
-  }
-  if(serverp.hasArg("mqttclientid") && paramsp[MQTTID] != serverp.arg("mqttclientid") ){
-	paramsp[MQTTID]=serverp.arg("mqttclientid");
-	EEPROMWriteStr(MQTTIDOFST,(paramsp[MQTTID]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttID "));
-	DEBUG_PRINTLN(paramsp[MQTTID]);
-  }
-  if(serverp.hasArg("outtopic") && (paramsp[MQTTOUTTOPIC] != serverp.arg("outtopic")) ){
-	paramsp[MQTTOUTTOPIC]=serverp.arg("outtopic");
-	EEPROMWriteStr(OUTTOPICOFST,(paramsp[MQTTOUTTOPIC]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttOutTopic "));
-	DEBUG_PRINTLN(paramsp[MQTTOUTTOPIC]);
-	//Topic MQTT cambiato!
-	paramsp[TOPICCHANGED]="true";
-  }
-  if(serverp.hasArg("intopic") && paramsp[MQTTINTOPIC] != serverp.arg("intopic") ){
-	paramsp[MQTTINTOPIC]=serverp.arg("intopic");
-	EEPROMWriteStr(INTOPICOFST,(paramsp[MQTTINTOPIC]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttInTopic "));
-	DEBUG_PRINTLN(paramsp[MQTTINTOPIC]);
-	//Topic MQTT cambiato!
-	paramsp[TOPICCHANGED]="true";
-  }
-  if(serverp.hasArg("btnup1") && paramsp[MQTTJSONUP1] != serverp.arg("btnup1") ){
-	mqttJsonp[MQTTJSONUP1] = serverp.arg("btnup1");
-	EEPROMWriteStr(MQTTJSONUP1OFST,(mqttJsonp[MQTTJSONUP1]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttJsonp[1] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP1]);
-  }
-  if(serverp.hasArg("btndown1") && paramsp[MQTTJSONDOWN1] != serverp.arg("btndown1") ){
-	mqttJsonp[MQTTJSONDOWN1] = serverp.arg("btndown1");
-	EEPROMWriteStr(MQTTJSONDOWN1OFST,(mqttJsonp[MQTTJSONDOWN1]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttJsonp[2] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN1]);
-  }
-  if(serverp.hasArg("btnup2") && paramsp[MQTTJSONUP2] != serverp.arg("btnup2") ){
-	mqttJsonp[MQTTJSONUP2] = serverp.arg("btnup2");
-	EEPROMWriteStr(MQTTJSONUP2OFST,(mqttJsonp[MQTTJSONUP2]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttJsonp[3] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP2]);
-  }
-  if(serverp.hasArg("btndown2") && paramsp[MQTTJSONDOWN2] != serverp.arg("btndown2") ){ 
-	mqttJsonp[MQTTJSONDOWN2] = serverp.arg("btndown2");
-	EEPROMWriteStr(MQTTJSONDOWN2OFST,(mqttJsonp[MQTTJSONDOWN2]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttJsonp[4] "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN2]);
-  }
-  if(serverp.hasArg("btntemp") && paramsp[MQTTJSONTEMP] != serverp.arg("btntemp") ){ 
-	mqttJsonp[MQTTJSONTEMP] = serverp.arg("btndown2");
-	EEPROMWriteStr(MQTTJSONTEMPOFST,(mqttJsonp[MQTTJSONTEMP]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttJsonp btntemp "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONTEMP]);
-  }
-  if(serverp.hasArg("btnmeanpwr") && paramsp[MQTTJSONMEANPWR] != serverp.arg("btnmeanpwr") ){ 
-	mqttJsonp[MQTTJSONMEANPWR] = serverp.arg("btnmeanpwr");
-	EEPROMWriteStr(MQTTJSONMEANPWROFST,(mqttJsonp[MQTTJSONMEANPWR]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttJsonp btnmeanpwr "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONMEANPWR]);
-  }
-  if(serverp.hasArg("btnpeakpwr") && paramsp[MQTTJSONPEAKPWR] != serverp.arg("btnpeakpwr") ){ 
-	mqttJsonp[MQTTJSONPEAKPWR] = serverp.arg("btnpeakpwr");
-	EEPROMWriteStr(MQTTJSONPEAKPWROFST,(mqttJsonp[MQTTJSONPEAKPWR]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttJsonp btnpeakpwr "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONPEAKPWR]);
-  }
-  
-  if(serverp.hasArg("btnall") && paramsp[MQTTJSONALL] != serverp.arg("btnall") ){ 
-	mqttJsonp[MQTTJSONALL] = serverp.arg("btndown2");
-	EEPROMWriteStr(MQTTJSONALLOFST,(mqttJsonp[MQTTJSONALL]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttJsonp btnall "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONALL]);
-  }
-  if(serverp.hasArg("wificlientssid1") && paramsp[CLNTSSID1] != serverp.arg("wificlientssid1") ){
-	paramsp[CLNTSSID1]=serverp.arg("wificlientssid1");
-	EEPROMWriteStr(WIFICLIENTSSIDOFST1,(paramsp[CLNTSSID1]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified clntSsid1 "));
-	DEBUG_PRINTLN(paramsp[CLNTSSID1]);
-	paramsp[WIFICHANGED]="true";
-  }
-  if(serverp.hasArg("wificlientpsw1") && paramsp[CLNTPSW1] != serverp.arg("wificlientpsw1") ){
-	paramsp[CLNTPSW1]=serverp.arg("wificlientpsw1");
-	EEPROMWriteStr(WIFICLIENTPSWOFST1,(paramsp[CLNTPSW1]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified clntPsw1 "));
-	DEBUG_PRINTLN(paramsp[CLNTPSW1]);
-	paramsp[WIFICHANGED]="true";
-  }
-  if(serverp.hasArg("wificlientssid2") && paramsp[CLNTSSID2] != serverp.arg("wificlientssid2") ){
-	paramsp[CLNTSSID2]=serverp.arg("wificlientssid2");
-	EEPROMWriteStr(WIFICLIENTSSIDOFST2,(paramsp[CLNTSSID2]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified clntSsid2 "));
-	DEBUG_PRINTLN(paramsp[CLNTSSID2]);
-	paramsp[WIFICHANGED]="true";
-  }
-  if(serverp.hasArg("wificlientpsw2") && paramsp[CLNTPSW2] != serverp.arg("wificlientpsw2") ){
-	paramsp[CLNTPSW2]=serverp.arg("wificlientpsw2");
-	EEPROMWriteStr(WIFICLIENTPSWOFST2,(paramsp[CLNTPSW2]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified clntPsw2 "));
-	DEBUG_PRINTLN(paramsp[CLNTPSW2]);
-	paramsp[WIFICHANGED]="true";
-  }
-  if(serverp.hasArg("wifiapssid") && paramsp[APPSSID] != serverp.arg("wifiapssid") ){
-	paramsp[APPSSID]=serverp.arg("wifiapssid");
-	EEPROMWriteStr(WIFIAPSSIDOFST,(paramsp[APPSSID]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified APSsid "));
-	DEBUG_PRINTLN(paramsp[APPSSID]);
-	paramsp[WIFICHANGED]="true";
-  }
-  if(serverp.hasArg("wifiAPPPSW") && paramsp[APPPSW] != serverp.arg("wifiAPPPSW") ){
-	paramsp[APPPSW]=serverp.arg("wifiAPPPSW");
-	EEPROMWriteStr(WIFIAPPPSWOFST,(paramsp[APPPSW]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified APPPSW "));
-	DEBUG_PRINTLN(paramsp[APPPSW]);
-	paramsp[WIFICHANGED]="true";
-  }
-  if(serverp.hasArg("username") && paramsp[WEBUSR] != serverp.arg("username") ){
-	paramsp[WEBUSR]=serverp.arg("username");
-	EEPROMWriteStr(WEBUSROFST,(paramsp[WEBUSR]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified webUsr "));
-	DEBUG_PRINTLN(paramsp[WEBUSR]);
-  }
-  if(serverp.hasArg("username") && paramsp[WEBPSW] != serverp.arg("username") ){
-	paramsp[WEBPSW]=serverp.arg("password");
-	EEPROMWriteStr(WEBPSWOFST,(paramsp[WEBPSW]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified webPsw "));
-	DEBUG_PRINTLN(paramsp[WEBPSW]);
-  } 
-  if(serverp.hasArg("mqttusr") && paramsp[MQTTUSR] != serverp.arg("mqttusr") ){
-	paramsp[MQTTUSR]=serverp.arg("mqttusr");
-	EEPROMWriteStr(MQTTUSROFST,(paramsp[MQTTUSR]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTT username "));
-	DEBUG_PRINTLN(paramsp[MQTTUSR]);
-	paramsp[MQTTCONNCHANGED]="true";
-  } 
-  if(serverp.hasArg("mqttpsw") && paramsp[MQTTPSW] != serverp.arg("mqttpsw") ){
-	paramsp[MQTTPSW]=serverp.arg("mqttpsw");
-	EEPROMWriteStr(MQTTPSWOFST,(paramsp[MQTTPSW]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTT password "));
-	DEBUG_PRINTLN(paramsp[MQTTPSW]);
-	paramsp[MQTTCONNCHANGED]="true";
-  } 
-#if (!AUTOCAL) 
-  if(serverp.hasArg("startdelay1") && paramsp[STDEL1] != serverp.arg("startdelay1") ){
-	paramsp[STDEL1]=serverp.arg("startdelay1");
-	EEPROMWriteFloat(STDEL1OFST,(paramsp[STDEL1]).toFloat());
-	
-	DEBUG_PRINT(F("Motor start delay 1"));
-	DEBUG_PRINTLN(paramsp[STDEL1]);
-	paramsp[TIMINGCHANGED]="true";
-  } 
-  if(serverp.hasArg("startdelay2") && paramsp[STDEL2] != serverp.arg("startdelay2") ){
-	paramsp[STDEL2]=serverp.arg("startdelay2");
-	EEPROMWriteFloat(STDEL2OFST,(paramsp[STDEL2]).toFloat());
-	
-	DEBUG_PRINT(F("Motor start delay 2"));
-	DEBUG_PRINTLN(paramsp[STDEL2]);
-	paramsp[TIMINGCHANGED]="true";
-  } 
-#endif
-  if(serverp.hasArg("thalt1") && (paramsp[THALT1] != String(serverp.arg("thalt1"))) ){
-	paramsp[THALT1] = serverp.arg("thalt1");
-	EEPROMWriteInt(THALT1OFST,(paramsp[THALT1]).toInt());
-	
-	DEBUG_PRINT(F("Modified THALT1 "));
-	DEBUG_PRINTLN(paramsp[THALT1]);
-	paramsp[TIMINGCHANGED]="true";
-  }
-  if(serverp.hasArg("thalt2") && (paramsp[THALT2] != String(serverp.arg("thalt2"))) ){
-	paramsp[THALT2] = serverp.arg("thalt2");
-	EEPROMWriteInt(THALT2OFST,(paramsp[THALT2]).toInt());
-	
-    DEBUG_PRINT(F("Modified THALT2 "));
-    DEBUG_PRINTLN(paramsp[THALT2]);
-    paramsp[TIMINGCHANGED]="true";
-  }
-  if(serverp.hasArg("thalt3") && (paramsp[THALT3] != String(serverp.arg("thalt3"))) ){
-	paramsp[THALT3] = serverp.arg("thalt3");
-	EEPROMWriteInt(THALT3OFST,(paramsp[THALT3]).toInt());
-	
-	DEBUG_PRINT(F("Modified THALT3 "));
-	DEBUG_PRINTLN(paramsp[THALT3]);
-	paramsp[TIMINGCHANGED]="true";
-  }
-  if(serverp.hasArg("thalt4") && (paramsp[THALT4] != String(serverp.arg("thalt4"))) ){
-	paramsp[THALT4] = serverp.arg("thalt4");
-	EEPROMWriteInt(THALT4OFST,(paramsp[THALT4]).toInt());
-	
-    DEBUG_PRINT(F("Modified THALT4 "));
-    DEBUG_PRINTLN(paramsp[THALT4]);
-    paramsp[TIMINGCHANGED]="true";
-  }
-  if(serverp.hasArg("taplength") && (paramsp[TLENGTH] != String(serverp.arg("taplength"))) ){
-	paramsp[TLENGTH] = serverp.arg("taplength");
-	EEPROMWriteFloat(TLENGTHOFST,(paramsp[TLENGTH]).toFloat());
-	
-	DEBUG_PRINT(F("Modified TLENGTH "));
-	DEBUG_PRINTLN(paramsp[TLENGTH]);
-	paramsp[TIMINGCHANGED]="true";
-  }
-  if(serverp.hasArg("barrelrad") && (paramsp[BARRELRAD] != String(serverp.arg("barrelrad"))) ){
-	paramsp[BARRELRAD] = serverp.arg("barrelrad");
-	EEPROMWriteFloat(BARRELRADOFST,(paramsp[BARRELRAD]).toFloat());
-	
-    DEBUG_PRINT(F("Modified BARRELRAD "));
-    DEBUG_PRINTLN(paramsp[BARRELRAD]);
-    paramsp[TIMINGCHANGED]="true";
-  }
-  if(serverp.hasArg("thickness") && (paramsp[THICKNESS] != String(serverp.arg("thickness"))) ){
-	paramsp[THICKNESS] = serverp.arg("thickness");
-	EEPROMWriteFloat(THICKNESSOFST,(paramsp[THICKNESS]).toFloat());
-	
-    DEBUG_PRINT(F("Modified THICKNESS "));
-    DEBUG_PRINTLN(paramsp[THICKNESS]);
-    paramsp[TIMINGCHANGED]="true";
-  }
-   if(serverp.hasArg("slatsratio") && (paramsp[SLATSRATIO] != String(serverp.arg("slatsratio"))) ){
-	paramsp[SLATSRATIO] = serverp.arg("slatsratio");
-	EEPROMWriteFloat(SLATSRATIOFST,(paramsp[SLATSRATIO]).toFloat());
-	
-    DEBUG_PRINT(F("Modified SLATSRATIO "));
-    DEBUG_PRINTLN(paramsp[SLATSRATIO]);
-    paramsp[TIMINGCHANGED]="true";
+  for(int i=VARCONFDIM; i<CONFDIM; i++){
+		saveParamFromForm(i);
   }
   EEPROM.end();
   
-  //nuovo begin da quì!
-  //writeOnOffCondition(char* exp, byte sw);
-  //writeOnOffAction(byte id, byte sw);
    
   DEBUG_PRINTLN(F("Disconnection"));
   
@@ -1524,11 +1379,12 @@ void handleModify(){
   page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
   serverp.send(200, "text/html", page);
 		
-  if(paramsp[TIMINGCHANGED]=="true"){
-	paramsp[TIMINGCHANGED]=="false";
+  if(confcmdp[TIMINGCHANGED]=="true"){
+	confcmdp[TIMINGCHANGED]=="false";
 	initIiming(false);
   }
   
+  //special checkbox inputs
   if( serverp.hasArg("rebootd") && String("y") == serverp.arg("rebootd") ){
 	rebootSystem();
   }
@@ -1538,20 +1394,32 @@ void handleModify(){
 	ESP.restart();
   }
   
-  if( serverp.hasArg("swmode1") && String("0") == serverp.arg("swmode1") ){
-	setSWMode(0,0);
-	writeSWMode(0,0);	
+  if( serverp.hasArg("swroll1") && String("1") == serverp.arg("swroll1") ){
+	//writeSWMode(0,0); 
+	updtConf(SWROLL1OFST, String(0));
+	setSWMode(0,0); 
   }else{
-	setSWMode(1,0);
-	writeSWMode(1,0);  
+	//writeSWMode(1,0);
+	updtConf(SWROLL1OFST, String(1));
+	setSWMode(1,0);	
   }
   
-  if( serverp.hasArg("swmode2") && String("0") == serverp.arg("swmode2") ){
+  if( serverp.hasArg("swroll2") && String("1") == serverp.arg("swroll2") ){
+	//writeSWMode(0,1);
 	setSWMode(0,1);
-	writeSWMode(0,1);	
+	updtConf(SWROLL1OFST+1, String(1));
   }else{
-	setSWMode(1,1);
-	writeSWMode(1,1);
+	//writeSWMode(1,1);
+	updtConf(SWROLL1OFST+1, String(0));
+	setSWMode(1,1);	
+  }
+  
+  if( serverp.hasArg("utcsdt") && String("y") == serverp.arg("utcsdt") ){
+	setSDT(true);
+	updtConf(UTCSDT, String(1));
+  }else{
+	setSDT(false);
+	updtConf(UTCSDT, String(0));
   }
   
 }
@@ -1579,195 +1447,20 @@ void loadConfig() {
 		varStrOfst[0] = varStrOfst[1] = varStrOfst[2] = varStrOfst[3] = varStrOfst[4] = FIXEDPARAMSLEN;
 		varStrOfst[5] = FIXEDPARAMSLEN;
 		saveOnEEPROM(FIXEDPARAMSLEN);
-		paramsp[CONFLOADED]="false";
+		confcmdp[CONFLOADED]="false";
 		delay(1000);
 	} else {
 		EEPROM.begin(THALT1OFST);//the next after EEPROMLENOFST
 		int eepromlen = EEPROMReadInt(EEPROMLENOFST);
 		EEPROM.end();
 		EEPROM.begin(eepromlen+1);
-		DEBUG_PRINTLN(F("Reading EEPROM configuration of len "));
-		DEBUG_PRINTLN(eepromlen);
 		
-		paramsp[THALT1]	= EEPROMReadInt(THALT1OFST);
-		DEBUG_PRINT(F("THALT1: "));
-		DEBUG_PRINTLN(paramsp[THALT1]);
-		
-		paramsp[THALT2] = EEPROMReadInt(THALT2OFST);
-		DEBUG_PRINT(F("THALT2: "));
-		DEBUG_PRINTLN(paramsp[THALT2]);
-		
-		paramsp[THALT3] = EEPROMReadInt(THALT3OFST);
-		DEBUG_PRINT(F("THALT3: "));
-		DEBUG_PRINTLN(paramsp[THALT3]);
-		
-		paramsp[THALT4]	= EEPROMReadInt(THALT4OFST);
-		DEBUG_PRINT(F("THALT4: "));
-		DEBUG_PRINTLN(paramsp[THALT4]);
-		
-		EEPROMReadStr(MQTTADDROFST,buf);
-		paramsp[MQTTADDR] = buf;
-		DEBUG_PRINT(F("mqttAddr: "));
-		DEBUG_PRINTLN(paramsp[MQTTADDR]);
-		
-		EEPROMReadStr(MQTTIDOFST,buf);
-		paramsp[MQTTID] = buf;
-		DEBUG_PRINT(F("mqttID: "));
-		DEBUG_PRINTLN(paramsp[MQTTID]);
-		
-		EEPROMReadStr(OUTTOPICOFST,buf);
-		paramsp[MQTTOUTTOPIC] = buf;
-		DEBUG_PRINT(F("mqttOutTopic: "));
-		DEBUG_PRINTLN(paramsp[MQTTOUTTOPIC]);
-		
-		EEPROMReadStr(INTOPICOFST,buf);
-		paramsp[MQTTINTOPIC] = buf;
-		DEBUG_PRINT(F("mqttInTopic: "));
-		DEBUG_PRINTLN(paramsp[MQTTINTOPIC]);
-		
-		EEPROMReadStr(MQTTJSONUP1OFST,buf);
-		mqttJsonp[MQTTJSONUP1] = buf;
-		DEBUG_PRINT(F("MQTTJSONUP1: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP1]);
-		
-		EEPROMReadStr(MQTTJSONDOWN1OFST,buf);
-		mqttJsonp[MQTTJSONDOWN1] = buf;
-		DEBUG_PRINT(F("MQTTJSONDOWN1: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN1]);
-		
-		EEPROMReadStr(MQTTJSONUP2OFST,buf);
-		mqttJsonp[MQTTJSONUP2] = buf;
-		DEBUG_PRINT(F("MQTTJSONUP2: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP2]);
-		
-		EEPROMReadStr(MQTTJSONDOWN2OFST,buf);
-		mqttJsonp[MQTTJSONDOWN2] = buf;
-		DEBUG_PRINT(F("MQTTJSONDOWN2: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN2]);
-		
-		EEPROMReadStr(MQTTJSONTEMPOFST,buf);
-		mqttJsonp[MQTTJSONTEMP] = buf;
-		DEBUG_PRINT(F("MQTTJSONTEMP: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSONTEMP]);
-		
-		EEPROMReadStr(MQTTJSONMEANPWROFST,buf);
-		mqttJsonp[MQTTJSONMEANPWR] = buf;
-		DEBUG_PRINT(F("MQTTJSONMEANPWR: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSONMEANPWR]);
-		
-		EEPROMReadStr(MQTTJSONPEAKPWROFST,buf);
-		mqttJsonp[MQTTJSONPEAKPWR] = buf;
-		DEBUG_PRINT(F("MQTTJSONPEAKPWR: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSONPEAKPWR]);
-		
-		EEPROMReadStr(MQTTJSONALLOFST,buf);
-		mqttJsonp[MQTTJSONALL] = buf;
-		DEBUG_PRINT(F("MQTTJSONALL: "));
-		DEBUG_PRINTLN(mqttJsonp[MQTTJSONALL]);
-		
-		EEPROMReadStr(WIFICLIENTSSIDOFST1,buf);
-		paramsp[CLNTSSID1] = buf;
-		DEBUG_PRINT(F("clntSsid1: "));
-		DEBUG_PRINTLN(paramsp[CLNTSSID1]);
-		
-		EEPROMReadStr(WIFICLIENTPSWOFST1,buf);
-		paramsp[CLNTPSW1] = buf;
-		DEBUG_PRINT(F("clntPsw1: "));
-		DEBUG_PRINTLN(paramsp[CLNTPSW1]);
-		
-		EEPROMReadStr(WIFICLIENTSSIDOFST2,buf);
-		paramsp[CLNTSSID2] = buf;
-		DEBUG_PRINT(F("clntSsid2: "));
-		DEBUG_PRINTLN(paramsp[CLNTSSID2]);
-		
-		EEPROMReadStr(WIFICLIENTPSWOFST2,buf);
-		paramsp[CLNTPSW2] = buf;
-		DEBUG_PRINT(F("clntPsw2: "));
-		DEBUG_PRINTLN(paramsp[CLNTPSW2]);
-		
-		EEPROMReadStr(WIFIAPSSIDOFST,buf);
-		paramsp[APPSSID] = buf;
-		DEBUG_PRINT(F("APSsid: "));
-		DEBUG_PRINTLN(paramsp[APPSSID]);
-		
-		EEPROMReadStr(WIFIAPPPSWOFST,buf);
-		paramsp[APPPSW] = buf;
-		DEBUG_PRINT(F("APPPSW: "));
-		DEBUG_PRINTLN(paramsp[APPPSW]);
-		
-		EEPROMReadStr(WEBUSROFST,buf);
-		paramsp[WEBUSR] = buf;
-		DEBUG_PRINT(F("webUsr: "));
-		DEBUG_PRINTLN(paramsp[WEBUSR]);
-		
-		EEPROMReadStr(WEBPSWOFST,buf);
-		paramsp[WEBPSW] = buf;
-		DEBUG_PRINT(F("webPsw: "));
-		DEBUG_PRINTLN(paramsp[WEBPSW]);
-		
-		EEPROMReadStr(MQTTUSROFST,buf);
-		paramsp[MQTTUSR] = buf;
-		DEBUG_PRINT(F("mqtt user name: "));
-		DEBUG_PRINTLN(paramsp[MQTTUSR]);
-		
-		EEPROMReadStr(MQTTPSWOFST,buf);
-		paramsp[MQTTPSW] = buf;
-		DEBUG_PRINTLN(F("mqtt user password: "));
-		DEBUG_PRINTLN(paramsp[MQTTPSW]);
-#if (!AUTOCAL)		
-		paramsp[STDEL1] = EEPROMReadFloat(STDEL1OFST);
-		DEBUG_PRINTLN(F("motor start delay1: "));
-		DEBUG_PRINTLN(paramsp[STDEL1]);
-		
-		paramsp[STDEL2] = EEPROMReadFloat(STDEL2OFST);
-		DEBUG_PRINTLN(F("motor start delay2: "));
-		DEBUG_PRINTLN(paramsp[STDEL2]);
-#endif		
-		paramsp[VALWEIGHT] = EEPROMReadFloat(VALWEIGHTOFST);
-		DEBUG_PRINTLN(F("sensor weight: "));
-		DEBUG_PRINTLN(paramsp[VALWEIGHT]);
-		
-		paramsp[TLENGTH] = EEPROMReadFloat(TLENGTHOFST);
-		DEBUG_PRINTLN(F("barrel LENGTH: "));
-		DEBUG_PRINTLN(paramsp[TLENGTH]);
-		
-		paramsp[BARRELRAD] = EEPROMReadFloat(BARRELRADOFST);
-		DEBUG_PRINTLN(F("barrel radius: "));
-		DEBUG_PRINTLN(paramsp[BARRELRAD]);
-		
-		paramsp[THICKNESS] = EEPROMReadFloat(THICKNESSOFST);
-		DEBUG_PRINTLN(F("barrel THICKNESS: "));
-		DEBUG_PRINTLN(paramsp[THICKNESS]);
-		
-		paramsp[SLATSRATIO] = EEPROMReadFloat(SLATSRATIOFST);
-		DEBUG_PRINTLN(F("barrel SLATSRATIO: "));
-		DEBUG_PRINTLN(paramsp[SLATSRATIO]);
-		
-		paramsp[SWROLL1] = EEPROM.read(SWROLL1OFST);
-		DEBUG_PRINTLN(F("rollmode 1 SWROLL1: "));
-		DEBUG_PRINTLN(paramsp[SWROLL1]);
-		rollmode[0] = (paramsp[SWROLL1]).toInt();
-		setSWMode(rollmode[0],0);
-		
-		paramsp[SWROLL2] = EEPROM.read(SWROLL2OFST);
-		DEBUG_PRINTLN(F("rollmode 2 SWROLL2: "));
-		DEBUG_PRINTLN(paramsp[SWROLL2]);
-		rollmode[1] = (paramsp[SWROLL2]).toInt();
-		setSWMode(rollmode[1],1);
-		/*
-		for(i=0; i<4; ++i){
-			//if(rollmode[i/2]==false){
-				paramsp[SWACTION1+i] = (int) EEPROM.read(SWACTION1OFST+i);
-				DEBUG_PRINT(F("switches SWACTION"));
-				DEBUG_PRINT(i+1);
-				DEBUG_PRINT(F(": "));
-				DEBUG_PRINTLN(paramsp[SWACTION1+i]);
-			//}
+		for(int i=VARCONFDIM; i<CONFDIM; i++){
+			loadConf(i);
 		}
-		*/
-		//EEPROMReadStr read until /0 occur
+		
 		varStrOfst[0] = FIXEDPARAMSLEN;
-		for(i=0; i<5; ++i){
+		for(i=0; i<VARCONFDIM; ++i){
 				varStrOfst[i+1] = EEPROMReadStr(varStrOfst[i], buf) + varStrOfst[i];
 				confcmdp[i]=buf;
 				DEBUG_PRINT(F("sensors CONFEXPR "));
@@ -1776,12 +1469,12 @@ void loadConfig() {
 				DEBUG_PRINTLN(confcmdp[i]);
 		}
 			
-		paramsp[CONFLOADED]="true";
+		confcmdp[CONFLOADED]="true";
 		EEPROM.end();
 		DEBUG_PRINTLN(F("EEPROM configuration readed"));
 	}
-}
-
+}		
+		
 //Check if header is present and correct
 bool is_authentified(ESP8266WebServer &server){
 #if (DEBUG)	 
@@ -1821,343 +1514,26 @@ bool is_authentified(ESP8266WebServer &server){
 
 void saveOnEEPROM(int len){
 	int i;
+	char eprom, form;
 	
 	//I parametri devono poter essere modificati
 	DEBUG_PRINTLN(F("Saving configuration...."));
   
-	EEPROM.begin(len);
-	
-	EEPROM.write(SWROLL1OFST, (char) (paramsp[SWROLL1]).toInt());
-	
-	DEBUG_PRINT(F("Modified rollmode 1 SWROLL1 "));
-	DEBUG_PRINTLN(paramsp[SWROLL1]);
-	
-	EEPROM.write(SWROLL2OFST, (char) (paramsp[SWROLL2]).toInt());
-	
-	DEBUG_PRINT(F("Modified rollmode 2 SWROLL2 "));
-	DEBUG_PRINTLN(paramsp[SWROLL2]);
-		
-	EEPROMWriteInt(THALT1OFST,(paramsp[THALT1]).toInt());
-	
-	DEBUG_PRINT(F("Modified THALT1 "));
-	DEBUG_PRINTLN(paramsp[THALT1]);
-
-	EEPROMWriteInt(THALT2OFST,(paramsp[THALT2]).toInt());
-	
-	DEBUG_PRINT(F("Modified THALT2 "));
-	DEBUG_PRINTLN(paramsp[THALT2]);
-	
-	EEPROMWriteInt(THALT3OFST,(paramsp[THALT3]).toInt());
-	
-	DEBUG_PRINT(F("Modified THALT3 "));
-	DEBUG_PRINTLN(paramsp[THALT3]);
-
-	EEPROMWriteInt(THALT4OFST,(paramsp[THALT4]).toInt());
-	
-	DEBUG_PRINT(F("Modified THALT4 "));
-	DEBUG_PRINTLN(paramsp[THALT4]);
-	/*
-	for(i=0; i<4; ++i){
-		//if(rollmode[i/2]==false){
-			EEPROM.write(SWACTION1OFST+i, (char) (paramsp[SWACTION1+i]).toInt());
-			DEBUG_PRINT(F("Modified action SWACTION"));
-			DEBUG_PRINT(i+1);
-			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(paramsp[SWACTION1+i]);
-		//}
+	EEPROM.begin(len);	
+	for(int i=VARCONFDIM; i<CONFDIM; i++){
+		saveConf(i);
 	}
-	*/
-	EEPROMWriteStr(MQTTADDROFST,(paramsp[MQTTADDR]).c_str(),64);
-	
-	DEBUG_PRINT(F("Modified mqttAddr "));
-	DEBUG_PRINTLN(paramsp[MQTTADDR]);
-	//indirizzo MQTT cambiato!
-	//paramsp[MQTTADDRMODFIED]="true"
-
-	EEPROMWriteStr(MQTTIDOFST,(paramsp[MQTTID]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttID "));
-	DEBUG_PRINTLN(paramsp[MQTTID]);
-
-	EEPROMWriteStr(OUTTOPICOFST,(paramsp[MQTTOUTTOPIC]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttOutTopic "));
-	DEBUG_PRINTLN(paramsp[MQTTOUTTOPIC]);
-	//Topic MQTT cambiato!
-	//paramsp[TOPICCHANGED]="true"
-
-	EEPROMWriteStr(INTOPICOFST,(paramsp[MQTTINTOPIC]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified mqttInTopic "));
-	DEBUG_PRINTLN(paramsp[MQTTINTOPIC]);
-	//Topic MQTT cambiato!
-	//paramsp[TOPICCHANGED]="true"
-
-	EEPROMWriteStr(MQTTJSONUP1OFST,(mqttJsonp[MQTTJSONUP1]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTTJSONUP1 "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP1]);
-	
-	EEPROMWriteStr(MQTTJSONDOWN1OFST,(mqttJsonp[MQTTJSONDOWN1]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTTJSONDOWN1 "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN1]);
-
-	EEPROMWriteStr(MQTTJSONUP2OFST,(mqttJsonp[MQTTJSONUP2]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTTJSONUP2 "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONUP2]);
-	
-	EEPROMWriteStr(MQTTJSONDOWN2OFST,(mqttJsonp[MQTTJSONDOWN2]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTTJSONDOWN2 "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONDOWN2]);
-	
-	EEPROMWriteStr(MQTTJSONTEMPOFST,(mqttJsonp[MQTTJSONTEMP]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTTJSONTEMP "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONTEMP]);
-	
-	EEPROMWriteStr(MQTTJSONMEANPWROFST,(mqttJsonp[MQTTJSONMEANPWR]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTTJSONMEANPWR "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONMEANPWR]);
-	
-	EEPROMWriteStr(MQTTJSONPEAKPWROFST,(mqttJsonp[MQTTJSONPEAKPWR]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTTJSONPEAKPWR "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONPEAKPWR]);
-	
-	EEPROMWriteStr(MQTTJSONALLOFST,(mqttJsonp[MQTTJSONALL]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTTJSONALL "));
-	DEBUG_PRINTLN(mqttJsonp[MQTTJSONALL]);
-	
-	EEPROMWriteStr(WIFICLIENTSSIDOFST1,(paramsp[CLNTSSID1]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified clntSsid1 "));
-	DEBUG_PRINTLN(paramsp[CLNTSSID1]);
-	//paramsp[WIFICHANGED]="true"
-
-	EEPROMWriteStr(WIFICLIENTPSWOFST1,(paramsp[CLNTPSW1]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified clntPsw1 "));
-	DEBUG_PRINTLN(paramsp[CLNTPSW1]);
-	//paramsp[WIFICHANGED]="true"
-	
-	EEPROMWriteStr(WIFICLIENTSSIDOFST2,(paramsp[CLNTSSID2]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified clntSsid2 "));
-	DEBUG_PRINTLN(paramsp[CLNTSSID2]);
-	//paramsp[WIFICHANGED]="true"
-
-	EEPROMWriteStr(WIFICLIENTPSWOFST2,(paramsp[CLNTPSW2]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified clntPsw2 "));
-	DEBUG_PRINTLN(paramsp[CLNTPSW2]);
-	//paramsp[WIFICHANGED]="true"
-
-	EEPROMWriteStr(WIFIAPSSIDOFST,(paramsp[APPSSID]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified APSsid "));
-	DEBUG_PRINTLN(paramsp[APPSSID]);
-	//paramsp[WIFICHANGED]="true"
-
-	EEPROMWriteStr(WIFIAPPPSWOFST,(paramsp[APPPSW]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified APPPSW "));
-	DEBUG_PRINTLN(paramsp[APPPSW]);
-	//paramsp[WIFICHANGED]="true"
-
-	EEPROMWriteStr(WEBUSROFST,(paramsp[WEBUSR]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified webUsr "));
-	DEBUG_PRINTLN(paramsp[WEBUSR]);
-	
-	EEPROMWriteStr(WEBPSWOFST,(paramsp[WEBPSW]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified webPsw "));
-	DEBUG_PRINTLN(paramsp[WEBPSW]);
-	
-	EEPROMWriteStr(MQTTUSROFST,(paramsp[MQTTUSR]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTT username "));
-	DEBUG_PRINTLN(paramsp[MQTTUSR]);
-	//paramsp[MQTTCONNCHANGED]="true"
-
-	EEPROMWriteStr(MQTTPSWOFST,(paramsp[MQTTPSW]).c_str(),32);
-	
-	DEBUG_PRINT(F("Modified MQTT password "));
-	DEBUG_PRINTLN(paramsp[MQTTPSW]);
-	//paramsp[MQTTCONNCHANGED]="true"
-#if (!AUTOCAL) 	
-	EEPROMWriteFloat(STDEL1OFST,(paramsp[STDEL1]).toFloat());
-	
-	DEBUG_PRINT(F("Modified start delay 1 "));
-	DEBUG_PRINTLN(paramsp[STDEL1]);
-	
-	EEPROMWriteFloat(STDEL2OFST,(paramsp[STDEL2]).toFloat());
-	
-	DEBUG_PRINT(F("Modified start delay 2 "));
-	DEBUG_PRINTLN(paramsp[STDEL2]);
-#endif	
-	EEPROMWriteFloat(VALWEIGHTOFST,(paramsp[VALWEIGHT]).toFloat());
-	
-	DEBUG_PRINT(F("Modified sensor weight "));
-	DEBUG_PRINTLN(paramsp[VALWEIGHT]);
-	
-	EEPROMWriteFloat(TLENGTHOFST,(paramsp[TLENGTH]).toFloat());
-	
-	DEBUG_PRINT(F("Modified barrel length "));
-	DEBUG_PRINTLN(paramsp[TLENGTH]);
-	
-	EEPROMWriteFloat(BARRELRADOFST,(paramsp[BARRELRAD]).toFloat());
-	
-	DEBUG_PRINT(F("Modified barrel radius "));
-	DEBUG_PRINTLN(paramsp[BARRELRAD]);
-	
-	EEPROMWriteFloat(THICKNESSOFST,(paramsp[THICKNESS]).toFloat());
-	
-	DEBUG_PRINT(F("Modified barrel THICKNESS "));
-	DEBUG_PRINTLN(paramsp[THICKNESS]);
-	
-	EEPROMWriteFloat(SLATSRATIOFST,(paramsp[SLATSRATIO]).toFloat());
-	
-	DEBUG_PRINT(F("Modified barrel SLATSRATIO "));
-	DEBUG_PRINTLN(paramsp[SLATSRATIO]);
-	
-    EEPROM.end();
+	EEPROM.end();
 	
 	writeOnOffConditions();
 }
-
+	
 void printConfig(){
 		int i;
 		
 		DEBUG_PRINT(F("\nPrinting EEPROM configuration...."));
 		
-		DEBUG_PRINT(F("\nTHALT1: "));
-		DEBUG_PRINT(paramsp[THALT1]);
-		
-		DEBUG_PRINT(F("\nTHALT2: "));
-		DEBUG_PRINT(paramsp[THALT2]);
-		
-		DEBUG_PRINT(F("\nTHALT3: "));
-		DEBUG_PRINT(paramsp[THALT3]);
-		
-		DEBUG_PRINT(F("\nTHALT4: "));
-		DEBUG_PRINT(paramsp[THALT4]);
-		
-		DEBUG_PRINT(F("\nmqttAddr: "));
-		DEBUG_PRINT(paramsp[MQTTADDR]);
-		
-		DEBUG_PRINT(F("\nmqttID: "));
-		DEBUG_PRINT(paramsp[MQTTID]);
-		
-		DEBUG_PRINT(F("\nmqttOutTopic: "));
-		DEBUG_PRINT(paramsp[MQTTOUTTOPIC]);
-		
-		DEBUG_PRINT(F("\nmqttInTopic: "));
-		DEBUG_PRINT(paramsp[MQTTINTOPIC]);
-		
-		DEBUG_PRINT(F("\nMQTTJSONUP1: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSONUP1]);
-		
-		DEBUG_PRINT(F("\nMQTTJSONDOWN1: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSONDOWN1]);
-		
-		DEBUG_PRINT(F("\nMQTTJSONUP2: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSONUP2]);
-		
-		DEBUG_PRINT(F("\nMQTTJSONDOWN2: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSONDOWN2]);
-		
-		DEBUG_PRINT(F("\nMQTTJSONTEMP: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSONTEMP]);
-		
-		DEBUG_PRINT(F("\nMQTTJSONMEANPWR: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSONMEANPWR]);
-		
-		DEBUG_PRINT(F("\nMQTTJSONPEAKPWR: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSONPEAKPWR]);
-		
-		DEBUG_PRINT(F("\nMQTTJSONALL: "));
-		DEBUG_PRINT(mqttJsonp[MQTTJSONALL]);
-		
-		DEBUG_PRINT(F("\nclntSsid1: "));
-		DEBUG_PRINT(paramsp[CLNTSSID1]);
-		
-		DEBUG_PRINT(F("\nclntPsw1: "));
-		DEBUG_PRINT(paramsp[CLNTPSW1]);
-		
-		DEBUG_PRINT(F("\nclntSsid2: "));
-		DEBUG_PRINT(paramsp[CLNTSSID2]);
-		
-		DEBUG_PRINT(F("\nclntPsw2: "));
-		DEBUG_PRINT(paramsp[CLNTPSW2]);
-		
-		DEBUG_PRINT(F("\nAPSsid: "));
-		DEBUG_PRINT(paramsp[APPSSID]);
-		
-		DEBUG_PRINT(F("\nAPPPSW: "));
-		DEBUG_PRINT(paramsp[APPPSW]);
-		
-		DEBUG_PRINT(F("\nwebUsr: "));
-		DEBUG_PRINT(paramsp[WEBUSR]);
-		
-		DEBUG_PRINT(F("\nwebPsw: "));
-		DEBUG_PRINT(paramsp[WEBPSW]);
-		
-		DEBUG_PRINT(F("\nmqtt user name: "));
-		DEBUG_PRINT(paramsp[MQTTUSR]);
-		
-		DEBUG_PRINT(F("\nmqtt user password: "));
-		DEBUG_PRINT(paramsp[MQTTPSW]);
-		
-		DEBUG_PRINT(F("\nmotor start delay1: "));
-		DEBUG_PRINT(paramsp[STDEL1]);
-		
-		DEBUG_PRINT(F("\nmotor start delay2: "));
-		DEBUG_PRINT(paramsp[STDEL2]);
-		
-		DEBUG_PRINT(F("\nsensor weight: "));
-		DEBUG_PRINT(paramsp[VALWEIGHT]);
-		
-		DEBUG_PRINT(F("\nbarrel length: "));
-		DEBUG_PRINT(paramsp[TLENGTH]);
-		
-		DEBUG_PRINT(F("\nbarrel  radius: "));
-		DEBUG_PRINT(paramsp[BARRELRAD]);
-		
-		DEBUG_PRINT(F("\nbarrel THICKNESS: "));
-		DEBUG_PRINT(paramsp[THICKNESS]);
-		
-		DEBUG_PRINT(F("\nbarrel SLATSRATIO: "));
-		DEBUG_PRINT(paramsp[SLATSRATIO]);
-		
-		DEBUG_PRINT(F("\nrollhmode SWROLL1: "));
-		DEBUG_PRINT(paramsp[SWROLL1]);
-		
-		DEBUG_PRINT(F("\nrollhmode SWROLL2: "));
-		DEBUG_PRINT(paramsp[SWROLL2]);
-		/*
-		//if(rollmode[0]){
-			DEBUG_PRINT(F("\nswitch SWACTION1: "));
-			DEBUG_PRINT(paramsp[SWACTION1]);
-			
-			DEBUG_PRINT(F("\nswitch SWACTION2: "));
-			DEBUG_PRINT(paramsp[SWACTION2]);
-		//}	
-			
-		//if(rollmode[1]){
-			DEBUG_PRINT(F("\nswitch SWACTION3: "));
-			DEBUG_PRINT(paramsp[SWACTION3]);
-			
-			DEBUG_PRINT(F("\nswitch SWACTION4: "));
-			DEBUG_PRINT(paramsp[SWACTION4]);
-		//}	
-		*/	
-		for(i=0; i<CONFJSONDIM; ++i){
+		for(i=0; i<VARCONFDIM; ++i){
 			DEBUG_PRINT(F("\nsensors CONFEXPR "));
 			DEBUG_PRINT(i);
 			DEBUG_PRINT(F(": "));
@@ -2166,32 +1542,222 @@ void printConfig(){
 			DEBUG_PRINT(i);
 			DEBUG_PRINT(F(": "));
 			DEBUG_PRINT(varStrOfst[i]);
-		}	
+		}
 		
+		for(int i=VARCONFDIM; i<CONFDIM; i++){
+			printFixedParam(i);
+		}
+
 		DEBUG_PRINT(F("\neeprom EEPROMLENOFST: "));
-		DEBUG_PRINT(varStrOfst[CONFJSONDIM]);
-}
-/*
-void writeOnOffAction(byte id, byte n){
+		DEBUG_PRINT(varStrOfst[VARCONFDIM]);
+}		
+
+void saveSingleParam(unsigned paramofst){
 	eepromBegin();
-	EEPROM.write(SWACTION1OFST+n, id);
+	saveConf(paramofst);
 	EEPROM.end();
-	paramsp[SWACTION1+n] = String(id);
-	DEBUG_PRINT(F("Modified action SWACTION"));
-	DEBUG_PRINT(n+1);
-	DEBUG_PRINT(F(": "));
-	DEBUG_PRINTLN(paramsp[SWACTION1+n]);
 }
-*/
-void writeSWMode(byte id, byte sw){
-	eepromBegin();
-	EEPROM.write(SWROLL1OFST+sw, id);
-	EEPROM.end();
-	paramsp[SWROLL1OFST+sw] = String(id);
-	DEBUG_PRINT(F("Modified action SWROLL"));
-	DEBUG_PRINT(sw+1);
-	DEBUG_PRINT(F(": "));
-	DEBUG_PRINTLN(paramsp[SWROLL1OFST+sw]);
+
+void updtConf(unsigned paramofst, String val){
+	char partype;
+	unsigned eepromofst;
+	char* param;
+	
+	param = parsp[paramofst]->parname;
+	eepromofst = parsp[paramofst]->eprom;
+	partype = parsp[paramofst]->partype;
+	if(partype == 'p'){
+		confcmdp[paramofst] = val;
+		parsp[paramofst]->writeParam(confcmdp[paramofst]);
+		
+		DEBUG_PRINT(F("Modified param: "));
+		DEBUG_PRINTLN(param);
+		DEBUG_PRINT(F(" : "));
+		DEBUG_PRINTLN(confcmdp[paramofst]);	
+	}else if(partype == 'j'){
+		mqttJsonp[paramofst] = val; 
+		EEPROMWriteStr(eepromofst,(mqttJsonp[paramofst]).c_str(),32);
+		
+		DEBUG_PRINT(F("Modified json: "));
+		DEBUG_PRINTLN(param);
+		DEBUG_PRINT(F(" : "));
+		DEBUG_PRINTLN(mqttJsonp[paramofst]);	
+	}
+}
+
+void saveConf(unsigned paramofst){
+	char partype;
+	unsigned eepromofst;
+	char* param;
+	
+	param = parsp[paramofst]->parname;
+	eepromofst = parsp[paramofst]->eprom;
+	partype = parsp[paramofst]->partype;
+	if(partype == 'p'){
+		parsp[paramofst]->writeParam(confcmdp[paramofst]);
+		
+		DEBUG_PRINT(F("Modified param: "));
+		DEBUG_PRINTLN(param);
+		DEBUG_PRINT(F(" : "));
+		DEBUG_PRINTLN(confcmdp[paramofst]);	
+	}else if(partype == 'j'){	
+		EEPROMWriteStr(eepromofst,(mqttJsonp[paramofst]).c_str(),32);
+		
+		DEBUG_PRINT(F("Modified json: "));
+		DEBUG_PRINTLN(param);
+		DEBUG_PRINT(F(" : "));
+		DEBUG_PRINTLN(mqttJsonp[paramofst]);	
+	}
+}
+
+void loadConf(unsigned paramofst){
+	char partype;
+	unsigned eepromofst;
+	char buf[50];
+	char* param;
+	
+	param = parsp[paramofst]->parname;
+	eepromofst = parsp[paramofst]->eprom;
+	partype = parsp[paramofst]->partype;
+	if(partype == 'p'){
+		confcmdp[paramofst] = parsp[paramofst]->getParam();
+		
+		DEBUG_PRINT(F("Load param: "));
+		DEBUG_PRINTLN(param);
+		DEBUG_PRINT(F(" : "));
+		DEBUG_PRINTLN(confcmdp[paramofst]);
+	}else if(partype == 'j'){	
+		EEPROMReadStr(eepromofst,buf);
+		mqttJsonp[paramofst] = buf;	
+			
+		DEBUG_PRINT(F("Load json: "));
+		DEBUG_PRINTLN(param);
+		DEBUG_PRINT(F(" : "));
+		DEBUG_PRINTLN(mqttJsonp[paramofst]);	
+	}
+}
+
+void printFixedParam(unsigned paramofst){
+	char eprom, partype;
+	unsigned eepromofst;
+	char* param;
+	
+	param = parsp[paramofst]->parname;
+	eepromofst = parsp[paramofst]->eprom;
+	partype = parsp[paramofst]->partype;
+	if(partype == 'p'){
+		if(eprom != 'v'){
+			DEBUG_PRINT(F("\nsensors CONFEXPR "));
+			DEBUG_PRINT(param);
+			DEBUG_PRINT(F(": "));
+			DEBUG_PRINTLN(confcmdp[paramofst]);
+		}	
+	}else if(partype == 'j'){	
+		DEBUG_PRINT(F("json: "));
+		DEBUG_PRINTLN(param);
+		DEBUG_PRINT(F(" : "));
+		DEBUG_PRINTLN(mqttJsonp[paramofst]);	
+	}
+}
+
+void saveParamFromForm(unsigned paramofst){
+	char buf[50];
+	char partype;
+	char intype;
+	char* param;
+	
+	param = parsp[paramofst]->parname;
+	intype = parsp[paramofst]->formfield;
+	partype = parsp[paramofst]->partype;
+	if(intype == 'i'){//form element input or text area
+		if(partype == 'p'){
+			if(serverp.hasArg(param) && (confcmdp[paramofst] != String(serverp.arg(param))) ){
+				confcmdp[paramofst] = serverp.arg(param);
+				parsp[paramofst]->writeParam(confcmdp[paramofst]);
+				
+				DEBUG_PRINT(F("Updated param: "));
+				DEBUG_PRINTLN(param);
+				DEBUG_PRINT(F(" : "));
+				DEBUG_PRINTLN(confcmdp[paramofst]);
+			}				
+		}else if(partype == 'j'){
+			if(serverp.hasArg(param) && (mqttJsonp[paramofst] != String(serverp.arg(param))) ){
+				mqttJsonp[paramofst] = serverp.arg(param);
+				parsp[paramofst]->writeParam(mqttJsonp[paramofst]);
+				
+				DEBUG_PRINT(F("Updated param: "));
+				DEBUG_PRINTLN(param);
+				DEBUG_PRINT(F(" : "));
+				DEBUG_PRINTLN(mqttJsonp[paramofst]);
+			}
+		}
+
+	}//form element input or text area		
+}
+
+//conservata in eeprom, acquisita in form, sia nome che valore campo MQTT
+Par::Par(const char* pname, unsigned epromofst, char ptype, char ffield){
+	parname = (char *) pname;
+	eprom = epromofst;
+	formfield = ffield;
+	partype = ptype;
+}
+
+String Par::getParam(){
+	return  "";
+}
+
+void Par::writeParam(String &str){}
+
+String ParByte::getParam(){
+	return  String((byte)EEPROM.read(eprom));
+}
+
+void ParByte::writeParam(String &str){
+	byte app = str.toInt();
+	EEPROM.write(eprom, app);
+}
+
+String ParInt::getParam(){
+	return  String(EEPROMReadInt(eprom));
+}
+
+void ParInt::writeParam(String &str){
+	EEPROMWriteInt(eprom, str.toInt());
+}
+
+String ParLong::getParam(){
+	return  String(EEPROMReadLong(eprom));
+}
+
+void ParLong::writeParam(String &str){
+	EEPROMWriteLong(eprom,strtoul(str.c_str(), NULL, 10));
+}
+
+String ParFloat::getParam(){
+	return  String(EEPROMReadFloat(eprom));
+}
+
+void ParFloat::writeParam(String &str){
+	EEPROMWriteFloat(eprom,str.toFloat());
+}
+
+String ParStr32::getParam(){
+	char buf[32];
+	return  String(EEPROMReadStr(eprom, buf,32));
+}
+
+void ParStr32::writeParam(String &str){
+	EEPROMWriteStr(eprom,str.c_str(),32);
+}
+
+String ParStr64::getParam(){
+	char buf[64];
+	return  String(EEPROMReadStr(eprom,buf,64));
+}
+
+void ParStr64::writeParam(String &str){
+	EEPROMWriteStr(eprom,str.c_str(),64);
 }
 
 void writeOnOffConditions(){
@@ -2199,30 +1765,38 @@ void writeOnOffConditions(){
 	
 	eepromBegin();
 	varStrOfst[0] = FIXEDPARAMSLEN;
-	for(i=0; i<CONFJSONDIM; ++i){
+	for(i=0; i<VARCONFDIM; ++i){
 		varStrOfst[i+1] = EEPROMWriteStr(varStrOfst[i], (confcmdp[i]).c_str()) + varStrOfst[i];
 		DEBUG_PRINT(F("Modified sensors CONFEXPR "));
 		DEBUG_PRINT(i);
 		DEBUG_PRINT(F(": "));
 		DEBUG_PRINTLN(confcmdp[i]);
 	}
-	EEPROMWriteInt(EEPROMLENOFST,varStrOfst[CONFJSONDIM]);
+	EEPROMWriteInt(EEPROMLENOFST,varStrOfst[VARCONFDIM]);
 	DEBUG_PRINT(F("Modified sensors EEPROMLENOFST: "));
 	DEBUG_PRINTLN(varStrOfst[i]);
 	EEPROM.end();
 }
 
-void writeHaltDelay(unsigned int dly, byte n){
-	paramsp[THALT1+n]=dly;
-	eepromBegin();
-	EEPROMWriteInt(THALT1OFST,(paramsp[THALT1+n]).toInt());
-	DEBUG_PRINT(F("Modified THALT"));
-	DEBUG_PRINT(n+1);
-	DEBUG_PRINT(F(": "));
-	DEBUG_PRINTLN(paramsp[THALT1+n]);
-	EEPROM.end();
+byte saveByteConf(unsigned paramofst){
+	saveConf(paramofst);
+	return (byte) (confcmdp[paramofst]).toInt();
 }
 
+int saveIntConf(unsigned paramofst){
+	saveConf(paramofst);
+	return (confcmdp[paramofst]).toInt();
+}
+
+long saveLongConf( unsigned paramofst){
+	saveConf(paramofst);
+	return strtoul((confcmdp[paramofst]).c_str(), NULL, 10);
+}
+
+float saveFloatConf(unsigned paramofst){
+	saveConf(paramofst);
+	return (confcmdp[paramofst]).toFloat();
+}
 
 
 

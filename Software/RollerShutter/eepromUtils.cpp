@@ -110,6 +110,20 @@ float EEPROMReadFloat(int offset) //4 byte
 	EEPROM.get(offset,v);
 	return v;
 }
+
+void EEPROMWriteLong(int offset, long value) //4 byte
+{
+	EEPROM.put(offset,value);
+	
+	EEPROM.commit();
+}
+ 
+long EEPROMReadLong(int offset) //4 byte
+{
+	long v;
+	EEPROM.get(offset,v);
+	return v;
+}
 /*
 void EEPROMWriteDouble(int ee, double value) //4 o byte
 {
