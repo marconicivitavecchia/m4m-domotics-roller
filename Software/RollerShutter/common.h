@@ -48,8 +48,10 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH		1
-#define ROLLERSHUTTER 	0
+#define SONOFF_4CH				1
+#define ROLLERSHUTTER 			0
+#define AUTOCAL_HLW8012			1
+#define AUTOCAL_ACS712			0
 
 #if (ROLLERSHUTTER)
   #define SCR    1  
@@ -91,7 +93,8 @@
 #define ONE_WIRE_BUS 2  // DS18B20 pin
 #define RUNDELAY  	1
 #define DELTAL		4
-#define AUTOCAL		1
+#define AUTOCAL_HLW8012		1
+#define AUTOCAL_ACS712		0
 #define NSIGMA 		3
 #define EMA  		0.8
 #define THALTMAX   	90000 
@@ -334,8 +337,42 @@
 #define EXTCONFDIM			13
 #define TOSAVEPARAMS		41
 //--------------------------Fine array indexes-----------------------------------
+#if (AUTOCAL_HLW8012 || AUTOCAL_ACS712) 
+#define	AUTOCAL		1
+#endif
+
+#if (AUTOCAL_HLW8012) 
+#define TBASE 			25	
+#define MAINPROCSTEP	2
+#define ONESEC_STEP		40
+#define STOP_STEP		1
+#define SEL_PIN			5
+#define CF1_PIN			13
+#define CF_PIN			14
+// Set SEL_PIN to HIGH to sample current
+// This is the case for Itead's Sonoff POW, where a
+// the SEL_PIN drives a transistor that pulls down
+// the SEL pin in the HLW8012 when closed
+#define CURRENT_MODE                    HIGH
+
+// These are the nominal values for the resistors in the circuit
+#define CURRENT_RESISTOR                0.001
+#define VOLTAGE_RESISTOR_UPSTREAM       ( 5 * 470000 ) // Real: 2280k
+#define VOLTAGE_RESISTOR_DOWNSTREAM     ( 1000 ) // Real 1.009k
+#endif
+
+#if (AUTOCAL_ACS712) 
+#define TBASE 			2	
+#define MAINPROCSTEP 	60
+#define ONESEC_STEP		500
+#define STOP_STEP		10
+#endif
+
 
 #if (LARGEFW)
+	#if (AUTOCAL_HLW8012) 
+		#include "HLW8012.h"
+	#endif
 	//#include <WiFiUdp.h>
 	#include <ESP8266mDNS.h>
 	#include <RemoteDebug.h>                  // https://github.com/JoaoLopesF/RemoteDebug

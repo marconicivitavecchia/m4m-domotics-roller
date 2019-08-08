@@ -1,7 +1,6 @@
 #include "common.h"
 //End MQTT config------------------------------------------
 //inizio variabili e costanti dello schedulatore (antirimbalzo)
-#define time_base     	2            // periodo base in millisecondi
 #define nsteps          12000        // numero di fasi massimo di un periodo generico
 
 //global strings
@@ -136,8 +135,6 @@ String confcmd[CONFDIM]={/*len variabile-->*/"","","","","",""/*len fissa-->*/,"
 //contain parameters of confJson[] and confcmd[] that are to be saved or modified via web
 Par *pars[TOSAVEPARAMS + USRMODIFICABLEFLAGS];
 
-
-
 ESP8266WebServer server(80);    	// Create a webserver object that listens for HTTP request on port 80
 WebSocketsServer webSocket(81);	    // create a websocket server on port 81
 ESP8266HTTPUpdateServer httpUpdater;
@@ -181,6 +178,70 @@ bool mqttAddrChanged=true;
 bool dscnct=false;
 String pr[3] = {"{\"pr1\":\"", "{\"pr2\":\"", "\"}"};
 //-----------------------------------------Begin of prototypes---------------------------------------------------------
+#if (AUTOCAL_HLW8012 && LARGEFW) 
+HLW8012 hlw8012;
+
+// When using interrupts we have to call the library entry point
+		// whenever an interrupt is triggered
+void ICACHE_RAM_ATTR hlw8012_cf1_interrupt() {
+	hlw8012.cf1_interrupt();
+}
+
+void ICACHE_RAM_ATTR hlw8012_cf_interrupt() {
+	hlw8012.cf_interrupt();
+}
+
+// Library expects an interrupt on both edges
+void setInterrupts() {
+	attachInterrupt(CF1_PIN, hlw8012_cf1_interrupt, CHANGE);
+	attachInterrupt(CF_PIN, hlw8012_cf_interrupt, CHANGE);
+}
+
+void calibrate() {
+	// Let some time to register values
+	unsigned long timeout = millis();
+	while ((millis() - timeout) < 10000) {
+		delay(1);
+	}
+
+	// Calibrate using a 60W bulb (pure resistive) on a 230V line
+	hlw8012.expectedActivePower(60.0);
+	hlw8012.expectedVoltage(230.0);
+	hlw8012.expectedCurrent(60.0 / 230.0);
+
+	// Show corrected factors
+	Serial.print("[HLW] New current multiplier : "); Serial.println(hlw8012.getCurrentMultiplier());
+	Serial.print("[HLW] New voltage multiplier : "); Serial.println(hlw8012.getVoltageMultiplier());
+	Serial.print("[HLW] New power multiplier   : "); Serial.println(hlw8012.getPowerMultiplier());
+}
+
+void HLW8012_init(){
+		// Initialize HLW8012
+		// void begin(unsigned char cf_pin, unsigned char cf1_pin, unsigned char sel_pin, unsigned char currentWhen = HIGH, bool use_interrupts = false, unsigned long pulse_timeout = PULSE_TIMEOUT);
+		// * cf_pin, cf1_pin and sel_pin are GPIOs to the HLW8012 IC
+		// * currentWhen is the value in sel_pin to select current sampling
+		// * set use_interrupts to true to use interrupts to monitor pulse widths
+		// * leave pulse_timeout to the default value, recommended when using interrupts
+		hlw8012.begin(CF_PIN, CF1_PIN, SEL_PIN, CURRENT_MODE, true);
+
+		// These values are used to calculate current, voltage and power factors as per datasheet formula
+		// These are the nominal values for the Sonoff POW resistors:
+		// * The CURRENT_RESISTOR is the 1milliOhm copper-manganese resistor in series with the main line
+		// * The VOLTAGE_RESISTOR_UPSTREAM are the 5 470kOhm resistors in the voltage divider that feeds the V2P pin in the HLW8012
+		// * The VOLTAGE_RESISTOR_DOWNSTREAM is the 1kOhm resistor in the voltage divider that feeds the V2P pin in the HLW8012
+		hlw8012.setResistors(CURRENT_RESISTOR, VOLTAGE_RESISTOR_UPSTREAM, VOLTAGE_RESISTOR_DOWNSTREAM);
+
+		// Show default (as per datasheet) multipliers
+		Serial.print("[HLW] Default current multiplier : "); Serial.println(hlw8012.getCurrentMultiplier());
+		Serial.print("[HLW] Default voltage multiplier : "); Serial.println(hlw8012.getVoltageMultiplier());
+		Serial.print("[HLW] Default power multiplier   : "); Serial.println(hlw8012.getPowerMultiplier());
+		Serial.println();
+
+		setInterrupts();
+		//calibrate();
+}
+#endif
+
 //-----------------------------------------End of prototypes---------------------------------------------------------
 inline void initOfst(){
 	//------------------------------------------
@@ -996,6 +1057,9 @@ void setup() {
   setupNTP();
   //setTimerState(wfs, CONNSTATSW);
 #if(LARGEFW)
+#if (AUTOCAL_HLW8012) 
+  HLW8012_init();
+#endif    
   telnet.begin((confcmd[MQTTID]).c_str()); // Initiaze the telnet server
   telnet.setResetCmdEnabled(true); // Enable the reset command
   telnet.setCallBackProjectCmds(&processCmdRemoteDebug);
@@ -1225,21 +1289,23 @@ inline void loop2() {
   //---------------------------------------------------------------------
   // 2 msec scheduler (main scheduler)
   //------------------------------------------------------------------------
-  if((millis()-prec) > time_base) //schedulatore per tempo base 
+  if((millis()-prec) > TBASE) //schedulatore per tempo base 
   {	
 	prec = millis();
-	//prec += time_base;
 	//calcolo dei multipli interi del tempo base
 	step = (step + 1) % nsteps;
 	
 #if (AUTOCAL) 
 	if(dosmpl){//solo a motore in moto
+#if (AUTOCAL_ACS712) 
 		currentPeakDetector();
+#endif
 	}
+
 	//---------------------------------------------------------------------
-	// 20 msec scheduler
+	// 10-20 msec scheduler
 	//---------------------------------------------------------------------
-	if(!(step % 10)){		
+	if(!(step % STOP_STEP)){		
 		automaticStopManager();
 	}//END 20ms scheduler--------------------------------------------------
 #endif
@@ -1247,7 +1313,7 @@ inline void loop2() {
 	//---------------------------------------------------------------------
 	// 1 sec scheduler
 	//---------------------------------------------------------------------
-	if(!(step % 500)){
+	if(!(step % ONESEC_STEP)){
 		updateCounters();
 		
 		if(!(isrun[0] || isrun[1])){//solo a motore fermo! Per evitare contemporaneità col currentPeakDetector
@@ -1276,9 +1342,9 @@ inline void loop2() {
 	}//END 1 sec scheduler-----------------------------------------------------
 	
 	//---------------------------------------------------------------------
-	// 60 msec scheduler
+	// 50-60 msec scheduler
 	//---------------------------------------------------------------------
-	if(!(step % 30)){		
+	if(!(step % MAINPROCSTEP)){		
 		//leggi ingressi locali e mette il loro valore sull'array val[]
 		leggiTastiLocali();
 		leggiTastiLocaliRemoto();
@@ -1301,13 +1367,15 @@ inline void loop2() {
 		//------------------------------------------------------------------------------------------------------------
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
 		if((wifiConn == false && !(isrun[0] || isrun[1]))){
+#if (AUTOCAL_ACS712) 
 			DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
 			delay(30);//give 30ms to the ESP stack for wifi connect
+#endif  
 			wifiConn = (WiFi.status() == WL_CONNECTED);
 		}
 		//------------------------------------------------------------------------------------------------------------
-	}//END 60ms scheduler------------------------------------------------------------------------------------
-  }//END Time base (2 msec) main scheduler------------------------------------------------------------------------  
+	}//END 50-60ms scheduler------------------------------------------------------------------------------------
+  }//END Time base (2-20 msec) main scheduler------------------------------------------------------------------------  
   //POST SCHEDULERS ACTIONS-----------------
 #if(LARGEFW)
   telnet.handle();
@@ -1492,6 +1560,7 @@ inline void leggiTastiRemoti(){
 	}
 }
 
+#if (AUTOCAL_ACS712) 
 inline void currentPeakDetector(){
 	//AC current peak detector
         system_soft_wdt_stop();
@@ -1515,6 +1584,7 @@ inline void currentPeakDetector(){
         ets_intr_unlock(); //open interrupt
         system_soft_wdt_restart();
 }
+#endif
 
 inline void sensorStatePoll(){
 	//sensor variation polling management
@@ -1553,14 +1623,21 @@ inline void sensorStatePoll(){
 inline void automaticStopManager(){
 	if((isrun[0] || isrun[1])){
 			//automatic stop manager
+#if (AUTOCAL_ACS712) 
 			dd = maxx - minx;
+#endif
+#if (AUTOCAL_HLW8012) 
+			//dd = hlw8012.getActivePower();
+			//dd = hlw8012.getExtimActivePower();
+			dd = hlw8012.getAvgdExtimActivePower();
+#endif
 			//EMA calculation
 			//ACSVolt = (double) ex/2.0;
 			//peak = (double) ex/2.0;
 			//reset of peak sample value
 			DEBUG_PRINT(F("\n("));
 			DEBUG_PRINT(0);
-			DEBUG_PRINT(F(") ADC enable: "));
+			DEBUG_PRINT(F(") sensor enable: "));
 			DEBUG_PRINT(dosmpl);
 			
 			if(isrun[0] && dosmpl){
@@ -1569,6 +1646,7 @@ inline void automaticStopManager(){
 					ex[0] = dd*EMA + (1.0 - EMA)*ex[0];
 					DEBUG_PRINT(F("\n("));
 					DEBUG_PRINT(0);
+#if (AUTOCAL_ACS712) 
 					DEBUG_PRINT(F(") minx sensor: "));
 					DEBUG_PRINT(minx);
 					DEBUG_PRINT(F(" - maxx sensor: "));
@@ -1577,6 +1655,7 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(m);
 					DEBUG_PRINT(F(" - Peak: "));
 					DEBUG_PRINT(ex[0]);
+#endif
 					DEBUG_PRINT(F(" - diff: "));
 					DEBUG_PRINT(dd);
 					//DEBUG_PRINT(F("\n("));
@@ -1707,6 +1786,7 @@ inline void automaticStopManager(){
 			dosmpl = true;
 			//DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}else{
+#if (AUTOCAL_ACS712) 
 			//zero detection manager
 			//zero detection scheduler
 			zeroCnt = (zeroCnt + 1) % 50;
@@ -1729,6 +1809,7 @@ inline void automaticStopManager(){
 				//DEBUG_PRINT(F(" - Zero mean sensor: "));
 				//DEBUG_PRINT(m);
 			}
+#endif
 		}	
 }
 
