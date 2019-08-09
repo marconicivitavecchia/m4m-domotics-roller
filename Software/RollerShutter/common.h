@@ -50,8 +50,8 @@
 //Definizione modello
 #define SONOFF_4CH				1
 #define ROLLERSHUTTER 			0
-#define AUTOCAL_HLW8012			1
-#define AUTOCAL_ACS712			0
+#define AUTOCAL_HLW8012			0
+#define AUTOCAL_ACS712			1
 
 #if (ROLLERSHUTTER)
   #define SCR    1  
@@ -336,6 +336,7 @@
 #define VARCONFDIM			6
 #define EXTCONFDIM			13
 #define TOSAVEPARAMS		41
+#define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
 //--------------------------Fine array indexes-----------------------------------
 #if (AUTOCAL_HLW8012 || AUTOCAL_ACS712) 
 #define	AUTOCAL		1
@@ -388,6 +389,7 @@
 	#define _DEBUG1   	    0		
 #endif
 
+//#define NELEMS(x)  (sizeof(x) / sizeof((x)[0]))
 //-----------------------_DEBUG1 MACRO------------------------------------------------------------
 //#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
 //#define PGMT( pgm_ptr ) ( reinterpret_cast< const __FlashStringHelper * >( pgm_ptr ) )
@@ -423,7 +425,8 @@
 
 class Par{
 	public:
-		char* parname;
+		char* parname = "empty";
+		//unsigned pofst;
 		unsigned eprom;
 		char formfield;
 		char partype;
@@ -437,10 +440,6 @@ class Par{
 class ParByte : public Par{
 	
 	public:
-		char* parname;
-		unsigned eprom;
-		char formfield;
-		char partype;
 		
 		ParByte(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
 		
@@ -451,10 +450,6 @@ class ParByte : public Par{
 class ParInt : public Par{
 	
 	public:
-		char* parname;
-		unsigned eprom;
-		char formfield;
-		char partype;
 		
 		ParInt(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
 		
@@ -465,10 +460,6 @@ class ParInt : public Par{
 class ParLong : public Par{
 	
 	public:
-		char* parname;
-		unsigned eprom;
-		char formfield;
-		char partype;
 		
 		ParLong(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
 		
@@ -479,10 +470,6 @@ class ParLong : public Par{
 class ParFloat : public Par{
 	
 	public:
-		char* parname;
-		unsigned eprom;
-		char formfield;
-		char partype;
 		
 		ParFloat(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
 		
@@ -493,10 +480,6 @@ class ParFloat : public Par{
 class ParStr32 : public Par{
 	
 	public:
-		char* parname;
-		unsigned eprom;
-		char formfield;
-		char partype;
 		
 		ParStr32(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
 		
@@ -507,10 +490,6 @@ class ParStr32 : public Par{
 class ParStr64 : public Par{
 	
 	public:
-		char* parname;
-		unsigned eprom;
-		char formfield;
-		char partype;
 		
 		ParStr64(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
 		
@@ -560,6 +539,7 @@ long saveLongConf(unsigned);
 int saveIntConf(unsigned);
 byte saveByteConf(unsigned);
 void updtConf(unsigned, String);
+unsigned getConfofstFromParamofst(unsigned);
 
 /*
 //http server callback function prototypes

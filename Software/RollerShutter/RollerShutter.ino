@@ -128,12 +128,12 @@ byte inr[MQTTDIM];
 //commands flags that generates event signalling
 String confJson[EXTCONFDIM]={/*len variabile-->*/"oncond1","oncond2","oncond3","oncond4","oncond5","onaction"/*len fissa-->*/,"utcval","utcsync","utcadj","utcsdt","utczone","webusr","webpsw"/*privati-->,"appssid","apppsw","clntssid1","clntpsw1","clntssid2","clntpsw2","mqttaddr","mqttid","mqttouttopic","mqttintopic","mqttusr","mqttpsw","thalt1","thalt2","thalt3","thalt4", "stdel1","stdel2","valweight","tlength","barrelrad","thickness","slatsratio","swroll1","swroll2","localip","ntpaddr1","ntpaddr2"*/};
 //default values, some modificable via MQTT, web form or event rules
-String confcmd[CONFDIM]={/*len variabile-->*/"","","","","",""/*len fissa-->*/,"","50","ntpadj","1","1"/*privati-->*/,webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID, mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),String(thalt3),String(thalt4), "400","400", "0.5","53","3.37","1.5" "0.8", "0","0", "ip", "ntp1.inrim.it","0.it.pool.ntp.org", "false","false","false","false","false","false"};
+String confcmd[CONFDIM]={/*len variabile-->*/"","","","","",""/*len fissa-->*/,"","50","0","1","1"/*privati-->*/,webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID, mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),String(thalt3),String(thalt4), "400","400", "0.5","53","3.37","1.5", "0.8", "0","0", "ip", "ntp1.inrim.it","0.it.pool.ntp.org", "false","false","false","false","false","false"};
 //constant values, identify confcmd across entire system
 //(MQTT parser, web page static component, web page dinamyc component, etc).
 //parameter properties mapper, is dinamically created on system setup
 //contain parameters of confJson[] and confcmd[] that are to be saved or modified via web
-Par *pars[TOSAVEPARAMS + USRMODIFICABLEFLAGS];
+Par *pars[PARAMSDIM];
 
 ESP8266WebServer server(80);    	// Create a webserver object that listens for HTTP request on port 80
 WebSocketsServer webSocket(81);	    // create a websocket server on port 81
@@ -242,6 +242,35 @@ void HLW8012_init(){
 }
 #endif
 
+void testparam(int i){
+	char * param;
+	
+	if(pars[i] != NULL){
+		param = pars[i]->parname;
+		DEBUG_PRINT(F("param("));
+		DEBUG_PRINT(i);
+		DEBUG_PRINT(F("): "));
+		DEBUG_PRINTLN(param);
+	}
+}
+
+void printparams(){
+	DEBUG_PRINT(F("printparams "));
+	DEBUG_PRINTLN(PARAMSDIM);
+	for(int i=0; i<PARAMSDIM; i++){
+		testparam(i);
+	}
+}
+
+unsigned getConfofstFromParamofst(unsigned pofst){
+	if(pars[pofst] != NULL){
+		if(pofst < USRMODIFICABLEFLAGS)
+			return pofst;
+		else
+			return pofst - USRMODIFICABLEFLAGS;
+	}
+}
+
 //-----------------------------------------End of prototypes---------------------------------------------------------
 inline void initOfst(){
 	//------------------------------------------
@@ -269,50 +298,56 @@ inline void initOfst(){
 	//p:parameter
 	//j:jsonname
 	//----------------------------------------------
-	/*1*/pars[LOCALIP] = new ParInt("localip");
-	/*2*/pars[SWROLL1] = new ParInt("swroll1", SWROLL1OFST, 'p', 'i');
-	/*3*/pars[SWROLL2] = new ParInt("swroll2", SWROLL1OFST, 'p', 'i');
-	/*4*/pars[UTCSDT] = new ParByte("utcsdt", NTPSDTOFST, 'b', 'i');
-	/*5*/pars[UTCZONE] = new ParByte("utczone", NTPZONEOFST, 'i');
-	/*6*/pars[THALT1] = new ParInt("thalt1", THALT1OFST, 'p','i');
-	/*7*/pars[THALT2] = new ParInt("thalt2", THALT2OFST, 'p','i');
-	/*8*/pars[THALT3] = new ParInt("thalt3", THALT3OFST, 'p','i');
-	/*9*/pars[THALT4] = new ParInt("thalt4", THALT4OFST, 'p','i');
-	/*10*/pars[STDEL1] = new ParFloat("stdel1", STDEL1OFST, 'p','i');
-	/*10*/pars[STDEL2] = new ParFloat("stdel2", STDEL2OFST, 'p','i');
-	/*12*/pars[VALWEIGHT] = new ParFloat("valweight", VALWEIGHTOFST, 'n','i');
-	/*13*/pars[TLENGTH] = new ParFloat("tlength", TLENGTHOFST, 'p','i');
-	/*14*/pars[BARRELRAD] = new ParFloat("barrelrad", BARRELRADOFST, 'p','i');
-	/*15*/pars[THICKNESS] = new ParFloat("thickness", THICKNESSOFST, 'p','i');
-	/*16*/pars[UTCADJ] = new ParInt("utcadj", NTPADJUSTOFST, 'p','i');
-	/*17*/pars[SLATSRATIO] = new ParFloat("slatsratio", SLATSRATIOFST, 'p','i');
-	/*19*/pars[UTCSYNC] = new ParInt("utcsync", NTPSYNCINTOFST, 'p','i');
-	/*20*/pars[MQTTID] = new ParStr32("mqttid", MQTTIDOFST, 'p','i');
-	/*21*/pars[MQTTOUTTOPIC] = new ParStr32("mqttouttopic", OUTTOPICOFST, 'p','i');
-	/*22*/pars[MQTTINTOPIC] = new ParStr32("mqttintopic", INTOPICOFST, 'p','i');
-	/*23*/pars[MQTTUP1] = new ParStr32("up1", MQTTUP1OFST, 'p','i');
-	/*24*/pars[MQTTDOWN1] = new ParStr32("down1", MQTTDOWN1OFST, 'p','j');
-	/*25*/pars[MQTTUP2] = new ParStr32("up2", MQTTUP2OFST, 'p','j');
-	/*26*/pars[MQTTDOWN2] = new ParStr32("down2", MQTTDOWN2OFST, 'p','j');
-	/*27*/pars[CLNTSSID1] = new ParStr32("clntssid1", WIFICLIENTSSIDOFST1, 'p','i');
-	/*28*/pars[CLNTPSW1] = new ParStr32("clntpsw1", WIFICLIENTPSWOFST1, 'p','i');
-	/*29*/pars[CLNTSSID2] = new ParStr32("clntssid2", WIFICLIENTSSIDOFST2, 'p','i');
-	/*30*/pars[CLNTPSW2] = new ParStr32("clntpsw2", WIFICLIENTPSWOFST2, 'p','i');
-	/*18*/pars[APPSSID] = new ParStr32("appssid", WIFIAPSSIDOFST, 'p','i');
-	/*32*/pars[APPPSW] = new ParStr32("apppsw", WIFIAPPPSWOFST, 'p','i');
-	/*33*/pars[WEBUSR] = new ParStr32("webusr", WEBUSROFST, 'p','i');
-	/*34*/pars[WEBPSW] = new ParStr32("webpsw", WEBPSWOFST, 'p','i');
-	/*35*/pars[MQTTUSR] = new ParStr32("mqttusr", MQTTUSROFST, 'p','i');
-	/*36*/pars[MQTTPSW] = new ParStr32("mqttpsw", MQTTPSWOFST, 'p','i');
-	/*37*/pars[MQTTADDR] = new ParStr64("mqttaddr", MQTTADDROFST, 'p','i');
-	/*38*/pars[NTPADDR1] = new ParStr32("ntpaddr1", NTP1ADDROFST, 'p','i');
-	/*39*/pars[NTPADDR2] = new ParStr32("ntpaddr2", NTP2ADDROFST, 'p','i');
-	/*40*/pars[ONCOND1] = new ParStr32("oncond1");
-	/*41*/pars[ONCOND2] = new ParStr32("oncond2");
-	/*42*/pars[ONCOND3] = new ParStr32("oncond3");
-	/*43*/pars[ONCOND4] = new ParStr32("oncond4");
-	/*44*/pars[ONCOND5] = new ParStr32("oncond5");
-	/*45*/pars[ACTIONEVAL] = new ParStr32("onaction");
+	for(int i=0; i<PARAMSDIM; i++){
+		pars[i] = NULL;
+	}
+	/*23*/pars[MQTTUP1] = new ParStr32("up1", MQTTUP1OFST, 'j','i');
+	/*24*/pars[MQTTDOWN1] = new ParStr32("down1", MQTTDOWN1OFST, 'j','i');
+	/*25*/pars[MQTTUP2] = new ParStr32("up2", MQTTUP2OFST, 'j','i');
+	/*26*/pars[MQTTDOWN2] = new ParStr32("down2", MQTTDOWN2OFST, 'j','i');
+	//--------------------------------------------------------------------------------------------------------------
+	/*1*/pars[LOCALIP + USRMODIFICABLEFLAGS] = new ParInt("localip");
+	/*2*/pars[SWROLL1 + USRMODIFICABLEFLAGS] = new ParInt("swroll1", SWROLL1OFST, 'p', 'i');
+	/*3*/pars[SWROLL2 + USRMODIFICABLEFLAGS] = new ParInt("swroll2", SWROLL1OFST, 'p', 'i');
+	/*4*/pars[UTCSDT + USRMODIFICABLEFLAGS] = new ParByte("utcsdt", NTPSDTOFST, 'p', 'i');
+	/*5*/pars[UTCZONE + USRMODIFICABLEFLAGS] = new ParByte("utczone", NTPZONEOFST, 'p','i');
+	/*6*/pars[THALT1 + USRMODIFICABLEFLAGS] = new ParInt("thalt1", THALT1OFST, 'p','i');
+	/*7*/pars[THALT2 + USRMODIFICABLEFLAGS] = new ParInt("thalt2", THALT2OFST, 'p','i');
+	/*8*/pars[THALT3 + USRMODIFICABLEFLAGS] = new ParInt("thalt3", THALT3OFST, 'p','i');
+	/*9*/pars[THALT4 + USRMODIFICABLEFLAGS] = new ParInt("thalt4", THALT4OFST, 'p','i');
+	/*10*/pars[STDEL1 + USRMODIFICABLEFLAGS] = new ParFloat("stdel1", STDEL1OFST, 'p','i');
+	/*10*/pars[STDEL2 + USRMODIFICABLEFLAGS] = new ParFloat("stdel2", STDEL2OFST, 'p','i');
+	/*12*/pars[VALWEIGHT + USRMODIFICABLEFLAGS] = new ParFloat("valweight", VALWEIGHTOFST, 'n','i');
+	/*13*/pars[TLENGTH + USRMODIFICABLEFLAGS] = new ParFloat("tlength", TLENGTHOFST, 'p','i');
+	/*14*/pars[BARRELRAD + USRMODIFICABLEFLAGS] = new ParFloat("barrelrad", BARRELRADOFST, 'p','i');
+	/*15*/pars[THICKNESS + USRMODIFICABLEFLAGS] = new ParFloat("thickness", THICKNESSOFST, 'p','i');
+	/*16*/pars[UTCADJ + USRMODIFICABLEFLAGS] = new ParInt("utcadj", NTPADJUSTOFST, 'p','i');
+	/*17*/pars[SLATSRATIO + USRMODIFICABLEFLAGS] = new ParFloat("slatsratio", SLATSRATIOFST, 'p','i');
+	/*19*/pars[UTCSYNC + USRMODIFICABLEFLAGS] = new ParInt("utcsync", NTPSYNCINTOFST, 'p','i');
+	/*20*/pars[MQTTID + USRMODIFICABLEFLAGS] = new ParStr32("mqttid", MQTTIDOFST, 'p','i');
+	/*21*/pars[MQTTOUTTOPIC + USRMODIFICABLEFLAGS] = new ParStr32("mqttouttopic", OUTTOPICOFST, 'p','i');
+	/*22*/pars[MQTTINTOPIC + USRMODIFICABLEFLAGS] = new ParStr32("mqttintopic", INTOPICOFST, 'p','i');
+	/*27*/pars[CLNTSSID1 + USRMODIFICABLEFLAGS] = new ParStr32("clntssid1", WIFICLIENTSSIDOFST1, 'p','i');
+	/*28*/pars[CLNTPSW1 + USRMODIFICABLEFLAGS] = new ParStr32("clntpsw1", WIFICLIENTPSWOFST1, 'p','i');
+	/*29*/pars[CLNTSSID2 + USRMODIFICABLEFLAGS] = new ParStr32("clntssid2", WIFICLIENTSSIDOFST2, 'p','i');
+	/*30*/pars[CLNTPSW2 + USRMODIFICABLEFLAGS] = new ParStr32("clntpsw2", WIFICLIENTPSWOFST2, 'p','i');
+	/*18*/pars[APPSSID + USRMODIFICABLEFLAGS] = new ParStr32("appssid", WIFIAPSSIDOFST, 'p','i');
+	/*32*/pars[APPPSW + USRMODIFICABLEFLAGS] = new ParStr32("apppsw", WIFIAPPPSWOFST, 'p','i');
+	/*33*/pars[WEBUSR + USRMODIFICABLEFLAGS] = new ParStr32("webusr", WEBUSROFST, 'p','i');
+	/*34*/pars[WEBPSW + USRMODIFICABLEFLAGS] = new ParStr32("webpsw", WEBPSWOFST, 'p','i');
+	/*35*/pars[MQTTUSR + USRMODIFICABLEFLAGS] = new ParStr32("mqttusr", MQTTUSROFST, 'p','i');
+	/*36*/pars[MQTTPSW + USRMODIFICABLEFLAGS] = new ParStr32("mqttpsw", MQTTPSWOFST, 'p','i');
+	/*37*/pars[MQTTADDR + USRMODIFICABLEFLAGS] = new ParStr64("mqttaddr", MQTTADDROFST, 'p','i');
+	/*38*/pars[NTPADDR1 + USRMODIFICABLEFLAGS] = new ParStr32("ntpaddr1", NTP1ADDROFST, 'p','i');
+	/*39*/pars[NTPADDR2 + USRMODIFICABLEFLAGS] = new ParStr32("ntpaddr2", NTP2ADDROFST, 'p','i');
+	/*40*/pars[ONCOND1 + USRMODIFICABLEFLAGS] = new ParStr32("oncond1");
+	/*41*/pars[ONCOND2 + USRMODIFICABLEFLAGS] = new ParStr32("oncond2");
+	/*42*/pars[ONCOND3 + USRMODIFICABLEFLAGS] = new ParStr32("oncond3");
+	/*43*/pars[ONCOND4 + USRMODIFICABLEFLAGS] = new ParStr32("oncond4");
+	/*44*/pars[ONCOND5 + USRMODIFICABLEFLAGS] = new ParStr32("oncond5");
+	/*45*/pars[ACTIONEVAL + USRMODIFICABLEFLAGS] = new ParStr32("onaction");
+
+	printparams();
 }
 
 inline bool switchdfn(byte val, byte n){
@@ -1013,7 +1048,9 @@ inline void setupNTP() {
 }
 
 void setup() {
-  initOfst();
+  //delay(5000);
+  DEBUG_PRINTLN(F("Inizializzo i parametri."));
+  //initOfst();
   dosmpl = false;
   zeroCnt = 0;
   mqttcnt = 0;
@@ -1032,8 +1069,11 @@ void setup() {
   confcmd[2]="-1";
   confcmd[3]="-1";
   confcmd[4]="(td1=4000)|(ma1=0)|(ma4=2)|(tsmpl4=4)|(oe1=1)";
+  DEBUG_PRINTLN(F("initCommon."));
   initCommon(&server,pars,mqttJson,confJson,confcmd);
   delay(10000);
+  initOfst();
+  DEBUG_PRINTLN(F("loadConfig."));
   loadConfig();
   delay(100);
   wifiConn = false;

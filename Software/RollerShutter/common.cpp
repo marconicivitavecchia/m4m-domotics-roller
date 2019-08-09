@@ -1439,13 +1439,15 @@ void loadConfig() {
 	EEPROM.end();
 	DEBUG_PRINTLN(buf);
 	delay(1000);
+
 	if(!cfg) {
 		DEBUG_PRINTLN(F("EEPROM read error! EEPROM will be initialized, you must load a new valid system configuration."));
 		EEPROM.begin(FIXEDPARAMSLEN);
 		initEEPROM(FIXEDPARAMSLEN); 
 		EEPROM.end();
-		varStrOfst[0] = varStrOfst[1] = varStrOfst[2] = varStrOfst[3] = varStrOfst[4] = FIXEDPARAMSLEN;
-		varStrOfst[5] = FIXEDPARAMSLEN;
+		varStrOfst[0] = varStrOfst[1] = varStrOfst[2] = varStrOfst[3] = varStrOfst[4] = varStrOfst[5] = FIXEDPARAMSLEN;
+		DEBUG_PRINT(F("FIXEDPARAMSLEN "));
+		DEBUG_PRINTLN(FIXEDPARAMSLEN);
 		saveOnEEPROM(FIXEDPARAMSLEN);
 		confcmdp[CONFLOADED]="false";
 		delay(1000);
@@ -1454,11 +1456,15 @@ void loadConfig() {
 		int eepromlen = EEPROMReadInt(EEPROMLENOFST);
 		EEPROM.end();
 		EEPROM.begin(eepromlen+1);
+		DEBUG_PRINT(F("eepromlen "));
+		DEBUG_PRINTLN(eepromlen);
 		
-		for(int i=VARCONFDIM; i<CONFDIM; i++){
+		DEBUG_PRINT(F("Reading all fixed params... "));
+		for(int i=0; i<PARAMSDIM; i++){
 			loadConf(i);
 		}
 		
+		DEBUG_PRINT(F("Reading all variables params... "));
 		varStrOfst[0] = FIXEDPARAMSLEN;
 		for(i=0; i<VARCONFDIM; ++i){
 				varStrOfst[i+1] = EEPROMReadStr(varStrOfst[i], buf) + varStrOfst[i];
@@ -1520,12 +1526,14 @@ void saveOnEEPROM(int len){
 	DEBUG_PRINTLN(F("Saving configuration...."));
   
 	EEPROM.begin(len);	
-	for(int i=VARCONFDIM; i<CONFDIM; i++){
+	for(int i=0; i<PARAMSDIM; i++){
 		saveConf(i);
 	}
 	EEPROM.end();
 	
+	DEBUG_PRINTLN(F("Fixed length params saved...."));
 	writeOnOffConditions();
+	DEBUG_PRINTLN(F("Variable length params saved...."));
 }
 	
 void printConfig(){
@@ -1544,7 +1552,7 @@ void printConfig(){
 			DEBUG_PRINT(varStrOfst[i]);
 		}
 		
-		for(int i=VARCONFDIM; i<CONFDIM; i++){
+		for(int i=0; i<PARAMSDIM; i++){
 			printFixedParam(i);
 		}
 
@@ -1563,25 +1571,32 @@ void updtConf(unsigned paramofst, String val){
 	unsigned eepromofst;
 	char* param;
 	
-	param = parsp[paramofst]->parname;
-	eepromofst = parsp[paramofst]->eprom;
-	partype = parsp[paramofst]->partype;
-	if(partype == 'p'){
-		confcmdp[paramofst] = val;
-		parsp[paramofst]->writeParam(confcmdp[paramofst]);
+	DEBUG_PRINT(F("paramofst: "));
+	DEBUG_PRINTLN(paramofst);
+	if(parsp[paramofst] != NULL){
+		param = parsp[paramofst]->parname;
+		eepromofst = parsp[paramofst]->eprom;
+		partype = parsp[paramofst]->partype;
+		unsigned confofst = getConfofstFromParamofst(paramofst);
 		
-		DEBUG_PRINT(F("Modified param: "));
-		DEBUG_PRINTLN(param);
-		DEBUG_PRINT(F(" : "));
-		DEBUG_PRINTLN(confcmdp[paramofst]);	
-	}else if(partype == 'j'){
-		mqttJsonp[paramofst] = val; 
-		EEPROMWriteStr(eepromofst,(mqttJsonp[paramofst]).c_str(),32);
-		
-		DEBUG_PRINT(F("Modified json: "));
-		DEBUG_PRINTLN(param);
-		DEBUG_PRINT(F(" : "));
-		DEBUG_PRINTLN(mqttJsonp[paramofst]);	
+		if(partype == 'p'){
+			confcmdp[confofst] = val;
+			parsp[paramofst]->writeParam(confcmdp[confofst]);
+			
+			DEBUG_PRINT(F("Modified param: "));
+			DEBUG_PRINT(param);
+			DEBUG_PRINT(F(": "));
+			DEBUG_PRINTLN(confcmdp[paramofst]);	
+		}else if(partype == 'j'){
+			mqttJsonp[confofst] = val; 
+			EEPROMWriteStr(eepromofst,(mqttJsonp[confofst]).c_str(),32);
+			
+			DEBUG_PRINT(F("Modified json: "));
+			DEBUG_PRINT(param);
+			DEBUG_PRINT(F(": "));
+			DEBUG_PRINTLN(mqttJsonp[confofst]);	
+		}
+		DEBUG_PRINTLN(F("---------------------------------"));
 	}
 }
 
@@ -1590,23 +1605,38 @@ void saveConf(unsigned paramofst){
 	unsigned eepromofst;
 	char* param;
 	
-	param = parsp[paramofst]->parname;
-	eepromofst = parsp[paramofst]->eprom;
-	partype = parsp[paramofst]->partype;
-	if(partype == 'p'){
-		parsp[paramofst]->writeParam(confcmdp[paramofst]);
-		
-		DEBUG_PRINT(F("Modified param: "));
+	DEBUG_PRINT(F("paramofst: "));
+	DEBUG_PRINTLN(paramofst);
+	if(parsp[paramofst] != NULL){
+		param = parsp[paramofst]->parname;
+		DEBUG_PRINT(F("param: "));
 		DEBUG_PRINTLN(param);
-		DEBUG_PRINT(F(" : "));
-		DEBUG_PRINTLN(confcmdp[paramofst]);	
-	}else if(partype == 'j'){	
-		EEPROMWriteStr(eepromofst,(mqttJsonp[paramofst]).c_str(),32);
+		eepromofst = parsp[paramofst]->eprom;
+		DEBUG_PRINT(F("eepromofst: "));
+		DEBUG_PRINTLN(eepromofst);
+		partype = parsp[paramofst]->partype;
+		DEBUG_PRINT(F("partype: "));
+		DEBUG_PRINTLN(partype);
+		unsigned confofst = getConfofstFromParamofst(paramofst);
+		DEBUG_PRINT(F("confofst: "));
+		DEBUG_PRINTLN(confofst);
 		
-		DEBUG_PRINT(F("Modified json: "));
-		DEBUG_PRINTLN(param);
-		DEBUG_PRINT(F(" : "));
-		DEBUG_PRINTLN(mqttJsonp[paramofst]);	
+		if(partype == 'p'){
+			parsp[paramofst]->writeParam(confcmdp[confofst]);
+			
+			DEBUG_PRINT(F("Modified param: "));
+			DEBUG_PRINT(param);
+			DEBUG_PRINT(F(": "));
+			DEBUG_PRINTLN(confcmdp[confofst]);	
+		}else if(partype == 'j'){	
+			EEPROMWriteStr(eepromofst,(mqttJsonp[confofst]).c_str(),32);
+			
+			DEBUG_PRINT(F("Modified json: "));
+			DEBUG_PRINT(param);
+			DEBUG_PRINT(F(": "));
+			DEBUG_PRINTLN(mqttJsonp[confofst]);	
+		}
+		DEBUG_PRINTLN(F("---------------------------------"));
 	}
 }
 
@@ -1616,24 +1646,39 @@ void loadConf(unsigned paramofst){
 	char buf[50];
 	char* param;
 	
-	param = parsp[paramofst]->parname;
-	eepromofst = parsp[paramofst]->eprom;
-	partype = parsp[paramofst]->partype;
-	if(partype == 'p'){
-		confcmdp[paramofst] = parsp[paramofst]->getParam();
+	DEBUG_PRINT(F("paramofst: "));
+	DEBUG_PRINTLN(paramofst);
+	if(parsp[paramofst] != NULL){
+		param = parsp[paramofst]->parname;
+		DEBUG_PRINT(F("param: "));
+		DEBUG_PRINTLN(param);
+		eepromofst = parsp[paramofst]->eprom;
+		DEBUG_PRINT(F("eepromofst: "));
+		DEBUG_PRINTLN(eepromofst);
+		partype = parsp[paramofst]->partype;
+		DEBUG_PRINT(F("partype: "));
+		DEBUG_PRINTLN(partype);
+		unsigned confofst = getConfofstFromParamofst(paramofst);
+		DEBUG_PRINT(F("confofst: "));
+		DEBUG_PRINTLN(confofst);
 		
-		DEBUG_PRINT(F("Load param: "));
-		DEBUG_PRINTLN(param);
-		DEBUG_PRINT(F(" : "));
-		DEBUG_PRINTLN(confcmdp[paramofst]);
-	}else if(partype == 'j'){	
-		EEPROMReadStr(eepromofst,buf);
-		mqttJsonp[paramofst] = buf;	
+		if(partype == 'p'){
+			confcmdp[confofst] = parsp[paramofst]->getParam();
 			
-		DEBUG_PRINT(F("Load json: "));
-		DEBUG_PRINTLN(param);
-		DEBUG_PRINT(F(" : "));
-		DEBUG_PRINTLN(mqttJsonp[paramofst]);	
+			DEBUG_PRINT(F("Load param: "));
+			DEBUG_PRINT(param);
+			DEBUG_PRINT(F(": "));
+			DEBUG_PRINTLN(confcmdp[confofst]);
+		}else if(partype == 'j'){	
+			EEPROMReadStr(eepromofst,buf);
+			mqttJsonp[confofst] = buf;	
+				
+			DEBUG_PRINT(F("Load json: "));
+			DEBUG_PRINT(param);
+			DEBUG_PRINT(F(": "));
+			DEBUG_PRINTLN(mqttJsonp[confofst]);	
+		}
+		DEBUG_PRINTLN(F("---------------------------------"));
 	}
 }
 
@@ -1642,21 +1687,30 @@ void printFixedParam(unsigned paramofst){
 	unsigned eepromofst;
 	char* param;
 	
-	param = parsp[paramofst]->parname;
-	eepromofst = parsp[paramofst]->eprom;
-	partype = parsp[paramofst]->partype;
-	if(partype == 'p'){
-		if(eprom != 'v'){
-			DEBUG_PRINT(F("\nsensors CONFEXPR "));
-			DEBUG_PRINT(param);
-			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(confcmdp[paramofst]);
-		}	
-	}else if(partype == 'j'){	
-		DEBUG_PRINT(F("json: "));
-		DEBUG_PRINTLN(param);
-		DEBUG_PRINT(F(" : "));
-		DEBUG_PRINTLN(mqttJsonp[paramofst]);	
+	DEBUG_PRINT(F("paramofst: "));
+	DEBUG_PRINTLN(paramofst);
+	if(parsp[paramofst] != NULL){
+		param = parsp[paramofst]->parname;
+		eepromofst = parsp[paramofst]->eprom;
+		partype = parsp[paramofst]->partype;
+		unsigned confofst = getConfofstFromParamofst(paramofst);
+		DEBUG_PRINT(F("confofst: "));
+		DEBUG_PRINTLN(confofst);
+		
+		if(partype == 'p'){
+			if(eprom != 'v'){
+				DEBUG_PRINT(F("\nsensors CONFEXPR "));
+				DEBUG_PRINT(param);
+				DEBUG_PRINT(F(": "));
+				DEBUG_PRINTLN(confcmdp[confofst]);
+			}	
+		}else if(partype == 'j'){	
+			DEBUG_PRINT(F("json: "));
+			DEBUG_PRINTLN(param);
+			DEBUG_PRINT(F(" : "));
+			DEBUG_PRINTLN(mqttJsonp[confofst]);	
+		}
+		DEBUG_PRINTLN(F("---------------------------------"));
 	}
 }
 
@@ -1666,36 +1720,44 @@ void saveParamFromForm(unsigned paramofst){
 	char intype;
 	char* param;
 	
-	param = parsp[paramofst]->parname;
-	intype = parsp[paramofst]->formfield;
-	partype = parsp[paramofst]->partype;
-	if(intype == 'i'){//form element input or text area
-		if(partype == 'p'){
-			if(serverp.hasArg(param) && (confcmdp[paramofst] != String(serverp.arg(param))) ){
-				confcmdp[paramofst] = serverp.arg(param);
-				parsp[paramofst]->writeParam(confcmdp[paramofst]);
-				
-				DEBUG_PRINT(F("Updated param: "));
-				DEBUG_PRINTLN(param);
-				DEBUG_PRINT(F(" : "));
-				DEBUG_PRINTLN(confcmdp[paramofst]);
-			}				
-		}else if(partype == 'j'){
-			if(serverp.hasArg(param) && (mqttJsonp[paramofst] != String(serverp.arg(param))) ){
-				mqttJsonp[paramofst] = serverp.arg(param);
-				parsp[paramofst]->writeParam(mqttJsonp[paramofst]);
-				
-				DEBUG_PRINT(F("Updated param: "));
-				DEBUG_PRINTLN(param);
-				DEBUG_PRINT(F(" : "));
-				DEBUG_PRINTLN(mqttJsonp[paramofst]);
+	DEBUG_PRINT(F("paramofst: "));
+	DEBUG_PRINTLN(paramofst);
+	if(parsp[paramofst] != NULL){
+		param = parsp[paramofst]->parname;
+		intype = parsp[paramofst]->formfield;
+		partype = parsp[paramofst]->partype;
+		unsigned confofst = getConfofstFromParamofst(paramofst);
+		DEBUG_PRINT(F("confofst: "));
+		DEBUG_PRINTLN(confofst);
+		
+		if(intype == 'i'){//form element input or text area
+			if(partype == 'p'){
+				if(serverp.hasArg(param) && (confcmdp[confofst] != String(serverp.arg(param))) ){
+					confcmdp[confofst] = serverp.arg(param);
+					parsp[paramofst]->writeParam(confcmdp[confofst]);
+					
+					DEBUG_PRINT(F("Updated param: "));
+					DEBUG_PRINTLN(param);
+					DEBUG_PRINT(F(" : "));
+					DEBUG_PRINTLN(confcmdp[confofst]);
+				}				
+			}else if(partype == 'j'){
+				if(serverp.hasArg(param) && (mqttJsonp[confofst] != String(serverp.arg(param))) ){
+					mqttJsonp[confofst] = serverp.arg(param);
+					parsp[paramofst]->writeParam(mqttJsonp[confofst]);
+					
+					DEBUG_PRINT(F("Updated param: "));
+					DEBUG_PRINTLN(param);
+					DEBUG_PRINT(F(" : "));
+					DEBUG_PRINTLN(mqttJsonp[confofst]);
+				}
 			}
-		}
-
-	}//form element input or text area		
+			DEBUG_PRINTLN(F("---------------------------------"));
+		}//form element input or text area		
+	}
 }
 
-//conservata in eeprom, acquisita in form, sia nome che valore campo MQTT
+//conservata in eeprom, acqu,isita in form, sia nome che valore campo MQTT
 Par::Par(const char* pname, unsigned epromofst, char ptype, char ffield){
 	parname = (char *) pname;
 	eprom = epromofst;
@@ -1763,6 +1825,7 @@ void ParStr64::writeParam(String &str){
 void writeOnOffConditions(){
 	int i;
 	
+	DEBUG_PRINTLN(F("writeOnOffConditions"));
 	eepromBegin();
 	varStrOfst[0] = FIXEDPARAMSLEN;
 	for(i=0; i<VARCONFDIM; ++i){
@@ -1778,24 +1841,24 @@ void writeOnOffConditions(){
 	EEPROM.end();
 }
 
-byte saveByteConf(unsigned paramofst){
-	saveConf(paramofst);
-	return (byte) (confcmdp[paramofst]).toInt();
+byte saveByteConf(unsigned confofst){
+	saveConf(confofst + USRMODIFICABLEFLAGS);
+	return (byte) (confcmdp[confofst]).toInt();
 }
 
-int saveIntConf(unsigned paramofst){
-	saveConf(paramofst);
-	return (confcmdp[paramofst]).toInt();
+int saveIntConf(unsigned confofst){
+	saveConf(confofst + USRMODIFICABLEFLAGS);
+	return (confcmdp[confofst]).toInt();
 }
 
-long saveLongConf( unsigned paramofst){
-	saveConf(paramofst);
-	return strtoul((confcmdp[paramofst]).c_str(), NULL, 10);
+long saveLongConf( unsigned confofst){
+	saveConf(confofst + USRMODIFICABLEFLAGS);
+	return strtoul((confcmdp[confofst]).c_str(), NULL, 10);
 }
 
-float saveFloatConf(unsigned paramofst){
-	saveConf(paramofst);
-	return (confcmdp[paramofst]).toFloat();
+float saveFloatConf(unsigned confofst){
+	saveConf(confofst + USRMODIFICABLEFLAGS);
+	return (confcmdp[confofst]).toFloat();
 }
 
 
