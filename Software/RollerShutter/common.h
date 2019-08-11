@@ -48,8 +48,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				1
-#define ROLLERSHUTTER 			0
+#define SONOFF_4CH				0
+#define ROLLERSHUTTER 			1
 //#define AUTOCAL_HLW8012			0
 //#define AUTOCAL_ACS712			1
 //#define MCP2317					1

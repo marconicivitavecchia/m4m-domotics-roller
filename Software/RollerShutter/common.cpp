@@ -706,7 +706,7 @@ const char HTTP_FORM_CMD[] PROGMEM =
 			//"console.log('----------------------------------');"
 			"clearInterval(updt[n]);"
 			"var aa=Math.round(calcLen(t,l));"
-			"if(isNaN(aa) && isFinite(aa))p.value=0; else p.value=aa;"
+			"if(isNaN(aa) && !isFinite(aa))p.value=0; else p.value=aa;"
 			"console.log('aa: '+aa);"
 			"console.log('t:'+t+' p.value:'+p.value);"
 			"updt[n]=setInterval(function(){"
