@@ -48,24 +48,28 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				1
-#define ROLLERSHUTTER 			0
-#define AUTOCAL_HLW8012			0
-#define AUTOCAL_ACS712			1
+#define SONOFF_4CH				0
+#define ROLLERSHUTTER 			1
+//#define AUTOCAL_HLW8012			0
+//#define AUTOCAL_ACS712			1
+//#define MCP2317					1
 
 #if (ROLLERSHUTTER)
   #define SCR    1  
   #define INPULLUP  0  			//disable internal pullup
   #define OUTSLED  	2     
-  #define OUT1EU  	12      	// OUT1 =  MOTOR1 UP   
-  #define OUT1DD  	4 //5    	// OUT2 =  MOTOR1 DOWN     
-  #define OUT2EU  	5 //4     	// OUT3 =  MOTOR2 UP  
-  #define OUT2DD  	15       	// OUT4 =  MOTOR2 DOWN
+  #define OUT1EU  	0      		// OUT1 =  MOTOR1 UP   
+  #define OUT1DD  	1 //5    	// OUT2 =  MOTOR1 DOWN     
+  #define OUT2EU  	2 //4     	// OUT3 =  MOTOR2 UP  
+  #define OUT2DD  	3      		// OUT4 =  MOTOR2 DOWN
   //local buttons
-  #define BTN1U    	0    		// IN1   =  MOTOR1 UP    
-  #define BTN1D    	13    		// IN2   =  MOTOR1 DOWN    
-  #define BTN2U    	16    		// IN3   =  MOTOR2 UP    
-  #define BTN2D    	14    		// IN4   =  MOTOR2 DOWN
+  #define BTN1U    	8    		// IN1   =  MOTOR1 UP    
+  #define BTN1D    	9    		// IN2   =  MOTOR1 DOWN    
+  #define BTN2U    	10    		// IN3   =  MOTOR2 UP    
+  #define BTN2D    	11    		// IN4   =  MOTOR2 DOWN
+  #define AUTOCAL_HLW8012			1
+  #define AUTOCAL_ACS712			0
+  #define MCP2317					1
 #elif (SONOFF_4CH)
   #define SCR		1 
   #define INPULLUP  1   		//enable internal pullup
@@ -79,6 +83,9 @@
   #define BTN1D		9  
   #define BTN2U		10   
   #define BTN2D		14   
+  #define AUTOCAL_ACS712			1
+  #define AUTOCAL_HLW8012			0
+  #define MCP2317					0
 #else
   #error Wrong version defined - cannot continue!
 #endif
@@ -355,7 +362,6 @@
 #define STOP_STEP		10
 #endif
 
-
 #if (LARGEFW)
 	#if (AUTOCAL_HLW8012) 
 		#include "HLW8012.h"
@@ -375,6 +381,11 @@
 	#define _DEBUG1   	    0		
 #endif
 
+#if (MCP2317) 
+	#include <Wire.h>
+	#include <Adafruit_MCP23017.h>
+#endif
+
 //#define NELEMS(x)  (sizeof(x) / sizeof((x)[0]))
 //-----------------------_DEBUG1 MACRO------------------------------------------------------------
 //#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
@@ -382,9 +393,15 @@
 
 //legge gli ingressi dei tasti già puliti dai rimbalzi
 #define leggiTastiLocali()  in[BTN1IN] =!digitalRead(BTN1U);	\
-    in[BTN2IN] =!digitalRead(BTN1D);	\
-    in[BTN1IN+BTNDIM] =!digitalRead(BTN2U); 	\
-    in[BTN2IN+BTNDIM] =!digitalRead(BTN2D)
+	#if (MCP2317) 							\
+		in[BTN2IN] = !digitalRead(BTN1D);	\
+		in[BTN1IN+BTNDIM] = !digitalRead(BTN2U); 	\
+		in[BTN2IN+BTNDIM] = !digitalRead(BTN2D)		\
+	#else
+		in[BTN2IN] = !mcp.digitalRead(BTN1D);	\
+		in[BTN1IN+BTNDIM] = !mcp.digitalRead(BTN2U); 	\
+		in[BTN2IN+BTNDIM] = !mcp.digitalRead(BTN2D)		\
+	#endif
 	
 #define p(x) 	x + USRMODIFICABLEFLAGS
 

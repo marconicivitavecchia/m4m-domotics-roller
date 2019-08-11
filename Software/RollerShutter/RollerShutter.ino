@@ -178,6 +178,19 @@ bool mqttConnected=false;
 bool mqttAddrChanged=true;
 bool dscnct=false;
 String pr[3] = {"{\"pr1\":\"", "{\"pr2\":\"", "\"}"};
+#if (MCP2317) 
+	Adafruit_MCP23017 mcp;
+    void MCP2317_init(){
+// Connect pin #12 of the expander to Analog 5 (i2c clock)
+// Connect pin #13 of the expander to Analog 4 (i2c data)
+// Connect pins #15, 16 and 17 of the expander to ground (address selection)
+// Connect pin #9 of the expander to 5V (power)
+// Connect pin #10 of the expander to ground (common ground)
+// Connect pin #18 through a ~10kohm resistor to 5V (reset pin, active low)
+// Output #0 is on pin 21 so connect an LED or whatever from that to ground
+		mcp.begin();      		// use default address 0
+	}	
+#endif
 //-----------------------------------------Begin of prototypes---------------------------------------------------------
 #if (AUTOCAL_HLW8012 && LARGEFW) 
 HLW8012 hlw8012;
@@ -1050,7 +1063,7 @@ inline void setupNTP() {
   sntpInit();  
 }
 
-void setup() {
+void setup(){
   //delay(5000);
   DEBUG_PRINTLN(F("Inizializzo i parametri."));
   //initOfst();
@@ -1148,7 +1161,26 @@ void setup() {
   outPorts[1]=OUT1DD;
   outPorts[2]=OUT2EU;
   outPorts[3]=OUT2DD;
-  //imposta la Direzione delle porte dei pulsanti  
+#if (MCP2317) 
+  MCP2317_init();
+  #if (INPULLUP)
+	mcp.pullUp(BTN1U, HIGH);
+	mcp.pullUp(BTN1D, HIGH);
+	mcp.pullUp(BTN2U, HIGH);
+	mcp.pullUp(BTN2D, HIGH);
+#else
+	mcp.pullUp(BTN1U, LOW);
+	mcp.pullUp(BTN1D, LOW);
+	mcp.pullUp(BTN2U, LOW);
+	mcp.pullUp(BTN2D, LOW);
+#endif
+	mcp.pinMode(OUTSLED,OUTPUT);
+	mcp.digitalWrite(OUTSLED, LOW);
+	for(int i=0;i<NBTN*BTNDIM;i++){
+	  mcp.pinMode(outPorts[i],OUTPUT);
+	  mcp.digitalWrite(outPorts[i], LOW);
+	}
+#else
 #if (INPULLUP)
 	pinMode(BTN1U, INPUT_PULLUP);
 	pinMode(BTN1D, INPUT_PULLUP);
@@ -1160,14 +1192,16 @@ void setup() {
 	pinMode(BTN2U, INPUT);
 	pinMode(BTN2D, INPUT);
 #endif
-	pinMode(A0, INPUT);
-  //imposta la DIRSezione delle porte dei led, imposta inizialmente i led come spenti
-  pinMode(OUTSLED,OUTPUT);
-  digitalWrite(OUTSLED, LOW);
-  for(int i=0;i<NBTN*BTNDIM;i++){
+	pinMode(OUTSLED,OUTPUT);
+	digitalWrite(OUTSLED, LOW);
+	for(int i=0;i<NBTN*BTNDIM;i++){
 	  pinMode(outPorts[i],OUTPUT);
 	  digitalWrite(outPorts[i], LOW);
-  }
+	}
+#endif
+	
+  //imposta la DIRSezione delle porte dei led, imposta inizialmente i led come spento  
+  
   //------------------------------------------OTA SETUP---------------------------------------------------------------------------------------
   //------------------------------------------END OTA SETUP---------------------------------------------------------------------------------------
   delay(500);
@@ -1864,7 +1898,11 @@ inline void wifiFailoverManager(){
 	if(WiFi.getMode() == WIFI_OFF || WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
 		if(!wifiConn){
 			//lampeggia led di connessione
-			digitalWrite(OUTSLED, !digitalRead(OUTSLED));
+			#if (MCP2317) 
+				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
+			#else
+				mcp.digitalWrite(OUTSLED, !mcp.digitalRead(OUTSLED));
+			#endif
 			//yield();
 			DEBUG_PRINT(F("\nSwcount roll: "));
 			DEBUG_PRINTLN(swcount);
