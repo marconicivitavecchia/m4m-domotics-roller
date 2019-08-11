@@ -118,6 +118,8 @@ unsigned int thalt4=5000;
 //JSON config----------------------------------------------
 //{"OUTSLED":"0","up1":"1","down1":"0","up2":"50","down2":"0", pr1:"12", pr2:"76"}
 int ncifre=4;
+//vettori di ingresso, uscite e stato
+byte in[NBTN*BTNDIM], outPorts[NBTN*BTNDIM], out[NBTN*BTNDIM];
 //array delle proprietà
 //l'ordine è importante! Le proprietà verranno ricercate nella stringa in arrivo con questo ordine.
 //e salvate in un array con indici a questo corrrispondenti
@@ -161,8 +163,6 @@ byte wifindx=0;
 //End port config------------------------------------------
 unsigned int step;
 //bool extCmd=false;
-//vettori di ingresso, uscite e stato
-byte in[NBTN*BTNDIM], outPorts[NBTN*BTNDIM], out[NBTN*BTNDIM];
 byte acts[4];
 //numerazione porte
 byte outLogic[NBTN*STATUSDIM];
@@ -1899,9 +1899,10 @@ inline void wifiFailoverManager(){
 		if(!wifiConn){
 			//lampeggia led di connessione
 			#if (MCP2317) 
-				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
-			#else
 				mcp.digitalWrite(OUTSLED, !mcp.digitalRead(OUTSLED));
+			#else
+				
+				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
 			#endif
 			//yield();
 			DEBUG_PRINT(F("\nSwcount roll: "));

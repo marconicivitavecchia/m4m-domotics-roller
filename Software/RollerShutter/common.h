@@ -48,8 +48,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				0
-#define ROLLERSHUTTER 			1
+#define SONOFF_4CH				1
+#define ROLLERSHUTTER 			0
 //#define AUTOCAL_HLW8012			0
 //#define AUTOCAL_ACS712			1
 //#define MCP2317					1
@@ -392,16 +392,18 @@
 //#define PGMT( pgm_ptr ) ( reinterpret_cast< const __FlashStringHelper * >( pgm_ptr ) )
 
 //legge gli ingressi dei tasti già puliti dai rimbalzi
-#define leggiTastiLocali()  in[BTN1IN] =!digitalRead(BTN1U);	\
-	#if (MCP2317) 							\
-		in[BTN2IN] = !digitalRead(BTN1D);	\
-		in[BTN1IN+BTNDIM] = !digitalRead(BTN2U); 	\
-		in[BTN2IN+BTNDIM] = !digitalRead(BTN2D)		\
-	#else
+
+#if (MCP2317) 
+    #define leggiTastiLocali()  in[BTN1IN] =!digitalRead(BTN1U);	\		
 		in[BTN2IN] = !mcp.digitalRead(BTN1D);	\
 		in[BTN1IN+BTNDIM] = !mcp.digitalRead(BTN2U); 	\
-		in[BTN2IN+BTNDIM] = !mcp.digitalRead(BTN2D)		\
-	#endif
+		in[BTN2IN+BTNDIM] = !mcp.digitalRead(BTN2D)	
+#else										
+	#define leggiTastiLocali()  in[BTN1IN] =!digitalRead(BTN1U);	\
+		in[BTN2IN] = !digitalRead(BTN1D);	\
+		in[BTN1IN+BTNDIM] = !digitalRead(BTN2U); 	\
+		in[BTN2IN+BTNDIM] = !digitalRead(BTN2D)				
+#endif
 	
 #define p(x) 	x + USRMODIFICABLEFLAGS
 
