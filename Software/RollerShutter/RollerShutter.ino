@@ -123,10 +123,11 @@ int ncifre=4;
 //e salvate in un array con indici a questo corrrispondenti
 //l'ordine di trasmissione da remoto dei campi è ininfluente
 //I comandi della tapparella devono essere  gli ultimi!
-String mqttJson[MQTTDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all","date","mac","ip","time","mqttid","oncond1","oncond2","oncond3","oncond4","oncond5","onaction","utcval","utcsync","utcadj","utcsdt","utczone","webusr","webpsw"};
+String mqttJson[MQTTDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all","date","mac","ip","time","mqttid"};
 byte inr[MQTTDIM];
 //commands flags that generates event signalling
 String confJson[EXTCONFDIM]={/*len variabile-->*/"oncond1","oncond2","oncond3","oncond4","oncond5","onaction"/*len fissa-->*/,"utcval","utcsync","utcadj","utcsdt","utczone","webusr","webpsw"/*privati-->,"appssid","apppsw","clntssid1","clntpsw1","clntssid2","clntpsw2","mqttaddr","mqttid","mqttouttopic","mqttintopic","mqttusr","mqttpsw","thalt1","thalt2","thalt3","thalt4", "stdel1","stdel2","valweight","tlength","barrelrad","thickness","slatsratio","swroll1","swroll2","localip","ntpaddr1","ntpaddr2"*/};
+byte confFlags[EXTCONFDIM];
 //default values, some modificable via MQTT, web form or event rules
 String confcmd[CONFDIM]={/*len variabile-->*/"","","","","",""/*len fissa-->*/,"","50","0","1","1"/*privati-->*/,webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID, mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),String(thalt3),String(thalt4), "400","400", "0.5","53","3.37","1.5", "0.8", "0","0", "ip", "ntp1.inrim.it","0.it.pool.ntp.org", "false","false","false","false","false","false"};
 //constant values, identify confcmd across entire system
@@ -737,7 +738,7 @@ void setup_wifi(int wifindx) {
 
 #if (LARGEFW)
 void setup_mDNS() {
-	if (MDNS.begin((confcmd[MQTTID]).c_str())) {              // Start the mDNS responder for esp8266.local
+	if (MDNS.begin((confcmd[LOCALIP]).c_str())) {              // Start the mDNS responder for esp8266.local
 		DEBUG_PRINTLN(F("mDNS responder started"));
 	} else {
 		DEBUG_PRINTLN(F("Error setting up MDNS responder!"));
@@ -834,8 +835,9 @@ void mqttCallback(String &topic, String &response) {
 	//v = parseJsonFieldToInt(response, mqttJson[0], ncifre);
 	//digitalWrite(OUTSLED, v); 
    
-	parseJsonFieldArrayToInt(response, inr, mqttJson, ncifre, MQTTDIM,0);
-	parseJsonFieldArrayToStr(response, confcmd, confJson, ncifre+500, CONFDIM,0,'#',"|");
+	if(parseJsonFieldArrayToInt(response, inr, mqttJson, ncifre, USRMODIFICABLEFLAGS,0)){
+		parseJsonFieldArrayToStr(response, confcmd, confJson, confFlags, ncifre+500, EXTCONFDIM,0,'#',"|");
+	}
     //inr: memoria tampone per l'evento asincrono scrittura da remoto
 }
 
@@ -1005,9 +1007,10 @@ void publishStr(String &str){
   str+="\"";
   str+=mqttJson[MQTTTIME]+twodot+String(millis())+comma;
   str+=mqttJson[MQTTMAC]+twodot+String(WiFi.macAddress())+comma;
-  str+=mqttJson[LOCALIP]+twodot+WiFi.localIP().toString()+comma;
-  str+=mqttJson[MQTTID]+twodot+confcmd[MQTTID]+closebrk;
-   
+  str+=mqttJson[MQTTIP]+twodot+confcmd[LOCALIP]+comma;
+  str+=mqttJson[MQTTMQTTID]+twodot+confcmd[MQTTID]+comma;
+  str+=mqttJson[MQTTDATE]+twodot+printUNIXTimeMin(gbuf)+closebrk;
+  
   if(mqttClient==NULL){
 	  DEBUG_PRINTLN(F("ERROR on publishStr MQTT client is not allocated."));
   }
@@ -1100,7 +1103,7 @@ void setup() {
 #if (AUTOCAL_HLW8012) 
   HLW8012_init();
 #endif    
-  telnet.begin((confcmd[MQTTID]).c_str()); // Initiaze the telnet server
+  telnet.begin((confcmd[LOCALIP]).c_str()); // Initiaze the telnet server
   telnet.setResetCmdEnabled(true); // Enable the reset command
   telnet.setCallBackProjectCmds(&processCmdRemoteDebug);
   DEBUG_PRINTLN(F("Activated remote _DEBUG1"));
@@ -1167,7 +1170,6 @@ void setup() {
   }
   //------------------------------------------OTA SETUP---------------------------------------------------------------------------------------
   //------------------------------------------END OTA SETUP---------------------------------------------------------------------------------------
-  //segnala  la corretta accensione della macchina con un blink dei led dei pulsanti
   delay(500);
   for(int i=0;i<NBTN*STATUSDIM;i++)
 	  outLogic[i]=LOW;
@@ -1175,6 +1177,9 @@ void setup() {
 	  inr[i]=LOW;
   for(int i=0;i<4;i++)
 	  acts[i]=LOW;
+  for(int i=0;i<EXTCONFDIM;i++)
+	  confFlags[i]=LOW;
+  
   initIiming(true);
   // Register event handlers.
   // Callback functions will be called as long as these handler objects exist.
@@ -1407,10 +1412,10 @@ inline void loop2() {
 		//------------------------------------------------------------------------------------------------------------
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
 		if((wifiConn == false && !(isrun[0] || isrun[1]))){
-#if (AUTOCAL_ACS712) 
+//#if (AUTOCAL_ACS712) 
 			DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
 			delay(30);//give 30ms to the ESP stack for wifi connect
-#endif  
+//#endif  
 			wifiConn = (WiFi.status() == WL_CONNECTED);
 		}
 		//------------------------------------------------------------------------------------------------------------
@@ -1496,73 +1501,73 @@ inline void leggiTastiRemoti(){
 	//---------------------------------------------------------------
 	//for(int i=0; i < EXTCONFDIM; i++){
 	//}
-	if(inr[UTCFLAG]){
-		inr[UTCFLAG] = LOW;
+	if(confFlags[UTCVAL]){// 1
+		confFlags[UTCVAL] = LOW;
 		updateNTP(strtoul((confcmd[UTCVAL]).c_str(), NULL, 10));
 		//no confcmd to save
 	}
-	if(inr[UTCSYNCFLAG]){
-		inr[UTCSYNCFLAG] = LOW;
+	if(confFlags[UTCSYNC]){// 2
+		confFlags[UTCSYNC] = LOW;
 		setSyncInterval(saveLongConf(UTCSYNC));
 	}
-	if(inr[UTCADJFLAG]){
-		inr[UTCADJFLAG] = LOW;
+	if(confFlags[UTCADJ]){// 3
+		confFlags[UTCADJ] = LOW;
 		adjustTime(saveIntConf(UTCADJ));
 	}
-	if(inr[UTCSDTFLAG]){
-		inr[UTCSDTFLAG] = LOW;
+	if(confFlags[UTCSDT]){// 4
+		confFlags[UTCSDT] = LOW;
 		setSDT(saveByteConf(UTCSDT));
 	}
-	if(inr[UTCZONEFLAG]){
-		inr[UTCZONEFLAG] = LOW;
+	if(confFlags[UTCZONE]){// 5
+		confFlags[UTCZONE] = LOW;
 		setTimeZone(saveByteConf(UTCZONE));
 	}
 	//parametri di configurazione di lunghezza variabile
-	if(inr[ACTIONFLAG]){
-		inr[ACTIONFLAG] = LOW;
+	if(confFlags[ACTIONEVAL]){// 6
+		confFlags[ACTIONEVAL] = LOW;
 		//save confs and actions on new action received event
 		writeOnOffConditions();
 		//run actions one time on new action received event
 		readActionConfAndSet();
 	}
-	if(inr[CONFFLAG5]){
-		inr[CONFFLAG5] = LOW;
+	if(confFlags[ONCOND1]){// 7
+		confFlags[ONCOND1] = LOW;
 		//save confs and actions on new action received event
 		writeOnOffConditions();
 		//are periodic actions!
 	}
-	if(inr[CONFFLAG1]){
-		inr[CONFFLAG1] = LOW;
+	if(confFlags[ONCOND2]){// 8
+		confFlags[ONCOND2] = LOW;
 		//save confs and actions on new config received event
 		writeOnOffConditions();
 		//confs are automatically runned on every loop by leggiTastiLocaliDaExp()
 	}
-	if(inr[CONFFLAG2]){
-		inr[CONFFLAG2] = LOW;
+	if(confFlags[ONCOND3]){// 9
+		confFlags[ONCOND3] = LOW;
 		//save confs and actions on new config received event
 		writeOnOffConditions();
 		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
 	}
-	if(inr[CONFFLAG3]){
-		inr[CONFFLAG3] = LOW;
+	if(confFlags[ONCOND4]){// 10
+		confFlags[ONCOND4] = LOW;
 		//save confs and actions on new config received event
 		writeOnOffConditions();
 		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
 	}
-	if(inr[CONFFLAG4]){
-		inr[CONFFLAG4] = LOW;
+	if(confFlags[ONCOND5]){// 11
+		confFlags[ONCOND5] = LOW;
 		//save confs and actions on new config received event
 		writeOnOffConditions();
 		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
 	}
-	if(inr[WEBUSERFLAG]){
-		inr[WEBUSERFLAG] = LOW;
+	if(confFlags[WEBUSR]){// 12
+		confFlags[WEBUSR] = LOW;
 		//save confs and actions on new config received event
 		saveSingleParam(WEBUSR);
 		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
 	}
-	if(inr[WEBPSWFLAG]){
-		inr[WEBPSWFLAG] = LOW;
+	if(confFlags[WEBPSW]){// 13
+		confFlags[WEBPSW] = LOW;
 		//save confs and actions on new config received event
 		saveSingleParam(WEBPSW);
 		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
@@ -1570,31 +1575,31 @@ inline void leggiTastiRemoti(){
 	//----------------------------------------------------------------------------
 	//richieste da remoto di valori locali
 	//----------------------------------------------------------------------------
-	if(inr[MQTTTEMP]){
+	if(inr[MQTTTEMP]){// 1
 		inr[MQTTTEMP] = LOW;
 		readTempAndPub();
 	}
-	if(inr[MQTTMEANPWR]){
+	if(inr[MQTTMEANPWR]){// 2
 		inr[MQTTMEANPWR] = LOW;
 		readAvgPowerAndPub();
 	}
-	if(inr[MQTTPEAKPWR]){
+	if(inr[MQTTPEAKPWR]){// 3
 		inr[MQTTPEAKPWR] = LOW;
 		readPeakPowerAndPub();
 	}
-	if(inr[MQTTMAC]){
+	if(inr[MQTTMAC]){// 4
 		inr[MQTTMAC] = LOW;
 		readMacAndPub();
 	}
-	if(inr[MQTTIP]){
+	if(inr[MQTTIP]){// 5
 		inr[MQTTIP] = LOW;
 		readIpAndPub();
 	}
-	if(inr[MQTTTIME]){
+	if(inr[MQTTTIME]){// 6
 		inr[MQTTTIME] = LOW;
 		readTimeAndPub();
 	}
-	if(inr[MQTTMQTTID]){
+	if(inr[MQTTMQTTID]){// 7
 		inr[MQTTMQTTID] = LOW;
 		readMQTTIdAndPub();
 	}
@@ -2146,7 +2151,7 @@ void onElapse(byte nn){
 					//interrupts ();
 					//WiFi.enableAP(true); //is STA + AP
 					//setup_AP();
-					//confcmd[LOCALIP] = WiFi.softAPIP().toString();
+					//confcmd[MQTTIP] = WiFi.softAPIP().toString();
 					//MDNS.notifyAPChange()();
 					//wifi_softap_dhcps_start();
 					//delay(100);

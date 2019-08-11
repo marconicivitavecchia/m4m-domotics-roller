@@ -76,7 +76,7 @@ const char HTTP_FORM_WIFI[] PROGMEM =
 				"</div>"
 				"<div class='col-2'></div>"
 				"<div class='col-2 col-s-12'>"
-					"<input type='submit' value='Save' formaction='/modify' formmethod='post'>"
+					"<input type='submit' name='svwifi' value='Save' formaction='/modify' formmethod='post'>"
 				"</div>"
 				"<div class='col-4'></div>"
 				"<div class='col-2 col-s-12'>"
@@ -138,7 +138,7 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 #endif		
 				"<div class='col-2'></div>"
 					"<div class='col-2 col-s-12'>"
-						"<input type='submit' value='Save' formaction='/modify' formmethod='post'>"
+						"<input type='submit' name='svsystem' value='Save' formaction='/modify' formmethod='post'>"
 					"</div>"
 					"<div class='col-4'></div>"
 					"<div class='col-2 col-s-12'>"
@@ -223,7 +223,7 @@ const char HTTP_FORM_MQTT[] PROGMEM =
 				"</div>"*/				
 				"<div class='col-2'></div>"
 				"<div class='col-2 col-s-12'>"
-					"<input type='submit' value='Save' formaction='/modify' formmethod='post'>"
+					"<input type='submit' name='svmqtt' value='Save' formaction='/modify' formmethod='post'>"
 				"</div>"
 				"<div class='col-4'></div>"
 				"<div class='col-2 col-s-12'>"
@@ -271,7 +271,7 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 				"</div>"
 				"<div class='col-2'></div>"
 				"<div class='col-2 col-s-12'>"
-					"<input type='submit' value='Save' formaction='/modify' formmethod='post'>"
+					"<input type='submit' name='svlogic' value='Save' formaction='/modify' formmethod='post'>"
 				"</div>"
 				"<div class='col-4'></div>"
 				"<div class='col-2 col-s-12'>"
@@ -541,7 +541,7 @@ const char HTTP_FORM_CMD[] PROGMEM =
 			"</div>"
 			"<div class='asidebottom'></div>"
 		"</div>"
-		"<div class='col-6 col-s-12 col-s-12'>"
+		"<div class='col-6 col-s-12'>"
 			"<div id='form'>"
 				"<form>"
 					"<input id='up1' type='button' value='Button 1 UP' onclick='press(vls[0])' onmousedown='this.style.opacity='1'' onmouseup='this.style.opacity='0.6'' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
@@ -647,10 +647,12 @@ const char HTTP_FORM_CMD[] PROGMEM =
 							"ie[3]=0;"
 						"}"
 					"}"
-					"if(obj[x] == \"1\"){"
-						"el.style.backgroundColor = \"#b30000\";"
-					"}else{"
-						"el.style.backgroundColor = \"#00ccff\";"
+					"if(x=='up1' || x=='down1' || x=='up2' || x=='down2'){"
+						"if(obj[x] == \"1\"){"
+							"el.style.backgroundColor = \"#b30000\";"
+						"}else{"
+							"el.style.backgroundColor = \"#00ccff\";"
+						"}"
 					"}"
 					"dir[0]=ie[0]+ie[1]*-1;"
 					"dir[1]=ie[2]+ie[3]*-1;"
@@ -839,23 +841,28 @@ const char HTTP_FORM_HEAD[] PROGMEM =
 
 ".aside{"
 	//"display:inline-block;"
-	"margin: 18% 1%;"
+	"margin: 18% 3%;"
 	"background-color: #333;"
+	"padding: 0 2%;"
+	"text-align: center;"
 "}"
 
 "#temp{"
 	"font-size: 3rem;"
 	"background-color: #333;"
+	"text-align: center;"
 "}"
 
 "#time{"
 	"font-size: 2.6rem;"
 	"background-color: #333;"
+	"text-align: center;"
 "}"
 
 "#date{"
 	"font-size: 2rem;"
 	"background-color: #333;"
+	"text-align: center;"
 "}"
 
 ".footer {"
@@ -931,7 +938,7 @@ const char HTTP_WEBSOCKET[] PROGMEM =
 		"var cond = ['{\"oncond1\":\"C\"}','{\"oncond2\":\"C\"}','{\"oncond3\":\"C\"}','{\"oncond4\":\"C\"}'];"
 		"var conn = new WebSocket('ws://{WS}:81/', ['arduino']);"
 		"conn.onopen = function () {"
-			"conn.send('Connect ' + new Date());"
+			//"conn.send('Connect ' + new Date());"
 		"};"
 		"conn.onerror = function (error) {"
 			"console.log('WebSocket Error ', error);"
@@ -1353,6 +1360,12 @@ void handleCmd() {  // If a POST request is made to URI /login
 	serverp.send(200, "text/html", page);
 }
 
+inline void savegroup(byte fields[], byte len){
+	for(int i=0; i<len; i++){
+		saveParamFromForm(fields[i]);
+	}
+}
+
 void handleModify(){
   
   if (!is_authentified(serverp)) {
@@ -1362,14 +1375,60 @@ void handleModify(){
 		return;
   }
   
-  //manage only input and textarea elements
   eepromBegin();
-  for(int i=VARCONFDIM; i<CONFDIM; i++){
-		saveParamFromForm(i);
+  if(serverp.hasArg("svwifi")){
+	  DEBUG_PRINTLN(F("savegroup svwifi"));
+	  byte fields[6] ={p(APPSSID), p(APPPSW), p(CLNTSSID1), p(CLNTPSW1), p(CLNTSSID2), p(CLNTPSW2)};
+	  savegroup(fields, 6);
+  }else if(serverp.hasArg("svmqtt")){
+	  DEBUG_PRINTLN(F("savegroup svmqtt"));
+	  byte fields[6] ={p(MQTTADDR), p(MQTTID), p(MQTTOUTTOPIC), p(MQTTINTOPIC), p(MQTTUSR), p(MQTTPSW)};
+	  savegroup(fields, 6);
+  }else if(serverp.hasArg("svsystem")){
+	  DEBUG_PRINTLN(F("savegroup svsystem"));
+	  byte fields[6] ={p(WEBUSR), p(WEBPSW), p(UTCSYNC), p(UTCADJ), p(UTCSDT), p(UTCZONE)};
+	  savegroup(fields, 6);
+	  
+	  if( serverp.hasArg("rebootd") && String("y") == serverp.arg("rebootd") ){
+		rebootSystem();
+	  }
+	  if( serverp.hasArg("reboot") && String("y") == serverp.arg("reboot") ){
+		DEBUG_PRINTLN(F("Rebooting ESP"));
+		ESP.restart();
+	  }  
+	  if( serverp.hasArg("utcsdt") && String("y") == serverp.arg("utcsdt") ){
+		setSDT(true);
+		updtConf(UTCSDT, String(1));
+	  }else{
+		setSDT(false);
+		updtConf(UTCSDT, String(0));
+	  }
+  }else if(serverp.hasArg("svlogic")){
+	  DEBUG_PRINTLN(F("savegroup svlogic"));
+	  byte fields[11] ={p(THALT1), p(THALT2), p(THALT3), p(THALT4), p(STDEL1), p(STDEL2), p(VALWEIGHT), p(TLENGTH), p(BARRELRAD), p(THICKNESS), p(SLATSRATIO)};
+	  savegroup(fields, 11);
+	  
+	  if( serverp.hasArg("swroll1") && String("1") == serverp.arg("swroll1") ){
+		//writeSWMode(0,0); 
+		updtConf(SWROLL1OFST, String(0));
+		setSWMode(0,0); 
+	  }else{
+		//writeSWMode(1,0);
+		updtConf(SWROLL1OFST, String(1));
+		setSWMode(1,0);	
+	  }
+	  if( serverp.hasArg("swroll2") && String("1") == serverp.arg("swroll2") ){
+		//writeSWMode(0,1);
+		setSWMode(0,1);
+		updtConf(SWROLL1OFST+1, String(1));
+	  }else{
+		//writeSWMode(1,1);
+		updtConf(SWROLL1OFST+1, String(0));
+		setSWMode(1,1);	
+	  }
   }
   EEPROM.end();
   
-   
   DEBUG_PRINTLN(F("Disconnection"));
   
   serverp.sendHeader("Cache-Control", "no-cache");
@@ -1382,46 +1441,7 @@ void handleModify(){
   if(confcmdp[TIMINGCHANGED]=="true"){
 	confcmdp[TIMINGCHANGED]=="false";
 	initIiming(false);
-  }
-  
-  //special checkbox inputs
-  if( serverp.hasArg("rebootd") && String("y") == serverp.arg("rebootd") ){
-	rebootSystem();
-  }
-  
-  if( serverp.hasArg("reboot") && String("y") == serverp.arg("reboot") ){
-	DEBUG_PRINTLN(F("Rebooting ESP"));
-	ESP.restart();
-  }
-  
-  if( serverp.hasArg("swroll1") && String("1") == serverp.arg("swroll1") ){
-	//writeSWMode(0,0); 
-	updtConf(SWROLL1OFST, String(0));
-	setSWMode(0,0); 
-  }else{
-	//writeSWMode(1,0);
-	updtConf(SWROLL1OFST, String(1));
-	setSWMode(1,0);	
-  }
-  
-  if( serverp.hasArg("swroll2") && String("1") == serverp.arg("swroll2") ){
-	//writeSWMode(0,1);
-	setSWMode(0,1);
-	updtConf(SWROLL1OFST+1, String(1));
-  }else{
-	//writeSWMode(1,1);
-	updtConf(SWROLL1OFST+1, String(0));
-	setSWMode(1,1);	
-  }
-  
-  if( serverp.hasArg("utcsdt") && String("y") == serverp.arg("utcsdt") ){
-	setSDT(true);
-	updtConf(UTCSDT, String(1));
-  }else{
-	setSDT(false);
-	updtConf(UTCSDT, String(0));
-  }
-  
+  } 
 }
 
 void loadConfig() {
@@ -1459,7 +1479,7 @@ void loadConfig() {
 		DEBUG_PRINT(F("eepromlen "));
 		DEBUG_PRINTLN(eepromlen);
 		
-		DEBUG_PRINT(F("Reading all fixed params... "));
+		DEBUG_PRINTLN(F("Reading all fixed params... "));
 		for(int i=0; i<PARAMSDIM; i++){
 			loadConf(i);
 		}
@@ -1575,9 +1595,17 @@ void updtConf(unsigned paramofst, String val){
 	DEBUG_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
 		param = parsp[paramofst]->parname;
+		DEBUG_PRINT(F("param: "));
+		DEBUG_PRINTLN(param);
 		eepromofst = parsp[paramofst]->eprom;
+		DEBUG_PRINT(F("eepromofst: "));
+		DEBUG_PRINTLN(eepromofst);
 		partype = parsp[paramofst]->partype;
+		DEBUG_PRINT(F("partype: "));
+		DEBUG_PRINTLN(partype);
 		unsigned confofst = getConfofstFromParamofst(paramofst);
+		DEBUG_PRINT(F("confofst: "));
+		DEBUG_PRINTLN(confofst);
 		
 		if(partype == 'p'){
 			confcmdp[confofst] = val;
@@ -1691,8 +1719,14 @@ void printFixedParam(unsigned paramofst){
 	DEBUG_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
 		param = parsp[paramofst]->parname;
+		DEBUG_PRINT(F("param: "));
+		DEBUG_PRINTLN(param);
 		eepromofst = parsp[paramofst]->eprom;
+		DEBUG_PRINT(F("eepromofst: "));
+		DEBUG_PRINTLN(eepromofst);
 		partype = parsp[paramofst]->partype;
+		DEBUG_PRINT(F("partype: "));
+		DEBUG_PRINTLN(partype);
 		unsigned confofst = getConfofstFromParamofst(paramofst);
 		DEBUG_PRINT(F("confofst: "));
 		DEBUG_PRINTLN(confofst);
@@ -1719,16 +1753,26 @@ void saveParamFromForm(unsigned paramofst){
 	char partype;
 	char intype;
 	char* param;
+	unsigned eepromofst;
 	
 	DEBUG_PRINT(F("paramofst: "));
 	DEBUG_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
 		param = parsp[paramofst]->parname;
-		intype = parsp[paramofst]->formfield;
+		DEBUG_PRINT(F("param: "));
+		DEBUG_PRINTLN(param);
+		eepromofst = parsp[paramofst]->eprom;
+		DEBUG_PRINT(F("eepromofst: "));
+		DEBUG_PRINTLN(eepromofst);
 		partype = parsp[paramofst]->partype;
+		DEBUG_PRINT(F("partype: "));
+		DEBUG_PRINTLN(partype);
 		unsigned confofst = getConfofstFromParamofst(paramofst);
 		DEBUG_PRINT(F("confofst: "));
 		DEBUG_PRINTLN(confofst);
+		intype = parsp[paramofst]->formfield;
+		DEBUG_PRINT(F("formfield: "));
+		DEBUG_PRINTLN(intype);
 		
 		if(intype == 'i'){//form element input or text area
 			if(partype == 'p'){
@@ -1737,7 +1781,7 @@ void saveParamFromForm(unsigned paramofst){
 					parsp[paramofst]->writeParam(confcmdp[confofst]);
 					
 					DEBUG_PRINT(F("Updated param: "));
-					DEBUG_PRINTLN(param);
+					DEBUG_PRINT(param);
 					DEBUG_PRINT(F(" : "));
 					DEBUG_PRINTLN(confcmdp[confofst]);
 				}				
@@ -1747,14 +1791,14 @@ void saveParamFromForm(unsigned paramofst){
 					parsp[paramofst]->writeParam(mqttJsonp[confofst]);
 					
 					DEBUG_PRINT(F("Updated param: "));
-					DEBUG_PRINTLN(param);
+					DEBUG_PRINT(param);
 					DEBUG_PRINT(F(" : "));
 					DEBUG_PRINTLN(mqttJsonp[confofst]);
 				}
 			}
-			DEBUG_PRINTLN(F("---------------------------------"));
 		}//form element input or text area		
 	}
+	DEBUG_PRINTLN(F("---------------------------------"));
 }
 
 //conservata in eeprom, acqu,isita in form, sia nome che valore campo MQTT
@@ -1769,13 +1813,13 @@ String Par::getParam(){
 	return  "";
 }
 
-void Par::writeParam(String &str){}
+void Par::writeParam(String str){}
 
 String ParByte::getParam(){
 	return  String((byte)EEPROM.read(eprom));
 }
 
-void ParByte::writeParam(String &str){
+void ParByte::writeParam(String str){
 	byte app = str.toInt();
 	EEPROM.write(eprom, app);
 }
@@ -1784,7 +1828,7 @@ String ParInt::getParam(){
 	return  String(EEPROMReadInt(eprom));
 }
 
-void ParInt::writeParam(String &str){
+void ParInt::writeParam(String str){
 	EEPROMWriteInt(eprom, str.toInt());
 }
 
@@ -1792,7 +1836,7 @@ String ParLong::getParam(){
 	return  String(EEPROMReadLong(eprom));
 }
 
-void ParLong::writeParam(String &str){
+void ParLong::writeParam(String str){
 	EEPROMWriteLong(eprom,strtoul(str.c_str(), NULL, 10));
 }
 
@@ -1800,25 +1844,27 @@ String ParFloat::getParam(){
 	return  String(EEPROMReadFloat(eprom));
 }
 
-void ParFloat::writeParam(String &str){
+void ParFloat::writeParam(String str){
 	EEPROMWriteFloat(eprom,str.toFloat());
 }
 
 String ParStr32::getParam(){
 	char buf[32];
-	return  String(EEPROMReadStr(eprom, buf,32));
+	EEPROMReadStr(eprom, buf,32);
+	return  String(buf);
 }
 
-void ParStr32::writeParam(String &str){
+void ParStr32::writeParam(String str){
 	EEPROMWriteStr(eprom,str.c_str(),32);
 }
 
 String ParStr64::getParam(){
 	char buf[64];
-	return  String(EEPROMReadStr(eprom,buf,64));
+	EEPROMReadStr(eprom, buf,64);
+	return  String(buf);
 }
 
-void ParStr64::writeParam(String &str){
+void ParStr64::writeParam(String str){
 	EEPROMWriteStr(eprom,str.c_str(),64);
 }
 
@@ -1860,7 +1906,4 @@ float saveFloatConf(unsigned confofst){
 	saveConf(confofst + USRMODIFICABLEFLAGS);
 	return (confcmdp[confofst]).toFloat();
 }
-
-
-
 

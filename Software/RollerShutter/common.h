@@ -93,8 +93,8 @@
 #define ONE_WIRE_BUS 2  // DS18B20 pin
 #define RUNDELAY  	1
 #define DELTAL		4
-#define AUTOCAL_HLW8012		1
-#define AUTOCAL_ACS712		0
+#define AUTOCAL_HLW8012		0
+#define AUTOCAL_ACS712		1
 #define NSIGMA 		3
 #define EMA  		0.8
 #define THALTMAX   	90000 
@@ -175,7 +175,7 @@
 //--------------------------EEPROM offsets-------------------------------------------
 //First two byte reserved for EEPROM check
 //1 byte offets (char)
-#define RESERVEBYTE1OFST		2
+#define DONOTUSE				2
 #define RESERVEBYTE2OFST		3
 #define RESERVEBYTE3OFST		4
 #define RESERVEBYTE4OFST		5
@@ -244,30 +244,16 @@
 #define MQTTDOWN2			3
 //richiesta parametri
 #define MQTTTEMP			4
-#define MQTTDATE			5
-#define MQTTMEANPWR			6
-#define MQTTPEAKPWR			7
-#define MQTTALL				8
+#define MQTTMEANPWR			5
+#define MQTTPEAKPWR			6
+#define MQTTALL				7
+#define MQTTDATE			8
 //end user modificable flags
 #define MQTTMAC				9
 #define MQTTIP				10
 #define MQTTTIME			11
 #define MQTTMQTTID			12
-//ingresso configurazioni
-#define CONFFLAG1			13
-#define CONFFLAG2			14
-#define CONFFLAG3			15
-#define CONFFLAG4			16
-#define CONFFLAG5			17
-#define ACTIONFLAG			18
-#define UTCFLAG				19
-#define UTCSYNCFLAG			20
-#define UTCADJFLAG			21
-#define UTCSDTFLAG			22
-#define UTCZONEFLAG			23
-#define WEBUSERFLAG			24
-#define WEBPSWFLAG			25
-#define MQTTDIM				26
+#define MQTTDIM				13
 #define USRMODIFICABLEFLAGS 4
 //--------------------------Inizio MQTT config array indexes-----------------------------------------------------
 //Indici array confJson[CONFDIM] dei NOMI dei campi json dei valori di configurazione --> array confcmd[CONFDIM] 
@@ -399,6 +385,8 @@
     in[BTN2IN] =!digitalRead(BTN1D);	\
     in[BTN1IN+BTNDIM] =!digitalRead(BTN2U); 	\
     in[BTN2IN+BTNDIM] =!digitalRead(BTN2D)
+	
+#define p(x) 	x + USRMODIFICABLEFLAGS
 
 #if (_DEBUG1)
  //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
@@ -426,75 +414,74 @@
 class Par{
 	public:
 		char* parname = "empty";
-		//unsigned pofst;
 		unsigned eprom;
 		char formfield;
 		char partype;
 		
-		Par(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n');
+		Par(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n');
 		
 		virtual String getParam();
-		void writeParam(String &);
+		virtual void writeParam(String);
 };
 
 class ParByte : public Par{
 	
 	public:
 		
-		ParByte(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		ParByte(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
 		
 		String getParam();
-		void writeParam(String &);
+		void writeParam(String);
 };
 
 class ParInt : public Par{
 	
 	public:
 		
-		ParInt(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		ParInt(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
 		
 		String getParam();
-		void writeParam(String &);
+		void writeParam(String);
 };
 
 class ParLong : public Par{
 	
 	public:
 		
-		ParLong(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		ParLong(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
 		
 		String getParam();
-		void writeParam(String &);
+		void writeParam(String);
 };
 
 class ParFloat : public Par{
 	
 	public:
 		
-		ParFloat(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		ParFloat(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
 		
 		String getParam();
-		void writeParam(String &);
+		void writeParam(String);
 };
 
 class ParStr32 : public Par{
 	
 	public:
 		
-		ParStr32(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		ParStr32(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
 		
 		String getParam();
-		void writeParam(String &);
+		void writeParam(String);
 };
 
 class ParStr64 : public Par{
 	
 	public:
 		
-		ParStr64(const char* x = "empty", unsigned y = 0, char z = 'p', char t = 'n'):Par(x,y,z,t){};
+		ParStr64(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
 		
 		String getParam();
-		void writeParam(String &);
+		void writeParam(String);
 };
 
 void setup_AP(bool);
@@ -511,6 +498,8 @@ void readIpAndPub();
 void readTimeAndPub();
 void readMQTTIdAndPub();
 void readParamAndPub(byte, char*);
+void readModeAndPub(byte);
+void readActModeAndPub(byte);
 void publishStr(String &);
 float getAmpRMS(float);
 float getTemperature();
