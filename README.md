@@ -19,6 +19,7 @@ A sequence of pressions is considered valid if it's executed in a 2Seconds max t
 * https://www.pjrc.com/teensy/td_libs_OneWire.html
 * https://github.com/milesburton/Arduino-Temperature-Control-Library
 * https://github.com/i-n-g-o/esp-mqtt-arduino
+* https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library
 
 
 
