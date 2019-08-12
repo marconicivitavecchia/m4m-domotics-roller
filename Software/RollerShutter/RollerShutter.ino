@@ -642,12 +642,19 @@ float variables(char *key){
 }
 
 void scriviOutDaStato(){
-	 digitalWrite(OUT1EU,out[0]);	
-	 digitalWrite(OUT1DD,out[1]);		
-	 digitalWrite(OUT2EU,out[2]);	
-	 digitalWrite(OUT2DD,out[3]);		
-	 isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0];					
-	 isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1];	
+#if (MCP2317) 
+	mcp.digitalWrite(OUT1EU,out[0]);	
+	mcp.digitalWrite(OUT1DD,out[1]);		
+	mcp.digitalWrite(OUT2EU,out[2]);	
+	mcp.digitalWrite(OUT2DD,out[3]);	
+#else										
+	digitalWrite(OUT1EU,out[0]);	
+	digitalWrite(OUT1DD,out[1]);		
+	digitalWrite(OUT2EU,out[2]);	
+	digitalWrite(OUT2DD,out[3]);		
+#endif
+	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0];					
+	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1];
 }
 
 void setup_AP(bool apmode) {
@@ -895,23 +902,35 @@ void readStatesAndPub(bool all){
   //vals=digitalRead(OUTSLED); //legge lo stato del led di stato
   //crea una stringa JSON con i valori  dello stato corrente dei pulsanti
   String s=openbrk;	
-  s+=mqttJson[MQTTUP1]+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+comma; 	//up1 DIRS=HIGH
-  s+=mqttJson[MQTTDOWN1]+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+comma;    //down1  DIRS=LOW
-  s+=mqttJson[MQTTUP2]+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+comma;	//up2 
-  s+=mqttJson[MQTTDOWN2]+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+comma;    //down2
-  s+= (String) "pr1"+twodot+String(percfdbck(0))+comma;		//pr1
-  s+= (String) "pr2"+twodot+String(percfdbck(1))+comma;		//pr2
-  s+= (String) "tr1"+twodot+String(getCronoCount(0))+comma;			//tr1
-  s+= (String) "tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
-  if(blocked[0]>0){
-	  s+= (String) "blk1"+twodot+blocked[0]+comma;		//blk1
-  }
-  if(blocked[1]>0){
-	  s+= (String) "blk2"+twodot+blocked[1]+comma;		//blk2
-  }
-  s+= (String) "sp1"+twodot+String((long)getTapThalt(0))+comma;		//sp1
-  s+= (String) "sp2"+twodot+String((long)getTapThalt(1));
   
+  if(roll[0] == true){
+	  s+=mqttJson[MQTTUP1]+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+comma; 	//up1 DIRS=HIGH
+	  s+=mqttJson[MQTTDOWN1]+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+comma;    //down1  DIRS=LOW
+	  if(blocked[0]>0){
+		  s+= (String) "blk1"+twodot+blocked[0]+comma;		//blk1
+	  }
+  }else{
+	  s+=mqttJson[MQTTUP1]+twodot+(out[0]==HIGH)+comma; 	//up1 DIRS=HIGH
+	  s+=mqttJson[MQTTDOWN1]+twodot+(out[1]==HIGH)+comma;    //down1  DIRS=LOW
+  }
+  if(roll[1] == true){
+	  s+=mqttJson[MQTTUP2]+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+comma; 	//up1 DIRS=HIGH
+	  s+=mqttJson[MQTTDOWN2]+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+comma;    //down1  DIRS=LOW
+	  s+= (String) "pr2"+twodot+String(percfdbck(1))+comma;		//pr2
+	  s+= (String) "tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
+	  if(blocked[1]>0){
+		  s+= (String) "blk2"+twodot+blocked[1]+comma;		//blk2
+	  }
+  }else{
+	  s+=mqttJson[MQTTUP2]+twodot+(out[2]==HIGH)+comma; 	//up1 DIRS=HIGH
+	  s+=mqttJson[MQTTDOWN2]+twodot+(out[3]==HIGH)+comma;    //down1  DIRS=LOW
+  }
+  s+= (String) "pr1"+twodot+String(percfdbck(0))+comma;		//pr1
+  s+= (String) "tr1"+twodot+String(getCronoCount(0))+comma;			//tr1
+  s+= (String) "pr2"+twodot+String(percfdbck(1))+comma;		//pr2
+  s+= (String) "tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
+  s+= (String) "sp1"+twodot+String((long)getTapThalt(0))+comma;		//sp1
+  s+= (String) "sp2"+twodot+String((long)getTapThalt(1));		//sp2
   if(all){
 	    s+=comma;
 		s+=mqttJson[MQTTTEMP]+twodot+String(asyncBuf[GTTEMP])+comma;
