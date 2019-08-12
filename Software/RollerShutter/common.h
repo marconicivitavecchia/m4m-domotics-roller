@@ -15,11 +15,12 @@
 
 #include <Arduino.h>
 #include <EEPROM.h>
-//#include <sched.h>
 #include <ESP8266WiFi.h>
-#include <MQTT.h>                         // https://github.com/i-n-g-o/esp-mqtt-arduino
-#include <WebSocketsServer.h>             //  https://github.com/Links2004/arduinoWebSockets
 #include <ESP8266WebServer.h>
+#include <MQTT.h> 
+//#include <WebSockets.h> 
+//#include <WebSocketsClient.h>                     
+#include <WebSocketsServer.h>           
 #include <ESP8266HTTPUpdateServer.h>
 
 //#include <ArduinoOTA.h>
@@ -48,8 +49,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				0
-#define ROLLERSHUTTER 			1
+#define SONOFF_4CH				1
+#define ROLLERSHUTTER 			0
 //#define AUTOCAL_HLW8012			0
 //#define AUTOCAL_ACS712			1
 //#define MCP2317					1
