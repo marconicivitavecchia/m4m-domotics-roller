@@ -1032,7 +1032,7 @@ const char HTTP_FORM_HEAD[] PROGMEM =
 "</style>"
 "</head>";
 
-const char PAHO_SRC[] PROGMEM = "<script src='https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js' type='text/javascript'></script>";
+const char PAHO_SRC[] PROGMEM = "<script manifest='mqttws31.appcache' src='https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js' type='text/javascript'></script>";
 
 const char HTTP_MQTT[] PROGMEM =
 		// Create a client instance
