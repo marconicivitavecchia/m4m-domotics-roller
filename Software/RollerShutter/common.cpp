@@ -623,7 +623,7 @@ const char HTTP_FORM_SUCCESS[] PROGMEM =
 	
 const char HTTP_FORM_CMD[] PROGMEM =	
 	//{"OUTSLED":"0","up1":"1","down1":"0","up2":"50","down2":"0"}
-	"<html>{HD}<body>{SP}"
+	"<html manifest='cmd.appcache'>{HD}<body>{SP}"
 	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
 	"<div class='grid-container'>"
 		"<div class='col-4 col-s-12'>"
@@ -1514,6 +1514,7 @@ void handleCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{PD}"), String(round(getPosdelta())));
 	page.replace(F("{TP}"), mqttJsonp[MQTTTEMP]);
 	page.replace(F("{DT}"), mqttJsonp[MQTTDATE]);
+	page.replace(F("{SP}"), "");
 	//Body placeholders
 	//DEBUG_PRINTLN(page);
 	//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
