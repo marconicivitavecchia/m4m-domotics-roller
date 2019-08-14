@@ -807,9 +807,9 @@ void mqttReconnect() {
 		delay(50);
 	}
 	DEBUG_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
-	noInterrupts ();
+	/////noInterrupts ();
 	mqttClient = new MQTT((confcmd[MQTTID]).c_str(),(confcmd[MQTTADDR]).c_str(), (confcmd[MQTTPORT]).toInt());
-	interrupts ();
+	/////interrupts ();
     DEBUG_PRINTLN(F("Registro i callback dell'MQTT."));
 	DEBUG_PRINT(F("Attempting MQTT connection to: "));
 	DEBUG_PRINT(confcmd[MQTTADDR]);
@@ -839,9 +839,9 @@ void mqttReconnect() {
 		});
 		DEBUG_PRINTLN(F("MQTT: Eseguo la prima connect."));
 		mqttClient->setUserPwd((confcmd[MQTTUSR]).c_str(), (confcmd[MQTTPSW]).c_str());
-		noInterrupts ();
+		//////noInterrupts ();
 		mqttClient->connect();
-		interrupts ();
+		//////interrupts ();
 		delay(50);
 		mqttClient->subscribe(confcmd[MQTTINTOPIC]);
 		mqttClient->publish(confcmd[MQTTOUTTOPIC], confcmd[MQTTID]);
