@@ -39,7 +39,10 @@
 #define PSW2			"pippo2503"
 #define SSIDAP			"admin"
 #define PSWAP			"admin"
-#define MQTTSRV			"iot.eclipse.org"
+#define MQTTSRV			"broker.hivemq.com"
+#define MQTTPRT			"1883"
+#define WSPRT			"8000"
+#define MQTTPT			"mqtt"
 #define MQTTCLIENTID 	"mytapparella"
 //END DEFAULTS
 //_DEBUG1 LEVELS---------------------
@@ -49,8 +52,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				1
-#define ROLLERSHUTTER 			0
+#define SONOFF_4CH				0
+#define ROLLERSHUTTER 			1
 //#define AUTOCAL_HLW8012			0
 //#define AUTOCAL_ACS712			1
 //#define MCP2317					1
@@ -218,10 +221,10 @@
 #define	MQTTDOWN1OFST			194
 #define	MQTTUP2OFST				226
 #define	MQTTDOWN2OFST			258
-#define	MQTTTEMPOFST			290
-#define	MQTTMEANPWROFST			322
-#define	MQTTPEAKPWROFST			354
-#define	MQTTALLOFST				386
+#define	MQTTPORTOFST			290
+#define	WSPORTOFST				322
+#define	MQTTPROTOFST			354
+#define	RESERVEDSTR3			386
 #define	WIFICLIENTSSIDOFST1		418
 #define	WIFICLIENTPSWOFST1		450
 #define	WIFICLIENTSSIDOFST2		482
@@ -294,42 +297,45 @@
 #define CLNTSSID2			17
 #define CLNTPSW2			18
 #define MQTTADDR			19
-#define MQTTID				20
-#define MQTTOUTTOPIC		21
-#define MQTTINTOPIC			22
-#define MQTTUSR				23
-#define MQTTPSW				24
-#define THALT1				25
-#define THALT2				26
-#define THALT3				27
-#define THALT4				28
-#define STDEL1				29
-#define STDEL2				30
-#define VALWEIGHT			31
-#define	TLENGTH				32
-#define	BARRELRAD			33
-#define	THICKNESS			34
-#define	SLATSRATIO			35
-#define SWROLL1				36
-#define SWROLL2				37
-#define LOCALIP				38
-#define NTPADDR1			39
-#define NTPADDR2			40
+#define MQTTPORT			20
+#define WSPORT				21
+#define MQTTPROTO			22
+#define MQTTID				23
+#define MQTTOUTTOPIC		24
+#define MQTTINTOPIC			25
+#define MQTTUSR				26
+#define MQTTPSW				27
+#define THALT1				28
+#define THALT2				29
+#define THALT3				30
+#define THALT4				31
+#define STDEL1				32
+#define STDEL2				33
+#define VALWEIGHT			34
+#define	TLENGTH				35
+#define	BARRELRAD			36
+#define	THICKNESS			37
+#define	SLATSRATIO			38
+#define SWROLL1				39
+#define SWROLL2				40
+#define LOCALIP				41
+#define NTPADDR1			42
+#define NTPADDR2			43
 //parametri di stato (da non esporre)
-#define WIFICHANGED			41
-#define CONFLOADED			42
-#define MQTTADDRMODFIED		43
-#define TOPICCHANGED		44
-#define MQTTCONNCHANGED		45
-#define	TIMINGCHANGED		46
-#define SWACTION1			47
-#define SWACTION2			48
-#define SWACTION3			49
-#define SWACTION4			50
-#define CONFDIM				51
+#define WIFICHANGED			44
+#define CONFLOADED			45
+#define MQTTADDRMODFIED		46
+#define TOPICCHANGED		47
+#define MQTTCONNCHANGED		48
+#define	TIMINGCHANGED		49
+#define SWACTION1			50
+#define SWACTION2			51
+#define SWACTION3			52
+#define SWACTION4			53
+#define CONFDIM				54
 #define VARCONFDIM			6
 #define EXTCONFDIM			13
-#define TOSAVEPARAMS		41
+#define TOSAVEPARAMS		44
 #define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
 //--------------------------Fine array indexes-----------------------------------
 #if (AUTOCAL_HLW8012 || AUTOCAL_ACS712) 
@@ -567,6 +573,7 @@ bool is_authentified(ESP8266WebServer&);
 // function prototypes for HTTP handlers
 void initCommon(ESP8266WebServer *,  Par**, String  *, String  *, String  *);
 
+void handleMqttCmd();
 void handleRoot();              
 void handleLogin();
 void handleNotFound();

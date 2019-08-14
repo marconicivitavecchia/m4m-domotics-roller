@@ -70,6 +70,9 @@ const char* apSsid = SSIDAP;
 const char* apPassword = PSWAP;
 //MQTT config----------------------------------------------
 const char* mqtt_server = MQTTSRV;
+const char* mqtt_port = MQTTPRT;
+const char* ws_port = WSPRT;
+const char* mqtt_proto = MQTTPT;
 const char* clientID = MQTTCLIENTID;
 int haltPrm[2] = {THALT1,THALT2};
 int haltOfs[2] = {THALT1OFST,THALT2OFST};
@@ -102,6 +105,9 @@ String clntPsw1(password1);
 String clntSsid2(ssid2);
 String clntPsw2(password2);
 String mqttAddr(mqtt_server);
+String mqttPort(mqtt_port);
+String wsPort(ws_port);
+String mqttProto(mqtt_proto);
 String mqttID(clientID);
 String mqttOutTopic(outTopic);
 String mqttInTopic(inTopic);
@@ -131,7 +137,7 @@ byte inr[MQTTDIM];
 String confJson[EXTCONFDIM]={/*len variabile-->*/"oncond1","oncond2","oncond3","oncond4","oncond5","onaction"/*len fissa-->*/,"utcval","utcsync","utcadj","utcsdt","utczone","webusr","webpsw"/*privati-->,"appssid","apppsw","clntssid1","clntpsw1","clntssid2","clntpsw2","mqttaddr","mqttid","mqttouttopic","mqttintopic","mqttusr","mqttpsw","thalt1","thalt2","thalt3","thalt4", "stdel1","stdel2","valweight","tlength","barrelrad","thickness","slatsratio","swroll1","swroll2","localip","ntpaddr1","ntpaddr2"*/};
 byte confFlags[EXTCONFDIM];
 //default values, some modificable via MQTT, web form or event rules
-String confcmd[CONFDIM]={/*len variabile-->*/"","","","","",""/*len fissa-->*/,"","50","0","1","1"/*privati-->*/,webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2,mqttAddr,mqttID, mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),String(thalt3),String(thalt4), "400","400", "0.5","53","3.37","1.5", "0.8", "0","0", "ip", "ntp1.inrim.it","0.it.pool.ntp.org", "false","false","false","false","false","false"};
+String confcmd[CONFDIM]={/*len variabile-->*/"","","","","",""/*len fissa-->*/,"","50","0","1","1"/*privati-->*/,webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2, mqttAddr, mqttPort, wsPort, mqttProto, mqttID, mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),String(thalt3),String(thalt4), "400","400", "0.5","53","3.37","1.5", "0.8", "0","0", "ip", "ntp1.inrim.it","0.it.pool.ntp.org", "false","false","false","false","false","false"};
 //constant values, identify confcmd across entire system
 //(MQTT parser, web page static component, web page dinamyc component, etc).
 //parameter properties mapper, is dinamically created on system setup
@@ -352,6 +358,9 @@ inline void initOfst(){
 	/*35*/pars[MQTTUSR + USRMODIFICABLEFLAGS] = new ParStr32("mqttusr", MQTTUSROFST, 'p','i');
 	/*36*/pars[MQTTPSW + USRMODIFICABLEFLAGS] = new ParStr32("mqttpsw", MQTTPSWOFST, 'p','i');
 	/*37*/pars[MQTTADDR + USRMODIFICABLEFLAGS] = new ParStr64("mqttaddr", MQTTADDROFST, 'p','i');
+	/*37*/pars[MQTTPORT + USRMODIFICABLEFLAGS] = new ParStr32("mqttport", MQTTPORTOFST, 'p','i');
+	/*37*/pars[MQTTPORT + USRMODIFICABLEFLAGS] = new ParStr32("wsport", WSPORTOFST, 'p','i');
+	/*37*/pars[MQTTPROTO + USRMODIFICABLEFLAGS] = new ParStr32("mqttproto", MQTTPROTOFST, 'p','i');
 	/*38*/pars[NTPADDR1 + USRMODIFICABLEFLAGS] = new ParStr32("ntpaddr1", NTP1ADDROFST, 'p','i');
 	/*39*/pars[NTPADDR2 + USRMODIFICABLEFLAGS] = new ParStr32("ntpaddr2", NTP2ADDROFST, 'p','i');
 	/*40*/pars[ONCOND1 + USRMODIFICABLEFLAGS] = new ParStr32("oncond1");
@@ -799,7 +808,7 @@ void mqttReconnect() {
 	}
 	DEBUG_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
 	noInterrupts ();
-	mqttClient = new MQTT((confcmd[MQTTID]).c_str(),(confcmd[MQTTADDR]).c_str(), 1883);
+	mqttClient = new MQTT((confcmd[MQTTID]).c_str(),(confcmd[MQTTADDR]).c_str(), (confcmd[MQTTPORT]).toInt());
 	interrupts ();
     DEBUG_PRINTLN(F("Registro i callback dell'MQTT."));
 	DEBUG_PRINT(F("Attempting MQTT connection to: "));
@@ -1310,6 +1319,7 @@ void httpSetup(){
   server.on("/logicconf", HTTP_POST, handleLogicConf);
   server.on("/eventconf", HTTP_POST, handleEventConf);
   server.on("/cmd", HTTP_GET, handleCmd);
+  server.on("/mqttcmd", HTTP_GET, handleMqttCmd);
   //server.on("/cmdjson", handleCmdJsonExt);
   //DEBUG_PRINTLN(F("Registro handleNotFoundExt."));
   server.onNotFound(handleNotFound);           // When a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
@@ -1529,7 +1539,6 @@ inline void leggiTastiLocaliDaExp(){
 			setActionLogic(eval((confcmd[2]).c_str()),2);
 		if(testUpCntEvnt(1,true,SMPLCNT4)){
 			setActionLogic(eval((confcmd[3]).c_str()),3);
-			DEBUG_PRINTLN(F("\nSMPLCNT4: "));
 			DEBUG_PRINTLN(getCntValue(SMPLCNT4));
 		}
 		//legge lo stato finale e lo scrive sulle uscite
