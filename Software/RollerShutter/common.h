@@ -343,9 +343,9 @@
 #endif
 
 #if (AUTOCAL_HLW8012) 
-#define TBASE 			25	
+#define TBASE 			20	
 #define MAINPROCSTEP	2
-#define ONESEC_STEP		40
+#define ONESEC_STEP		50
 #define STOP_STEP		1
 #define SEL_PIN			5
 #define CF1_PIN			13

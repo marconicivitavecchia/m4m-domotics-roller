@@ -2231,7 +2231,7 @@ void onElapse(byte nn, unsigned long tm){
 					//WiFi.printDiag(Serial);
 					//MDNS.update();
 					setGroupState(0,n%2);
-				}else if(getCntValue(nn)==4){
+				}else if(getCntValue(nn)==7){
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("Rebooting ESP without reset of configuration"));
 					DEBUG_PRINTLN(F("-----------------------------"));
