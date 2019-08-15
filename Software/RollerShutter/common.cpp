@@ -1697,9 +1697,15 @@ void printConfig(){
 		DEBUG_PRINT(varStrOfst[VARCONFDIM]);
 }		
 
-void saveSingleParam(unsigned paramofst){
+void saveSingleConf(unsigned confofst){
 	eepromBegin();
-	saveConf(paramofst);
+	saveConf(confofst+USRMODIFICABLEFLAGS);
+	EEPROM.end();
+}
+
+void saveSingleJson(unsigned jsnofst){
+	eepromBegin();
+	saveConf(jsnofst);
 	EEPROM.end();
 }
 

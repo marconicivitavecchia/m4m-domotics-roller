@@ -74,8 +74,8 @@ const char* mqtt_port = MQTTPRT;
 const char* ws_port = WSPRT;
 const char* mqtt_proto = MQTTPT;
 const char* clientID = MQTTCLIENTID;
-int haltPrm[2] = {THALT1,THALT2};
-int haltOfs[2] = {THALT1OFST,THALT2OFST};
+//int haltPrm[2] = {THALT1,THALT2};
+//int haltOfs[2] = {THALT1OFST,THALT2OFST};
 byte blocked[2]={0,0};
 unsigned long edelay[2]={0,0};
 byte wsnconn = 0;
@@ -339,7 +339,7 @@ inline void initOfst(){
 	/*9*/pars[THALT4 + USRMODIFICABLEFLAGS] = new ParInt("thalt4", THALT4OFST, 'p','i');
 	/*10*/pars[STDEL1 + USRMODIFICABLEFLAGS] = new ParFloat("stdel1", STDEL1OFST, 'p','i');
 	/*10*/pars[STDEL2 + USRMODIFICABLEFLAGS] = new ParFloat("stdel2", STDEL2OFST, 'p','i');
-	/*12*/pars[VALWEIGHT + USRMODIFICABLEFLAGS] = new ParFloat("valweight", VALWEIGHTOFST, 'n','i');
+	/*12*/pars[VALWEIGHT + USRMODIFICABLEFLAGS] = new ParFloat("valweight", VALWEIGHTOFST, 'p','i');
 	/*13*/pars[TLENGTH + USRMODIFICABLEFLAGS] = new ParFloat("tlength", TLENGTHOFST, 'p','i');
 	/*14*/pars[BARRELRAD + USRMODIFICABLEFLAGS] = new ParFloat("barrelrad", BARRELRADOFST, 'p','i');
 	/*15*/pars[THICKNESS + USRMODIFICABLEFLAGS] = new ParFloat("thickness", THICKNESSOFST, 'p','i');
@@ -837,7 +837,7 @@ void mqttReconnect() {
 		mqttClient->onDisconnected([]() {
 			//DEBUG_PRINTLN("MQTT disconnected.");
 		DEBUG_PRINTLN(F("MQTT: onDisconnected([]() dice mi sono disconnesso."));
-			//mqttConnected=false;
+			mqttConnected=false;
 		});
 		DEBUG_PRINTLN(F("MQTT: Eseguo la prima connect."));
 		mqttClient->setUserPwd((confcmd[MQTTUSR]).c_str(), (confcmd[MQTTPSW]).c_str());
@@ -1627,13 +1627,13 @@ inline void leggiTastiRemoti(){
 	if(confFlags[WEBUSR]){// 12
 		confFlags[WEBUSR] = LOW;
 		//save confs and actions on new config received event
-		saveSingleParam(WEBUSR);
+		saveSingleConf(WEBUSR);
 		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
 	}
 	if(confFlags[WEBPSW]){// 13
 		confFlags[WEBPSW] = LOW;
 		//save confs and actions on new config received event
-		saveSingleParam(WEBPSW);
+		saveSingleConf(WEBPSW);
 		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
 	}
 	//----------------------------------------------------------------------------
@@ -2297,9 +2297,9 @@ void onTapStop(byte n){
 }
 		
 void onCalibrEnd(unsigned long app, byte n){		
-	confcmd[haltPrm[n]] = String(app);
+	confcmd[THALT1 + n] = String(app);
 	//initTapparellaLogic(in,inr,outLogic,(confcmd[THALT1]).toInt(),(confcmd[THALT2]).toInt(),(confcmd[STDEL1]).toInt(),(confcmd[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
-	setTapThalt((confcmd[THALT1 + n]).toInt(), n);
+	setTapThalt(app, n);
 	DEBUG_PRINTLN(F("-----------------------------"));
 #if (AUTOCAL)
 	calAvg[n] = getAVG(n);
@@ -2309,23 +2309,15 @@ void onCalibrEnd(unsigned long app, byte n){
 	updateUpThreshold(n);
 	//confcmd[TRSHOLD1 + n] = String(getThresholdUp(n));
 	//setThresholdUp((confcmd[TRSHOLD1 + n]).toFloat(), n);
-#endif
-	EEPROM.begin(FIXEDPARAMSLEN);
-	
-	EEPROMWriteStr(VALWEIGHTOFST,(confcmd[VALWEIGHT]).c_str());
-	EEPROM.commit();
+	saveSingleConf(VALWEIGHT);
 	DEBUG_PRINT(F("Modified current weight "));
 	DEBUG_PRINTLN(confcmd[VALWEIGHT]);
-	
-	EEPROMWriteInt(haltOfs[n], app);
-	EEPROM.commit();
+#endif
+	saveSingleConf(THALT1 + n);
 	DEBUG_PRINT(F("Modified THALT "));
-	DEBUG_PRINTLN(haltPrm[n]);
+	DEBUG_PRINTLN(confcmd[THALT1 + n]);
 	DEBUG_PRINT(F(": "));
-	DEBUG_PRINTLN(confcmd[haltPrm[n]]);
-	EEPROM.end();
-	//deactivate the learning of the running statistics
-	//clrStatsLearnMode();
+	DEBUG_PRINTLN(confcmd[THALT1 + n]);
 }
 
 void manualCalibration(byte btn){
