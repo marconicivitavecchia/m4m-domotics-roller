@@ -52,8 +52,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				0
-#define ROLLERSHUTTER 			1
+#define SONOFF_4CH				1
+#define ROLLERSHUTTER 			0
 //#define AUTOCAL_HLW8012			0
 //#define AUTOCAL_ACS712			1
 //#define MCP2317					1
@@ -104,8 +104,6 @@
 #define ONE_WIRE_BUS 2  // DS18B20 pin
 #define RUNDELAY  	1
 #define DELTAL		4
-#define AUTOCAL_HLW8012		0
-#define AUTOCAL_ACS712		1
 #define NSIGMA 		3
 #define EMA  		0.8
 #define THALTMAX   	90000 

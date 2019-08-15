@@ -44,10 +44,10 @@ inline bool switchdfn(byte val, byte n){
 
 inline void copytout(){
 #if (SCR)
-	 outp[0]=(outlogicp[ENABLES] && (outlogicp[DIRS]==HIGH));	
-	 outp[1]=(outlogicp[ENABLES] && (outlogicp[DIRS]==LOW));		
-	 outp[2]=(outlogicp[ENABLES+STATUSDIM] && (outlogicp[DIRS+STATUSDIM]==HIGH));	
-	 outp[3]=(outlogicp[ENABLES+STATUSDIM] && (outlogicp[DIRS+STATUSDIM]==LOW));		
+	 outp[0]=(outlogicp[ENABLES] && (outlogicp[DIRS]==LOW));	
+	 outp[1]=(outlogicp[ENABLES] && (outlogicp[DIRS]==HIGH));		
+	 outp[2]=(outlogicp[ENABLES+STATUSDIM] && (outlogicp[DIRS+STATUSDIM]==LOW));	
+	 outp[3]=(outlogicp[ENABLES+STATUSDIM] && (outlogicp[DIRS+STATUSDIM]==HIGH));		
 #else		
 	 outp[0]=outlogicp[ENABLES];	
 	 outp[1]=outlogicp[DIRS];		
