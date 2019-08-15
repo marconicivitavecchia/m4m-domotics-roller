@@ -98,6 +98,8 @@ char gbuf[50];
 
 //User config
 //--------------------------------------------------------------------------------------
+String rmode1(ROLLMODE1);
+String rmode2(ROLLMODE2);
 String APSsid(apSsid);
 String APPsw(apPassword);
 String clntSsid1(ssid1);
@@ -137,7 +139,7 @@ byte inr[MQTTDIM];
 String confJson[EXTCONFDIM]={/*len variabile-->*/"oncond1","oncond2","oncond3","oncond4","oncond5","onaction"/*len fissa-->*/,"utcval","utcsync","utcadj","utcsdt","utczone","webusr","webpsw"/*privati-->,"appssid","apppsw","clntssid1","clntpsw1","clntssid2","clntpsw2","mqttaddr","mqttid","mqttouttopic","mqttintopic","mqttusr","mqttpsw","thalt1","thalt2","thalt3","thalt4", "stdel1","stdel2","valweight","tlength","barrelrad","thickness","slatsratio","swroll1","swroll2","localip","ntpaddr1","ntpaddr2"*/};
 byte confFlags[EXTCONFDIM];
 //default values, some modificable via MQTT, web form or event rules
-String confcmd[CONFDIM]={/*len variabile-->*/"","","","","",""/*len fissa-->*/,"","50","0","1","1"/*privati-->*/,webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2, mqttAddr, mqttPort, wsPort, mqttProto, mqttID, mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),String(thalt3),String(thalt4), "400","400", "0.5","53","3.37","1.5", "0.8", "0","0", "ip", "ntp1.inrim.it","0.it.pool.ntp.org", "false","false","false","false","false","false"};
+String confcmd[CONFDIM]={/*len variabile-->*/"","","","","",""/*len fissa-->*/,"","50","0","1","1"/*privati-->*/,webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2, mqttAddr, mqttPort, wsPort, mqttProto, mqttID, mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),String(thalt3),String(thalt4), "400","400", "0.5","53","3.37","1.5", "0.8", rmode1, rmode2, "ip", "ntp1.inrim.it","0.it.pool.ntp.org", "false","false","false","false","false","false"};
 //constant values, identify confcmd across entire system
 //(MQTT parser, web page static component, web page dinamyc component, etc).
 //parameter properties mapper, is dinamically created on system setup
@@ -1463,7 +1465,7 @@ inline void loop2() {
 			//legge lo stato finale e lo scrive sulle uscite
 			scriviOutDaStato();
 			//legge lo stato finale e lo pubblica su MQTT
-			//readStatesAndPub();
+			readStatesAndPub();
 			//DEBUG_PRINTLN("Fine callback MQTT.");
 			blocked[0]=blocked[1]=false;
 		}
@@ -2117,12 +2119,14 @@ inline void paramsModificationPoll(){
 
 //-----------------------------------------------INIZIO TIMER----------------------------------------------------------------------
 //azione da compiere allo scadere di uno dei timer dell'array	
-void onElapse(byte nn){
+void onElapse(byte nn, unsigned long tm){
 	int n = nn / TIMERDIM;
 	int sw = nn % TIMERDIM;
 	
 	DEBUG_PRINT(F("\nElapse timer n: "));
 	DEBUG_PRINT(nn);
+	DEBUG_PRINT(F("  al tempo: "));
+	DEBUG_PRINT(tm);
 	DEBUG_PRINT(F("  con stato: "));
 	DEBUG_PRINTLN(getGroupState(nn));
 	DEBUG_PRINT(F("  con n: "));
@@ -2162,7 +2166,9 @@ void onElapse(byte nn){
 					DEBUG_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
 					secondPress(n,0,true);
 					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
-					scriviOutDaStato();
+					scriviOutDaStato();//15/08/19
+					//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
+					readStatesAndPub();
 				}
 #endif
 			}else{//se è in modalità switch
@@ -2182,7 +2188,7 @@ void onElapse(byte nn){
 		}else if(getCntValue(nn) > 1){ //in tutte le modalità
 			if(n == 0){
 				DEBUG_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
-				if(getCntValue(CNTSERV1)==3){
+				if(getCntValue(nn)==3){
 					wifiState = WIFIAP;
 					//wifi_station_dhcpc_stop();
 					//WiFi.enableAP(true);
@@ -2225,18 +2231,18 @@ void onElapse(byte nn){
 					//WiFi.printDiag(Serial);
 					//MDNS.update();
 					setGroupState(0,n%2);
-				}else if(getCntValue(CNTSERV1)==4){
+				}else if(getCntValue(nn)==4){
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("Rebooting ESP without reset of configuration"));
 					DEBUG_PRINTLN(F("-----------------------------"));
 					ESP.eraseConfig(); //do the erasing of wifi credentials
 					ESP.restart();
-				}else if(getCntValue(CNTSERV1)==5 && roll[n]){ //solo in modalità tapparella!
+				}else if(getCntValue(nn)==5 && roll[n]){ //solo in modalità tapparella!
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
 					DEBUG_PRINTLN(F("-----------------------------"));
 					manualCalibration(0); //BTN1
-				}else if(getCntValue(CNTSERV1)==8){
+				}else if(getCntValue(nn)==8){
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("Reboot ESP with reset of configuration"));
 					DEBUG_PRINTLN(F("-----------------------------"));
@@ -2245,10 +2251,10 @@ void onElapse(byte nn){
 					setGroupState(0,nn);
 				}
 				//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
-				resetCnt(CNTSERV1);
+				resetCnt(nn);
 			}else if(roll[n]){ //solo in modalità tapparella!
 				DEBUG_PRINTLN(F("onElapse:  timer 2 dei servizi a conteggio scaduto"));
-				if(getCntValue(CNTSERV2)==5){
+				if(getCntValue(CNTSERV3)==5){
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 2"));
 					DEBUG_PRINTLN(F("-----------------------------"));
@@ -2257,7 +2263,7 @@ void onElapse(byte nn){
 					setGroupState(0,nn);
 				}
 				//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
-				resetCnt(CNTSERV2);
+				resetCnt(nn);
 			}
 		}
 	}else if(nn == RESETTIMER)

@@ -18,7 +18,7 @@ void startTimer(unsigned long, byte n);
 //verifica se è arrivato il tempo di far scattare il timer
 void aggiornaTimer(byte);
 //azione da compiere allo scadere del timer
-extern void onElapse(byte);
+extern void onElapse(byte, unsigned long);
 void initTimers();
 byte getTimerState(byte n);
 void setTimerState(byte,byte n);

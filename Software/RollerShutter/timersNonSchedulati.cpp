@@ -57,7 +57,7 @@ void aggiornaTimer(byte n){
 	//Serial.println("TS "+ String(TIMERN));
 	if((millis() - startTimeN[n] >= timelapseN[n]) && timerStateN[n]>0){
 		timerStateN[n]=0;
-		onElapse(n);
+		onElapse(n, timelapseN[n]);
 	}
 }	
 

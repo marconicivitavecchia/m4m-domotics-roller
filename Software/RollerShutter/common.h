@@ -44,6 +44,8 @@
 #define WSPRT			"8000"
 #define MQTTPT			"mqtt"
 #define MQTTCLIENTID 	"mytapparella"
+#define ROLLMODE1 		1
+#define ROLLMODE2 		1
 //END DEFAULTS
 //_DEBUG1 LEVELS---------------------
 #define _DEBUG1   	1		//ACTIVATE LOCAL AND REMOTE _DEBUG1 MODE
@@ -127,8 +129,8 @@
 //INIZIO COSTANTI LOGICA DI COMANDO---------------------------------------------------
 #define TENDCHECK	2		//MAX TIME IN SEC BEFORE THE EFFECTIVE START OF THE MOTOR 
 #define NBTN     	2     	//NUMBER OF BUTTONS
-#define	BTNDEL1   	500    	//BTN DELAY (ms)
-#define	BTNDEL2  	500    	//BTN DELAY (ms)
+#define	BTNDEL1   	600    	//BTN DELAY (ms)
+#define	BTNDEL2  	600    	//BTN DELAY (ms)
 #define ENABLES    	0		//ENABLES STATE
 #define DIRS       	1		//DIR SELECTION STATE
 #define SW1ONS      2		//SWITCH 1 (UP) ON STATE
@@ -362,7 +364,7 @@
 
 #if (AUTOCAL_ACS712) 
 #define TBASE 			2	
-#define MAINPROCSTEP 	60
+#define MAINPROCSTEP 	40
 #define ONESEC_STEP		500
 #define STOP_STEP		10
 #endif

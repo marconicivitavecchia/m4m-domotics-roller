@@ -93,6 +93,10 @@ byte switchLogic(byte sw, byte n){
 					setGroupState(1,toffset);	
 					incCnt(toffset);
 					changed = 0;
+					DEBUG_PRINT(F("incCnt0("));
+					DEBUG_PRINT(toffset);
+					DEBUG_PRINT(F("): "));
+					DEBUG_PRINTLN(getCntValue(toffset));
 				}else if(s==1)
 				{//se il motore è in attesa
 					//sono pressioni di configurazione
@@ -101,6 +105,10 @@ byte switchLogic(byte sw, byte n){
 					startTimer(btndelay[n],TMRHALT+toffset);	
 					incCnt(toffset);
 					changed = 0;
+					DEBUG_PRINT(F("\nincCnt1("));
+					DEBUG_PRINT(toffset);
+					DEBUG_PRINT(F("): "));
+					DEBUG_PRINTLN(getCntValue(toffset));
 				}else  if(s==2 || s==3)//se il motore è in moto a vuoto o in moto cronometrato
 				{
 					secondPress(n);
