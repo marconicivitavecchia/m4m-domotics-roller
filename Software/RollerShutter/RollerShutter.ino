@@ -417,7 +417,7 @@ void setSWMode(byte mode,byte n){
 	DEBUG_PRINT("setSWMode: ");
 	DEBUG_PRINTLN(confcmd[SWROLL1+n]);
 	DEBUG_PRINTLN(n);
-	readModeAndPub(n);
+	//readModeAndPub(n);
 }
 
 byte inline getSWMode(byte n){
@@ -1737,8 +1737,8 @@ inline void automaticStopManager(){
 #endif
 #if (AUTOCAL_HLW8012) 
 			//dd = hlw8012.getActivePower();
-			//dd = hlw8012.getExtimActivePower();
-			dd = hlw8012.getAvgdExtimActivePower();
+			dd = hlw8012.getExtimActivePower();
+			//dd = hlw8012.getAvgdExtimActivePower();
 #endif
 			//EMA calculation
 			//ACSVolt = (double) ex/2.0;

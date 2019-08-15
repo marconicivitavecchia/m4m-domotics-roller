@@ -124,8 +124,8 @@ unsigned int HLW8012::getAvgdExtimActivePower() {//works only with interrupts!
     unsigned long _extim_power_pulse_width = micros() - _last_cf_interrupt;
 	unsigned long _p_pulse_width, _extim_p_pulse_width;
 	
-	_p_pulse_width = _summed_pulse_width / _avg_pulse_count;	//last measured pulse width mean
-	_extim_p_pulse_width = (_summed_pulse_width + _extim_power_pulse_width) / (_avg_pulse_count + 1);
+	(_avg_pulse_count + 1 > 0) && (_p_pulse_width = _summed_pulse_width / (_avg_pulse_count + 1));	//last measured pulse width mean
+	(_avg_pulse_count + 1 > 0) && (_extim_p_pulse_width = (_summed_pulse_width + _extim_power_pulse_width) / (_avg_pulse_count + 1));
 	_avg_pulse_count = 0;
 	_summed_pulse_width = 0;
 	
