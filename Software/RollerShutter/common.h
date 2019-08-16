@@ -407,7 +407,7 @@
 //legge gli ingressi dei tasti già puliti dai rimbalzi
 
 #if (MCP2317) 
-    #define leggiTastiLocali()  in[BTN1IN] =!digitalRead(BTN1U);	\		
+    #define leggiTastiLocali()  in[BTN1IN] =!mcp.digitalRead(BTN1U);	\		
 		in[BTN2IN] = !mcp.digitalRead(BTN1D);	\
 		in[BTN1IN+BTNDIM] = !mcp.digitalRead(BTN2U); 	\
 		in[BTN2IN+BTNDIM] = !mcp.digitalRead(BTN2D)	

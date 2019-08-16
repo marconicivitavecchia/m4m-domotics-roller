@@ -291,7 +291,7 @@ void printOut(){
 	if(ledpause == 0){
 		if(ledcnt > 0){
 			if((ledcnt % 2) == 0)
-				(mcp.digitalRead(ledslct))?setColor(cols[1]):setColor(cols[0]);
+				(mcp.digitalRead(ledslct+BTN1U))?setColor(cols[1]):setColor(cols[0]);
 			else
 				setColor(cols[7]);
 			ledcnt--;
@@ -1264,6 +1264,12 @@ void setup(){
 		mcp.pinMode(outPorts[i],OUTPUT);
 		mcp.digitalWrite(outPorts[i], LOW);
 	}
+	mcp.pinMode(GREEN,OUTPUT);
+	mcp.pinMode(RED,OUTPUT);
+	mcp.pinMode(BLUE,OUTPUT);
+	mcp.digitalWrite(GREEN, LOW);
+	mcp.digitalWrite(RED, LOW);
+	mcp.digitalWrite(GREEN, LOW);
 #else
 #if (INPULLUP)
 	pinMode(BTN1U, INPUT_PULLUP);
