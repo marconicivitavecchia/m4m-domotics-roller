@@ -48,8 +48,8 @@
 #define ROLLMODE2 		1
 //END DEFAULTS
 //_DEBUG1 LEVELS---------------------
-#define _DEBUG1   	1		//ACTIVATE LOCAL AND REMOTE _DEBUG1 MODE
-#define _DEBUGR   	0		//ACTIVATE ONLY REMOTE _DEBUG1 MODE
+#define _DEBUG1   		1		//ACTIVATE LOCAL AND REMOTE _DEBUG1 MODE
+#define _DEBUGR   		0		//ACTIVATE ONLY REMOTE _DEBUG1 MODE
 //LARGE FW OTA UPLOAD---------------------
 #define LARGEFW 		1
 //----------------------------------------
@@ -70,6 +70,9 @@
   #define OUT1DD  	1 //5    	// OUT2 =  MOTOR1 DOWN     
   #define OUT2EU  	2 //4     	// OUT3 =  MOTOR2 UP  
   #define OUT2DD  	3      		// OUT4 =  MOTOR2 DOWN
+  #define GREEN  	4  
+  #define RED  		5
+  #define BLUE  	6      		
   //local buttons
   #define BTN1U    	8    		// IN1   =  MOTOR1 UP    
   #define BTN1D    	9    		// IN2   =  MOTOR1 DOWN    
@@ -348,6 +351,7 @@
 #define TBASE 			20	
 #define MAINPROCSTEP	2
 #define ONESEC_STEP		50
+#define	LED_STEP		10
 #define STOP_STEP		1
 #define SEL_PIN			5
 #define CF1_PIN			13
@@ -558,6 +562,8 @@ int saveIntConf(unsigned);
 byte saveByteConf(unsigned);
 void updtConf(unsigned, String);
 unsigned getConfofstFromParamofst(unsigned);
+void printOut();
+void rstldcnt(byte);
 
 /*
 //http server callback function prototypes

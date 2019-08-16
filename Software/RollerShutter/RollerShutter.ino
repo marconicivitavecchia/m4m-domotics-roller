@@ -84,6 +84,11 @@ IPAddress mygateway(192, 168, 43, 1);
 IPAddress mysubnet(255, 255, 255, 0);
 bool roll[2] = {true, true};
 
+byte cols[] = {7,4,2,1,6,5,3,0};
+byte ledcnt = 0;
+byte ledslct = 0;
+byte ledpause = 0;
+
 #if(LARGEFW)
 RemoteDebug telnet;
 OneWire oneWire(ONE_WIRE_BUS);
@@ -264,6 +269,54 @@ void HLW8012_init(){
 }
 #endif
 
+#if (MCP2317) 
+inline void getbits(byte num, byte &r, byte &g, byte &b) 
+{ 
+    r = (num >> 2) & 1;
+	g = (num >> 1) & 1;
+	b = num & 1;
+}
+	
+inline void setColor(byte num) 
+{   
+	byte r,g,b;
+
+    getbits(byte num, byte &r, byte &g, byte &b)
+	mcp.digitalWrite(GREEN,g);	
+	mcp.digitalWrite(RED,r);		
+	mcp.digitalWrite(BLUE,b);
+} 
+
+void printOut(){ 
+	if(ledpause == 0){
+		if(ledcnt > 0){
+			if(ledcnt % 0)
+				(mcp.digitalRead(ledslct))?setColor(cols[1]):setColor(cols[0]);
+			else
+				setColor(cols[7]);
+			ledcnt--;
+		}else if(ledcnt == 0){
+			if(ledslct < 4){
+				ledslct++;
+				ledcnt = 2*(ledslct+1);
+				ledpause = 4;
+			}else{
+				ledpause = -1;
+			}
+		}
+	}else if(ledpause > 0){
+		ledpause--;
+	}
+}
+
+void rstldcnt(byte n){   
+	ledcnt = 2*(n+1);
+	ledslct = n;
+	ledpause = 0;
+} 
+
+#endif
+
 void testparam(int i){
 	char * param;
 	
@@ -323,54 +376,54 @@ inline void initOfst(){
 	for(int i=0; i<PARAMSDIM; i++){
 		pars[i] = NULL;
 	}
-	/*23*/pars[MQTTUP1] = new ParStr32("up1", MQTTUP1OFST, 'j','i');
-	/*24*/pars[MQTTDOWN1] = new ParStr32("down1", MQTTDOWN1OFST, 'j','i');
-	/*25*/pars[MQTTUP2] = new ParStr32("up2", MQTTUP2OFST, 'j','i');
-	/*26*/pars[MQTTDOWN2] = new ParStr32("down2", MQTTDOWN2OFST, 'j','i');
+	/*1*/pars[MQTTUP1] = new ParStr32("up1", MQTTUP1OFST, 'j','i');
+	/*2*/pars[MQTTDOWN1] = new ParStr32("down1", MQTTDOWN1OFST, 'j','i');
+	/*3*/pars[MQTTUP2] = new ParStr32("up2", MQTTUP2OFST, 'j','i');
+	/*4*/pars[MQTTDOWN2] = new ParStr32("down2", MQTTDOWN2OFST, 'j','i');
 	//--------------------------------------------------------------------------------------------------------------
-	/*1*/pars[LOCALIP + USRMODIFICABLEFLAGS] = new ParInt("localip");
-	/*2*/pars[SWROLL1 + USRMODIFICABLEFLAGS] = new ParInt("swroll1", SWROLL1OFST, 'p', 'i');
-	/*3*/pars[SWROLL2 + USRMODIFICABLEFLAGS] = new ParInt("swroll2", SWROLL1OFST, 'p', 'i');
-	/*4*/pars[UTCSDT + USRMODIFICABLEFLAGS] = new ParByte("utcsdt", NTPSDTOFST, 'p', 'i');
-	/*5*/pars[UTCZONE + USRMODIFICABLEFLAGS] = new ParByte("utczone", NTPZONEOFST, 'p','i');
-	/*6*/pars[THALT1 + USRMODIFICABLEFLAGS] = new ParInt("thalt1", THALT1OFST, 'p','i');
-	/*7*/pars[THALT2 + USRMODIFICABLEFLAGS] = new ParInt("thalt2", THALT2OFST, 'p','i');
-	/*8*/pars[THALT3 + USRMODIFICABLEFLAGS] = new ParInt("thalt3", THALT3OFST, 'p','i');
-	/*9*/pars[THALT4 + USRMODIFICABLEFLAGS] = new ParInt("thalt4", THALT4OFST, 'p','i');
-	/*10*/pars[STDEL1 + USRMODIFICABLEFLAGS] = new ParFloat("stdel1", STDEL1OFST, 'p','i');
-	/*10*/pars[STDEL2 + USRMODIFICABLEFLAGS] = new ParFloat("stdel2", STDEL2OFST, 'p','i');
-	/*12*/pars[VALWEIGHT + USRMODIFICABLEFLAGS] = new ParFloat("valweight", VALWEIGHTOFST, 'p','i');
-	/*13*/pars[TLENGTH + USRMODIFICABLEFLAGS] = new ParFloat("tlength", TLENGTHOFST, 'p','i');
-	/*14*/pars[BARRELRAD + USRMODIFICABLEFLAGS] = new ParFloat("barrelrad", BARRELRADOFST, 'p','i');
-	/*15*/pars[THICKNESS + USRMODIFICABLEFLAGS] = new ParFloat("thickness", THICKNESSOFST, 'p','i');
-	/*16*/pars[UTCADJ + USRMODIFICABLEFLAGS] = new ParInt("utcadj", NTPADJUSTOFST, 'p','i');
-	/*17*/pars[SLATSRATIO + USRMODIFICABLEFLAGS] = new ParFloat("slatsratio", SLATSRATIOFST, 'p','i');
-	/*19*/pars[UTCSYNC + USRMODIFICABLEFLAGS] = new ParInt("utcsync", NTPSYNCINTOFST, 'p','i');
-	/*20*/pars[MQTTID + USRMODIFICABLEFLAGS] = new ParStr32("mqttid", MQTTIDOFST, 'p','i');
-	/*21*/pars[MQTTOUTTOPIC + USRMODIFICABLEFLAGS] = new ParStr32("mqttouttopic", OUTTOPICOFST, 'p','i');
-	/*22*/pars[MQTTINTOPIC + USRMODIFICABLEFLAGS] = new ParStr32("mqttintopic", INTOPICOFST, 'p','i');
-	/*27*/pars[CLNTSSID1 + USRMODIFICABLEFLAGS] = new ParStr32("clntssid1", WIFICLIENTSSIDOFST1, 'p','i');
-	/*28*/pars[CLNTPSW1 + USRMODIFICABLEFLAGS] = new ParStr32("clntpsw1", WIFICLIENTPSWOFST1, 'p','i');
-	/*29*/pars[CLNTSSID2 + USRMODIFICABLEFLAGS] = new ParStr32("clntssid2", WIFICLIENTSSIDOFST2, 'p','i');
-	/*30*/pars[CLNTPSW2 + USRMODIFICABLEFLAGS] = new ParStr32("clntpsw2", WIFICLIENTPSWOFST2, 'p','i');
-	/*18*/pars[APPSSID + USRMODIFICABLEFLAGS] = new ParStr32("appssid", WIFIAPSSIDOFST, 'p','i');
-	/*32*/pars[APPPSW + USRMODIFICABLEFLAGS] = new ParStr32("apppsw", WIFIAPPPSWOFST, 'p','i');
-	/*33*/pars[WEBUSR + USRMODIFICABLEFLAGS] = new ParStr32("webusr", WEBUSROFST, 'p','i');
-	/*34*/pars[WEBPSW + USRMODIFICABLEFLAGS] = new ParStr32("webpsw", WEBPSWOFST, 'p','i');
-	/*35*/pars[MQTTUSR + USRMODIFICABLEFLAGS] = new ParStr32("mqttusr", MQTTUSROFST, 'p','i');
-	/*36*/pars[MQTTPSW + USRMODIFICABLEFLAGS] = new ParStr32("mqttpsw", MQTTPSWOFST, 'p','i');
-	/*37*/pars[MQTTADDR + USRMODIFICABLEFLAGS] = new ParStr64("mqttaddr", MQTTADDROFST, 'p','i');
-	/*37*/pars[MQTTPORT + USRMODIFICABLEFLAGS] = new ParStr32("mqttport", MQTTPORTOFST, 'p','i');
+	/*5*/pars[LOCALIP + USRMODIFICABLEFLAGS] = new ParInt("localip");
+	/*5*/pars[SWROLL1 + USRMODIFICABLEFLAGS] = new ParInt("swroll1", SWROLL1OFST, 'p', 'i');
+	/*6*/pars[SWROLL2 + USRMODIFICABLEFLAGS] = new ParInt("swroll2", SWROLL1OFST, 'p', 'i');
+	/*7*/pars[UTCSDT + USRMODIFICABLEFLAGS] = new ParByte("utcsdt", NTPSDTOFST, 'p', 'i');
+	/*8*/pars[UTCZONE + USRMODIFICABLEFLAGS] = new ParByte("utczone", NTPZONEOFST, 'p','i');
+	/*9*/pars[THALT1 + USRMODIFICABLEFLAGS] = new ParInt("thalt1", THALT1OFST, 'p','i');
+	/*10*/pars[THALT2 + USRMODIFICABLEFLAGS] = new ParInt("thalt2", THALT2OFST, 'p','i');
+	/*11*/pars[THALT3 + USRMODIFICABLEFLAGS] = new ParInt("thalt3", THALT3OFST, 'p','i');
+	/*12*/pars[THALT4 + USRMODIFICABLEFLAGS] = new ParInt("thalt4", THALT4OFST, 'p','i');
+	/*13*/pars[STDEL1 + USRMODIFICABLEFLAGS] = new ParFloat("stdel1", STDEL1OFST, 'p','i');
+	/*14*/pars[STDEL2 + USRMODIFICABLEFLAGS] = new ParFloat("stdel2", STDEL2OFST, 'p','i');
+	/*15*/pars[VALWEIGHT + USRMODIFICABLEFLAGS] = new ParFloat("valweight", VALWEIGHTOFST, 'p','i');
+	/*16*/pars[TLENGTH + USRMODIFICABLEFLAGS] = new ParFloat("tlength", TLENGTHOFST, 'p','i');
+	/*17*/pars[BARRELRAD + USRMODIFICABLEFLAGS] = new ParFloat("barrelrad", BARRELRADOFST, 'p','i');
+	/*18*/pars[THICKNESS + USRMODIFICABLEFLAGS] = new ParFloat("thickness", THICKNESSOFST, 'p','i');
+	/*19*/pars[UTCADJ + USRMODIFICABLEFLAGS] = new ParInt("utcadj", NTPADJUSTOFST, 'p','i');
+	/*20*/pars[SLATSRATIO + USRMODIFICABLEFLAGS] = new ParFloat("slatsratio", SLATSRATIOFST, 'p','i');
+	/*21*/pars[UTCSYNC + USRMODIFICABLEFLAGS] = new ParInt("utcsync", NTPSYNCINTOFST, 'p','i');
+	/*22*/pars[MQTTID + USRMODIFICABLEFLAGS] = new ParStr32("mqttid", MQTTIDOFST, 'p','i');
+	/*23*/pars[MQTTOUTTOPIC + USRMODIFICABLEFLAGS] = new ParStr32("mqttouttopic", OUTTOPICOFST, 'p','i');
+	/*24*/pars[MQTTINTOPIC + USRMODIFICABLEFLAGS] = new ParStr32("mqttintopic", INTOPICOFST, 'p','i');
+	/*25*/pars[CLNTSSID1 + USRMODIFICABLEFLAGS] = new ParStr32("clntssid1", WIFICLIENTSSIDOFST1, 'p','i');
+	/*26*/pars[CLNTPSW1 + USRMODIFICABLEFLAGS] = new ParStr32("clntpsw1", WIFICLIENTPSWOFST1, 'p','i');
+	/*27*/pars[CLNTSSID2 + USRMODIFICABLEFLAGS] = new ParStr32("clntssid2", WIFICLIENTSSIDOFST2, 'p','i');
+	/*28*/pars[CLNTPSW2 + USRMODIFICABLEFLAGS] = new ParStr32("clntpsw2", WIFICLIENTPSWOFST2, 'p','i');
+	/*29*/pars[APPSSID + USRMODIFICABLEFLAGS] = new ParStr32("appssid", WIFIAPSSIDOFST, 'p','i');
+	/*30*/pars[APPPSW + USRMODIFICABLEFLAGS] = new ParStr32("apppsw", WIFIAPPPSWOFST, 'p','i');
+	/*31*/pars[WEBUSR + USRMODIFICABLEFLAGS] = new ParStr32("webusr", WEBUSROFST, 'p','i');
+	/*32*/pars[WEBPSW + USRMODIFICABLEFLAGS] = new ParStr32("webpsw", WEBPSWOFST, 'p','i');
+	/*33*/pars[MQTTUSR + USRMODIFICABLEFLAGS] = new ParStr32("mqttusr", MQTTUSROFST, 'p','i');
+	/*34*/pars[MQTTPSW + USRMODIFICABLEFLAGS] = new ParStr32("mqttpsw", MQTTPSWOFST, 'p','i');
+	/*35*/pars[MQTTADDR + USRMODIFICABLEFLAGS] = new ParStr64("mqttaddr", MQTTADDROFST, 'p','i');
+	/*36*/pars[MQTTPORT + USRMODIFICABLEFLAGS] = new ParStr32("mqttport", MQTTPORTOFST, 'p','i');
 	/*37*/pars[MQTTPORT + USRMODIFICABLEFLAGS] = new ParStr32("wsport", WSPORTOFST, 'p','i');
-	/*37*/pars[MQTTPROTO + USRMODIFICABLEFLAGS] = new ParStr32("mqttproto", MQTTPROTOFST, 'p','i');
-	/*38*/pars[NTPADDR1 + USRMODIFICABLEFLAGS] = new ParStr32("ntpaddr1", NTP1ADDROFST, 'p','i');
-	/*39*/pars[NTPADDR2 + USRMODIFICABLEFLAGS] = new ParStr32("ntpaddr2", NTP2ADDROFST, 'p','i');
-	/*40*/pars[ONCOND1 + USRMODIFICABLEFLAGS] = new ParStr32("oncond1");
-	/*41*/pars[ONCOND2 + USRMODIFICABLEFLAGS] = new ParStr32("oncond2");
-	/*42*/pars[ONCOND3 + USRMODIFICABLEFLAGS] = new ParStr32("oncond3");
-	/*43*/pars[ONCOND4 + USRMODIFICABLEFLAGS] = new ParStr32("oncond4");
-	/*44*/pars[ONCOND5 + USRMODIFICABLEFLAGS] = new ParStr32("oncond5");
-	/*45*/pars[ACTIONEVAL + USRMODIFICABLEFLAGS] = new ParStr32("onaction");
+	/*38*/pars[MQTTPROTO + USRMODIFICABLEFLAGS] = new ParStr32("mqttproto", MQTTPROTOFST, 'p','i');
+	/*39*/pars[NTPADDR1 + USRMODIFICABLEFLAGS] = new ParStr32("ntpaddr1", NTP1ADDROFST, 'p','i');
+	/*40*/pars[NTPADDR2 + USRMODIFICABLEFLAGS] = new ParStr32("ntpaddr2", NTP2ADDROFST, 'p','i');
+	/*41*/pars[ONCOND1 + USRMODIFICABLEFLAGS] = new ParStr32("oncond1");
+	/*42*/pars[ONCOND2 + USRMODIFICABLEFLAGS] = new ParStr32("oncond2");
+	/*43*/pars[ONCOND3 + USRMODIFICABLEFLAGS] = new ParStr32("oncond3");
+	/*44*/pars[ONCOND4 + USRMODIFICABLEFLAGS] = new ParStr32("oncond4");
+	/*45*/pars[ONCOND5 + USRMODIFICABLEFLAGS] = new ParStr32("oncond5");
+	/*46*/pars[ACTIONEVAL + USRMODIFICABLEFLAGS] = new ParStr32("onaction");
 
 	printparams();
 }
@@ -657,7 +710,8 @@ void scriviOutDaStato(){
 	mcp.digitalWrite(OUT1EU,out[0]);	
 	mcp.digitalWrite(OUT1DD,out[1]);		
 	mcp.digitalWrite(OUT2EU,out[2]);	
-	mcp.digitalWrite(OUT2DD,out[3]);	
+	mcp.digitalWrite(OUT2DD,out[3]);
+	rstldcnt(0);
 #else										
 	digitalWrite(OUT1EU,out[0]);	
 	digitalWrite(OUT1DD,out[1]);		
@@ -1418,6 +1472,12 @@ inline void loop2() {
 	if(!(step % STOP_STEP)){		
 		automaticStopManager();
 	}//END 20ms scheduler--------------------------------------------------
+#endif
+
+#if (MCP2317) 
+	if(!(step % LED_STEP)){		
+		 printOut();
+	}//END LED_STEP scheduler--------------------------------------------------
 #endif
 
 	//---------------------------------------------------------------------
