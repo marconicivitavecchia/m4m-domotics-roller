@@ -281,7 +281,7 @@ inline void setColor(byte num)
 {   
 	byte r,g,b;
 
-    getbits(byte num, byte &r, byte &g, byte &b)
+    getbits(num, r, g, b);
 	mcp.digitalWrite(GREEN,g);	
 	mcp.digitalWrite(RED,r);		
 	mcp.digitalWrite(BLUE,b);
@@ -290,7 +290,7 @@ inline void setColor(byte num)
 void printOut(){ 
 	if(ledpause == 0){
 		if(ledcnt > 0){
-			if(ledcnt % 0)
+			if((ledcnt % 2) == 0)
 				(mcp.digitalRead(ledslct))?setColor(cols[1]):setColor(cols[0]);
 			else
 				setColor(cols[7]);
