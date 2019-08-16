@@ -66,18 +66,18 @@
   #define SCR    1  
   #define INPULLUP  0  			//disable internal pullup
   #define OUTSLED  	2     
-  #define OUT1EU  	0      		// OUT1 =  MOTOR1 UP   
-  #define OUT1DD  	1 //5    	// OUT2 =  MOTOR1 DOWN     
-  #define OUT2EU  	2 //4     	// OUT3 =  MOTOR2 UP  
-  #define OUT2DD  	3      		// OUT4 =  MOTOR2 DOWN
-  #define GREEN  	4  
-  #define RED  		5
-  #define BLUE  	6      		
+  #define OUT1EU  	8      		// OUT1 =  MOTOR1 UP   
+  #define OUT1DD  	9 //5    	// OUT2 =  MOTOR1 DOWN     
+  #define OUT2EU  	10 //4     	// OUT3 =  MOTOR2 UP  
+  #define OUT2DD  	11      		// OUT4 =  MOTOR2 DOWN
+  #define GREEN  	12  
+  #define RED  		13
+  #define BLUE  	14      		
   //local buttons
-  #define BTN1U    	8    		// IN1   =  MOTOR1 UP    
-  #define BTN1D    	9    		// IN2   =  MOTOR1 DOWN    
-  #define BTN2U    	10    		// IN3   =  MOTOR2 UP    
-  #define BTN2D    	11    		// IN4   =  MOTOR2 DOWN
+  #define BTN1U    	0    		// IN1   =  MOTOR1 UP    
+  #define BTN1D    	1    		// IN2   =  MOTOR1 DOWN    
+  #define BTN2U    	2    		// IN3   =  MOTOR2 UP    
+  #define BTN2D    	3    		// IN4   =  MOTOR2 DOWN
   #define AUTOCAL_HLW8012			1
   #define AUTOCAL_ACS712			0
   #define MCP2317					1

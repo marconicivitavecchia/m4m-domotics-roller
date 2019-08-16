@@ -1247,7 +1247,7 @@ void setup(){
   outPorts[3]=OUT2DD;
 #if (MCP2317) 
   MCP2317_init();
-  #if (INPULLUP)
+#if (INPULLUP)
 	mcp.pullUp(BTN1U, HIGH);
 	mcp.pullUp(BTN1D, HIGH);
 	mcp.pullUp(BTN2U, HIGH);
@@ -1261,8 +1261,8 @@ void setup(){
 	mcp.pinMode(OUTSLED,OUTPUT);
 	mcp.digitalWrite(OUTSLED, LOW);
 	for(int i=0;i<NBTN*BTNDIM;i++){
-	  mcp.pinMode(outPorts[i],OUTPUT);
-	  mcp.digitalWrite(outPorts[i], LOW);
+		mcp.pinMode(outPorts[i],OUTPUT);
+		mcp.digitalWrite(outPorts[i], LOW);
 	}
 #else
 #if (INPULLUP)
@@ -1279,8 +1279,8 @@ void setup(){
 	pinMode(OUTSLED,OUTPUT);
 	digitalWrite(OUTSLED, LOW);
 	for(int i=0;i<NBTN*BTNDIM;i++){
-	  pinMode(outPorts[i],OUTPUT);
-	  digitalWrite(outPorts[i], LOW);
+		pinMode(outPorts[i],OUTPUT);
+		digitalWrite(outPorts[i], LOW);
 	}
 #endif
 	
