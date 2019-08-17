@@ -1246,8 +1246,12 @@ void setup(){
   outPorts[2]=OUT2EU;
   outPorts[3]=OUT2DD;
 #if (MCP2317) 
-  MCP2317_init();
-#if (INPULLUP)
+	MCP2317_init();
+	mcp.pinMode(BTN1U, INPUT);
+	mcp.pinMode(BTN1D, INPUT);
+	mcp.pinMode(BTN2U, INPUT);
+	mcp.pinMode(BTN2D, INPUT);
+ #if (INPULLUP)
 	mcp.pullUp(BTN1U, HIGH);
 	mcp.pullUp(BTN1D, HIGH);
 	mcp.pullUp(BTN2U, HIGH);
@@ -1257,9 +1261,9 @@ void setup(){
 	mcp.pullUp(BTN1D, LOW);
 	mcp.pullUp(BTN2U, LOW);
 	mcp.pullUp(BTN2D, LOW);
-#endif
-	mcp.pinMode(OUTSLED,OUTPUT);
-	mcp.digitalWrite(OUTSLED, LOW);
+ #endif
+	pinMode(OUTSLED,OUTPUT);
+	digitalWrite(OUTSLED, LOW);
 	for(int i=0;i<NBTN*BTNDIM;i++){
 		mcp.pinMode(outPorts[i],OUTPUT);
 		mcp.digitalWrite(outPorts[i], LOW);
@@ -1271,17 +1275,17 @@ void setup(){
 	mcp.digitalWrite(RED, LOW);
 	mcp.digitalWrite(GREEN, LOW);
 #else
-#if (INPULLUP)
+ #if (INPULLUP)
 	pinMode(BTN1U, INPUT_PULLUP);
 	pinMode(BTN1D, INPUT_PULLUP);
 	pinMode(BTN2U, INPUT_PULLUP);
 	pinMode(BTN2D, INPUT_PULLUP);
-#else
+ #else
 	pinMode(BTN1U, INPUT);
 	pinMode(BTN1D, INPUT);
 	pinMode(BTN2U, INPUT);
 	pinMode(BTN2D, INPUT);
-#endif
+ #endif
 	pinMode(OUTSLED,OUTPUT);
 	digitalWrite(OUTSLED, LOW);
 	for(int i=0;i<NBTN*BTNDIM;i++){
