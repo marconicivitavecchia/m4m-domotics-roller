@@ -1,7 +1,7 @@
 #include "serialize.h"
 
 
-void parseJsonFieldArrayToStr(String srcJSONStr, String (&destStrArr)[CONFDIM], String (&fieldArr)[EXTCONFDIM], byte confFlags[], int valueLen, int arrLen, int first, char delim, String op){
+void parseJsonFieldArrayToStr(String srcJSONStr, Par*p[], String (&destStrArr)[CONFDIM], String (&fieldArr)[EXTCONFDIM], byte confFlags[], int valueLen, int arrLen, int first, char delim, String op){
 	int start, ends=0;
 	byte count = 0;
 	
@@ -28,6 +28,7 @@ void parseJsonFieldArrayToStr(String srcJSONStr, String (&destStrArr)[CONFDIM], 
 			DEBUG_PRINT(F("TROVATO"));
 			
 			confFlags[i] = HIGH;
+			
 			start += (fieldArr[i]).length() + 4;
 			for(ends=start+1; ends < start + valueLen && srcJSONStr.charAt(ends)!='"' && ends < srcJSONStr.length(); ends++);
 			app = srcJSONStr.substring(start, ends);
@@ -40,7 +41,7 @@ void parseJsonFieldArrayToStr(String srcJSONStr, String (&destStrArr)[CONFDIM], 
 			DEBUG_PRINT(F(" - "));
 			
 			if(app[1] != delim){//default append
-				destStrArr[i-first] += " " + op + " "+ app;
+				destStrArr[i-first] = app;
 			}else{
 				if(app[0] == 'a'){//append
 					destStrArr[i-first] += " " + op + " "+ app.substring(2);
@@ -50,8 +51,17 @@ void parseJsonFieldArrayToStr(String srcJSONStr, String (&destStrArr)[CONFDIM], 
 					destStrArr[i-first] += " " + op + " "+ app.substring(2);
 				}
 			}
-			DEBUG_PRINT(app);
+			DEBUG_PRINT(F("- index: "));
+			DEBUG_PRINT(i);
+			DEBUG_PRINT(F("-"));
+			DEBUG_PRINT(p(i));
+			DEBUG_PRINT(F("- flagname: "));
+			DEBUG_PRINT(p[p(i)]->parname);
+			DEBUG_PRINT(F("- destStrArr[i-first]: "));
 			DEBUG_PRINTLN(destStrArr[i-first]);
+
+			p[p(i)]->doaction();
+			
 		}else{
 			DEBUG_PRINT(F("- campo: "));
 			DEBUG_PRINT("\""+fieldArr[i] + "\":\"");
@@ -60,7 +70,7 @@ void parseJsonFieldArrayToStr(String srcJSONStr, String (&destStrArr)[CONFDIM], 
 	}
 }
 
-bool parseJsonFieldArrayToInt(String srcJSONStr, byte destIntArr[], String (&fieldArr)[MQTTDIM], int valueLen, int arrLen, int first=0){
+bool parseJsonFieldArrayToInt(String srcJSONStr, Par*p[], byte destIntArr[], String (&fieldArr)[MQTTDIM], int valueLen, int arrLen, int first=0){
 	int start, ends=0;
 	byte count = 0;
 	
@@ -95,7 +105,10 @@ bool parseJsonFieldArrayToInt(String srcJSONStr, byte destIntArr[], String (&fie
 				if(srcJSONStr.charAt(start) != '0'){ // allora è una stringa
 					destIntArr[i-first] = 1; //allora è un messaggio di configurazione, flag ON
 				}
-			}*/				
+			}*/		
+			DEBUG_PRINT(F("- flagname: "));
+			DEBUG_PRINT(p[i]->parname);	
+			p[i]->doaction();
 			DEBUG_PRINT(srcJSONStr.substring(start, ends));
 			DEBUG_PRINT(F(" - start: "));
 			DEBUG_PRINT(start);

@@ -138,13 +138,13 @@ byte in[NBTN*BTNDIM], outPorts[NBTN*BTNDIM], out[NBTN*BTNDIM];
 //e salvate in un array con indici a questo corrrispondenti
 //l'ordine di trasmissione da remoto dei campi è ininfluente
 //I comandi della tapparella devono essere  gli ultimi!
-String mqttJson[MQTTDIM]={"up1","down1","up2","down2","temp","avgpwr","peakpwr","all","date","mac","ip","time","mqttid"};
+String mqttJson[MQTTDIM]={"up1","down1","up2","down2","mac","ip","mqttid","time","temp","avgpwr","peakpwr","all","date","ipwr","iacvolt","pwrmult"};
 byte inr[MQTTDIM];
 //commands flags that generates event signalling
-String confJson[EXTCONFDIM]={/*len variabile-->*/"oncond1","oncond2","oncond3","oncond4","oncond5","onaction"/*len fissa-->*/,"utcval","utcsync","utcadj","utcsdt","utczone","webusr","webpsw"/*privati-->,"appssid","apppsw","clntssid1","clntpsw1","clntssid2","clntpsw2","mqttaddr","mqttid","mqttouttopic","mqttintopic","mqttusr","mqttpsw","thalt1","thalt2","thalt3","thalt4", "stdel1","stdel2","valweight","tlength","barrelrad","thickness","slatsratio","swroll1","swroll2","localip","ntpaddr1","ntpaddr2"*/};
+String confJson[EXTCONFDIM]={/*len variabile-->*/"oncond1","oncond2","oncond3","oncond4","oncond5","onaction"/*len fissa-->*/,"utcval","utcsync","utcadj","utcsdt","utczone","webusr","webpsw","calpwr"/*privati-->,"appssid","apppsw","clntssid1","clntpsw1","clntssid2","clntpsw2","mqttaddr","mqttid","mqttouttopic","mqttintopic","mqttusr","mqttpsw","thalt1","thalt2","thalt3","thalt4", "stdel1","stdel2","valweight","tlength","barrelrad","thickness","slatsratio","swroll1","swroll2","localip","ntpaddr1","ntpaddr2"*/};
 byte confFlags[EXTCONFDIM];
 //default values, some modificable via MQTT, web form or event rules
-String confcmd[CONFDIM]={/*len variabile-->*/"","","","","",""/*len fissa-->*/,"","50","0","1","1"/*privati-->*/,webUsr,webPsw,APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2, mqttAddr, mqttPort, wsPort, mqttProto, mqttID, mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),String(thalt3),String(thalt4), "400","400", "0.5","53","3.37","1.5", "0.8", rmode1, rmode2, "ip", "ntp1.inrim.it","0.it.pool.ntp.org", "false","false","false","false","false","false"};
+String confcmd[CONFDIM]={/*len variabile-->*/"","","","","",""/*len fissa-->*/,"","50","0","1","1"/*privati-->*/,webUsr,webPsw,"60",APSsid,APPsw,clntSsid1,clntPsw1,clntSsid2,clntPsw2, mqttAddr, mqttPort, wsPort, mqttProto, mqttID, mqttOutTopic,mqttInTopic,mqttUsr,mqttPsw,String(thalt1),String(thalt2),String(thalt3),String(thalt4), "400","400", "0.5","53","3.37","1.5", "0.8", rmode1, rmode2, "ip", "ntp1.inrim.it", "0.it.pool.ntp.org", "1", "230", "false","false","false","false","false","false"};
 //constant values, identify confcmd across entire system
 //(MQTT parser, web page static component, web page dinamyc component, etc).
 //parameter properties mapper, is dinamically created on system setup
@@ -224,22 +224,24 @@ void setInterrupts() {
 	attachInterrupt(CF_PIN, hlw8012_cf_interrupt, CHANGE);
 }
 
-void calibrate() {
+void calibrate_pwr() {
 	// Let some time to register values
-	unsigned long timeout = millis();
-	while ((millis() - timeout) < 10000) {
-		delay(1);
-	}
+	//unsigned long timeout = millis();
+	//while ((millis() - timeout) < 10000) {
+	//	delay(1);
+	//}
 
 	// Calibrate using a 60W bulb (pure resistive) on a 230V line
-	hlw8012.expectedActivePower(60.0);
-	hlw8012.expectedVoltage(230.0);
-	hlw8012.expectedCurrent(60.0 / 230.0);
+	hlw8012.expectedActivePower((confcmd[CALPWR]).toFloat());
+	hlw8012.expectedVoltage((confcmd[ACVOLT]).toFloat());
+	hlw8012.expectedCurrent((confcmd[CALPWR]).toFloat() / (confcmd[ACVOLT]).toFloat());
+	//Save parameter in the system array
+	confcmd[PWRMULT] = hlw8012.getPowerMultiplier();
 
 	// Show corrected factors
-	Serial.print("[HLW] New current multiplier : "); Serial.println(hlw8012.getCurrentMultiplier());
-	Serial.print("[HLW] New voltage multiplier : "); Serial.println(hlw8012.getVoltageMultiplier());
-	Serial.print("[HLW] New power multiplier   : "); Serial.println(hlw8012.getPowerMultiplier());
+	DEBUG_PRINT(F("[HLW] New current multiplier : ")); DEBUG_PRINTLN(hlw8012.getCurrentMultiplier());
+	DEBUG_PRINT(F("[HLW] New voltage multiplier : ")); DEBUG_PRINTLN(hlw8012.getVoltageMultiplier());
+	DEBUG_PRINT(F("[HLW] New power multiplier   : ")); DEBUG_PRINTLN(hlw8012.getPowerMultiplier());
 }
 
 void HLW8012_init(){
@@ -259,13 +261,11 @@ void HLW8012_init(){
 		hlw8012.setResistors(CURRENT_RESISTOR, VOLTAGE_RESISTOR_UPSTREAM, VOLTAGE_RESISTOR_DOWNSTREAM);
 
 		// Show default (as per datasheet) multipliers
-		Serial.print("[HLW] Default current multiplier : "); Serial.println(hlw8012.getCurrentMultiplier());
-		Serial.print("[HLW] Default voltage multiplier : "); Serial.println(hlw8012.getVoltageMultiplier());
-		Serial.print("[HLW] Default power multiplier   : "); Serial.println(hlw8012.getPowerMultiplier());
-		Serial.println();
+		DEBUG_PRINT(F("[HLW] New current multiplier : ")); DEBUG_PRINTLN(hlw8012.getCurrentMultiplier());
+		DEBUG_PRINT(F("[HLW] New voltage multiplier : ")); DEBUG_PRINTLN(hlw8012.getVoltageMultiplier());
+		DEBUG_PRINT(F("[HLW] New power multiplier   : ")); DEBUG_PRINTLN(hlw8012.getPowerMultiplier());
 
 		setInterrupts();
-		//calibrate();
 }
 #endif
 
@@ -380,12 +380,26 @@ inline void initOfst(){
 	/*2*/pars[MQTTDOWN1] = new ParStr32("down1", MQTTDOWN1OFST, 'j','i');
 	/*3*/pars[MQTTUP2] = new ParStr32("up2", MQTTUP2OFST, 'j','i');
 	/*4*/pars[MQTTDOWN2] = new ParStr32("down2", MQTTDOWN2OFST, 'j','i');
+	/*4*/pars[MQTTALL] =  new ParByte("",0,'n','n');
+	/*4*/pars[MQTTMAC] = new ParByte("",0,'n','n', new MQTTMAC_Evnt(MQTTMAC));
+	/*4*/pars[MQTTIP] = new ParByte("",0,'n','n', new MQTTIP_Evnt(MQTTIP));
+	/*4*/pars[MQTTMQTTID] = new ParByte("",0,'n','n', new MQTTMQTTID_Evnt(MQTTMQTTID));
+	/*4*/pars[MQTTTEMP] = new ParByte("",0,'n','n', new MQTTTEMP_Evnt(MQTTTEMP));
+	/*4*/pars[MQTTMEANPWR] = new ParByte("",0,'n','n', new MQTTMEANPWR_Evnt(MQTTMEANPWR));
+	/*4*/pars[MQTTPEAKPWR] = new ParByte("",0,'n','n', new MQTTPEAKPWR_Evnt(MQTTPEAKPWR));
+	/*4*/pars[MQTTTIME] = new ParByte("",0,'n','n', new MQTTTIME_Evnt(MQTTTIME));
+#if (AUTOCAL_HLW8012) 
+	/*4*/pars[DOPWRCAL] = new ParByte("",0,'n','n', new DOPWRCAL_Evnt(DOPWRCAL));
+	/*4*/pars[INSTPWR] = new ParByte("",0,'n','n', new INSTPWR_Evnt(INSTPWR));
+	/*4*/pars[INSTACV] = new ParByte("",0,'n','n', new INSTACV_Evnt(INSTACV));
+	/*42*/pars[CALPWR + USRMODIFICABLEFLAGS] = new ParStr32("calpwr", CALPWROFST, 'p','i', new CALPWR_Evnt(CALPWR));
+#endif
 	//--------------------------------------------------------------------------------------------------------------
 	/*5*/pars[LOCALIP + USRMODIFICABLEFLAGS] = new ParInt("localip");
 	/*5*/pars[SWROLL1 + USRMODIFICABLEFLAGS] = new ParInt("swroll1", SWROLL1OFST, 'p', 'i');
-	/*6*/pars[SWROLL2 + USRMODIFICABLEFLAGS] = new ParInt("swroll2", SWROLL1OFST, 'p', 'i');
-	/*7*/pars[UTCSDT + USRMODIFICABLEFLAGS] = new ParByte("utcsdt", NTPSDTOFST, 'p', 'i');
-	/*8*/pars[UTCZONE + USRMODIFICABLEFLAGS] = new ParByte("utczone", NTPZONEOFST, 'p','i');
+	/*6*/pars[SWROLL2 + USRMODIFICABLEFLAGS] = new ParInt("swroll2", SWROLL2OFST, 'p', 'i');
+	/*7*/pars[UTCSDT + USRMODIFICABLEFLAGS] = new ParByte("utcsdt", NTPSDTOFST, 'p', 'i', new UTCSDT_Evnt(UTCSDT + USRMODIFICABLEFLAGS));
+	/*8*/pars[UTCZONE + USRMODIFICABLEFLAGS] = new ParByte("utczone", NTPZONEOFST, 'p','i', new UTCZONE_Evnt(UTCZONE + USRMODIFICABLEFLAGS));
 	/*9*/pars[THALT1 + USRMODIFICABLEFLAGS] = new ParInt("thalt1", THALT1OFST, 'p','i');
 	/*10*/pars[THALT2 + USRMODIFICABLEFLAGS] = new ParInt("thalt2", THALT2OFST, 'p','i');
 	/*11*/pars[THALT3 + USRMODIFICABLEFLAGS] = new ParInt("thalt3", THALT3OFST, 'p','i');
@@ -398,8 +412,8 @@ inline void initOfst(){
 	/*18*/pars[THICKNESS + USRMODIFICABLEFLAGS] = new ParFloat("thickness", THICKNESSOFST, 'p','i');
 	/*19*/pars[UTCADJ + USRMODIFICABLEFLAGS] = new ParInt("utcadj", NTPADJUSTOFST, 'p','i');
 	/*20*/pars[SLATSRATIO + USRMODIFICABLEFLAGS] = new ParFloat("slatsratio", SLATSRATIOFST, 'p','i');
-	/*21*/pars[UTCSYNC + USRMODIFICABLEFLAGS] = new ParInt("utcsync", NTPSYNCINTOFST, 'p','i');
-	/*22*/pars[MQTTID + USRMODIFICABLEFLAGS] = new ParStr32("mqttid", MQTTIDOFST, 'p','i');
+	/*21*/pars[UTCSYNC + USRMODIFICABLEFLAGS] = new ParInt("utcsync", NTPSYNCINTOFST, 'p','i', new UTCSYNC_Evnt(UTCSYNC + USRMODIFICABLEFLAGS));
+	/*22*/pars[MQTTID + USRMODIFICABLEFLAGS] = new ParStr32("mqttid", MQTTIDOFST, 'p','i', new UTCADJ_Evnt(UTCADJ + USRMODIFICABLEFLAGS));
 	/*23*/pars[MQTTOUTTOPIC + USRMODIFICABLEFLAGS] = new ParStr32("mqttouttopic", OUTTOPICOFST, 'p','i');
 	/*24*/pars[MQTTINTOPIC + USRMODIFICABLEFLAGS] = new ParStr32("mqttintopic", INTOPICOFST, 'p','i');
 	/*25*/pars[CLNTSSID1 + USRMODIFICABLEFLAGS] = new ParStr32("clntssid1", WIFICLIENTSSIDOFST1, 'p','i');
@@ -407,8 +421,8 @@ inline void initOfst(){
 	/*27*/pars[CLNTSSID2 + USRMODIFICABLEFLAGS] = new ParStr32("clntssid2", WIFICLIENTSSIDOFST2, 'p','i');
 	/*28*/pars[CLNTPSW2 + USRMODIFICABLEFLAGS] = new ParStr32("clntpsw2", WIFICLIENTPSWOFST2, 'p','i');
 	/*29*/pars[APPSSID + USRMODIFICABLEFLAGS] = new ParStr32("appssid", WIFIAPSSIDOFST, 'p','i');
-	/*30*/pars[APPPSW + USRMODIFICABLEFLAGS] = new ParStr32("apppsw", WIFIAPPPSWOFST, 'p','i');
-	/*31*/pars[WEBUSR + USRMODIFICABLEFLAGS] = new ParStr32("webusr", WEBUSROFST, 'p','i');
+	/*30*/pars[APPPSW + USRMODIFICABLEFLAGS] = new ParStr32("apppsw", WIFIAPPPSWOFST, 'p','i', new WEBUSR_Evnt(WEBUSR + USRMODIFICABLEFLAGS));
+	/*31*/pars[WEBUSR + USRMODIFICABLEFLAGS] = new ParStr32("webusr", WEBUSROFST, 'p','i', new WEBPSW_Evnt(WEBPSW + USRMODIFICABLEFLAGS));
 	/*32*/pars[WEBPSW + USRMODIFICABLEFLAGS] = new ParStr32("webpsw", WEBPSWOFST, 'p','i');
 	/*33*/pars[MQTTUSR + USRMODIFICABLEFLAGS] = new ParStr32("mqttusr", MQTTUSROFST, 'p','i');
 	/*34*/pars[MQTTPSW + USRMODIFICABLEFLAGS] = new ParStr32("mqttpsw", MQTTPSWOFST, 'p','i');
@@ -418,12 +432,14 @@ inline void initOfst(){
 	/*38*/pars[MQTTPROTO + USRMODIFICABLEFLAGS] = new ParStr32("mqttproto", MQTTPROTOFST, 'p','i');
 	/*39*/pars[NTPADDR1 + USRMODIFICABLEFLAGS] = new ParStr32("ntpaddr1", NTP1ADDROFST, 'p','i');
 	/*40*/pars[NTPADDR2 + USRMODIFICABLEFLAGS] = new ParStr32("ntpaddr2", NTP2ADDROFST, 'p','i');
-	/*41*/pars[ONCOND1 + USRMODIFICABLEFLAGS] = new ParStr32("oncond1");
-	/*42*/pars[ONCOND2 + USRMODIFICABLEFLAGS] = new ParStr32("oncond2");
-	/*43*/pars[ONCOND3 + USRMODIFICABLEFLAGS] = new ParStr32("oncond3");
-	/*44*/pars[ONCOND4 + USRMODIFICABLEFLAGS] = new ParStr32("oncond4");
-	/*45*/pars[ONCOND5 + USRMODIFICABLEFLAGS] = new ParStr32("oncond5");
-	/*46*/pars[ACTIONEVAL + USRMODIFICABLEFLAGS] = new ParStr32("onaction");
+	/*41*/pars[PWRMULT + USRMODIFICABLEFLAGS] = new ParStr32("pwrmult", PWRMULTOFST, 'p','i');
+	/*42*/pars[ACVOLT + USRMODIFICABLEFLAGS] = new ParStr32("acvolt", ACVOLTOFST, 'p','i');
+	/*43*/pars[ONCOND1 + USRMODIFICABLEFLAGS] = new ParStr32("oncond1",0,'n','n', new ONCOND1_Evnt(ONCOND1 + USRMODIFICABLEFLAGS));
+	/*44*/pars[ONCOND2 + USRMODIFICABLEFLAGS] = new ParStr32("oncond2",0,'n','n', new ONCOND2_Evnt(ONCOND2 + USRMODIFICABLEFLAGS));
+	/*45*/pars[ONCOND3 + USRMODIFICABLEFLAGS] = new ParStr32("oncond3",0,'n','n', new ONCOND3_Evnt(ONCOND3 + USRMODIFICABLEFLAGS));
+	/*46*/pars[ONCOND4 + USRMODIFICABLEFLAGS] = new ParStr32("oncond4",0,'n','n', new ONCOND4_Evnt(ONCOND4 + USRMODIFICABLEFLAGS));
+	/*47*/pars[ONCOND5 + USRMODIFICABLEFLAGS] = new ParStr32("oncond5",0,'n','n', new ONCOND5_Evnt(ONCOND5 + USRMODIFICABLEFLAGS));
+	/*48*/pars[ACTIONEVAL + USRMODIFICABLEFLAGS] = new ParStr32("onaction",0,'n','n', new ACTIONEVAL_Evnt(ACTIONEVAL));
 
 	printparams();
 }
@@ -920,8 +936,8 @@ void mqttCallback(String &topic, String &response) {
 	//v = parseJsonFieldToInt(response, mqttJson[0], ncifre);
 	//digitalWrite(OUTSLED, v); 
    
-	if(parseJsonFieldArrayToInt(response, inr, mqttJson, ncifre, USRMODIFICABLEFLAGS,0)){
-		parseJsonFieldArrayToStr(response, confcmd, confJson, confFlags, ncifre+500, EXTCONFDIM,0,'#',"|");
+	if(parseJsonFieldArrayToInt(response, pars, inr, mqttJson, ncifre, USRMODIFICABLEFLAGS,0)){
+		parseJsonFieldArrayToStr(response, pars, confcmd, confJson, confFlags, ncifre+500, EXTCONFDIM,0,'#',"|");
 	}
     //inr: memoria tampone per l'evento asincrono scrittura da remoto
 }
@@ -1037,6 +1053,13 @@ void readModeAndPub(byte n){
   publishStr(s);
 }
 
+void readPwrCalAndPub(){
+  //DEBUG_PRINTLN(F("\nreadPwrCalAndPub")); 
+  String s=openbrk;
+  s+=mqttJson[DOPWRCAL]+twodot+confcmd[PWRMULT]+enda;
+  publishStr(s);
+}
+
 void readAvgPowerAndPub(){
   //DEBUG_PRINTLN(F("\nreadPowerAndPub")); 
   String s=openbrk;
@@ -1092,6 +1115,16 @@ void readMQTTIdAndPub(){
   publishStr(s);
 }
 
+void readIpwrAndPub(){
+  String s=openbrk2;
+  publishStr(s);
+}
+
+void readIacvoltAndPub(){
+  String s=openbrk2;
+  publishStr(s);
+}
+
 void inline readActionConfAndSet(){
 	//imposta le configurazioni dinamiche in base ad eventi esterni
 	DEBUG_PRINTLN(F("readActionConfAndSet."));
@@ -1106,6 +1139,10 @@ void publishStr(String &str){
   str+=mqttJson[MQTTMAC]+twodot+String(WiFi.macAddress())+comma;
   str+=mqttJson[MQTTIP]+twodot+confcmd[LOCALIP]+comma;
   str+=mqttJson[MQTTMQTTID]+twodot+confcmd[MQTTID]+comma;
+ #if (AUTOCAL_HLW8012) 
+  str+=mqttJson[INSTPWR]+twodot+hlw8012.getActivePower()+comma;
+  str+=mqttJson[INSTACV]+twodot+hlw8012.getVoltage()+comma;
+ #endif
   str+=mqttJson[MQTTDATE]+twodot+printUNIXTimeMin(gbuf)+closebrk;
   
   if(mqttClient==NULL){
@@ -1541,7 +1578,7 @@ inline void loop2() {
 		}
 		//provenienti dalla mqttCallback
 		//remote pressed button event
-		leggiTastiRemoti();
+		//leggiTastiRemoti();
 		//------------------------------------------------------------------------------------------------------------
 		//Finestra idle di riconnessione (necessaria se il loop è molto denso di eventi e il wifi non si aggancia!!!)
 		//------------------------------------------------------------------------------------------------------------
@@ -1625,118 +1662,6 @@ inline void leggiTastiLocaliDaExp(){
 	}
 	//imposta le configurazioni dinamiche in base ad eventi locali valutati periodicamente
 	//eval((confcmd[JSONONCOND5]).c_str());
-}
-
-inline void leggiTastiRemoti(){
-	//--------------------------------------------------------------------------------------------------
-	//gestione eventi MQTT sui sensori (richieste e configurazioni) all'arrivo memorizzate su confcmd[]
-	//--------------------------------------------------------------------------------------------------
-	//configurazioni provenienti da remoto
-	//---------------------------------------------------------------
-	//for(int i=0; i < EXTCONFDIM; i++){
-	//}
-	if(confFlags[UTCVAL]){// 1
-		confFlags[UTCVAL] = LOW;
-		updateNTP(strtoul((confcmd[UTCVAL]).c_str(), NULL, 10));
-		//no confcmd to save
-	}
-	if(confFlags[UTCSYNC]){// 2
-		confFlags[UTCSYNC] = LOW;
-		setSyncInterval(saveLongConf(UTCSYNC));
-	}
-	if(confFlags[UTCADJ]){// 3
-		confFlags[UTCADJ] = LOW;
-		adjustTime(saveIntConf(UTCADJ));
-	}
-	if(confFlags[UTCSDT]){// 4
-		confFlags[UTCSDT] = LOW;
-		setSDT(saveByteConf(UTCSDT));
-	}
-	if(confFlags[UTCZONE]){// 5
-		confFlags[UTCZONE] = LOW;
-		setTimeZone(saveByteConf(UTCZONE));
-	}
-	//parametri di configurazione di lunghezza variabile
-	if(confFlags[ACTIONEVAL]){// 6
-		confFlags[ACTIONEVAL] = LOW;
-		//save confs and actions on new action received event
-		writeOnOffConditions();
-		//run actions one time on new action received event
-		readActionConfAndSet();
-	}
-	if(confFlags[ONCOND1]){// 7
-		confFlags[ONCOND1] = LOW;
-		//save confs and actions on new action received event
-		writeOnOffConditions();
-		//are periodic actions!
-	}
-	if(confFlags[ONCOND2]){// 8
-		confFlags[ONCOND2] = LOW;
-		//save confs and actions on new config received event
-		writeOnOffConditions();
-		//confs are automatically runned on every loop by leggiTastiLocaliDaExp()
-	}
-	if(confFlags[ONCOND3]){// 9
-		confFlags[ONCOND3] = LOW;
-		//save confs and actions on new config received event
-		writeOnOffConditions();
-		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
-	}
-	if(confFlags[ONCOND4]){// 10
-		confFlags[ONCOND4] = LOW;
-		//save confs and actions on new config received event
-		writeOnOffConditions();
-		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
-	}
-	if(confFlags[ONCOND5]){// 11
-		confFlags[ONCOND5] = LOW;
-		//save confs and actions on new config received event
-		writeOnOffConditions();
-		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
-	}
-	if(confFlags[WEBUSR]){// 12
-		confFlags[WEBUSR] = LOW;
-		//save confs and actions on new config received event
-		saveSingleConf(WEBUSR);
-		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
-	}
-	if(confFlags[WEBPSW]){// 13
-		confFlags[WEBPSW] = LOW;
-		//save confs and actions on new config received event
-		saveSingleConf(WEBPSW);
-		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
-	}
-	//----------------------------------------------------------------------------
-	//richieste da remoto di valori locali
-	//----------------------------------------------------------------------------
-	if(inr[MQTTTEMP]){// 1
-		inr[MQTTTEMP] = LOW;
-		readTempAndPub();
-	}
-	if(inr[MQTTMEANPWR]){// 2
-		inr[MQTTMEANPWR] = LOW;
-		readAvgPowerAndPub();
-	}
-	if(inr[MQTTPEAKPWR]){// 3
-		inr[MQTTPEAKPWR] = LOW;
-		readPeakPowerAndPub();
-	}
-	if(inr[MQTTMAC]){// 4
-		inr[MQTTMAC] = LOW;
-		readMacAndPub();
-	}
-	if(inr[MQTTIP]){// 5
-		inr[MQTTIP] = LOW;
-		readIpAndPub();
-	}
-	if(inr[MQTTTIME]){// 6
-		inr[MQTTTIME] = LOW;
-		readTimeAndPub();
-	}
-	if(inr[MQTTMQTTID]){// 7
-		inr[MQTTMQTTID] = LOW;
-		readMQTTIdAndPub();
-	}
 }
 
 #if (AUTOCAL_ACS712) 
@@ -1999,9 +1924,8 @@ inline void wifiFailoverManager(){
 		if(!wifiConn){
 			//lampeggia led di connessione
 			#if (MCP2317) 
-				mcp.digitalWrite(OUTSLED, !mcp.digitalRead(OUTSLED));
+				mcp.digitalWrite(BLUE, !mcp.digitalRead(BLUE));
 			#else
-				
 				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
 			#endif
 			//yield();
@@ -2029,7 +1953,11 @@ inline void wifiFailoverManager(){
 			}
 			swcount = (swcount + 1) % TCOUNT;
 		}else{
-			digitalWrite(OUTSLED, LOW);
+			#if (MCP2317) 
+				mcp.digitalWrite(BLUE, LOW);
+			#else
+				digitalWrite(OUTSLED, LOW);
+			#endif
 			confcmd[LOCALIP] = WiFi.localIP().toString();
 		}
 	}
@@ -2312,12 +2240,22 @@ void onElapse(byte nn, unsigned long tm){
 					DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
 					DEBUG_PRINTLN(F("-----------------------------"));
 					manualCalibration(0); //BTN1
-				}else if(getCntValue(nn)==8){
+				}else if(getCntValue(nn)==9){
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("Reboot ESP with reset of configuration"));
 					DEBUG_PRINTLN(F("-----------------------------"));
 					rebootSystem();
-				}else{
+				}
+#if (AUTOCAL_HLW8012) 
+				else if(getCntValue(nn)==11){
+					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG_PRINTLN(F("Do power calibration"));
+					DEBUG_PRINTLN(F("-----------------------------"));
+					calibrate_pwr();
+					saveSingleConf(PWRMULT);
+				}
+#endif				
+				else{
 					setGroupState(0,nn);
 				}
 				//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
@@ -2566,6 +2504,279 @@ void testFlash(){
   }
 }
 #endif
+//-----------------------------------------------------------------------------------------------------------------------------
+BaseEvnt::BaseEvnt(byte fname){
+	flagname = fname;
+}
+//richieste da remoto di valori locali
+void BaseEvnt::doaction(){}
+//--------------------------------------------------------------------------------------------------
+//gestione eventi MQTT sui sensori (richieste e configurazioni) all'arrivo memorizzate su confcmd[]
+//--------------------------------------------------------------------------------------------------
+//configurazioni provenienti da remoto
+//---------------------------------------------------------------
+void MQTTMAC_Evnt::doaction(){
+	inr[MQTTMAC] = LOW;
+	readMacAndPub();
+}
+void MQTTIP_Evnt::doaction(){
+	inr[MQTTIP] = LOW;
+	readIpAndPub();
+}
+void MQTTMQTTID_Evnt::doaction(){
+	inr[MQTTMQTTID] = LOW;
+	readMQTTIdAndPub();
+}
+void MQTTTIME_Evnt::doaction(){
+	inr[MQTTTIME] = LOW;
+	readTimeAndPub();
+}
+void MQTTTEMP_Evnt::doaction(){
+	inr[MQTTTEMP] = LOW;
+	readTempAndPub();
+}
+void MQTTMEANPWR_Evnt::doaction(){
+	inr[MQTTMEANPWR] = LOW;
+	readAvgPowerAndPub();
+}
+void MQTTPEAKPWR_Evnt::doaction(){
+	inr[MQTTPEAKPWR] = LOW;
+	readPeakPowerAndPub();
+}
+#if (AUTOCAL_HLW8012) 
+void DOPWRCAL_Evnt::doaction(){
+	inr[DOPWRCAL] = LOW;
+	calibrate_pwr();
+	saveSingleConf(PWRMULT);
+	readPwrCalAndPub();
+}
+void INSTPWR_Evnt::doaction(){
+	inr[INSTPWR] = LOW;
+	void readIpwrAndPub();
+}
+void INSTACV_Evnt::doaction(){
+	inr[INSTACV] = LOW;
+	void readIacvoltAndPub();
+}
+#endif
+//----------------------------------------------------------------------------
+//richieste da remoto di valori locali
+//----------------------------------------------------------------------------
+void UTCVAL_Evnt::doaction(){
+	confFlags[UTCVAL] = LOW;
+	updateNTP(strtoul((confcmd[UTCVAL]).c_str(), NULL, 10));
+}
+void UTCSYNC_Evnt::doaction(){
+	confFlags[UTCSYNC] = LOW;
+	setSyncInterval(saveLongConf(UTCSYNC));
+}
+void UTCADJ_Evnt::doaction(){
+	confFlags[UTCADJ] = LOW;
+	adjustTime(saveIntConf(UTCADJ));
+}
+void UTCSDT_Evnt::doaction(){
+	confFlags[UTCSDT] = LOW;
+	setSDT(saveByteConf(UTCSDT));
+}
+void UTCZONE_Evnt::doaction(){
+	confFlags[UTCZONE] = LOW;
+	setTimeZone(saveByteConf(UTCZONE));
+}
+void ACTIONEVAL_Evnt::doaction(){
+	confFlags[ACTIONEVAL] = LOW;
+	//save confs and actions on new action received event
+	writeOnOffConditions();
+	//run actions one time on new action received event
+	readActionConfAndSet();
+}
+void ONCOND1_Evnt::doaction(){
+	confFlags[ONCOND1] = LOW;
+	//save confs and actions on new action received event
+	writeOnOffConditions();
+}
+void ONCOND2_Evnt::doaction(){
+	confFlags[ONCOND2] = LOW;
+	//save confs and actions on new config received event
+	writeOnOffConditions();
+}
+void ONCOND3_Evnt::doaction(){
+	confFlags[ONCOND3] = LOW;
+	//save confs and actions on new config received event
+	writeOnOffConditions();
+}
+void ONCOND4_Evnt::doaction(){
+	confFlags[ONCOND4] = LOW;
+	//save confs and actions on new config received event
+	writeOnOffConditions();
+}
+void ONCOND5_Evnt::doaction(){
+	confFlags[ONCOND5] = LOW;
+	//save confs and actions on new config received event
+	writeOnOffConditions();
+}
+void WEBUSR_Evnt::doaction(){
+	confFlags[WEBUSR] = LOW;
+	//save confs and actions on new config received event
+	saveSingleConf(WEBUSR);
+}
+void WEBPSW_Evnt::doaction(){
+	confFlags[WEBPSW] = LOW;
+	//save confs and actions on new config received event
+	saveSingleConf(WEBPSW);
+}
+#if (AUTOCAL_HLW8012) 
+void CALPWR_Evnt::doaction(){
+	confFlags[CALPWR] = LOW;
+	//save confs and actions on new config received event
+	saveSingleConf(CALPWR);
+}
+#endif
+//-----------------------------------------------------------------------------------------------------------------------------
+/*inline void leggiTastiRemoti(){
+	//--------------------------------------------------------------------------------------------------
+	//gestione eventi MQTT sui sensori (richieste e configurazioni) all'arrivo memorizzate su confcmd[]
+	//--------------------------------------------------------------------------------------------------
+	//configurazioni provenienti da remoto
+	//---------------------------------------------------------------
+	//for(int i=0; i < EXTCONFDIM; i++){
+	//}
+	
+	if(confFlags[UTCVAL]){// 1
+		confFlags[UTCVAL] = LOW;
+		updateNTP(strtoul((confcmd[UTCVAL]).c_str(), NULL, 10));
+		//no confcmd to save
+	}
+	if(confFlags[UTCSYNC]){// 2
+		confFlags[UTCSYNC] = LOW;
+		setSyncInterval(saveLongConf(UTCSYNC));
+	}
+	if(confFlags[UTCADJ]){// 3
+		confFlags[UTCADJ] = LOW;
+		adjustTime(saveIntConf(UTCADJ));
+	}
+	if(confFlags[UTCSDT]){// 4
+		confFlags[UTCSDT] = LOW;
+		setSDT(saveByteConf(UTCSDT));
+	}
+	if(confFlags[UTCZONE]){// 5
+		confFlags[UTCZONE] = LOW;
+		setTimeZone(saveByteConf(UTCZONE));
+	}
+	//parametri di configurazione di lunghezza variabile
+	if(confFlags[ACTIONEVAL]){// 6
+		confFlags[ACTIONEVAL] = LOW;
+		//save confs and actions on new action received event
+		writeOnOffConditions();
+		//run actions one time on new action received event
+		readActionConfAndSet();
+	}
+	if(confFlags[ONCOND1]){// 7
+		confFlags[ONCOND1] = LOW;
+		//save confs and actions on new action received event
+		writeOnOffConditions();
+		//are periodic actions!
+	}
+	if(confFlags[ONCOND2]){// 8
+		confFlags[ONCOND2] = LOW;
+		//save confs and actions on new config received event
+		writeOnOffConditions();
+		//confs are automatically runned on every loop by leggiTastiLocaliDaExp()
+	}
+	if(confFlags[ONCOND3]){// 9
+		confFlags[ONCOND3] = LOW;
+		//save confs and actions on new config received event
+		writeOnOffConditions();
+		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
+	}
+	if(confFlags[ONCOND4]){// 10
+		confFlags[ONCOND4] = LOW;
+		//save confs and actions on new config received event
+		writeOnOffConditions();
+		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
+	}
+	if(confFlags[ONCOND5]){// 11
+		confFlags[ONCOND5] = LOW;
+		//save confs and actions on new config received event
+		writeOnOffConditions();
+		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
+	}
+	if(confFlags[WEBUSR]){// 12
+		confFlags[WEBUSR] = LOW;
+		//save confs and actions on new config received event
+		saveSingleConf(WEBUSR);
+		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
+	}
+	if(confFlags[WEBPSW]){// 13
+		confFlags[WEBPSW] = LOW;
+		//save confs and actions on new config received event
+		saveSingleConf(WEBPSW);
+		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
+	}
+#if (AUTOCAL_HLW8012) 
+	if(confFlags[CALPWR]){// 13
+		confFlags[CALPWR] = LOW;
+		//save confs and actions on new config received event
+		saveSingleConf(CALPWR);
+		//config are automatically runned on every loop by leggiTastiLocaliDaExp()
+		//do power calibration
+		//calibrate_pwr();
+		//saveSingleConf(PWRMULT);
+	}
+#endif
+*/
+	//----------------------------------------------------------------------------
+	//richieste da remoto di valori locali
+	//----------------------------------------------------------------------------
+	/*
+	if(inr[MQTTMAC]){// 1
+		inr[MQTTMAC] = LOW;
+		readMacAndPub();
+	}
+	if(inr[MQTTIP]){// 2
+		inr[MQTTIP] = LOW;
+		readIpAndPub();
+	}
+	if(inr[MQTTMQTTID]){// 3
+		inr[MQTTMQTTID] = LOW;
+		readMQTTIdAndPub();
+	}
+	if(inr[MQTTTIME]){// 4
+		inr[MQTTTIME] = LOW;
+		readTimeAndPub();
+	}
+	if(inr[MQTTTEMP]){// 5
+		inr[MQTTTEMP] = LOW;
+		readTempAndPub();
+	}
+	if(inr[MQTTMEANPWR]){// 6
+		inr[MQTTMEANPWR] = LOW;
+		readAvgPowerAndPub();
+	}
+	if(inr[MQTTPEAKPWR]){// 7
+		inr[MQTTPEAKPWR] = LOW;
+		readPeakPowerAndPub();
+	}
+#if (AUTOCAL_HLW8012) 
+	if(inr[DOPWRCAL]){// 8
+		inr[DOPWRCAL] = LOW;
+		//do power calibration
+		calibrate_pwr();
+		saveSingleConf(PWRMULT);
+		readPwrCalAndPub();
+	}
+	if(inr[INSTPWR]){// 9
+		inr[INSTPWR] = LOW;
+		void readIpwrAndPub();
+	}
+	if(inr[INSTACV]){// 10
+		inr[INSTACV] = LOW;
+		readIacvoltAndPub();
+	} 
+#endif
+}
+*/
+
+
 
 /**
  * Disconnect from the network

@@ -33,8 +33,9 @@
 //wifi config----------------------------------------------
 #define OUTTOPIC		"sonoff17/out"
 #define INTOPIC			"sonoff17/in"
-#define SSID1			"WebPocket-E280"
-#define PSW1			"dorabino.7468!"
+//#define SSID1			"WebPocket-E280"
+#define SSID1			"D-Link-6A30CC"
+#define PSW1			"FabSeb050770250368120110"
 #define SSID2			"AndroidAP1"
 #define PSW2			"pippo2503"
 #define SSIDAP			"admin"
@@ -44,8 +45,8 @@
 #define WSPRT			"8000"
 #define MQTTPT			"mqtt"
 #define MQTTCLIENTID 	"mytapparella"
-#define ROLLMODE1 		1
-#define ROLLMODE2 		1
+#define ROLLMODE1 		0
+#define ROLLMODE2 		0
 //END DEFAULTS
 //_DEBUG1 LEVELS---------------------
 #define _DEBUG1   		1		//ACTIVATE LOCAL AND REMOTE _DEBUG1 MODE
@@ -194,7 +195,7 @@
 #define DONOTUSE				2
 #define RESERVEBYTE2OFST		3
 #define RESERVEBYTE3OFST		4
-#define RESERVEBYTE4OFST		5
+#define ACVOLTOFST				5
 #define SWROLL1OFST				6
 #define SWROLL2OFST				7
 #define NTPSDTOFST				8
@@ -207,7 +208,7 @@
 #define THALT4OFST				18
 #define NTPADJUSTOFST  			20
 //4 byte offets (float)
-#define RESERVEFLOAT1OFST		22
+#define PWRMULTOFST				22
 #define STDEL1OFST				26
 #define STDEL2OFST				30
 #define VALWEIGHTOFST			34
@@ -216,8 +217,8 @@
 #define	THICKNESSOFST			46
 #define SLATSRATIOFST			50
 #define NTPSYNCINTOFST			54
-//8 byte offsets (fixed short String)
-#define NAMEOFST				58
+#define CALPWROFST				58
+#define RESERVED1FLOTAFST		62
 //32 byte offsets (fixed medium String)
 #define	MQTTIDOFST				66
 #define	OUTTOPICOFST			98
@@ -252,30 +253,37 @@
 
 //--------------------------Inizio MQTT array indexes-----------------------------------
 //Indici array MQTT[MQTTDIM] dei NOMI dei campi json --> array inr[MQTTDIM] dei VALORI numerici di input (valori numerici di ingresso, 
-//flag di segnalazione arrivo configurazioni e richieste), segnalano: 
-//ingresso comandi
+//flag di segnalazione arrivo in INPUT: richieste di valori di parametri, richieste di esecuzione di comandi.
+//valori di risposta in OUTPUT: feedbacks broadcast di arrivo di un nuovo comando, parametro o richiesta, valori di risposta all'esecuzione di un comando, 
+//valori di risposta alla richiesta di lettura di un parametro (si noti che tutti questi, non dovendo essere processati dal parser MQTT, 
+//potrebbero alternativamente essere hardcoded, è opportuno che stiano quì se il loro nome COINCIDE con quello di un corrispondente flag di richiesta).
 #define MQTTUP1				0
 #define MQTTDOWN1			1
 #define MQTTUP2				2
 #define MQTTDOWN2			3
 //richiesta parametri
-#define MQTTTEMP			4
-#define MQTTMEANPWR			5
-#define MQTTPEAKPWR			6
-#define MQTTALL				7
-#define MQTTDATE			8
+#define MQTTMAC				4
+#define MQTTIP				5
+#define MQTTMQTTID			6
+#define MQTTTIME			7
+#define MQTTTEMP			8
+#define MQTTMEANPWR			9
+#define MQTTPEAKPWR			10
+#define MQTTALL				11
+#define MQTTDATE			12
+#define INSTPWR				13
+#define INSTACV				14
+#define DOPWRCAL			15
 //end user modificable flags
-#define MQTTMAC				9
-#define MQTTIP				10
-#define MQTTTIME			11
-#define MQTTMQTTID			12
-#define MQTTDIM				13
-#define USRMODIFICABLEFLAGS 4
+
+#define MQTTDIM				16
+#define USRMODIFICABLEFLAGS 16
 //--------------------------Inizio MQTT config array indexes-----------------------------------------------------
 //Indici array confJson[CONFDIM] dei NOMI dei campi json dei valori di configurazione --> array confcmd[CONFDIM] 
 //dei VALORI stringa di configurazione corrispondenti a flags attivi
 //---------------------------------------------------------------------------------------------------------------
-//Parametri da esporre in in e out via MQTT (hanno corrispettivo in array dei flag)
+//Parametri di IN/OUT (no IN o OUT separatamente) da esporre via MQTT (hanno corrispettivo in array dei flag E VANNO PRIMA SEMPRE)
+//Sono aggiornati anche via MQTT (oltre che da eeprom e da form)
 //---------------------------------------------------------------------------------------------------------------
 //parametri di lunghezza variabile (vanno prima sempre)
 #define ONCOND1				0
@@ -292,55 +300,59 @@
 #define UTCZONE				10
 #define WEBUSR				11
 #define WEBPSW				12
+#define CALPWR				13
 //-------------------------------------------------------------------------------------------------------
 //Parametri di stato da non eporre (non hanno corrispettivo in array dei flag, vanno subito dopo sempre)
+//Non sono aggiornati via MQTT (solo attraverso eeprom e attraverso form)
 //-------------------------------------------------------------------------------------------------------
-#define APPSSID				13
-#define APPPSW				14
-#define CLNTSSID1			15
-#define CLNTPSW1			16
-#define CLNTSSID2			17
-#define CLNTPSW2			18
-#define MQTTADDR			19
-#define MQTTPORT			20
-#define WSPORT				21
-#define MQTTPROTO			22
-#define MQTTID				23
-#define MQTTOUTTOPIC		24
-#define MQTTINTOPIC			25
-#define MQTTUSR				26
-#define MQTTPSW				27
-#define THALT1				28
-#define THALT2				29
-#define THALT3				30
-#define THALT4				31
-#define STDEL1				32
-#define STDEL2				33
-#define VALWEIGHT			34
-#define	TLENGTH				35
-#define	BARRELRAD			36
-#define	THICKNESS			37
-#define	SLATSRATIO			38
-#define SWROLL1				39
-#define SWROLL2				40
-#define LOCALIP				41
-#define NTPADDR1			42
-#define NTPADDR2			43
+#define APPSSID				14
+#define APPPSW				15
+#define CLNTSSID1			16
+#define CLNTPSW1			17
+#define CLNTSSID2			18
+#define CLNTPSW2			19
+#define MQTTADDR			20
+#define MQTTPORT			21
+#define WSPORT				22
+#define MQTTPROTO			23
+#define MQTTID				24
+#define MQTTOUTTOPIC		25
+#define MQTTINTOPIC			26
+#define MQTTUSR				27
+#define MQTTPSW				28
+#define THALT1				29
+#define THALT2				30
+#define THALT3				31
+#define THALT4				32
+#define STDEL1				33
+#define STDEL2				34
+#define VALWEIGHT			35
+#define	TLENGTH				36
+#define	BARRELRAD			37
+#define	THICKNESS			38
+#define	SLATSRATIO			39
+#define SWROLL1				40
+#define SWROLL2				41
+#define LOCALIP				42
+#define NTPADDR1			43
+#define NTPADDR2			44
+#define PWRMULT				45  
+#define ACVOLT				46
 //parametri di stato (da non esporre)
-#define WIFICHANGED			44
-#define CONFLOADED			45
-#define MQTTADDRMODFIED		46
-#define TOPICCHANGED		47
-#define MQTTCONNCHANGED		48
-#define	TIMINGCHANGED		49
-#define SWACTION1			50
-#define SWACTION2			51
-#define SWACTION3			52
-#define SWACTION4			53
-#define CONFDIM				54
+#define WIFICHANGED			47
+#define CONFLOADED			48
+#define MQTTADDRMODFIED		49
+#define TOPICCHANGED		50
+#define MQTTCONNCHANGED		51
+#define	TIMINGCHANGED		52
+#define SWACTION1			53
+#define SWACTION2			54
+#define SWACTION3			55
+#define SWACTION4			56
+#define CONFDIM				57
 #define VARCONFDIM			6
-#define EXTCONFDIM			13
-#define TOSAVEPARAMS		44
+#define EXTCONFDIM			14
+#define TOSAVEPARAMS		46
 #define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
 //--------------------------Fine array indexes-----------------------------------
 #if (AUTOCAL_HLW8012 || AUTOCAL_ACS712) 
@@ -419,6 +431,7 @@
 #endif
 	
 #define p(x) 	x + USRMODIFICABLEFLAGS
+#define pp(x) 	(x < USRMODIFICABLEFLAGS)?x:x + USRMODIFICABLEFLAGS
 
 #if (_DEBUG1)
  //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
@@ -434,14 +447,14 @@
  #define DEBUG_PRINTLN(x) 
 #endif	
 
-//PRIMA DEFINISCO LE COSTANTI, POI INCLUDO I FILES HEADERS (.h) CHE LE USANO
-#include "tapparellaLogic.h"
-#include "serialize.h"
-#include "logicaTasti.h"
-
-#if (AUTOCAL)  
-#include "statistics.h"
-#endif
+//Event classes---------------------------------------------------------------------------------------------
+class BaseEvnt{
+	public:
+		byte flagname;
+		
+		BaseEvnt(byte fname);
+		virtual void doaction();
+};
 
 class Par{
 	public:
@@ -449,18 +462,146 @@ class Par{
 		unsigned eprom;
 		char formfield;
 		char partype;
+		BaseEvnt *e = NULL;
 		
-		Par(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n');
+		Par(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL);
 		
 		virtual String getParam();
 		virtual void writeParam(String);
+		void doaction();
 };
+
+class MQTTMAC_Evnt: public BaseEvnt{
+	public:
+		MQTTMAC_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class MQTTIP_Evnt: public BaseEvnt{
+	public:
+		MQTTIP_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class MQTTMQTTID_Evnt: public BaseEvnt{
+	public:
+		MQTTMQTTID_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class MQTTTIME_Evnt: public BaseEvnt{
+	public:
+		MQTTTIME_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class MQTTTEMP_Evnt: public BaseEvnt{
+	public:
+		MQTTTEMP_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class MQTTMEANPWR_Evnt: public BaseEvnt{
+	public:
+		MQTTMEANPWR_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class MQTTPEAKPWR_Evnt: public BaseEvnt{
+	public:
+		MQTTPEAKPWR_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+#if (AUTOCAL_HLW8012) 
+class DOPWRCAL_Evnt: public BaseEvnt{
+	public:
+		DOPWRCAL_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class INSTPWR_Evnt: public BaseEvnt{
+	public:
+		INSTPWR_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class INSTACV_Evnt: public BaseEvnt{
+	public:
+		INSTACV_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+#endif
+//-----------------------------------------------------------------------
+class UTCVAL_Evnt: public BaseEvnt{
+	public:
+		UTCVAL_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class UTCSYNC_Evnt: public BaseEvnt{
+	public:
+		UTCSYNC_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class UTCADJ_Evnt: public BaseEvnt{
+	public:
+		UTCADJ_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class UTCSDT_Evnt: public BaseEvnt{
+	public:
+		UTCSDT_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class UTCZONE_Evnt: public BaseEvnt{
+	public:
+		UTCZONE_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class ACTIONEVAL_Evnt: public BaseEvnt{
+	public:
+		ACTIONEVAL_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class ONCOND1_Evnt: public BaseEvnt{
+	public:
+		ONCOND1_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class ONCOND2_Evnt: public BaseEvnt{
+	public:
+		ONCOND2_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class ONCOND3_Evnt: public BaseEvnt{
+	public:
+		ONCOND3_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class ONCOND4_Evnt: public BaseEvnt{
+	public:
+		ONCOND4_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class ONCOND5_Evnt: public BaseEvnt{
+	public:
+		ONCOND5_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class WEBUSR_Evnt: public BaseEvnt{
+	public:
+		WEBUSR_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+class WEBPSW_Evnt: public BaseEvnt{
+	public:
+		WEBPSW_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};
+#if (AUTOCAL_HLW8012)
+class CALPWR_Evnt: public BaseEvnt{
+	public:
+		CALPWR_Evnt(byte x):BaseEvnt(x){};
+		void doaction();
+};	
+#endif
 
 class ParByte : public Par{
 	
 	public:
 		
-		ParByte(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
+		ParByte(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
 		
 		String getParam();
 		void writeParam(String);
@@ -470,17 +611,18 @@ class ParInt : public Par{
 	
 	public:
 		
-		ParInt(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
+		ParInt(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
 		
 		String getParam();
 		void writeParam(String);
+		void doaction();
 };
 
 class ParLong : public Par{
 	
 	public:
 		
-		ParLong(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
+		ParLong(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
 		
 		String getParam();
 		void writeParam(String);
@@ -490,7 +632,7 @@ class ParFloat : public Par{
 	
 	public:
 		
-		ParFloat(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
+		ParFloat(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
 		
 		String getParam();
 		void writeParam(String);
@@ -500,7 +642,7 @@ class ParStr32 : public Par{
 	
 	public:
 		
-		ParStr32(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
+		ParStr32(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
 		
 		String getParam();
 		void writeParam(String);
@@ -510,11 +652,22 @@ class ParStr64 : public Par{
 	
 	public:
 		
-		ParStr64(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n'):Par(x,y,z,t){};
+		ParStr64(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
 		
 		String getParam();
 		void writeParam(String);
 };
+//End of event classes------------------------------------------------------------------------------------------------------------
+
+
+//PRIMA DEFINISCO LE COSTANTI, POI INCLUDO I FILES HEADERS (.h) CHE LE USANO
+#include "tapparellaLogic.h"
+#include "serialize.h"
+#include "logicaTasti.h"
+
+#if (AUTOCAL)  
+#include "statistics.h"
+#endif
 
 void setup_AP(bool);
 void setup_wifi();
@@ -532,6 +685,7 @@ void readMQTTIdAndPub();
 void readParamAndPub(byte, char*);
 void readModeAndPub(byte);
 void readActModeAndPub(byte);
+void readPwrCalAndPub();
 void publishStr(String &);
 float getAmpRMS(float);
 float getTemperature();
@@ -564,7 +718,11 @@ void updtConf(unsigned, String);
 unsigned getConfofstFromParamofst(unsigned);
 void printOut();
 void rstldcnt(byte);
-
+#if (AUTOCAL_HLW8012) 
+void calibrate_pwr();
+void readIpwrAndPub();
+void readIacvoltAndPub();
+#endif
 /*
 //http server callback function prototypes
 void handleRoot(ESP8266WebServer (&), String const (&)[PARAMSDIM]);        // function prototypes for HTTP handlers

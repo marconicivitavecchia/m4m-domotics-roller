@@ -87,7 +87,7 @@ const char HTTP_FORM_WIFI[] PROGMEM =
 	"</div></div></body></html>";
 	
 const char HTTP_FORM_SYSTEM[] PROGMEM =	
-	"<html>{HD}<body onload='loadTimeZoneList();showLoaded();'>"
+	"<html>{HD}<body onload = 'loadTimeZoneList();showLoaded()';>"
 	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
 	"<div id='form'>"
         "<form action='/login' method='POST'>"
@@ -120,6 +120,20 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 				"<div class='col-6 col-s-12'><label for='utcsdt'>Set daylight save (legal time)</label>"
 					 "<input type='checkbox' name='utcsdt' value='y' {N6}>"
 				"</div>"
+#if (AUTOCAL_HLW8012) 
+				"<div class='col-6 col-s-12'><label for='acvolt'>AC voltage:</label>"
+					 "<input type='text' name='acvolt' value='{N7}'>"
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='calpwr'>Calibration power:</label>"
+					 "<input type='text' name='calpwr' value='{N8}'>"
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='pwrmult'>Power multiplier:</label>"
+					 "<input type='text' id=pwrmult' name='pwrmult' value='{N9}' disabled>"
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='calbtn'>Press button for calibration:</label>"
+					 "<input type='button' id='calbtn' name='calbtn' value='Calibrate'>"
+				"</div>"
+#endif
 				"<div class='col-6 col-s-12'><label for='reboot'>Reboot the system with default config</label>"
 					 "<input type='checkbox' name='rebootd' value='y'>"
 				"</div>"
@@ -146,8 +160,9 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 				"</div>"
 			"</div>"
         "</form>"
-	"</div></div>"
+	"</div>"
 	"<script>"
+		"{SH}"
 		"function loadTimeZoneList(){" 
 			"var d = new Date();"
 			"var n = -d.getTimezoneOffset()/60;"
@@ -169,6 +184,26 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 		"}"
 		"function showLoaded(){"
 			"document.getElementById('report').value={N5};"
+		"}"
+#if (AUTOCAL_HLW8012) 
+		"var cb=document.getElementById('calbtn');"
+		"cb.addEventListener('onclick', function(){"
+			"cp=document.getElementById('calpwr').value;"
+			"var vl=vlsp[0].replace('N', cp);"
+			"console.log(vl);"
+			"press(vlsp[2]);"//il parser in uso non rispetta l'ordine dei campi nella stringa json!
+			"press(vls[4]);"//per farlo di devono inviare due json separati nell'ordine corretto
+		"}, false);"
+#endif
+		"function onRcv(d) {"
+			//"document.getElementById('p').innerHTML = f.data;\n"
+			"var obj = JSON.parse(d);"
+			"for(x in obj){"
+				"if(x=='{PM}'){"
+					"var el1 = document.getElementById('pwrmult');"
+					"el1.value=obj[x];"
+				"}"
+			"}"
 		"}"
 	"</script>"
 	"</body></html>";
@@ -554,6 +589,12 @@ const char HTTP_FORM_CMD[] PROGMEM =
 			"<div class='aside'>"
 				"<span id='date'></span>"
 			"</div>"
+			"<div class='aside'>"
+				"<span id='pwr'></span>"
+			"</div>"
+			"<div class='aside'>"
+				"<span id='acvolt'></span>"
+			"</div>"
 			"<div class='asidebottom'></div>"
 		"</div>"
 		"<div class='col-6 col-s-12'>"
@@ -606,6 +647,8 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		"var tmp = document.getElementById('temp');"
 		"var dt = document.getElementById('date');"
 		"var tm = document.getElementById('time');"
+		"var pw = document.getElementById('pwr');"
+		"var ac = document.getElementById('acvolt');"
 		"o1.innerHTML = sld1.value;"
 		"sld1.ontouchend = function() {"
 			"o1.innerHTML = this.value;"
@@ -694,6 +737,14 @@ const char HTTP_FORM_CMD[] PROGMEM =
 						"console.log('date:'+res[0]+' Time:'+res[1]);" 
 						"dt.style.backgroundColor = \"#333\";"
 						"tm.style.backgroundColor = \"#333\";"
+					"}"
+					"if(x=='{PW}'){"
+						"pw.innerHTML=obj[x]+' W';"
+						"pw.style.backgroundColor = \"#333\";"
+					"}"
+					"if(x=='{AC}'){"
+						"ac.innerHTML=obj[x]+' V';"
+						"ac.style.backgroundColor = \"#333\";"
 					"}"
 				"}else{"	
 					"if(x=='sp1')"
@@ -953,8 +1004,8 @@ const char PAHO_SRC[] PROGMEM = "<script src='https://cdnjs.cloudflare.com/ajax/
 
 const char HTTP_MQTT[] PROGMEM =
 		// Create a client instance
-		"var vls = ['{\"up1\":\"255\"}','{\"down1\":\"255\"}','{\"up2\":\"255\"}','{\"down2\":\"255\"}'];"
-		"var vlsp = ['{\"up1\":\"N\"}','{\"up2\":\"N\"}'];"
+		"var vls = ['{\"up1\":\"255\"}','{\"down1\":\"255\"}','{\"up2\":\"255\"}','{\"down2\":\"255\"}','{\"dopwrcal\":\"1\"}'];"
+		"var vlsp = ['{\"up1\":\"N\"}','{\"up2\":\"N\"}','{\"calpwr\":\"N\"}'];"
 		"var action = '{\"onaction\":\"D\"}';"
 		"var cond = ['{\"oncond1\":\"C\"}','{\"oncond2\":\"C\"}','{\"oncond3\":\"C\"}','{\"oncond4\":\"C\"}'];"
 		// Generate a random client ID
@@ -1006,8 +1057,8 @@ const char HTTP_MQTT[] PROGMEM =
 		"};";
 
 const char HTTP_WEBSOCKET[] PROGMEM =
-		"var vls = ['{\"up1\":\"255\"}','{\"down1\":\"255\"}','{\"up2\":\"255\"}','{\"down2\":\"255\"}'];"
-		"var vlsp = ['{\"up1\":\"N\"}','{\"up2\":\"N\"}'];"
+		"var vls = ['{\"up1\":\"255\"}','{\"down1\":\"255\"}','{\"up2\":\"255\"}','{\"down2\":\"255\"}','{\"dopwrcal\":\"1\"}'];"
+		"var vlsp = ['{\"up1\":\"N\"}','{\"up2\":\"N\"}','{\"calpwr\":\"N\"}'];"
 		"var action = '{\"onaction\":\"D\"}';"
 		"var cond = ['{\"oncond1\":\"C\"}','{\"oncond2\":\"C\"}','{\"oncond3\":\"C\"}','{\"oncond4\":\"C\"}'];"
 		"var conn = new WebSocket('ws://{WS}:81/', ['arduino']);"
@@ -1211,6 +1262,15 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		page.replace(F("{N4}"), confcmdp[UTCADJ]);
 		page.replace(F("{N5}"), confcmdp[UTCZONE]);
 		page.replace(F("{N6}"), ((confcmdp[UTCSDT]).toInt()==1)?"checked":"");
+#if (AUTOCAL_HLW8012) 
+		page.replace(F("{N7}"), confcmdp[ACVOLT]);
+		page.replace(F("{N8}"), confcmdp[CALPWR]);	
+		page.replace(F("{N9}"), confcmdp[PWRMULT]);
+		page.replace(F("{SH}"), FPSTR(HTTP_WEBSOCKET));
+		page.replace(F("{PM}"), mqttJsonp[DOPWRCAL]);
+#else
+		page.replace(F("{SH}"), FPSTR(""));
+#endif		
 #if (!AUTOCAL) 
 		page.replace(F("{S1}"), confcmdp[STDEL1]);
 		page.replace(F("{S2}"), confcmdp[STDEL2]);
@@ -1503,9 +1563,13 @@ void handleModify(){
 	  savegroup(fields, 9);
   }else if(serverp.hasArg("svsystem")){
 	  DEBUG_PRINTLN(F("savegroup svsystem"));
-	  byte fields[6] ={p(WEBUSR), p(WEBPSW), p(UTCSYNC), p(UTCADJ), p(UTCSDT), p(UTCZONE)};
-	  savegroup(fields, 6);
-	  
+#if (AUTOCAL_HLW8012) 
+	  byte fields[11] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCSDT), p(UTCZONE), p(ACVOLT), p(CALPWR)};
+	  savegroup(fields, 11);
+#else
+	  byte fields[8] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCSDT), p(UTCZONE)};
+	  savegroup(fields, 8);
+#endif	  
 	  if( serverp.hasArg("rebootd") && String("y") == serverp.arg("rebootd") ){
 		rebootSystem();
 	  }
@@ -1515,10 +1579,10 @@ void handleModify(){
 	  }  
 	  if( serverp.hasArg("utcsdt") && String("y") == serverp.arg("utcsdt") ){
 		setSDT(true);
-		updtConf(UTCSDT, String(1));
+		updtConf(p(UTCSDT), String(1));
 	  }else{
 		setSDT(false);
-		updtConf(UTCSDT, String(0));
+		updtConf(p(UTCSDT), String(0));
 	  }
   }else if(serverp.hasArg("svlogic")){
 	  DEBUG_PRINTLN(F("savegroup svlogic"));
@@ -1527,20 +1591,20 @@ void handleModify(){
 	  
 	  if( serverp.hasArg("swroll1") && String("1") == serverp.arg("swroll1") ){
 		//writeSWMode(0,0); 
-		updtConf(SWROLL1OFST, String(0));
+		updtConf(p(SWROLL1), String(0));
 		setSWMode(0,0); 
 	  }else{
 		//writeSWMode(1,0);
-		updtConf(SWROLL1OFST, String(1));
+		updtConf(p(SWROLL1), String(1));
 		setSWMode(1,0);	
 	  }
 	  if( serverp.hasArg("swroll2") && String("1") == serverp.arg("swroll2") ){
 		//writeSWMode(0,1);
 		setSWMode(0,1);
-		updtConf(SWROLL1OFST+1, String(1));
+		updtConf(p(SWROLL2), String(0));
 	  }else{
 		//writeSWMode(1,1);
-		updtConf(SWROLL1OFST+1, String(0));
+		updtConf(p(SWROLL2), String(1));
 		setSWMode(1,1);	
 	  }
   }
@@ -1737,7 +1801,7 @@ void updtConf(unsigned paramofst, String val){
 			DEBUG_PRINT(F("Modified param: "));
 			DEBUG_PRINT(param);
 			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(confcmdp[paramofst]);	
+			DEBUG_PRINTLN(confcmdp[confofst]);	
 		}else if(partype == 'j'){
 			mqttJsonp[confofst] = val; 
 			EEPROMWriteStr(eepromofst,(mqttJsonp[confofst]).c_str(),32);
@@ -1925,11 +1989,17 @@ void saveParamFromForm(unsigned paramofst){
 }
 
 //conservata in eeprom, acqu,isita in form, sia nome che valore campo MQTT
-Par::Par(const char* pname, unsigned epromofst, char ptype, char ffield){
+Par::Par(const char* pname, unsigned epromofst, char ptype, char ffield, BaseEvnt *evt){
 	parname = (char *) pname;
 	eprom = epromofst;
 	formfield = ffield;
 	partype = ptype;
+	e = evt;
+}
+
+void Par::doaction(){
+	if(e!=NULL)
+		e->doaction();
 }
 
 String Par::getParam(){
