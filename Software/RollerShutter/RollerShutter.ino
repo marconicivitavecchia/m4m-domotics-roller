@@ -1151,6 +1151,7 @@ void publishStr(String &str){
   else
   {
 	  mqttClient->publish(confcmd[MQTTOUTTOPIC], str);
+	  DEBUG_PRINTLN(F("Published data: "));
 	  DEBUG_PRINTLN(str);
   }
   //if(!webSocket){
@@ -2168,7 +2169,7 @@ void onElapse(byte nn, unsigned long tm){
 					//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
 					readStatesAndPub();
 				}
-#endif
+	#endif
 			}else{//se è in modalità switch
 				if(getGroupState(nn)==1){//se lo switch era inibito (timer di attesa scaduto)
 					DEBUG_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
