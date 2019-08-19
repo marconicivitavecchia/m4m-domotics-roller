@@ -998,6 +998,7 @@ const char HTTP_FORM_CMD[] PROGMEM =
 						"dt.style.backgroundColor = \"#333\";"
 						"tm.style.backgroundColor = \"#333\";"
 					"}"
+#if (AUTOCAL_HLW8012) 
 					"if(x=='{PW}'){"
 						"pw.innerHTML=obj[x]+' W';"
 						"pw.style.backgroundColor = \"#333\";"
@@ -1006,6 +1007,7 @@ const char HTTP_FORM_CMD[] PROGMEM =
 						"ac.innerHTML=obj[x]+' V';"
 						"ac.style.backgroundColor = \"#333\";"
 					"}"
+#endif
 				"}else{"	
 					"if(x=='sp1')"
 						"p[0]=Number(obj[x]);"						
