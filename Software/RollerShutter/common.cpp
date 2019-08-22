@@ -1300,7 +1300,7 @@ void handleMQTTConf() {  // If a POST request is made to URI /login
 		page.replace(F("{J2}"), parsp[MQTTDOWN1]->getStrJsonName());
 		page.replace(F("{J3}"), parsp[MQTTUP2]->getStrJsonName());
 		page.replace(F("{J4}"), parsp[MQTTDOWN2]->getStrJsonName());
-		page.replace(F("{PP}"), parsp[MQTTPROTO]->getStrVal());
+		page.replace(F("{PP}"), parsp[p(MQTTPROTO)]->getStrVal());
 
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
