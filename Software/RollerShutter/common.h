@@ -581,7 +581,7 @@ class Par{
 		char formfield;
 		char partype;
 		BaseEvnt *e = NULL;
-		byte val = 0;
+		byte val = 0;  //Attention! shadowed property, is referred by early binding on base class! (you must use static cast for read access)
 		
 		Par(const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL);
 		

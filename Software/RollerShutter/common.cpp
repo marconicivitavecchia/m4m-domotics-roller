@@ -1708,7 +1708,7 @@ void writeOnOffConditions(){
 	eepromBegin();
 	varStrOfst[0] = FIXEDPARAMSLEN;  
 	for(i=USRMODIFICABLEFLAGS; i<VARCONFDIM + USRMODIFICABLEFLAGS; ++i){
-		varStrOfst[i+1] = EEPROMWriteStr(varStrOfst[i], ((String) static_cast<ParVarStr*>(parsp[i])->val).c_str()) + varStrOfst[i];
+		varStrOfst[i+1] = EEPROMWriteStr(varStrOfst[i], (static_cast<ParVarStr*>(parsp[i])->val).c_str()) + varStrOfst[i];
 		DEBUG_PRINT(F("Modified sensors CONFEXPR "));
 		DEBUG_PRINT(i);
 		DEBUG_PRINT(F(": "));
