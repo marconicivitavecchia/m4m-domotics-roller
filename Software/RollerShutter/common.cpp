@@ -1239,7 +1239,7 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		page.replace(F("{N3}"), parsp[p(UTCSYNC)]->getStrVal());
 		page.replace(F("{N4}"), parsp[p(UTCADJ)]->getStrVal());
 		page.replace(F("{N5}"), parsp[p(UTCZONE)]->getStrVal());
-		page.replace(F("{N6}"), (parsp[p(UTCSDT)]->val == 1)?"checked":"");
+		page.replace(F("{N6}"), (parsp[p(UTCSDT)]->getStrVal() == "1")?"checked":"");
 #if (AUTOCAL_HLW8012) 
 		page.replace(F("{N7}"), parsp[p(ACVOLT)]->getStrVal());
 		page.replace(F("{N8}"), parsp[p(CALPWR)]->getStrVal());	
@@ -1338,12 +1338,12 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 		page.replace(F("{TD}"), parsp[p(THALT2)]->getStrVal());
 		page.replace(F("{DU}"), parsp[p(THALT3)]->getStrVal());
 		page.replace(F("{DD}"), parsp[p(THALT4)]->getStrVal());
-		if(parsp[SWROLL1]->val == 0){
+		if(static_cast<ParByte*>(parsp[SWROLL1])->val == 0){
 			page.replace(F("{H3}"), "disabled");
 		}else{
 			page.replace(F("{H3}"), "");
 		}
-		if(parsp[SWROLL2]->val == 0){
+		if(static_cast<ParByte*>(parsp[SWROLL2])->val == 0){
 			page.replace(F("{H4}"), "disabled");
 		}else{
 			page.replace(F("{H4}"), "");
@@ -1407,12 +1407,12 @@ void handleEventConf() {  // If a POST request is made to URI /login
 		page.replace(F("{S2}"), String(getCntValue(2)));
 		page.replace(F("{S3}"), String(getCntValue(3)));
 		page.replace(F("{S4}"), String(getCntValue(4)));
-		if(parsp[SWROLL1]->val == 0){
+		if(static_cast<ParByte*>(parsp[SWROLL1])->val == 0){
 			page.replace(F("{V1}"), "style=\"display:block\"");
 		}else{
 			page.replace(F("{V1}"), "style=\"display:none\"");
 		}
-		if(parsp[SWROLL2]->val == 0){
+		if(static_cast<ParByte*>(parsp[SWROLL2])->val == 0){
 			page.replace(F("{V2}"), "style=\"display:block\"");
 		}else{
 			page.replace(F("{V2}"), "style=\"display:none\"");
@@ -1582,9 +1582,9 @@ void handleModify(){
   String page = FPSTR(HTTP_FORM_SUCCESS);
   page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
   serverp.send(200, "text/html", page);
-		
-  if(parsp[TIMINGCHANGED]->val == 1){
-	parsp[TIMINGCHANGED]->val = 0;
+	
+  if(static_cast<ParByte*>(parsp[TIMINGCHANGED])->val == 1){
+	parsp[TIMINGCHANGED]->load(0);
 	initIiming(false);
   } 
 }
@@ -1614,7 +1614,7 @@ void loadConfig() {
 		DEBUG_PRINT(F("FIXEDPARAMSLEN "));
 		DEBUG_PRINTLN(FIXEDPARAMSLEN);
 		saveOnEEPROM(FIXEDPARAMSLEN);
-		parsp[p(CONFLOADED)]->val = 0;
+		parsp[p(CONFLOADED)]->load(0);
 		delay(1000);
 	} else {
 		EEPROM.begin(THALT1OFST);//the next after EEPROMLENOFST
@@ -1633,14 +1633,14 @@ void loadConfig() {
 		varStrOfst[0] = FIXEDPARAMSLEN;
 		for(i=USRMODIFICABLEFLAGS; i<VARCONFDIM + USRMODIFICABLEFLAGS; ++i){
 				varStrOfst[i+1] = EEPROMReadStr(varStrOfst[i], buf) + varStrOfst[i];
-				(String) parsp[i]->val  = String(buf);
+				parsp[i]->load(String(buf));
 				DEBUG_PRINT(F("sensors CONFEXPR "));
 				DEBUG_PRINT(i);
 				DEBUG_PRINT(F(": "));
-				DEBUG_PRINTLN(parsp[i]->val);
+				DEBUG_PRINTLN(parsp[i]->getStrVal());
 		}
 			
-		parsp[p(CONFLOADED)]->val = 1;
+		parsp[p(CONFLOADED)]->load(1);
 		EEPROM.end();
 		DEBUG_PRINTLN(F("EEPROM configuration readed"));
 	}
@@ -1706,13 +1706,13 @@ void writeOnOffConditions(){
 	
 	DEBUG_PRINTLN(F("writeOnOffConditions"));
 	eepromBegin();
-	varStrOfst[0] = FIXEDPARAMSLEN;
+	varStrOfst[0] = FIXEDPARAMSLEN;  
 	for(i=USRMODIFICABLEFLAGS; i<VARCONFDIM + USRMODIFICABLEFLAGS; ++i){
-		varStrOfst[i+1] = EEPROMWriteStr(varStrOfst[i], ((String) parsp[i]->val).c_str()) + varStrOfst[i];
+		varStrOfst[i+1] = EEPROMWriteStr(varStrOfst[i], ((String) static_cast<ParVarStr*>(parsp[i])->val).c_str()) + varStrOfst[i];
 		DEBUG_PRINT(F("Modified sensors CONFEXPR "));
 		DEBUG_PRINT(i);
 		DEBUG_PRINT(F(": "));
-		DEBUG_PRINTLN(parsp[i]->val);
+		DEBUG_PRINTLN(parsp[i]->getStrVal());
 	}
 	EEPROMWriteInt(EEPROMLENOFST,varStrOfst[VARCONFDIM]);
 	DEBUG_PRINT(F("Modified sensors EEPROMLENOFST: "));
@@ -1729,7 +1729,7 @@ void printConfig(){
 			DEBUG_PRINT(F("\nsensors CONFEXPR "));
 			DEBUG_PRINT(i);
 			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(parsp[i]->val);
+			DEBUG_PRINTLN(parsp[i]->getStrVal());
 			DEBUG_PRINT(F("- len "));
 			DEBUG_PRINT(i);
 			DEBUG_PRINT(F(": "));
@@ -1935,17 +1935,14 @@ void Par::load(float f){};
 void Par::load(double f){};
 void Par::load(char* f){};
 void Par::load(String f){};
-void Par::writeParam(String){};
-void Par::loadFromStr(String){};
-void Par::saveOnEprom(){};
-String Par::getStrVal(){return String(100);};
-void Par::loadFromEprom(){};
+
 String Par::getStrJsonName(){
 	return String(jsoname);
 }
 String Par::getStrFormName(){
 	return String(formname);
 }
+
 
 String ParByte::getStrVal(){
 	return String(this->val);
@@ -1967,6 +1964,7 @@ void ParByte::loadFromStr(String str){
 	this->val = str.toInt();
 }
 
+
 String ParInt::getStrVal(){
 	return String(this->val);
 }
@@ -1985,6 +1983,7 @@ void ParInt::loadFromEprom(){
 void ParInt::saveOnEprom(){
 	EEPROMWriteInt(eprom, val);
 }
+	
 
 String ParLong::getStrVal(){
 	return String(this->val);
@@ -2004,6 +2003,7 @@ void ParLong::loadFromEprom(){
 void ParLong::saveOnEprom(){
 	EEPROMWriteLong(eprom,this->val);
 }
+
 
 String ParFloat::getStrVal(){
 	return String(this->val);
@@ -2027,6 +2027,7 @@ void ParFloat::saveOnEprom(){
 	EEPROMWriteFloat(eprom,this->val);
 }
 
+
 String ParStr32::getStrVal(){
 	return String(this->val);
 }
@@ -2048,6 +2049,7 @@ void ParStr32::loadFromEprom(){
 void ParStr32::saveOnEprom(){
 	EEPROMWriteStr(eprom,val,32);
 }
+
 
 String ParStr64::getStrVal(){
 	return String(this->val);
@@ -2071,6 +2073,7 @@ void ParStr64::saveOnEprom(){
 	EEPROMWriteStr(eprom,val,64);
 }
 
+
 String ParVarStr::getStrVal(){
 	return String(this->val);
 }
@@ -2089,6 +2092,7 @@ void ParVarStr::load(String str){
 void ParVarStr::loadFromEprom(){
 	writeOnOffConditions();
 }
+
 
 byte saveByteConf(unsigned confofst){
 	saveConf(p(confofst));

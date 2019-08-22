@@ -461,7 +461,7 @@ class BaseEvnt{
 		unsigned long pid;
 		BaseEvnt(){};
 		BaseEvnt(unsigned id){pid = id;};
-		virtual void doaction();
+		virtual void doaction() = 0;
 };
 
 class MQTTBTN_Evnt: public BaseEvnt{
@@ -469,6 +469,7 @@ class MQTTBTN_Evnt: public BaseEvnt{
 		MQTTBTN_Evnt(unsigned x = 0):BaseEvnt(x){};
 		void doaction();
 };
+
 class MQTTMAC_Evnt: public BaseEvnt{
 	public:
 		void doaction();
@@ -584,21 +585,21 @@ class Par{
 		
 		Par(const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL);
 		
-		String getStrFormName();
-		String getStrJsonName();
-		void doaction();
-		virtual void writeParam(String);
-		virtual void loadFromStr(String);
-		virtual void saveOnEprom();
-		virtual String getStrVal();
-		virtual void loadFromEprom();
-		virtual void load(byte);
-		virtual void load(int);
-		virtual void load(unsigned long);
-		virtual void load(float);
-		virtual void load(double);
-		virtual void load(char*);
-		virtual void load(String);
+		String getStrFormName();				//base class version
+		String getStrJsonName();				//base class version
+		void doaction();						//base class version
+		virtual void writeParam(String) = 0;	//late binding abstract
+		virtual void loadFromStr(String) = 0;	//late binding abstract
+		virtual void saveOnEprom() = 0;			//late binding abstract
+		virtual String getStrVal() = 0;			//late binding abstract
+		virtual void loadFromEprom() = 0;		//late binding abstract
+		virtual void load(byte); 				//late binding
+		virtual void load(int);					//late binding
+		virtual void load(unsigned long);		//late binding
+		virtual void load(float);				//late binding
+		virtual void load(double);				//late binding
+		virtual void load(char*);				//late binding
+		virtual void load(String);				//late binding
 };
 
 class ParByte : public Par{
