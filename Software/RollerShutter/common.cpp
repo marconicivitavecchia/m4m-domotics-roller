@@ -2,29 +2,22 @@
 #define serverp (*serveru)
 
 ESP8266WebServer *serveru; 
-String  *mqttJsonp;
-String  *confJsonp;
-String  *confcmdp;
-
 Par **parsp;
 
-int EEaddress = FIXEDPARAMSLEN;
-int varStrOfst[VARCONFDIM+1];
+unsigned EEaddress = FIXEDPARAMSLEN;
+unsigned varStrOfst[VARCONFDIM+1];
 //bool rollmode[2] = {true, true};
 
 inline void eepromBegin(){
 	int i, len;
 	for(i=0,len=0;i<VARCONFDIM;++i){
-		len += confcmdp[i].length();
+		len += (parsp[p(i)]->getStrVal()).length();
 	}
 	EEPROM.begin(FIXEDPARAMSLEN + len + i);
 }
 
-void initCommon(ESP8266WebServer *serveri, Par **parsi, String  *mqttJsoni, String  *confJsoni, String  *confcmdi){
+void initCommon(ESP8266WebServer *serveri, Par **parsi){
 	serveru=serveri; 
-	mqttJsonp=mqttJsoni;
-	confJsonp=confJsoni;
-	confcmdp=confcmdi;
 	parsp=parsi;
 	for(int i=0; i<VARCONFDIM+1; ++i){
 		varStrOfst[i] = 0;
@@ -1094,8 +1087,8 @@ void handleNotFound(){
 void handleRoot() {   // When URI / is requested, send a web page with a button to toggle the LED
 	
 	String page = FPSTR(HTTP_FORM_ROOT);
-	page.replace(F("{HD}"),  FPSTR(HTTP_FORM_HEAD) );
-	page.replace(F("{WU}"),  confcmdp[WEBUSR] ); 
+	page.replace(F("{HD}"),  FPSTR(HTTP_FORM_HEAD));
+	page.replace(F("{WU}"),  parsp[WEBUSR]->getStrVal()); 
 	DEBUG_PRINTLN(F("Enter handleRoot"));
 	//String header;
 	if (!is_authentified(serverp)) {
@@ -1142,7 +1135,7 @@ void handleLogin() {  // If a POST request is made to URI /login
 	 DEBUG_PRINTLN(F(" assenti "));
 	 ok=false;
   }
-  else if(serverp.arg("webusr") == confcmdp[WEBUSR] && serverp.arg("webpsw") == confcmdp[WEBPSW])
+  else if(serverp.arg("webusr") == static_cast<ParStr32*>(parsp[p(WEBUSR)])->getStrVal() && static_cast<ParStr32*>(parsp[p(WEBPSW)])->getStrVal())  
   {
 	DEBUG_PRINTLN(F("Login di "));
 	DEBUG_PRINTLN(serverp.arg("webusr"));
@@ -1198,12 +1191,12 @@ void handleWifiConf() {  // If a POST request is made to URI /login
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
 		//Body placeholders
-		page.replace(F("{S1}"), confcmdp[CLNTSSID1] );
-		page.replace(F("{P1}"), confcmdp[CLNTPSW1] );
-		page.replace(F("{S2}"), confcmdp[CLNTSSID2] );
-		page.replace(F("{P2}"), confcmdp[CLNTPSW2] );
-		page.replace(F("{AS}"), confcmdp[APPSSID] );
-		page.replace(F("{AP}"), confcmdp[APPPSW] );
+		page.replace(F("{S1}"), parsp[p(CLNTSSID1)]->getStrVal());
+		page.replace(F("{P1}"), parsp[p(CLNTPSW1)]->getStrVal());
+		page.replace(F("{S2}"), parsp[p(CLNTSSID2)]->getStrVal());
+		page.replace(F("{P2}"), parsp[p(CLNTPSW2)]->getStrVal());
+		page.replace(F("{AS}"), parsp[p(APPSSID)]->getStrVal());
+		page.replace(F("{AP}"), parsp[p(APPPSW)]->getStrVal());
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -1239,26 +1232,26 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
 		//Body placeholders
-		page.replace(F("{WU}"), confcmdp[WEBUSR]) ;
-		page.replace(F("{WP}"), confcmdp[WEBPSW]);
-		page.replace(F("{N1}"), confcmdp[NTPADDR1]);
-		page.replace(F("{N2}"), confcmdp[NTPADDR2]);
-		page.replace(F("{N3}"), confcmdp[UTCSYNC]);
-		page.replace(F("{N4}"), confcmdp[UTCADJ]);
-		page.replace(F("{N5}"), confcmdp[UTCZONE]);
-		page.replace(F("{N6}"), ((confcmdp[UTCSDT]).toInt()==1)?"checked":"");
+		page.replace(F("{WU}"), parsp[p(WEBUSR)]->getStrVal());
+		page.replace(F("{WP}"), parsp[p(WEBPSW)]->getStrVal());
+		page.replace(F("{N1}"), parsp[p(NTPADDR1)]->getStrVal());
+		page.replace(F("{N2}"), parsp[p(NTPADDR2)]->getStrVal());
+		page.replace(F("{N3}"), parsp[p(UTCSYNC)]->getStrVal());
+		page.replace(F("{N4}"), parsp[p(UTCADJ)]->getStrVal());
+		page.replace(F("{N5}"), parsp[p(UTCZONE)]->getStrVal());
+		page.replace(F("{N6}"), (parsp[p(UTCSDT)]->val == 1)?"checked":"");
 #if (AUTOCAL_HLW8012) 
-		page.replace(F("{N7}"), confcmdp[ACVOLT]);
-		page.replace(F("{N8}"), confcmdp[CALPWR]);	
-		page.replace(F("{N9}"), confcmdp[PWRMULT]);
-		page.replace(F("{SH}"), FPSTR(HTTP_WEBSOCKET));
-		page.replace(F("{PM}"), mqttJsonp[DOPWRCAL]);
+		page.replace(F("{N7}"), parsp[p(ACVOLT)]->getStrVal());
+		page.replace(F("{N8}"), parsp[p(CALPWR)]->getStrVal());	
+		page.replace(F("{N9}"), parsp[p(PWRMULT)]->getStrVal());
+		page.replace(F("{SH}"), FPSTR(p(HTTP_WEBSOCKET));
+		page.replace(F("{PM}"), parsp[p(DOPWRCAL)]->getStrVal());
 #else
 		page.replace(F("{SH}"), FPSTR(""));
 #endif		
 #if (!AUTOCAL) 
-		page.replace(F("{S1}"), confcmdp[STDEL1]);
-		page.replace(F("{S2}"), confcmdp[STDEL2]);
+		page.replace(F("{S1}"), parsp[p(STDEL1)]->getStrVal());
+		page.replace(F("{S2}"), parsp[p(STDEL2)]->getStrVal());
 #endif
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
@@ -1295,28 +1288,20 @@ void handleMQTTConf() {  // If a POST request is made to URI /login
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
 		//Body placeholders
-		page.replace(F("{MA}"), confcmdp[MQTTADDR]);
-		page.replace(F("{MT}"), confcmdp[MQTTPORT]);
-		page.replace(F("{WT}"), confcmdp[WSPORT]);
-		page.replace(F("{MU}"), confcmdp[MQTTUSR]);
-		page.replace(F("{MP}"), confcmdp[MQTTPSW]);
-		page.replace(F("{MI}"), confcmdp[MQTTID]);
-		page.replace(F("{MO}"), confcmdp[MQTTOUTTOPIC]);
-		page.replace(F("{QI}"), confcmdp[MQTTINTOPIC]);
-		page.replace(F("{J1}"), mqttJsonp[MQTTUP1]);
-		page.replace(F("{J2}"), mqttJsonp[MQTTDOWN1]);
-		page.replace(F("{J3}"), mqttJsonp[MQTTUP2]);
-		page.replace(F("{J4}"), mqttJsonp[MQTTDOWN2]);
-		page.replace(F("{PP}"), confcmdp[MQTTPROTO]);
-		//page.replace(F("{P1}"), (confcmdp[MQTTPROTO]=="ws")?"selected":"");
-		//page.replace(F("{P2}"), (confcmdp[MQTTPROTO]=="tcp")?"selected":"");
-		//page.replace(F("{J5}"), mqttJsonp[MQTTTEMP]);
-		//page.replace(F("{J6}"), mqttJsonp[MQTTMEANPWR]);
-		//page.replace(F("{J7}"), mqttJsonp[MQTTPEAKPWR]);
-		//page.replace(F("{J8}"), mqttJsonp[MQTTALL]);
-		//set cookies OK
-		//DEBUG_PRINTLN(page);
-		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
+		page.replace(F("{MA}"), parsp[p(MQTTADDR)]->getStrVal());
+		page.replace(F("{MT}"), parsp[p(MQTTPORT)]->getStrVal());
+		page.replace(F("{WT}"), parsp[p(WSPORT)]->getStrVal());
+		page.replace(F("{MU}"), parsp[p(MQTTUSR)]->getStrVal());
+		page.replace(F("{MP}"), parsp[p(MQTTPSW)]->getStrVal());
+		page.replace(F("{MI}"), parsp[p(MQTTID)]->getStrVal());
+		page.replace(F("{MO}"), parsp[p(MQTTOUTTOPIC)]->getStrVal());
+		page.replace(F("{QI}"), parsp[p(MQTTINTOPIC)]->getStrVal());
+		page.replace(F("{J1}"), parsp[MQTTUP1]->getStrJsonName());
+		page.replace(F("{J2}"), parsp[MQTTDOWN1]->getStrJsonName());
+		page.replace(F("{J3}"), parsp[MQTTUP2]->getStrJsonName());
+		page.replace(F("{J4}"), parsp[MQTTDOWN2]->getStrJsonName());
+		page.replace(F("{PP}"), parsp[MQTTPROTO]->getStrVal());
+
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
 		serverp.send(200, "text/html", page);
@@ -1349,26 +1334,26 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
 		//Body placeholders
-		page.replace(F("{TU}"), confcmdp[THALT1]);
-		page.replace(F("{TD}"), confcmdp[THALT2]);
-		page.replace(F("{DU}"), confcmdp[THALT3]);
-		page.replace(F("{DD}"), confcmdp[THALT4]);
-		if(confcmdp[SWROLL1]=="0"){
+		page.replace(F("{TU}"), parsp[p(THALT1)]->getStrVal());
+		page.replace(F("{TD}"), parsp[p(THALT2)]->getStrVal());
+		page.replace(F("{DU}"), parsp[p(THALT3)]->getStrVal());
+		page.replace(F("{DD}"), parsp[p(THALT4)]->getStrVal());
+		if(parsp[SWROLL1]->val == 0){
 			page.replace(F("{H3}"), "disabled");
 		}else{
 			page.replace(F("{H3}"), "");
 		}
-		if(confcmdp[SWROLL2]=="0"){
+		if(parsp[SWROLL2]->val == 0){
 			page.replace(F("{H4}"), "disabled");
 		}else{
 			page.replace(F("{H4}"), "");
 		}
-		page.replace(F("{TL}"), confcmdp[TLENGTH]);
-		page.replace(F("{BR}"), confcmdp[BARRELRAD]);
-		page.replace(F("{TN}"), confcmdp[THICKNESS]);
-		page.replace(F("{SR}"), confcmdp[SLATSRATIO]);
-		page.replace(F("{H1}"), ((confcmdp[SWROLL1]).toInt()==0)?"checked":"");
-		page.replace(F("{H2}"), ((confcmdp[SWROLL2]).toInt()==0)?"checked":"");
+		page.replace(F("{TL}"), parsp[p(TLENGTH)]->getStrVal());
+		page.replace(F("{BR}"), parsp[p(BARRELRAD)]->getStrVal());
+		page.replace(F("{TN}"), parsp[p(THICKNESS)]->getStrVal());
+		page.replace(F("{SR}"), parsp[p(SLATSRATIO)]->getStrVal());
+		page.replace(F("{H1}"), (parsp[p(SWROLL1)]->val == 0)?"checked":"");
+		page.replace(F("{H2}"), (parsp[p(SWROLL2)]->val == 0)?"checked":"");
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -1406,32 +1391,28 @@ void handleEventConf() {  // If a POST request is made to URI /login
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
 		page.replace(F("{SH}"), FPSTR(HTTP_WEBSOCKET) );
-		page.replace(F("{WS}"), confcmdp[LOCALIP]);
+		page.replace(F("{WS}"), parsp[p(LOCALIP)]->getStrVal());
 		//Body placeholders
-		//page.replace(F("{A1}"), confcmdp[SWACTION1]);
-		//page.replace(F("{A2}"), confcmdp[SWACTION2]);
-		//page.replace(F("{A3}"), confcmdp[SWACTION3]);
-		//page.replace(F("{A4}"), confcmdp[SWACTION4]);
-		page.replace(F("{C1}"), confcmdp[ONCOND1]);
-		page.replace(F("{C2}"), confcmdp[ONCOND2]);
-		page.replace(F("{C3}"), confcmdp[ONCOND3]);
-		page.replace(F("{C4}"), confcmdp[ONCOND4]);
-		page.replace(F("{AC}"), confcmdp[ACTIONEVAL]);
-		page.replace(F("{AD}"), confcmdp[ONCOND5]);
-		page.replace(F("{D1}"), confcmdp[THALT1]);
-		page.replace(F("{D2}"), confcmdp[THALT2]);
-		page.replace(F("{D3}"), confcmdp[THALT3]);
-		page.replace(F("{D4}"), confcmdp[THALT4]);
+		page.replace(F("{C1}"), parsp[p(ONCOND1)]->getStrVal());
+		page.replace(F("{C2}"), parsp[p(ONCOND2)]->getStrVal());
+		page.replace(F("{C3}"), parsp[p(ONCOND3)]->getStrVal());
+		page.replace(F("{C4}"), parsp[p(ONCOND4)]->getStrVal());
+		page.replace(F("{AC}"), parsp[p(ACTIONEVAL)]->getStrVal());
+		page.replace(F("{AD}"), parsp[p(ONCOND5)]->getStrVal());
+		page.replace(F("{D1}"), parsp[p(THALT1)]->getStrVal());
+		page.replace(F("{D2}"), parsp[p(THALT2)]->getStrVal());
+		page.replace(F("{D3}"), parsp[p(THALT3)]->getStrVal());
+		page.replace(F("{D4}"), parsp[p(THALT4)]->getStrVal());
 		page.replace(F("{S1}"), String(getCntValue(1)));
 		page.replace(F("{S2}"), String(getCntValue(2)));
 		page.replace(F("{S3}"), String(getCntValue(3)));
 		page.replace(F("{S4}"), String(getCntValue(4)));
-		if(confcmdp[SWROLL1]=="0"){
+		if(parsp[SWROLL1]->val == 0){
 			page.replace(F("{V1}"), "style=\"display:block\"");
 		}else{
 			page.replace(F("{V1}"), "style=\"display:none\"");
 		}
-		if(confcmdp[SWROLL2]=="0"){
+		if(parsp[SWROLL2]->val == 0){
 			page.replace(F("{V2}"), "style=\"display:block\"");
 		}else{
 			page.replace(F("{V2}"), "style=\"display:none\"");
@@ -1465,18 +1446,18 @@ void handleCmd() {  // If a POST request is made to URI /login
 
 	String page = FPSTR(HTTP_FORM_CMD);
 	//Head placeholders
+	page.replace(F("{SH}"), FPSTR(HTTP_WEBSOCKET));
 	page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
 	page.replace(F("{SP}"), "");
-	page.replace(F("{SH}"), FPSTR(HTTP_WEBSOCKET));
-	page.replace(F("{WS}"), confcmdp[LOCALIP]);
-	page.replace(F("{TL}"), String(getTaplen()));
-	page.replace(F("{BR}"), confcmdp[BARRELRAD]);
-	page.replace(F("{TN}"), confcmdp[THICKNESS]);
-	page.replace(F("{SR}"), confcmdp[SLATSRATIO]);
+	page.replace(F("{WS}"), parsp[p(LOCALIP)]->getStrVal());
+	page.replace(F("{TL}"), String(getTaplen())); 
+	page.replace(F("{BR}"), parsp[p(BARRELRAD)]->getStrVal());
+	page.replace(F("{TN}"), parsp[p(THICKNESS)]->getStrVal());
+	page.replace(F("{SR}"), parsp[p(SLATSRATIO)]->getStrVal());
 	page.replace(F("{NM}"), String(getNmax()));
 	page.replace(F("{PD}"), String(round(getPosdelta())));
-	page.replace(F("{TP}"), mqttJsonp[MQTTTEMP]);
-	page.replace(F("{DT}"), mqttJsonp[MQTTDATE]);
+	page.replace(F("{TP}"), parsp[MQTTTEMP]->getStrJsonName());
+	page.replace(F("{DT}"), parsp[MQTTDATE]->getStrJsonName());
 	//Body placeholders
 	//DEBUG_PRINTLN(page);
 	//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -1494,24 +1475,24 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 	//page.replace(F("{TC}"), FPSTR(MQTT_CLIENT));PAHO_SRC
 	page.replace(F("{SP}"), FPSTR(PAHO_SRC));
 	
-	page.replace(F("{MA}"), confcmdp[MQTTADDR]);
-	page.replace(F("{MT}"), confcmdp[MQTTPORT]);
-	page.replace(F("{WT}"), confcmdp[WSPORT]);
-	page.replace(F("{MU}"), confcmdp[MQTTUSR]);
-	page.replace(F("{MP}"), confcmdp[MQTTPSW]);
-	page.replace(F("{MI}"), confcmdp[MQTTID]);
-	page.replace(F("{MO}"), confcmdp[MQTTOUTTOPIC]);
-	page.replace(F("{QI}"), confcmdp[MQTTINTOPIC]);
-	page.replace(F("{PP}"), confcmdp[MQTTPROTO]);
+	page.replace(F("{MA}"), parsp[p(MQTTADDR)]->getStrVal());
+	page.replace(F("{MT}"), parsp[p(MQTTPORT)]->getStrVal());
+	page.replace(F("{WT}"), parsp[p(WSPORT)]->getStrVal());
+	page.replace(F("{MU}"), parsp[p(MQTTUSR)]->getStrVal());
+	page.replace(F("{MP}"), parsp[p(MQTTPSW)]->getStrVal());
+	page.replace(F("{MI}"), parsp[p(MQTTID)]->getStrVal());
+	page.replace(F("{MO}"), parsp[p(MQTTOUTTOPIC)]->getStrVal());
+	page.replace(F("{QI}"), parsp[p(MQTTINTOPIC)]->getStrVal());
+	page.replace(F("{PP}"), parsp[p(MQTTPROTO)]->getStrVal());
 
 	page.replace(F("{TL}"), String(getTaplen()));
-	page.replace(F("{BR}"), confcmdp[BARRELRAD]);
-	page.replace(F("{TN}"), confcmdp[THICKNESS]);
-	page.replace(F("{SR}"), confcmdp[SLATSRATIO]);
+	page.replace(F("{BR}"), parsp[p(BARRELRAD)]->getStrVal());
+	page.replace(F("{TN}"), parsp[p(THICKNESS)]->getStrVal());
+	page.replace(F("{SR}"), parsp[p(SLATSRATIO)]->getStrVal());
 	page.replace(F("{NM}"), String(getNmax()));
 	page.replace(F("{PD}"), String(round(getPosdelta())));
-	page.replace(F("{TP}"), mqttJsonp[MQTTTEMP]);
-	page.replace(F("{DT}"), mqttJsonp[MQTTDATE]);
+	page.replace(F("{TP}"), parsp[p(MQTTTEMP)]->getStrJsonName());
+	page.replace(F("{DT}"), parsp[p(MQTTDATE)]->getStrJsonName());
 
 	//Body placeholders
 	//DEBUG_PRINTLN(page);
@@ -1584,13 +1565,11 @@ void handleModify(){
 		setSWMode(1,0);	
 	  }
 	  if( serverp.hasArg("swroll2") && String("1") == serverp.arg("swroll2") ){
-		//writeSWMode(0,1);
 		setSWMode(0,1);
 		updtConf(p(SWROLL2), String(0));
 	  }else{
-		//writeSWMode(1,1);
-		updtConf(p(SWROLL2), String(1));
 		setSWMode(1,1);	
+		updtConf(p(SWROLL2), String(1));
 	  }
   }
   EEPROM.end();
@@ -1604,8 +1583,8 @@ void handleModify(){
   page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
   serverp.send(200, "text/html", page);
 		
-  if(confcmdp[TIMINGCHANGED]=="true"){
-	confcmdp[TIMINGCHANGED]=="false";
+  if(parsp[TIMINGCHANGED]->val == 1){
+	parsp[TIMINGCHANGED]->val = 0;
 	initIiming(false);
   } 
 }
@@ -1635,7 +1614,7 @@ void loadConfig() {
 		DEBUG_PRINT(F("FIXEDPARAMSLEN "));
 		DEBUG_PRINTLN(FIXEDPARAMSLEN);
 		saveOnEEPROM(FIXEDPARAMSLEN);
-		confcmdp[CONFLOADED]="false";
+		parsp[p(CONFLOADED)]->val = 0;
 		delay(1000);
 	} else {
 		EEPROM.begin(THALT1OFST);//the next after EEPROMLENOFST
@@ -1646,22 +1625,22 @@ void loadConfig() {
 		DEBUG_PRINTLN(eepromlen);
 		
 		DEBUG_PRINTLN(F("Reading all fixed params... "));
-		for(int i=0; i<PARAMSDIM; i++){
+		for(int i=VARCONFDIM + USRMODIFICABLEFLAGS ; i<PARAMSDIM; i++){
 			loadConf(i);
 		}
 		
 		DEBUG_PRINT(F("Reading all variables params... "));
 		varStrOfst[0] = FIXEDPARAMSLEN;
-		for(i=0; i<VARCONFDIM; ++i){
+		for(i=USRMODIFICABLEFLAGS; i<VARCONFDIM + USRMODIFICABLEFLAGS; ++i){
 				varStrOfst[i+1] = EEPROMReadStr(varStrOfst[i], buf) + varStrOfst[i];
-				confcmdp[i]=buf;
+				(String) parsp[i]->val  = String(buf);
 				DEBUG_PRINT(F("sensors CONFEXPR "));
 				DEBUG_PRINT(i);
 				DEBUG_PRINT(F(": "));
-				DEBUG_PRINTLN(confcmdp[i]);
+				DEBUG_PRINTLN(parsp[i]->val);
 		}
 			
-		confcmdp[CONFLOADED]="true";
+		parsp[p(CONFLOADED)]->val = 1;
 		EEPROM.end();
 		DEBUG_PRINTLN(F("EEPROM configuration readed"));
 	}
@@ -1712,7 +1691,7 @@ void saveOnEEPROM(int len){
 	DEBUG_PRINTLN(F("Saving configuration...."));
   
 	EEPROM.begin(len);	
-	for(int i=0; i<PARAMSDIM; i++){
+	for(int i=VARCONFDIM + USRMODIFICABLEFLAGS; i<PARAMSDIM; i++){
 		saveConf(i);
 	}
 	EEPROM.end();
@@ -1721,17 +1700,36 @@ void saveOnEEPROM(int len){
 	writeOnOffConditions();
 	DEBUG_PRINTLN(F("Variable length params saved...."));
 }
+
+void writeOnOffConditions(){
+	int i;
+	
+	DEBUG_PRINTLN(F("writeOnOffConditions"));
+	eepromBegin();
+	varStrOfst[0] = FIXEDPARAMSLEN;
+	for(i=USRMODIFICABLEFLAGS; i<VARCONFDIM + USRMODIFICABLEFLAGS; ++i){
+		varStrOfst[i+1] = EEPROMWriteStr(varStrOfst[i], ((String) parsp[i]->val).c_str()) + varStrOfst[i];
+		DEBUG_PRINT(F("Modified sensors CONFEXPR "));
+		DEBUG_PRINT(i);
+		DEBUG_PRINT(F(": "));
+		DEBUG_PRINTLN(parsp[i]->val);
+	}
+	EEPROMWriteInt(EEPROMLENOFST,varStrOfst[VARCONFDIM]);
+	DEBUG_PRINT(F("Modified sensors EEPROMLENOFST: "));
+	DEBUG_PRINTLN(varStrOfst[i]);
+	EEPROM.end();
+}
 	
 void printConfig(){
 		int i;
 		
 		DEBUG_PRINT(F("\nPrinting EEPROM configuration...."));
 		
-		for(i=0; i<VARCONFDIM; ++i){
+		for(i=USRMODIFICABLEFLAGS; i<VARCONFDIM + USRMODIFICABLEFLAGS; ++i){
 			DEBUG_PRINT(F("\nsensors CONFEXPR "));
 			DEBUG_PRINT(i);
 			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(confcmdp[i]);
+			DEBUG_PRINTLN(parsp[i]->val);
 			DEBUG_PRINT(F("- len "));
 			DEBUG_PRINT(i);
 			DEBUG_PRINT(F(": "));
@@ -1748,7 +1746,7 @@ void printConfig(){
 
 void saveSingleConf(unsigned confofst){
 	eepromBegin();
-	saveConf(confofst+USRMODIFICABLEFLAGS);
+	saveConf(p(confofst));
 	EEPROM.end();
 }
 
@@ -1758,228 +1756,171 @@ void saveSingleJson(unsigned jsnofst){
 	EEPROM.end();
 }
 
-void updtConf(unsigned paramofst, String val){
-	char partype;
-	unsigned eepromofst;
-	char* param;
+void updtConf(unsigned paramofst, String v){
+	char intype = parsp[paramofst]->partype;
 	
 	DEBUG_PRINT(F("paramofst: "));
 	DEBUG_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
-		param = parsp[paramofst]->parname;
 		DEBUG_PRINT(F("param: "));
-		DEBUG_PRINTLN(param);
-		eepromofst = parsp[paramofst]->eprom;
+		DEBUG_PRINTLN(parsp[paramofst]->formname);
+		DEBUG_PRINT(F("jsoname: "));
+		DEBUG_PRINTLN( parsp[paramofst]->jsoname);
 		DEBUG_PRINT(F("eepromofst: "));
-		DEBUG_PRINTLN(eepromofst);
-		partype = parsp[paramofst]->partype;
+		DEBUG_PRINTLN(parsp[paramofst]->eprom);
 		DEBUG_PRINT(F("partype: "));
-		DEBUG_PRINTLN(partype);
-		unsigned confofst = getConfofstFromParamofst(paramofst);
+		DEBUG_PRINTLN(intype);
 		DEBUG_PRINT(F("confofst: "));
-		DEBUG_PRINTLN(confofst);
+		DEBUG_PRINTLN(getConfofstFromParamofst(paramofst));
+		DEBUG_PRINT(F("formfield: "));
+		DEBUG_PRINTLN(parsp[paramofst]->formfield);
 		
-		if(partype == 'p'){
-			confcmdp[confofst] = val;
-			parsp[paramofst]->writeParam(confcmdp[confofst]);
-			
-			DEBUG_PRINT(F("Modified param: "));
-			DEBUG_PRINT(param);
+		if(intype == 'p' || intype == 'j'){
+			parsp[paramofst]->loadFromStr(v);
+			parsp[paramofst]->saveOnEprom();
+			DEBUG_PRINT(F("Updated param: "));
+			DEBUG_PRINT(parsp[paramofst]->formname);
 			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(confcmdp[confofst]);	
-		}else if(partype == 'j'){
-			mqttJsonp[confofst] = val; 
-			EEPROMWriteStr(eepromofst,(mqttJsonp[confofst]).c_str(),32);
-			
-			DEBUG_PRINT(F("Modified json: "));
-			DEBUG_PRINT(param);
-			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(mqttJsonp[confofst]);	
+			DEBUG_PRINTLN(parsp[paramofst]->getStrVal());	
 		}
 		DEBUG_PRINTLN(F("---------------------------------"));
 	}
 }
 
 void saveConf(unsigned paramofst){
-	char partype;
-	unsigned eepromofst;
-	char* param;
+	char intype = parsp[paramofst]->partype;
 	
 	DEBUG_PRINT(F("paramofst: "));
 	DEBUG_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
-		param = parsp[paramofst]->parname;
 		DEBUG_PRINT(F("param: "));
-		DEBUG_PRINTLN(param);
-		eepromofst = parsp[paramofst]->eprom;
+		DEBUG_PRINTLN( parsp[paramofst]->formname);
+		DEBUG_PRINT(F("jsoname: "));
+		DEBUG_PRINTLN( parsp[paramofst]->jsoname);
 		DEBUG_PRINT(F("eepromofst: "));
-		DEBUG_PRINTLN(eepromofst);
-		partype = parsp[paramofst]->partype;
+		DEBUG_PRINTLN(parsp[paramofst]->eprom);
 		DEBUG_PRINT(F("partype: "));
-		DEBUG_PRINTLN(partype);
-		unsigned confofst = getConfofstFromParamofst(paramofst);
+		DEBUG_PRINTLN(intype);
 		DEBUG_PRINT(F("confofst: "));
-		DEBUG_PRINTLN(confofst);
+		DEBUG_PRINTLN(getConfofstFromParamofst(paramofst));
+		DEBUG_PRINT(F("formfield: "));
+		DEBUG_PRINTLN( parsp[paramofst]->formfield);
 		
-		if(partype == 'p'){
-			parsp[paramofst]->writeParam(confcmdp[confofst]);
-			
+		
+		if(intype == 'p' || intype == 'j'){
+			parsp[paramofst]->saveOnEprom();
 			DEBUG_PRINT(F("Modified param: "));
-			DEBUG_PRINT(param);
+			DEBUG_PRINT(parsp[paramofst]->formname);
 			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(confcmdp[confofst]);	
-		}else if(partype == 'j'){	
-			EEPROMWriteStr(eepromofst,(mqttJsonp[confofst]).c_str(),32);
-			
-			DEBUG_PRINT(F("Modified json: "));
-			DEBUG_PRINT(param);
-			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(mqttJsonp[confofst]);	
+			DEBUG_PRINTLN(parsp[paramofst]->getStrVal());		
 		}
+			
 		DEBUG_PRINTLN(F("---------------------------------"));
 	}
 }
 
 void loadConf(unsigned paramofst){
-	char partype;
-	unsigned eepromofst;
-	char buf[50];
-	char* param;
+	char intype = parsp[paramofst]->partype;
 	
 	DEBUG_PRINT(F("paramofst: "));
 	DEBUG_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
-		param = parsp[paramofst]->parname;
 		DEBUG_PRINT(F("param: "));
-		DEBUG_PRINTLN(param);
-		eepromofst = parsp[paramofst]->eprom;
+		DEBUG_PRINTLN(parsp[paramofst]->formname);
+		DEBUG_PRINT(F("jsoname: "));
+		DEBUG_PRINTLN( parsp[paramofst]->jsoname);
 		DEBUG_PRINT(F("eepromofst: "));
-		DEBUG_PRINTLN(eepromofst);
-		partype = parsp[paramofst]->partype;
+		DEBUG_PRINTLN(parsp[paramofst]->eprom);
 		DEBUG_PRINT(F("partype: "));
-		DEBUG_PRINTLN(partype);
-		unsigned confofst = getConfofstFromParamofst(paramofst);
+		DEBUG_PRINTLN(intype);
 		DEBUG_PRINT(F("confofst: "));
-		DEBUG_PRINTLN(confofst);
+		DEBUG_PRINTLN(getConfofstFromParamofst(paramofst));
+		DEBUG_PRINT(F("formfield: "));
+		DEBUG_PRINTLN( parsp[paramofst]->formfield);
 		
-		if(partype == 'p'){
-			confcmdp[confofst] = parsp[paramofst]->getParam();
-			
+		if(intype == 'p' || intype == 'j'){
 			DEBUG_PRINT(F("Load param: "));
-			DEBUG_PRINT(param);
+			parsp[paramofst]->loadFromEprom();
+			DEBUG_PRINT(parsp[paramofst]->formname);
 			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(confcmdp[confofst]);
-		}else if(partype == 'j'){	
-			EEPROMReadStr(eepromofst,buf);
-			mqttJsonp[confofst] = buf;	
-				
-			DEBUG_PRINT(F("Load json: "));
-			DEBUG_PRINT(param);
-			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(mqttJsonp[confofst]);	
+			DEBUG_PRINTLN(parsp[paramofst]->getStrVal());
 		}
 		DEBUG_PRINTLN(F("---------------------------------"));
 	}
 }
 
 void printFixedParam(unsigned paramofst){
-	char eprom, partype;
-	unsigned eepromofst;
-	char* param;
-	
 	DEBUG_PRINT(F("paramofst: "));
 	DEBUG_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
-		param = parsp[paramofst]->parname;
-		DEBUG_PRINT(F("param: "));
-		DEBUG_PRINTLN(param);
-		eepromofst = parsp[paramofst]->eprom;
+		DEBUG_PRINT(F("formname: "));
+		DEBUG_PRINTLN( parsp[paramofst]->formname);
+		DEBUG_PRINT(F("jsonname: "));
+		DEBUG_PRINTLN( parsp[paramofst]->jsoname);
 		DEBUG_PRINT(F("eepromofst: "));
-		DEBUG_PRINTLN(eepromofst);
-		partype = parsp[paramofst]->partype;
+		DEBUG_PRINTLN(parsp[paramofst]->eprom);
 		DEBUG_PRINT(F("partype: "));
-		DEBUG_PRINTLN(partype);
-		unsigned confofst = getConfofstFromParamofst(paramofst);
+		DEBUG_PRINTLN(parsp[paramofst]->partype);
 		DEBUG_PRINT(F("confofst: "));
-		DEBUG_PRINTLN(confofst);
-		
-		if(partype == 'p'){
-			if(eprom != 'v'){
-				DEBUG_PRINT(F("\nsensors CONFEXPR "));
-				DEBUG_PRINT(param);
-				DEBUG_PRINT(F(": "));
-				DEBUG_PRINTLN(confcmdp[confofst]);
-			}	
-		}else if(partype == 'j'){	
-			DEBUG_PRINT(F("json: "));
-			DEBUG_PRINTLN(param);
-			DEBUG_PRINT(F(" : "));
-			DEBUG_PRINTLN(mqttJsonp[confofst]);	
-		}
+		DEBUG_PRINTLN(getConfofstFromParamofst(paramofst));
+		DEBUG_PRINT(F("formfield: "));
+		DEBUG_PRINTLN(parsp[paramofst]->formfield);
+		DEBUG_PRINT(F("parval: "));
+		DEBUG_PRINTLN(parsp[paramofst]->getStrVal());
 		DEBUG_PRINTLN(F("---------------------------------"));
 	}
 }
 
 void saveParamFromForm(unsigned paramofst){
-	char buf[50];
-	char partype;
-	char intype;
-	char* param;
-	unsigned eepromofst;
+	char intype = parsp[paramofst]->partype;
 	
 	DEBUG_PRINT(F("paramofst: "));
 	DEBUG_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
-		param = parsp[paramofst]->parname;
 		DEBUG_PRINT(F("param: "));
-		DEBUG_PRINTLN(param);
-		eepromofst = parsp[paramofst]->eprom;
+		DEBUG_PRINTLN( parsp[paramofst]->formname);
+		DEBUG_PRINT(F("jsoname: "));
+		DEBUG_PRINTLN( parsp[paramofst]->jsoname);
 		DEBUG_PRINT(F("eepromofst: "));
-		DEBUG_PRINTLN(eepromofst);
-		partype = parsp[paramofst]->partype;
+		DEBUG_PRINTLN(parsp[paramofst]->eprom);
 		DEBUG_PRINT(F("partype: "));
-		DEBUG_PRINTLN(partype);
-		unsigned confofst = getConfofstFromParamofst(paramofst);
-		DEBUG_PRINT(F("confofst: "));
-		DEBUG_PRINTLN(confofst);
-		intype = parsp[paramofst]->formfield;
-		DEBUG_PRINT(F("formfield: "));
 		DEBUG_PRINTLN(intype);
+		DEBUG_PRINT(F("confofst: "));
+		DEBUG_PRINTLN(getConfofstFromParamofst(paramofst));
+		DEBUG_PRINT(F("formfield: "));
+		DEBUG_PRINTLN( parsp[paramofst]->formfield);
 		
 		if(intype == 'i'){//form element input or text area
-			if(partype == 'p'){
-				if(serverp.hasArg(param) && (confcmdp[confofst] != String(serverp.arg(param))) ){
-					confcmdp[confofst] = serverp.arg(param);
-					parsp[paramofst]->writeParam(confcmdp[confofst]);
-					
+			String param = String(parsp[paramofst]->formname);
+			if(intype == 'P'){
+				if(serverp.hasArg(param) && (parsp[paramofst]->getStrVal() != serverp.arg(param)) ){
+					parsp[paramofst]->loadFromStr(serverp.arg(param));
+					parsp[paramofst]->saveOnEprom();
 					DEBUG_PRINT(F("Updated param: "));
 					DEBUG_PRINT(param);
-					DEBUG_PRINT(F(" : "));
-					DEBUG_PRINTLN(confcmdp[confofst]);
-				}				
-			}else if(partype == 'j'){
-				if(serverp.hasArg(param) && (mqttJsonp[confofst] != String(serverp.arg(param))) ){
-					mqttJsonp[confofst] = serverp.arg(param);
-					parsp[paramofst]->writeParam(mqttJsonp[confofst]);
-					
-					DEBUG_PRINT(F("Updated param: "));
-					DEBUG_PRINT(param);
-					DEBUG_PRINT(F(" : "));
-					DEBUG_PRINTLN(mqttJsonp[confofst]);
+					DEBUG_PRINT(F(": "));
+					DEBUG_PRINTLN(parsp[paramofst]->getStrVal());
 				}
-			}
-		}//form element input or text area		
+			}else if(intype == 'j'){
+				if(serverp.hasArg(param) && (parsp[paramofst]->getStrVal() != serverp.arg(param)) ){
+					parsp[paramofst]->jsoname = (char *) (serverp.arg(param)).c_str();
+					DEBUG_PRINT(F("Updated json name: "));
+					DEBUG_PRINT(parsp[paramofst]->jsoname);
+				}
+			}	
+		}
 	}
 	DEBUG_PRINTLN(F("---------------------------------"));
 }
 
 //conservata in eeprom, acqu,isita in form, sia nome che valore campo MQTT
-Par::Par(const char* pname, unsigned epromofst, char ptype, char ffield, BaseEvnt *evt){
-	parname = (char *) pname;
+Par::Par(const char* pname, const char* mjson, unsigned epromofst, char ptype, char ffield, BaseEvnt *evt){
+	formname = (char *) pname;
 	eprom = epromofst;
 	formfield = ffield;
 	partype = ptype;
 	e = evt;
+	jsoname = (char *) mjson;
 }
 
 void Par::doaction(){
@@ -1987,101 +1928,185 @@ void Par::doaction(){
 		e->doaction();
 }
 
-String Par::getParam(){
-	return  "";
+void Par::load(byte f){};
+void Par::load(int f){};
+void Par::load(unsigned long f){};
+void Par::load(float f){};
+void Par::load(double f){};
+void Par::load(char* f){};
+void Par::load(String f){};
+void Par::writeParam(String){};
+void Par::loadFromStr(String){};
+void Par::saveOnEprom(){};
+String Par::getStrVal(){return String(100);};
+void Par::loadFromEprom(){};
+String Par::getStrJsonName(){
+	return String(jsoname);
+}
+String Par::getStrFormName(){
+	return String(formname);
 }
 
-void Par::writeParam(String str){}
-
-String ParByte::getParam(){
-	return  String((byte)EEPROM.read(eprom));
+String ParByte::getStrVal(){
+	return String(this->val);
 }
-
 void ParByte::writeParam(String str){
 	byte app = str.toInt();
 	EEPROM.write(eprom, app);
 }
-
-String ParInt::getParam(){
-	return  String(EEPROMReadInt(eprom));
+void ParByte::load(byte b){
+	this->val = b;
+}
+void ParByte::loadFromEprom(){
+	this->val = EEPROM.read(eprom);
+}
+void ParByte::saveOnEprom(){
+	EEPROM.write(eprom, this->val);
+}
+void ParByte::loadFromStr(String str){
+	this->val = str.toInt();
 }
 
+String ParInt::getStrVal(){
+	return String(this->val);
+}
 void ParInt::writeParam(String str){
 	EEPROMWriteInt(eprom, str.toInt());
 }
-
-String ParLong::getParam(){
-	return  String(EEPROMReadLong(eprom));
+void ParInt::loadFromStr(String str){
+	this->val = str.toInt();
+}
+void ParInt::load(int i){
+	this->val = i;
+}
+void ParInt::loadFromEprom(){
+	this->val = EEPROMReadInt(eprom);
+}
+void ParInt::saveOnEprom(){
+	EEPROMWriteInt(eprom, val);
 }
 
+String ParLong::getStrVal(){
+	return String(this->val);
+}
 void ParLong::writeParam(String str){
 	EEPROMWriteLong(eprom,strtoul(str.c_str(), NULL, 10));
 }
-
-String ParFloat::getParam(){
-	return  String(EEPROMReadFloat(eprom));
+void ParLong::loadFromStr(String str){
+	this->val = strtoul(str.c_str(), NULL, 10);
+}
+void ParLong::load(unsigned long l){
+	this->val = l;
+}
+void ParLong::loadFromEprom(){
+	this->val = EEPROMReadLong(eprom);
+}
+void ParLong::saveOnEprom(){
+	EEPROMWriteLong(eprom,this->val);
 }
 
+String ParFloat::getStrVal(){
+	return String(this->val);
+}
 void ParFloat::writeParam(String str){
 	EEPROMWriteFloat(eprom,str.toFloat());
 }
-
-String ParStr32::getParam(){
-	char buf[32];
-	EEPROMReadStr(eprom, buf,32);
-	return  String(buf);
+void ParFloat::loadFromStr(String str){
+	this->val = str.toFloat();
+}
+void ParFloat::load(float f){
+	this->val = f;
+}
+void ParFloat::load(double d){
+	this->val = (float) d;
+}
+void ParFloat::loadFromEprom(){
+	this->val = EEPROMReadFloat(eprom);
+}
+void ParFloat::saveOnEprom(){
+	EEPROMWriteFloat(eprom,this->val);
 }
 
+String ParStr32::getStrVal(){
+	return String(this->val);
+}
 void ParStr32::writeParam(String str){
 	EEPROMWriteStr(eprom,str.c_str(),32);
 }
-
-String ParStr64::getParam(){
-	char buf[64];
-	EEPROMReadStr(eprom, buf,64);
-	return  String(buf);
+void ParStr32::loadFromStr(String str){
+	this->val = (char *) str.c_str();
+}
+void ParStr32::load(char *str){
+	this->val = str;
+}
+void ParStr32::loadFromEprom(){
+	char * buf = new char[32];
+	EEPROMReadStr(eprom, buf,32);
+	delete[] val;
+	this->val = buf;
+}
+void ParStr32::saveOnEprom(){
+	EEPROMWriteStr(eprom,val,32);
 }
 
+String ParStr64::getStrVal(){
+	return String(this->val);
+}
 void ParStr64::writeParam(String str){
 	EEPROMWriteStr(eprom,str.c_str(),64);
 }
+void ParStr64::loadFromStr(String str){
+	this->val = (char *) str.c_str();
+}
+void ParStr64::load(char *str){
+	this->val = str;
+}
+void ParStr64::loadFromEprom(){
+	char * buf = new char[64];
+	EEPROMReadStr(eprom, buf,64);
+	delete[] val; 
+	this->val = buf;
+}
+void ParStr64::saveOnEprom(){
+	EEPROMWriteStr(eprom,val,64);
+}
 
-void writeOnOffConditions(){
-	int i;
-	
-	DEBUG_PRINTLN(F("writeOnOffConditions"));
-	eepromBegin();
-	varStrOfst[0] = FIXEDPARAMSLEN;
-	for(i=0; i<VARCONFDIM; ++i){
-		varStrOfst[i+1] = EEPROMWriteStr(varStrOfst[i], (confcmdp[i]).c_str()) + varStrOfst[i];
-		DEBUG_PRINT(F("Modified sensors CONFEXPR "));
-		DEBUG_PRINT(i);
-		DEBUG_PRINT(F(": "));
-		DEBUG_PRINTLN(confcmdp[i]);
-	}
-	EEPROMWriteInt(EEPROMLENOFST,varStrOfst[VARCONFDIM]);
-	DEBUG_PRINT(F("Modified sensors EEPROMLENOFST: "));
-	DEBUG_PRINTLN(varStrOfst[i]);
-	EEPROM.end();
+String ParVarStr::getStrVal(){
+	return String(this->val);
+}
+void ParVarStr::writeParam(String str){
+	EEPROMWriteStr(eprom,str.c_str(),64);
+}
+void ParVarStr::saveOnEprom(){
+	writeOnOffConditions();
+}
+void ParVarStr::loadFromStr(String str){
+	this->val = str;
+}
+void ParVarStr::load(String str){
+	this->val = str;
+}
+void ParVarStr::loadFromEprom(){
+	writeOnOffConditions();
 }
 
 byte saveByteConf(unsigned confofst){
-	saveConf(confofst + USRMODIFICABLEFLAGS);
-	return (byte) (confcmdp[confofst]).toInt();
+	saveConf(p(confofst));
+	return (byte) static_cast<ParByte*>(parsp[p(confofst)])->val;
 }
 
 int saveIntConf(unsigned confofst){
-	saveConf(confofst + USRMODIFICABLEFLAGS);
-	return (confcmdp[confofst]).toInt();
+	saveConf(p(confofst));
+	return  static_cast<ParInt*>(parsp[p(confofst)])->val;
 }
 
 long saveLongConf( unsigned confofst){
-	saveConf(confofst + USRMODIFICABLEFLAGS);
-	return strtoul((confcmdp[confofst]).c_str(), NULL, 10);
+	saveConf(p(confofst));
+	return  static_cast<ParLong*>(parsp[p(confofst)])->val;
 }
 
 float saveFloatConf(unsigned confofst){
-	saveConf(confofst + USRMODIFICABLEFLAGS);
-	return (confcmdp[confofst]).toFloat();
+	saveConf(p(confofst));
+	return  static_cast<ParFloat*>(parsp[p(confofst)])->val;
 }
 

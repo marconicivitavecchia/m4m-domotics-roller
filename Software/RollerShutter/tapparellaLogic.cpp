@@ -4,9 +4,8 @@ int count1 = 0;
 byte groupState[4];
 byte *inp;
 byte *outp;
-byte *inrp;
 byte *outlogicp;
-String  *confcmdl;
+Par **parsl;
 byte act[4] = {0,0,0,0};
 float taplen, deltal;
 float barrad;
@@ -161,42 +160,37 @@ byte tapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt, b
 	tapparellaLogic(n);
 }
 */
-void initTapparellaLogic(byte *in, byte *out, byte *inr, byte *outlogic, String  *confcmdi, bool firstTime=false){
-	confcmdl=confcmdi;
+void initTapparellaLogic(byte *in, byte *out, byte *outlogic, Par **parsi, bool firstTime=false){
+	parsl=parsi;
 	inp=in;
 	outp=out;
-	inrp=inr;
 	outlogicp=outlogic;
-	thaltp[0]=(confcmdl[THALT1]).toInt();
-	thaltp[1]=(confcmdl[THALT3]).toInt();
-	engdelay[0]=(confcmdl[STDEL1]).toInt();
-	engdelay[1]=(confcmdl[STDEL2]).toInt();
-	btndelay[0]=BTNDEL1;
-	btndelay[1]=BTNDEL2;
-	btndelay[2]=BTNDEL1;
-	btndelay[3]=BTNDEL2;
-	haltdelay[0]=(confcmdl[THALT1]).toInt();
-	haltdelay[1]=(confcmdl[THALT2]).toInt();
-	haltdelay[2]=(confcmdl[THALT3]).toInt();
-	haltdelay[3]=(confcmdl[THALT4]).toInt();
-	engdelay[2]=(confcmdl[STDEL1]).toInt();
-	engdelay[3]=(confcmdl[STDEL2]).toInt();
-	taplen=(confcmdl[TLENGTH]).toFloat();
+	thaltp[0] = static_cast<ParLong*>(parsl[p(THALT1)])->val;
+	thaltp[1] = static_cast<ParLong*>(parsl[p(THALT3)])->val;
+	engdelay[0] = static_cast<ParLong*>(parsl[p(STDEL1)])->val;
+	engdelay[1] = static_cast<ParLong*>(parsl[p(STDEL2)])->val;
+	btndelay[0] = BTNDEL1;
+	btndelay[1] = BTNDEL2;
+	btndelay[2] = BTNDEL1;
+	btndelay[3] = BTNDEL2;
+	haltdelay[0] = static_cast<ParLong*>(parsl[p(THALT1)])->val;
+	haltdelay[1] = static_cast<ParLong*>(parsl[p(THALT2)])->val;
+	haltdelay[2] = static_cast<ParLong*>(parsl[p(THALT3)])->val;
+	haltdelay[3] = static_cast<ParLong*>(parsl[p(THALT4)])->val;
+	engdelay[2] = static_cast<ParLong*>(parsl[p(STDEL1)])->val;
+	engdelay[3] = static_cast<ParLong*>(parsl[p(STDEL2)])->val;
+	taplen = static_cast<ParFloat*>(parsl[p(TLENGTH)])->val;
 	//correzzione per tapparelle a fisarmonica
-	float r = (confcmdl[SLATSRATIO]).toFloat();
+	float r = static_cast<ParFloat*>(parsl[SLATSRATIO])->val;
 	taplen = taplen*(1 + r);
 	posdelta = r / (1 + r)*100;
-	barrad=(confcmdl[BARRELRAD]).toFloat();
-	tapthick=(confcmdl[THICKNESS]).toFloat();
+	barrad = static_cast<ParFloat*>(parsl[p(BARRELRAD)])->val;
+	tapthick = static_cast<ParFloat*>(parsl[p(THICKNESS)])->val;
 	resetCronoCount(0);
 	resetCronoCount(1);
 	setCronoLimits(-THALTMAX,THALTMAX,0);
 	setCronoLimits(-THALTMAX,THALTMAX,1);
-	//rollmode[0] = (confcmdl[SWROLL1]).toInt();
-	//rollmode[1] = (confcmdl[SWROLL2]).toInt();
 #if (!AUTOCAL) 
-	//thaltp[0]=(confcmdl[THALT1]).toInt();
-	//thaltp[1]=(confcmdl[THALT3]).toInt();
 	first[0] = first[1] = firstTime;
 #else
 	fact = (float) ENDFACT/100.0;
@@ -696,14 +690,14 @@ void setSWAction(byte in, byte n){
 		DEBUG_PRINT(F("setSWAction normalmente aperto: "));
 		DEBUG_PRINTLN(in);
 		oe[n]=true;
-		haltdelay[n]=(confcmdl[THALT1+n]).toInt();
+		haltdelay[n] = static_cast<ParLong*>(parsl[p(THALT1+n)])->val;
 		setLogic(LOW,n);
 		DEBUG_PRINT(F("act==2: "));
 	}else if(in==3){
 		DEBUG_PRINT(F("setSWAction normalmente chiuso: "));
 		DEBUG_PRINTLN(in);
 		oe[n]=true;
-		haltdelay[n]=(confcmdl[THALT1+n]).toInt();
+		haltdelay[n] = static_cast<ParLong*>(parsl[p(THALT1+n)])->val;
 		setLogic(HIGH,n);
 		DEBUG_PRINT(F("act==3: "));
 	}

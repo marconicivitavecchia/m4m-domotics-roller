@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "common.h"
 
-void initTapparellaLogic(byte *, byte *, byte *, byte *, String  *, bool);
+void initTapparellaLogic(byte *, byte *, byte *, Par *[], bool);
 byte tapparellaLogic(byte *, byte *, byte*, unsigned long , byte n);
 //byte tapparellaLogic(byte);
 void setTapThalt(unsigned long, byte);

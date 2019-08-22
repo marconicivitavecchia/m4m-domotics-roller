@@ -39,14 +39,20 @@
 #define SSID2			"AndroidAP1"
 #define PSW2			"pippo2503"
 #define SSIDAP			"admin"
-#define PSWAP			"admin"
+#define PSWAP			""
+#define MQUSR			""
+#define MQPSW			""
+#define WBPSW			"admin"
+#define WBUSR			"admin"
 #define MQTTSRV			"broker.hivemq.com"
-#define MQTTPRT			"1883"
+#define MQTTPRT			1883
 #define WSPRT			"8000"
 #define MQTTPT			"mqtt"
 #define MQTTCLIENTID 	"mytapparella"
 #define ROLLMODE1 		0
 #define ROLLMODE2 		0
+#define NTP1 			"ntp1.inrim.it"
+#define NTP2 			"0.it.pool.ntp.org"
 //END DEFAULTS
 //_DEBUG1 LEVELS---------------------
 #define _DEBUG1   		1		//ACTIVATE LOCAL AND REMOTE _DEBUG1 MODE
@@ -108,7 +114,7 @@
 //#define RAMPDELAY2	1  		//n*20ms
 #define ONGAP		20			//divisioni ADC della soglia di ON motore
 #define ENDFACT		2	// (%) margine di posizionamento con i sensori in percentuale dell'escursione totale, dopo avviene col timer
-#define PUSHINTERV	 60 // in sec
+#define PUSHINTERV	60 // in sec
 #define ONE_WIRE_BUS 2  // DS18B20 pin
 #define RUNDELAY  	1
 #define DELTAL		4
@@ -169,7 +175,7 @@
 #define SMPLCNT2	9		//INDEX OF
 #define SMPLCNT3	10		//INDEX OF
 #define SMPLCNT4	11		//INDEX OF
-//#define TIMECNT		12		//INDEX OF
+//#define TIMECNT		12	//INDEX OF
 #define NCNT	 	12		//OVERALL NUMBER OF COUNTERS (FUNCTION COUNTERS + SPECIAL COUNTERS) 
 #define BTNUP		0		//INDEX OF CALIBRATION CRONO (DETECTS UP TIME AND DOWN TIME)
 #define BTNDOWN		1		//INDEX OF CALIBRATION CRONO (DETECTS UP TIME AND DOWN TIME)
@@ -277,6 +283,7 @@
 //end user modificable flags
 
 #define MQTTDIM				16
+#define INRDIM				4
 #define USRMODIFICABLEFLAGS 16
 //--------------------------Inizio MQTT config array indexes-----------------------------------------------------
 //Indici array confJson[CONFDIM] dei NOMI dei campi json dei valori di configurazione --> array confcmd[CONFDIM] 
@@ -353,10 +360,11 @@
 #define VARCONFDIM			6
 #define EXTCONFDIM			14
 #define TOSAVEPARAMS		46
-#define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
+//#define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
+#define PARAMSDIM 			CONFDIM + USRMODIFICABLEFLAGS
 //--------------------------Fine array indexes-----------------------------------
 #if (AUTOCAL_HLW8012 || AUTOCAL_ACS712) 
-#define	AUTOCAL		1
+#define	AUTOCAL			1
 #endif
 
 #if (AUTOCAL_HLW8012) 
@@ -450,212 +458,247 @@
 //Event classes---------------------------------------------------------------------------------------------
 class BaseEvnt{
 	public:
-		byte flagname;
-		
-		BaseEvnt(byte fname);
+		unsigned long pid;
+		BaseEvnt(){};
+		BaseEvnt(unsigned id){pid = id;};
 		virtual void doaction();
 };
 
-class Par{
+class MQTTBTN_Evnt: public BaseEvnt{
 	public:
-		char* parname = "empty";
-		unsigned eprom;
-		char formfield;
-		char partype;
-		BaseEvnt *e = NULL;
-		
-		Par(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL);
-		
-		virtual String getParam();
-		virtual void writeParam(String);
+		MQTTBTN_Evnt(unsigned x = 0):BaseEvnt(x){};
 		void doaction();
 };
-
 class MQTTMAC_Evnt: public BaseEvnt{
 	public:
-		MQTTMAC_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class MQTTIP_Evnt: public BaseEvnt{
 	public:
-		MQTTIP_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class MQTTMQTTID_Evnt: public BaseEvnt{
 	public:
-		MQTTMQTTID_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class MQTTTIME_Evnt: public BaseEvnt{
 	public:
-		MQTTTIME_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class MQTTTEMP_Evnt: public BaseEvnt{
 	public:
-		MQTTTEMP_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class MQTTMEANPWR_Evnt: public BaseEvnt{
 	public:
-		MQTTMEANPWR_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class MQTTPEAKPWR_Evnt: public BaseEvnt{
 	public:
-		MQTTPEAKPWR_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 #if (AUTOCAL_HLW8012) 
 class DOPWRCAL_Evnt: public BaseEvnt{
 	public:
-		DOPWRCAL_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class INSTPWR_Evnt: public BaseEvnt{
 	public:
-		INSTPWR_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class INSTACV_Evnt: public BaseEvnt{
 	public:
-		INSTACV_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 #endif
 //-----------------------------------------------------------------------
 class UTCVAL_Evnt: public BaseEvnt{
 	public:
-		UTCVAL_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class UTCSYNC_Evnt: public BaseEvnt{
 	public:
-		UTCSYNC_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class UTCADJ_Evnt: public BaseEvnt{
 	public:
-		UTCADJ_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class UTCSDT_Evnt: public BaseEvnt{
 	public:
-		UTCSDT_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class UTCZONE_Evnt: public BaseEvnt{
 	public:
-		UTCZONE_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class ACTIONEVAL_Evnt: public BaseEvnt{
 	public:
-		ACTIONEVAL_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class ONCOND1_Evnt: public BaseEvnt{
 	public:
-		ONCOND1_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class ONCOND2_Evnt: public BaseEvnt{
 	public:
-		ONCOND2_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class ONCOND3_Evnt: public BaseEvnt{
 	public:
-		ONCOND3_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class ONCOND4_Evnt: public BaseEvnt{
 	public:
-		ONCOND4_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class ONCOND5_Evnt: public BaseEvnt{
 	public:
-		ONCOND5_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class WEBUSR_Evnt: public BaseEvnt{
 	public:
-		WEBUSR_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 class WEBPSW_Evnt: public BaseEvnt{
 	public:
-		WEBPSW_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };
 #if (AUTOCAL_HLW8012)
 class CALPWR_Evnt: public BaseEvnt{
 	public:
-		CALPWR_Evnt(byte x):BaseEvnt(x){};
 		void doaction();
 };	
 #endif
 
-class ParByte : public Par{
-	
+
+class Par{
 	public:
+		char * jsoname;
+		char * formname = "empty";
+		unsigned eprom;
+		char formfield;
+		char partype;
+		BaseEvnt *e = NULL;
+		byte val = 0;
 		
-		ParByte(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
+		Par(const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL);
 		
-		String getParam();
+		String getStrFormName();
+		String getStrJsonName();
 		void writeParam(String);
+		void doaction();
+		void loadFromStr(String);
+		void saveOnEprom();
+		virtual String getStrVal();
+		void loadFromEprom();
+		virtual void load(byte);
+		virtual void load(int);
+		virtual void load(unsigned long);
+		virtual void load(float);
+		virtual void load(double);
+		virtual void load(char*);
+		virtual void load(String);
+};
+
+class ParByte : public Par{
+	 
+	public:
+		byte val = 1;
+		ParByte(byte v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
+		
+		using Par::load;
+		String getStrVal();
+		void writeParam(String);
+		void loadFromStr(String);
+		void loadFromEprom();
+		void saveOnEprom();
+		void load(byte);
 };
 
 class ParInt : public Par{
-	
 	public:
+		int val;
+		ParInt(int v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
 		
-		ParInt(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
-		
-		String getParam();
+		using Par::load;
+		String getStrVal();
 		void writeParam(String);
-		void doaction();
+		void loadFromStr(String);
+		void loadFromEprom();
+		void saveOnEprom();
+		void load(int);
 };
 
 class ParLong : public Par{
-	
 	public:
+		unsigned long val;
+		ParLong(unsigned long v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
 		
-		ParLong(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
-		
-		String getParam();
+		using Par::load;
+		String getStrVal();
 		void writeParam(String);
+		void loadFromStr(String);
+		void loadFromEprom();
+		void saveOnEprom();
+		void load(unsigned long);
 };
 
 class ParFloat : public Par{
-	
 	public:
+		float val;
+		ParFloat(float v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;}
 		
-		ParFloat(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
-		
-		String getParam();
+		using Par::load;
+		String getStrVal();
 		void writeParam(String);
+		void loadFromStr(String);
+		void loadFromEprom();
+		void saveOnEprom();
+		void load(float);
+		void load(double);
 };
 
 class ParStr32 : public Par{
-	
 	public:
+		char *val;
+		ParStr32(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = (char *) v;};
 		
-		ParStr32(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
-		
-		String getParam();
+		using Par::load;
+		String getStrVal();
 		void writeParam(String);
+		void loadFromStr(String);
+		void loadFromEprom();
+		void saveOnEprom();
+		void load(char *);
 };
 
 class ParStr64 : public Par{
-	
 	public:
+		char *val;
+		ParStr64(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = (char *) v;};
 		
-		ParStr64(const char* x = "empty", unsigned y = 2, char z = 'n', char t = 'n', BaseEvnt * u = NULL):Par(x,y,z,t,u){};
-		
-		String getParam();
+		using Par::load;
+		String getStrVal();
 		void writeParam(String);
+		void loadFromStr(String);
+		void loadFromEprom();
+		void saveOnEprom();
+		void load(char *);
+};
+
+class ParVarStr : public Par{
+	public:
+		String val;
+		ParVarStr(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){};
+		
+		using Par::load;
+		String getStrVal();
+		void writeParam(String);
+		void loadFromStr(String);
+		void saveOnEprom();
+		void loadFromEprom();
+		void load(String);
 };
 //End of event classes------------------------------------------------------------------------------------------------------------
 
@@ -738,7 +781,7 @@ void handleCmd(ESP8266WebServer (&),  String const (&)[PARAMSDIM], String const 
 //void handleCmdJson(ESP8266WebServer (&), String&);
 bool is_authentified(ESP8266WebServer&);
 // function prototypes for HTTP handlers
-void initCommon(ESP8266WebServer *,  Par**, String  *, String  *, String  *);
+void initCommon(ESP8266WebServer *,  Par**);
 
 void handleMqttCmd();
 void handleRoot();              
