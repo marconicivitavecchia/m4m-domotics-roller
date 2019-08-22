@@ -1088,7 +1088,7 @@ void handleRoot() {   // When URI / is requested, send a web page with a button 
 	
 	String page = FPSTR(HTTP_FORM_ROOT);
 	page.replace(F("{HD}"),  FPSTR(HTTP_FORM_HEAD));
-	page.replace(F("{WU}"),  parsp[WEBUSR]->getStrVal()); 
+	page.replace(F("{WU}"),  parsp[p(WEBUSR)]->getStrVal()); 
 	DEBUG_PRINTLN(F("Enter handleRoot"));
 	//String header;
 	if (!is_authentified(serverp)) {
