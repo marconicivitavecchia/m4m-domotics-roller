@@ -1352,8 +1352,8 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 		page.replace(F("{BR}"), parsp[p(BARRELRAD)]->getStrVal());
 		page.replace(F("{TN}"), parsp[p(THICKNESS)]->getStrVal());
 		page.replace(F("{SR}"), parsp[p(SLATSRATIO)]->getStrVal());
-		page.replace(F("{H1}"), (parsp[p(SWROLL1)]->val == 0)?"checked":"");
-		page.replace(F("{H2}"), (parsp[p(SWROLL2)]->val == 0)?"checked":"");
+		page.replace(F("{H1}"), (parsp[p(SWROLL1)]->getStrVal() == "0")?"checked":"");
+		page.replace(F("{H2}"), (parsp[p(SWROLL2)]->getStrVal() == "0")?"checked":"");
 		//set cookies OK
 		//DEBUG_PRINTLN(page);
 		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -1557,19 +1557,19 @@ void handleModify(){
 	  
 	  if( serverp.hasArg("swroll1") && String("1") == serverp.arg("swroll1") ){
 		//writeSWMode(0,0); 
-		updtConf(p(SWROLL1), String(0));
+		updtConf(p(SWROLL1), String("0"));
 		setSWMode(0,0); 
 	  }else{
 		//writeSWMode(1,0);
-		updtConf(p(SWROLL1), String(1));
+		updtConf(p(SWROLL1), String("1"));
 		setSWMode(1,0);	
 	  }
 	  if( serverp.hasArg("swroll2") && String("1") == serverp.arg("swroll2") ){
 		setSWMode(0,1);
-		updtConf(p(SWROLL2), String(0));
+		updtConf(p(SWROLL2), String("0"));
 	  }else{
 		setSWMode(1,1);	
-		updtConf(p(SWROLL2), String(1));
+		updtConf(p(SWROLL2), String("1"));
 	  }
   }
   EEPROM.end();

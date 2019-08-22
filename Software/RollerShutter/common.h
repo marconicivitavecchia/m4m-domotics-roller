@@ -586,12 +586,12 @@ class Par{
 		
 		String getStrFormName();
 		String getStrJsonName();
-		void writeParam(String);
 		void doaction();
-		void loadFromStr(String);
-		void saveOnEprom();
+		virtual void writeParam(String);
+		virtual void loadFromStr(String);
+		virtual void saveOnEprom();
 		virtual String getStrVal();
-		void loadFromEprom();
+		virtual void loadFromEprom();
 		virtual void load(byte);
 		virtual void load(int);
 		virtual void load(unsigned long);
@@ -604,7 +604,7 @@ class Par{
 class ParByte : public Par{
 	 
 	public:
-		byte val = 1;
+		byte val;
 		ParByte(byte v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
 		
 		using Par::load;

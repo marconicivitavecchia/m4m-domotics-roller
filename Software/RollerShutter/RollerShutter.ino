@@ -353,8 +353,8 @@ inline void initOfst(){
 	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'n','n');
 #endif
 	/*5*/pars[p(LOCALIP)] = new ParStr32("ip", "localip","ip", 0);
-	/*5*/pars[p(SWROLL1)] = new ParInt(ROLLMODE1, "swroll1", "swroll1", SWROLL1OFST, 'p', 'i');
-	/*6*/pars[p(SWROLL2)] = new ParInt(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i');
+	/*5*/pars[p(SWROLL1)] = new ParByte(ROLLMODE1, "swroll1", "swroll1", SWROLL1OFST, 'p', 'i');
+	/*6*/pars[p(SWROLL2)] = new ParByte(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i');
 	/*7*/pars[p(UTCSDT)] = new ParByte(1, "utcsdt", "utcsdt", NTPSDTOFST, 'p', 'i', new UTCSDT_Evnt());
 	/*8*/pars[p(UTCZONE)] = new ParByte(1, "utczone", "utczone", NTPZONEOFST, 'p','i', new UTCZONE_Evnt());
 	/*9*/pars[p(THALT1)] = new ParInt(thalt1,"thalt1", "thalt1", THALT1OFST, 'p','i');
