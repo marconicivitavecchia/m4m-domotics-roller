@@ -74,8 +74,8 @@
   #define INPULLUP  0  			//disable internal pullup
   #define OUTSLED  	2     
   #define OUT1EU  	8      		// OUT1 =  MOTOR1 UP   
-  #define OUT1DD  	9 //5    	// OUT2 =  MOTOR1 DOWN     
-  #define OUT2EU  	10 //4     	// OUT3 =  MOTOR2 UP  
+  #define OUT1DD  	9    	 	// OUT2 =  MOTOR1 DOWN     
+  #define OUT2EU  	10 	    	// OUT3 =  MOTOR2 UP  
   #define OUT2DD  	11      		// OUT4 =  MOTOR2 DOWN
   #define GREEN  	12  
   #define RED  		13
@@ -358,7 +358,7 @@
 #define SWACTION4			56
 #define CONFDIM				57
 #define VARCONFDIM			6
-#define EXTCONFDIM			14
+#define EXTCONFDIM			14 + 16
 #define TOSAVEPARAMS		46
 //#define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
 #define PARAMSDIM 			CONFDIM + USRMODIFICABLEFLAGS
@@ -372,7 +372,7 @@
 #define MAINPROCSTEP	2
 #define ONESEC_STEP		50
 #define	LED_STEP		10
-#define STOP_STEP		1
+#define STOP_STEP		2
 #define SEL_PIN			5
 #define CF1_PIN			13
 #define CF_PIN			14
@@ -589,6 +589,7 @@ class Par{
 		
 		String getStrFormName();				//base class version
 		String getStrJsonName();				//base class version
+		byte getType();
 		void doaction();						//base class version
 		virtual void writeParam(String) = 0;	//late binding abstract
 		virtual void loadFromStr(String) = 0;	//late binding abstract

@@ -3,6 +3,6 @@
 #include <Arduino.h>
 #include "common.h"
 
-bool parseJsonFieldArrayToInt(String, Par*[], int, int,int);
+//bool parseJsonFieldArrayToInt(String, Par*[], int, int,int);
 void parseJsonFieldArrayToStr(String, Par*[], int, int, int, char, String);
 #endif //__SERIALIZE__

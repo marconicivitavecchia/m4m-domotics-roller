@@ -38,33 +38,40 @@ void parseJsonFieldArrayToStr(String srcJSONStr, Par*p[], int valueLen, int arrL
 			DEBUG_PRINT(ends);
 			DEBUG_PRINT(F(" - "));
 			
-			if(app[1] != delim){//default append
-				p[i-first]->loadFromStr(app);
-			}else{
-				if(app[0] == 'a'){//append
-					app1 = p[i-first]->getStrVal();
-					app1 += " " + op + " "+ app.substring(2);
-					p[i-first]->loadFromStr(app1);
-				}else if(app[0] == 'w'){//overwrite
-					p[i-first]->loadFromStr(app.substring(2));
-				}else{//default append
-					app1 = p[i-first]->getStrVal();
-					app1 += " " + op + " "+ app.substring(2);
-					p[i-first]->loadFromStr(app1);
-					DEBUG_PRINT(F("\val: "));
-					DEBUG_PRINTLN(((ParByte*)p[i])->val);
+			if(p[i-first]->getType() == 'j'){
+				static_cast<ParByte*>(p[i-first])->loadFromStr(srcJSONStr.substring(start, ends)); 
+				DEBUG_PRINT(F("val: "));
+				DEBUG_PRINTLN(((ParByte*)p[i-first])->val);
+			}else if(p[i-first]->getType() == 'p'){
+				if(app[1] != delim){//default append
+					p[i-first]->loadFromStr(app);
+				}else{
+					if(app[0] == 'a'){//append
+						app1 = p[i-first]->getStrVal();
+						app1 += " " + op + " "+ app.substring(2);
+						p[i-first]->loadFromStr(app1);
+					}else if(app[0] == 'w'){//overwrite
+						p[i-first]->loadFromStr(app.substring(2));
+					}else{//default append
+						app1 = p[i-first]->getStrVal();
+						app1 += " " + op + " "+ app.substring(2);
+						p[i-first]->loadFromStr(app1);
+						DEBUG_PRINT(F("\val: "));
+						DEBUG_PRINTLN(((ParByte*)p[i])->val);
+					}
 				}
 			}
-			DEBUG_PRINT(F("- index: "));
-			DEBUG_PRINT(i);
-			DEBUG_PRINT(F("-"));
-			DEBUG_PRINT(p(i));
 			DEBUG_PRINT(F("- flagname: "));
-			DEBUG_PRINT(p[p(i)]->formname);
-			DEBUG_PRINT(F("- destStrArr[i-first]: "));
-			DEBUG_PRINTLN(p[i-first]->getStrVal());
+			DEBUG_PRINT(p[i]->formname);	
+			DEBUG_PRINT(F("- val received: "));
+			DEBUG_PRINT(srcJSONStr.substring(start, ends));
+			DEBUG_PRINT(F(" - start: "));
+			DEBUG_PRINT(start);
+			DEBUG_PRINT(F(" - end: "));
+			DEBUG_PRINT(ends);
+			DEBUG_PRINT(F(" - "));
 
-			p[p(i)]->doaction();
+			p[i-first]->doaction();
 			
 		}else{
 			DEBUG_PRINT(F("- campo: "));
@@ -73,7 +80,7 @@ void parseJsonFieldArrayToStr(String srcJSONStr, Par*p[], int valueLen, int arrL
 		}
 	}
 }
-
+/*
 bool parseJsonFieldArrayToInt(String srcJSONStr, Par*p[], int valueLen, int arrLen, int first=0){
 	int start, ends=0;
 	byte count = 0;
@@ -113,7 +120,7 @@ bool parseJsonFieldArrayToInt(String srcJSONStr, Par*p[], int valueLen, int arrL
 					destIntArr[i-first] = 1; //allora è un messaggio di configurazione, flag ON
 				}
 			}*/		
-			DEBUG_PRINT(F("- flagname: "));
+/*			DEBUG_PRINT(F("- flagname: "));
 			DEBUG_PRINT(p[i]->formname);	
 			p[i-first]->doaction();
 			DEBUG_PRINT(F("- val received: "));
@@ -131,3 +138,4 @@ bool parseJsonFieldArrayToInt(String srcJSONStr, Par*p[], int valueLen, int arrL
 	}  
 	return (count > 0);
 }
+*/

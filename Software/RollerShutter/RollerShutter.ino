@@ -910,9 +910,7 @@ void mqttCallback(String &topic, String &response) {
 	//v = parseJsonFieldToInt(response, mqttJson[0], ncifre);
 	//digitalWrite(OUTSLED, v); 
    
-	if(parseJsonFieldArrayToInt(response, pars, ncifre, USRMODIFICABLEFLAGS,0)){
-		parseJsonFieldArrayToStr(response, pars, ncifre+500, EXTCONFDIM,0,'#',"|");
-	}
+	parseJsonFieldArrayToStr(response, pars, ncifre+500, EXTCONFDIM,0,'#',"|");
     //inr: memoria tampone per l'evento asincrono scrittura da remoto
 }
 
@@ -1021,7 +1019,7 @@ void readModeAndPub(byte n){
   //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
   String s=openbrk;
   //char sd[300];
-  s+="mode"+String(n+1)+twodot+pars[p(SWROLL1+n)]->getStrVal()+enda;
+  s+="mode"+String(n+1)+twodot+pars[p(SWROLL1+n)]->getStrVal()+end;
   //sprintf(sd,"%s%s%s%f%s",openbrk,mqttJson[MQTTJSONTEMP].c_str(),twodot,asyncBuf[GTTEMP],closebrk);
   //s=String(sd);
   publishStr(s);
@@ -1030,7 +1028,7 @@ void readModeAndPub(byte n){
 void readPwrCalAndPub(){
   //DEBUG_PRINTLN(F("\nreadPwrCalAndPub")); 
   String s=openbrk;
-  s+=pars[DOPWRCAL]->getStrJsonName()+twodot+pars[p(PWRMULT)]->getStrVal()+enda;
+  s+=pars[p(PWRMULT)]->getStrJsonName()+twodot+pars[p(PWRMULT)]->getStrVal()+end;
   publishStr(s);
 }
 
@@ -1752,9 +1750,9 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(maxx);
 					DEBUG_PRINT(F(" - Mean sensor: "));
 					DEBUG_PRINT(m);
+#endif
 					DEBUG_PRINT(F(" - Peak: "));
 					DEBUG_PRINT(ex[0]);
-#endif
 					DEBUG_PRINT(F(" - diff: "));
 					DEBUG_PRINT(dd);
 					//DEBUG_PRINT(F("\n("));
@@ -1799,10 +1797,12 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(0);
 					DEBUG_PRINT(F(") aspetto: "));
 					DEBUG_PRINT(isrundelay[0]);
+#if (AUTOCAL_ACS712) 
 					DEBUG_PRINT(F(" - minx sensor: "));
 					DEBUG_PRINT(minx);
 					DEBUG_PRINT(F(" - maxx sensor: "));
 					DEBUG_PRINT(maxx);
+#endif
 					DEBUG_PRINT(F(" - Peak: "));
 					DEBUG_PRINT(ex[0]);
 					isrundelay[0]--;
@@ -1821,12 +1821,14 @@ inline void automaticStopManager(){
 					ex[1] = dd*EMA + (1.0 - EMA)*ex[1];
 					DEBUG_PRINT(F("\n("));
 					DEBUG_PRINT(1);
+#if (AUTOCAL_ACS712) 
 					DEBUG_PRINT(F(") minx sensor: "));
 					DEBUG_PRINT(minx);
 					DEBUG_PRINT(F(" - maxx sensor: "));
 					DEBUG_PRINT(maxx);
 					DEBUG_PRINT(F(" - Mean sensor: "));
 					DEBUG_PRINT(m);
+#endif
 					DEBUG_PRINT(F(" - Peak: "));
 					DEBUG_PRINT(ex[1]);
 					DEBUG_PRINT(F(" - ADC enable: "));
@@ -1880,9 +1882,11 @@ inline void automaticStopManager(){
 			}
 			//AC peak measure init
 			//indx = 0;
+#if (AUTOCAL_ACS712) 
 			minx = 1024;
 			maxx = 0;
 			dosmpl = true;
+#endif
 			//DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}else{
 #if (AUTOCAL_ACS712) 

@@ -379,13 +379,13 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 					 "<input type='text' name='acvolt' value='{N7}'>"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='calpwr'>Calibration power:</label>"
-					 "<input type='text' name='calpwr' value='{N8}'>"
+					 "<input type='text' id='calpwr' name='calpwr' value='{N8}'>"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='pwrmult'>Power multiplier:</label>"
-					 "<input type='text' id=pwrmult' name='pwrmult' value='{N9}' disabled>"
+					 "<input type='text' id='pwrmult' name='pwrmult' value='{N9}' disabled>"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='calbtn'>Press button for calibration:</label>"
-					 "<input type='button' id='calbtn' name='calbtn' value='Calibrate'>"
+					 "<input type='button' id='calbtn' name='calbtn' value='Calibrate' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
 				"</div>"
 #endif
 				"<div class='col-6 col-s-12'><label for='reboot'>Reboot the system with default config</label>"
@@ -442,12 +442,12 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 		"var cb=document.getElementById('calbtn');"
 		"cb.addEventListener('click', function(){"
 			"cp=document.getElementById('calpwr').value;"
-			"var vl=vlsp[0].replace('N', cp);"
+			"var vl=vlsp[2].replace('N', cp);"
 			"console.log(vl);"
-			"press(vlsp[2]);"//il parser in uso non rispetta l'ordine dei campi nella stringa json!
+			"press(vl);"//il parser in uso non rispetta l'ordine dei campi nella stringa json!
 			"press(vls[4]);"//per farlo di devono inviare due json separati nell'ordine corretto
 		"}, false);"
-#endif
+
 		"function onRcv(d) {"
 			//"document.getElementById('p').innerHTML = f.data;\n"
 			"var obj = JSON.parse(d);"
@@ -459,6 +459,7 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 			"}"
 		"}"
 		"{SH}"
+#endif
 	"</script>"
 	"</body></html>";
 	
@@ -1263,10 +1264,9 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		page.replace(F("{N7}"), parsp[p(ACVOLT)]->getStrVal());
 		page.replace(F("{N8}"), parsp[p(CALPWR)]->getStrVal());	
 		page.replace(F("{N9}"), parsp[p(PWRMULT)]->getStrVal());
+		page.replace(F("{PM}"), parsp[p(PWRMULT)]->getStrJsonName());
 		page.replace(F("{SH}"), FPSTR(HTTP_WEBSOCKET));
-		page.replace(F("{PM}"), parsp[p(DOPWRCAL)]->getStrVal());
-#else
-		page.replace(F("{SH}"), FPSTR(""));
+		page.replace(F("{WS}"), parsp[p(LOCALIP)]->getStrVal());
 #endif		
 #if (!AUTOCAL) 
 		page.replace(F("{S1}"), parsp[p(STDEL1)]->getStrVal());
@@ -1981,7 +1981,9 @@ String Par::getStrJsonName(){
 String Par::getStrFormName(){
 	return String(formname);
 }
-
+byte Par::getType(){
+	return partype;
+}
 
 String ParByte::getStrVal(){
 	return String(this->val);
