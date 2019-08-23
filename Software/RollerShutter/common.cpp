@@ -1516,8 +1516,8 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{SR}"), parsp[p(SLATSRATIO)]->getStrVal());
 	page.replace(F("{NM}"), String(getNmax()));
 	page.replace(F("{PD}"), String(round(getPosdelta())));
-	page.replace(F("{TP}"), parsp[p(MQTTTEMP)]->getStrJsonName());
-	page.replace(F("{DT}"), parsp[p(MQTTDATE)]->getStrJsonName());
+	page.replace(F("{TP}"), parsp[MQTTTEMP]->getStrJsonName());
+	page.replace(F("{DT}"), parsp[MQTTDATE]->getStrJsonName());
 
 	//Body placeholders
 	//DEBUG_PRINTLN(page);
