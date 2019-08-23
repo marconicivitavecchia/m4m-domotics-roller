@@ -345,8 +345,8 @@ inline void initOfst(){
 	/*4*/pars[MQTTDATE] = new ParByte(0, "date", "date", 2, 'n','n');
 #if (AUTOCAL_HLW8012) 
 	/*4*/pars[DOPWRCAL] = new ParByte(0, "dopwrcal", "dopwrcal", 2, 'n','n', new DOPWRCAL_Evnt());
-	/*4*/pars[INSTPWR] = new ParByte(0, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
-	/*4*/pars[INSTACV] = new ParByte(0, "iacvolt", "iacvolt", 2,'n','n', new INSTACV_Evnt());
+	/*4*/pars[INSTPWR] = new ParByte(10, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
+	/*4*/pars[INSTACV] = new ParByte(230, "iacvolt", "iacvolt", 2,'n','n', new INSTACV_Evnt());
 	//------------------------------------------------------------------------------------------------------------------------------------
 	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'p','i');
 #else

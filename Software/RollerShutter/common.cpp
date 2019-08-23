@@ -843,10 +843,10 @@ const char HTTP_FORM_CMD[] PROGMEM =
 				"<span id='date'></span>"
 			"</div>"
 			"<div class='aside'>"
-				"<span id='pwr'></span>"
+				"<span id='ipwr'></span>"
 			"</div>"
 			"<div class='aside'>"
-				"<span id='acvolt'></span>"
+				"<span id='iacvolt'></span>"
 			"</div>"
 			"<div class='asidebottom'></div>"
 		"</div>"
@@ -913,8 +913,8 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		"var tmp = document.getElementById('temp');"
 		"var dt = document.getElementById('date');"
 		"var tm = document.getElementById('time');"
-		"var pw = document.getElementById('pwr');"
-		"var ac = document.getElementById('acvolt');"
+		"var pw = document.getElementById('ipwr');"
+		"var ac = document.getElementById('iacvolt');"
 		"o1.innerHTML = sld1.value;"
 		"sld1.ontouchend = function() {"
 			"o1.innerHTML = this.value;"
@@ -1482,6 +1482,10 @@ void handleCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{PD}"), String(round(getPosdelta())));
 	page.replace(F("{TP}"), parsp[MQTTTEMP]->getStrJsonName());
 	page.replace(F("{DT}"), parsp[MQTTDATE]->getStrJsonName());
+#if (AUTOCAL_HLW8012) 
+	page.replace(F("{PW}"), parsp[INSTPWR]->getStrJsonName());
+	page.replace(F("{AC}"), parsp[INSTACV]->getStrJsonName());
+#endif
 	//Body placeholders
 	//DEBUG_PRINTLN(page);
 	//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
@@ -1518,6 +1522,10 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{PD}"), String(round(getPosdelta())));
 	page.replace(F("{TP}"), parsp[MQTTTEMP]->getStrJsonName());
 	page.replace(F("{DT}"), parsp[MQTTDATE]->getStrJsonName());
+#if (AUTOCAL_HLW8012) 
+	page.replace(F("{PW}"), parsp[INSTPWR]->getStrJsonName());
+	page.replace(F("{AC}"), parsp[INSTACV]->getStrJsonName());
+#endif
 
 	//Body placeholders
 	//DEBUG_PRINTLN(page);
