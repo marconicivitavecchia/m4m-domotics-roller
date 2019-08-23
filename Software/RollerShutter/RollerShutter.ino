@@ -1124,7 +1124,7 @@ void publishStr(String &str){
   }
   else
   {
-	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str, 32);
+	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str);
 	  DEBUG_PRINTLN(F("Published data: "));
 	  DEBUG_PRINTLN(str);
   }
@@ -1148,7 +1148,8 @@ void publishStr2(String &str){
   }
   else
   {
-	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str, 32);
+	  //str deve essere convertita in array char altrimenti la libreria introduce un carattere spurio all'inizio del messaggio
+	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str.c_str(), str.length());
 	  DEBUG_PRINTLN(F("Published data: "));
 	  DEBUG_PRINTLN(str);
   }
