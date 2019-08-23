@@ -559,6 +559,7 @@ class ONCOND5_Evnt: public BaseEvnt{
 	public:
 		void doaction();
 };
+/*
 class WEBUSR_Evnt: public BaseEvnt{
 	public:
 		void doaction();
@@ -567,6 +568,7 @@ class WEBPSW_Evnt: public BaseEvnt{
 	public:
 		void doaction();
 };
+*/
 #if (AUTOCAL_HLW8012)
 class CALPWR_Evnt: public BaseEvnt{
 	public:

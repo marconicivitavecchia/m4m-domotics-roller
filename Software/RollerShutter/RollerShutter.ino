@@ -382,8 +382,8 @@ inline void initOfst(){
 	/*28*/pars[p(CLNTPSW2)] = new ParStr32(PSW2, "clntpsw2", "clntpsw2", WIFICLIENTPSWOFST2, 'p','i');
 	/*29*/pars[p(APPSSID)] = new ParStr32(SSIDAP, "appssid", "appssid", WIFIAPSSIDOFST, 'p','i');
 	/*30*/pars[p(APPPSW)] = new ParStr32(PSWAP, "apppsw", "apppsw", WIFIAPPPSWOFST, 'p','i');
-	/*31*/pars[p(WEBUSR)] = new ParStr32(WBUSR, "webusr", "webusr", WEBUSROFST, 'p','i', new WEBUSR_Evnt());
-	/*32*/pars[p(WEBPSW)] = new ParStr32(WBPSW, "webpsw", "webpsw", WEBPSWOFST, 'p','i', new WEBPSW_Evnt());
+	/*31*/pars[p(WEBUSR)] = new ParStr32(WBUSR, "webusr", "webusr", WEBUSROFST, 'p','i');
+	/*32*/pars[p(WEBPSW)] = new ParStr32(WBPSW, "webpsw", "webpsw", WEBPSWOFST, 'p','i');
 	/*33*/pars[p(MQTTUSR)] = new ParStr32(MQUSR, "mqttusr", "mqttusr", MQTTUSROFST, 'p','i');
 	/*34*/pars[p(MQTTPSW)] = new ParStr32(MQPSW, "mqttpsw", "mqttpsw", MQTTPSWOFST, 'p','i');
 	/*35*/pars[p(MQTTADDR)] = new ParStr64(MQTTSRV, "mqttaddr", "mqttaddr", MQTTADDROFST, 'p','i');
@@ -2630,6 +2630,7 @@ void ONCOND5_Evnt::doaction(){
 	//save confs and actions on new config received event
 	writeOnOffConditions();
 }
+/*
 void WEBUSR_Evnt::doaction(){
 	//save confs and actions on new config received event
 	saveSingleConf(WEBUSR);
@@ -2638,6 +2639,7 @@ void WEBPSW_Evnt::doaction(){
 	//save confs and actions on new config received event
 	saveSingleConf(WEBPSW);
 }
+*/
 #if (AUTOCAL_HLW8012) 
 void CALPWR_Evnt::doaction(){
 	//save confs and actions on new config received event
