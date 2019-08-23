@@ -1194,8 +1194,8 @@ void setup(){
   //inizializza la seriale
   Serial.begin(115200);
   //importante per il _DEBUG1 del WIFI!
-  Serial.setDebugOutput(true);
-  WiFi.printDiag(Serial);
+  //Serial.setDebugOutput(true);
+  //WiFi.printDiag(Serial);
   //carica la configurazione dalla EEPROM
   //DEBUG_PRINTLN(F("Carico configurazione."));
   //for(int i=0;i<CONFDIM;i++)
