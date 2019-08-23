@@ -1366,7 +1366,7 @@ void setup(){
 #if defined (_DEBUG1) || defined (_DEBUGR)  
   testFlash();
 #endif
-#if (AUTOCAL)  
+#if (AUTOCAL_ACS712)  
   zeroDetect();
 #endif
   cont=0;
