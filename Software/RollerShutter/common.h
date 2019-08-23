@@ -390,7 +390,7 @@
 
 #if (AUTOCAL_ACS712) 
 #define TBASE 			2
-#define MAINPROCSTEP 	25
+#define MAINPROCSTEP 	20
 #define ONESEC_STEP		50
 #define STOP_STEP		20
 #define ZEROSMPL		200		//per non interrompere il caricamento delle pagine durante
