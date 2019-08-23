@@ -1451,11 +1451,12 @@ void zeroDetect(){
 	minx = 1024;
 	maxx = 0;
 }
+#endif
 
 void resetZeroDetectCnt(){
 	zeroCnt = 0;
 }
-#endif
+
 
 void loop(){
 	if(boot == false){

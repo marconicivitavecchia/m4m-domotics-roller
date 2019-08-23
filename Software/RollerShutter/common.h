@@ -61,8 +61,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				1
-#define ROLLERSHUTTER 			0
+#define SONOFF_4CH				0
+#define ROLLERSHUTTER 			1
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------NON MODIFICARE LA PARTE SOTTOSTATNTE------------------------------------------------------------------------------------------------
 //#define AUTOCAL_HLW8012			0
@@ -765,8 +765,8 @@ void readIpwrAndPub();
 void readIacvoltAndPub();
 #elif (AUTOCAL_ACS712) 
 void zeroDetect();
-void resetZeroDetectCnt();
 #endif
+void resetZeroDetectCnt();
 /*
 //http server callback function prototypes
 void handleRoot(ESP8266WebServer (&), String const (&)[PARAMSDIM]);        // function prototypes for HTTP handlers
