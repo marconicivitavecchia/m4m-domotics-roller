@@ -389,10 +389,12 @@
 #endif
 
 #if (AUTOCAL_ACS712) 
-#define TBASE 			2	
-#define MAINPROCSTEP 	40
-#define ONESEC_STEP		500
-#define STOP_STEP		10
+#define TBASE 			2
+#define MAINPROCSTEP 	25
+#define ONESEC_STEP		50
+#define STOP_STEP		20
+#define ZEROSMPL		200		//per non interrompere il caricamento delle pagine durante
+								//il campionamento dello zero
 #endif
 
 #if (LARGEFW)
@@ -608,7 +610,6 @@ class ParByte : public Par{
 		byte val;
 		ParByte(byte v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
 		
-		using Par::load;
 		String getStrVal();
 		void writeParam(String);
 		void loadFromStr(String);
@@ -622,7 +623,6 @@ class ParInt : public Par{
 		int val;
 		ParInt(int v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
 		
-		using Par::load;
 		String getStrVal();
 		void writeParam(String);
 		void loadFromStr(String);
@@ -636,7 +636,6 @@ class ParLong : public Par{
 		unsigned long val;
 		ParLong(unsigned long v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
 		
-		using Par::load;
 		String getStrVal();
 		void writeParam(String);
 		void loadFromStr(String);
@@ -650,7 +649,6 @@ class ParFloat : public Par{
 		float val;
 		ParFloat(float v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;}
 		
-		using Par::load;
 		String getStrVal();
 		void writeParam(String);
 		void loadFromStr(String);
@@ -662,10 +660,9 @@ class ParFloat : public Par{
 
 class ParStr32 : public Par{
 	public:
-		char *val;
-		ParStr32(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = (char *) v;};
+		char val[32];
+		ParStr32(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){this->load((char*)v);};
 		
-		using Par::load;
 		String getStrVal();
 		void writeParam(String);
 		void loadFromStr(String);
@@ -676,10 +673,9 @@ class ParStr32 : public Par{
 
 class ParStr64 : public Par{
 	public:
-		char *val;
-		ParStr64(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = (char *) v;};
+		char val[64];
+		ParStr64(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){this->load((char*)v);};
 		
-		using Par::load;
 		String getStrVal();
 		void writeParam(String);
 		void loadFromStr(String);
@@ -691,9 +687,9 @@ class ParStr64 : public Par{
 class ParVarStr : public Par{
 	public:
 		String val;
-		ParVarStr(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){};
+		ParVarStr(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){this->load(v);};
 		
-		using Par::load;
+		//using Par::load;
 		String getStrVal();
 		void writeParam(String);
 		void loadFromStr(String);
@@ -731,6 +727,7 @@ void readModeAndPub(byte);
 void readActModeAndPub(byte);
 void readPwrCalAndPub();
 void publishStr(String &);
+void publishStr2(String &);
 float getAmpRMS(float);
 float getTemperature();
 //void leggiTasti();
@@ -766,6 +763,9 @@ void rstldcnt(byte);
 void calibrate_pwr();
 void readIpwrAndPub();
 void readIacvoltAndPub();
+#elif (AUTOCAL_ACS712) 
+void zeroDetect();
+void resetZeroDetectCnt();
 #endif
 /*
 //http server callback function prototypes

@@ -10,7 +10,8 @@ unsigned varStrOfst[VARCONFDIM+1];
 
 inline void eepromBegin(){
 	int i, len;
-	for(i=0,len=0;i<VARCONFDIM;++i){
+
+	for(i=0, len=0; i<VARCONFDIM; ++i){
 		len += (parsp[p(i)]->getStrVal()).length();
 	}
 	EEPROM.begin(FIXEDPARAMSLEN + len + i);
@@ -197,7 +198,7 @@ const char HTTP_WEBSOCKET[] PROGMEM =
 		"conn.onerror = function (error) {"
 			"console.log('WebSocket Error ', error);"
 			"conn.close();"
-			"conn = new WebSocket('ws://{WS}:81', ['arduino']);"
+			//"conn = new WebSocket('ws://{WS}:81', ['arduino']);"
 		"};"
 		"conn.onmessage = function (e) {"
 			"console.log('Received: ', e.data);"
@@ -286,7 +287,7 @@ const char HTTP_MQTT[] PROGMEM =
 //-----Pages-----------------------------------------------------------------------------------------------------------------------------
 const char HTTP_FORM_ROOT[] PROGMEM =
 	"<html>{HD}<body>"
-	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
+	"<div class='header' id='logo'><h1>MyTapparella</h1></div>"
 		"<form action='login' method='POST'>"
 			"<div class='grid-container'>"
 				"<div class='col-6 col-s-12'>"
@@ -305,7 +306,7 @@ const char HTTP_FORM_ROOT[] PROGMEM =
 
 const char HTTP_FORM_WIFI[] PROGMEM =	
 	"<html>{HD}<body>"
-	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
+	"<div class='header' id='logo'><h1>MyTapparella</h1></div>"
 	"<div id='form'>"
         "<form action='/login' method='POST'>"
 			"<div class='grid-container'>"
@@ -341,7 +342,7 @@ const char HTTP_FORM_WIFI[] PROGMEM =
 	
 const char HTTP_FORM_SYSTEM[] PROGMEM =	
 	"<html>{HD}<body onload = 'loadTimeZoneList();showLoaded()';>"
-	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
+	"<div class='header' id='logo'><h1>MyTapparella</h1></div>"
 	"<div id='form'>"
         "<form action='/login' method='POST'>"
 			"<div class='grid-container'>"
@@ -415,7 +416,6 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
         "</form>"
 	"</div>"
 	"<script>"
-		"{SH}"
 		"function loadTimeZoneList(){" 
 			"var d = new Date();"
 			"var n = -d.getTimezoneOffset()/60;"
@@ -440,7 +440,7 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 		"}"
 #if (AUTOCAL_HLW8012) 
 		"var cb=document.getElementById('calbtn');"
-		"cb.addEventListener('onclick', function(){"
+		"cb.addEventListener('click', function(){"
 			"cp=document.getElementById('calpwr').value;"
 			"var vl=vlsp[0].replace('N', cp);"
 			"console.log(vl);"
@@ -458,12 +458,13 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 				"}"
 			"}"
 		"}"
+		"{SH}"
 	"</script>"
 	"</body></html>";
 	
 const char HTTP_FORM_MQTT[] PROGMEM =	
 	"<html>{HD}<body>"
-	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
+	"<div class='header' id='logo'><h1>MyTapparella</h1></div>"
 	"<div id='form'>"
 		"<form action='/login' method='POST'>"
 			"<div class='grid-container'>"
@@ -538,7 +539,7 @@ const char HTTP_FORM_MQTT[] PROGMEM =
 	
 const char HTTP_FORM_LOGIC[] PROGMEM =	
 	"<html>{HD}<body>"
-	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
+	"<div class='header' id='logo'><h1>MyTapparella</h1></div>"
 	"<div id='form'>"
         "<form action='/login' method='POST'>"
 			"<div class='grid-container'>"
@@ -587,7 +588,7 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 	//EVENT MANAGEMENT CONFIG
 	const char HTTP_FORM_EVENT[] PROGMEM =	
 	"<html>{HD}<body>"
-	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
+	"<div class='header' id='logo'><h1>MyTapparella</h1></div>"
 	"<div id='form'>"
 		"<form action='/login' method='POST'>"
 			"<div class='grid-container'>"
@@ -797,7 +798,7 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 	
 const char HTTP_FORM_LOGIN[] PROGMEM =	
 	"<html>{HD}<body>"
-	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
+	"<div class='header' id='logo'><h1>MyTapparella</h1></div>"
 	"<div class='grid-container'>"
 		"<div class='col-3 col-s-12'></div>"
 		"<div id='form' class='col-6 col-s-12'>"
@@ -815,7 +816,7 @@ const char HTTP_FORM_LOGIN[] PROGMEM =
 	
 const char HTTP_FORM_SUCCESS[] PROGMEM =	
 	"<html>{HD}<body>"
-	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
+	"<div class='header' id='logo'><h1>MyTapparella</h1></div>"
 	"<div class='grid-container'>"
 	"<div id='form' class='col-12 col-s-12'>"
 		"<form action='/login' method='POST'>"
@@ -828,7 +829,7 @@ const char HTTP_FORM_SUCCESS[] PROGMEM =
 	
 const char HTTP_FORM_CMD[] PROGMEM =	
 	"<html>{HD}<body>{SP}"
-	"<div class='header' 'id='logo'><h1>MyTapparella</h1></div>"
+	"<div class='header' id='logo'><h1>MyTapparella</h1></div>"
 	"<div class='grid-container'>"
 		"<div class='col-4 col-s-12'>"
 			"<div class='asidetop'></div>"
@@ -852,13 +853,13 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		"<div class='col-6 col-s-12'>"
 			"<div id='form'>"
 				"<form>"
-					"<input id='up1' type='button' value='Button 1 UP' onclick='press(vls[0])' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<input id='up1' type='button' value='Button 1 UP' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
 					"<br>"
-					"<input id='down1' type='button' value='Button 1 DOWN' onclick='press(vls[1])' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<input id='down1' type='button' value='Button 1 DOWN' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
 					"<br><br><br>"
-					"<input id='up2' type='button' value='Button 2 UP' onclick='press(vls[2])' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<input id='up2' type='button' value='Button 2 UP'  onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
 					"<br>"
-					"<input id='down2' type='button' value='Button 2 DOWN' onclick='press(vls[3])' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<input id='down2' type='button' value='Button 2 DOWN' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
 				"</form>"
 				//"<p id='p'></p>"
 			"</div>"
@@ -885,7 +886,6 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		"</div>"
 	"</div>"	
 	"<script>"
-		"{SH}"
 		"var a=[0,0];"
 		"var updt=[0,0];"
 		"var p=[0,0];"
@@ -894,6 +894,20 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		//"var c=[0,0];"
 		"var dir=[0,0];"
 		"var ie=[0,0,0,0];"
+		"{SH}"
+		"var up1=document.getElementById('up1');"
+		"var dw1=document.getElementById('down1');"
+		"var up2=document.getElementById('up2');"
+		"var dw2=document.getElementById('down2');"
+		"up1.addEventListener('click', function(){press(vls[0]);});"
+		//"up1.attachEvent('onclick', function(){press(vls[0]);});"
+		"dw1.addEventListener('click', function(){press(vls[1]);});"
+		//"dw1.attachEvent('onclick', function(){press(vls[1]);});"
+		"up2.addEventListener('click', function(){press(vls[2]);});"
+		//"up2.attachEvent('onclick', function(){press(vls[2]);});"
+		"dw2.addEventListener('click', function(){press(vls[3]);});"
+		//"dw2.attachEvent('onclick', function(){press(vls[3]);});"
+		
 		"var sld1 = document.getElementById('rng1');"
 		"var o1 = document.getElementById('val1');"
 		"var tmp = document.getElementById('temp');"
@@ -1080,11 +1094,13 @@ const char HTTP_FORM_CMD[] PROGMEM =
 //fine variabili globali
 
 void handleNotFound(){
+	resetZeroDetectCnt();
 	DEBUG_PRINTLN(F("Enter handleNotFound"));
 	is_authentified(serverp);
 }
 	
 void handleRoot() {   // When URI / is requested, send a web page with a button to toggle the LED
+    resetZeroDetectCnt();
 	
 	String page = FPSTR(HTTP_FORM_ROOT);
 	page.replace(F("{HD}"),  FPSTR(HTTP_FORM_HEAD));
@@ -1104,6 +1120,7 @@ void handleRoot() {   // When URI / is requested, send a web page with a button 
 }
 
 void handleLogin() {  // If a POST request is made to URI /login
+  resetZeroDetectCnt();
   DEBUG_PRINTLN(F("Enter handleLogin"));
   //I parametri NON devono essere modificati
   bool ok=false;
@@ -1171,6 +1188,7 @@ void handleLogin() {  // If a POST request is made to URI /login
 }
 
 void handleWifiConf() {  // If a POST request is made to URI /login
+  resetZeroDetectCnt();
   //I parametri NON devono essere modificati
   bool ok=false;
 
@@ -1212,6 +1230,7 @@ void handleWifiConf() {  // If a POST request is made to URI /login
 }
 
 void handleSystemConf() {  // If a POST request is made to URI /login
+  resetZeroDetectCnt();
   //I parametri NON devono essere modificati
   bool ok=false;
 
@@ -1244,7 +1263,7 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		page.replace(F("{N7}"), parsp[p(ACVOLT)]->getStrVal());
 		page.replace(F("{N8}"), parsp[p(CALPWR)]->getStrVal());	
 		page.replace(F("{N9}"), parsp[p(PWRMULT)]->getStrVal());
-		page.replace(F("{SH}"), FPSTR(p(HTTP_WEBSOCKET));
+		page.replace(F("{SH}"), FPSTR(HTTP_WEBSOCKET));
 		page.replace(F("{PM}"), parsp[p(DOPWRCAL)]->getStrVal());
 #else
 		page.replace(F("{SH}"), FPSTR(""));
@@ -1268,6 +1287,7 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 }
 
 void handleMQTTConf() {  // If a POST request is made to URI /login
+  resetZeroDetectCnt();
   //I parametri NON devono essere modificati
   bool ok=false;
 
@@ -1314,6 +1334,7 @@ void handleMQTTConf() {  // If a POST request is made to URI /login
 }
 
 void handleLogicConf() {  // If a POST request is made to URI /login
+  resetZeroDetectCnt();
   //I parametri NON devono essere modificati
   bool ok=false;
 
@@ -1370,6 +1391,8 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 
 //EVENT MANAGEMENT
 void handleEventConf() {  // If a POST request is made to URI /login
+	resetZeroDetectCnt();
+	
   //I parametri NON devono essere modificati
   bool ok=false;
 
@@ -1443,6 +1466,7 @@ void handleEventConf() {  // If a POST request is made to URI /login
 //END EVENT MANAGEMENT*/
 
 void handleCmd() {  // If a POST request is made to URI /login
+	resetZeroDetectCnt();
 
 	String page = FPSTR(HTTP_FORM_CMD);
 	//Head placeholders
@@ -1467,6 +1491,7 @@ void handleCmd() {  // If a POST request is made to URI /login
 }
 
 void handleMqttCmd() {  // If a POST request is made to URI /login
+	resetZeroDetectCnt();
 
 	String page = FPSTR(HTTP_FORM_CMD);
 	//Head placeholders
@@ -1505,11 +1530,13 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 
 inline void savegroup(byte fields[], byte len){
 	for(int i=0; i<len; i++){
-		saveParamFromForm(fields[i]);
+		saveParamFromForm(fields[i]);		//save param on eeprom
+		parsp[fields[i]]->doaction();		//execute onreceive param event manager
 	}
 }
 
 void handleModify(){
+	resetZeroDetectCnt();
   
   if (!is_authentified(serverp)) {
 		serverp.sendHeader("Location", "/");
@@ -1530,10 +1557,10 @@ void handleModify(){
   }else if(serverp.hasArg("svsystem")){
 	  DEBUG_PRINTLN(F("savegroup svsystem"));
 #if (AUTOCAL_HLW8012) 
-	  byte fields[11] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCSDT), p(UTCZONE), p(ACVOLT), p(CALPWR)};
+	  byte fields[11] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE), p(ACVOLT), p(CALPWR)};
 	  savegroup(fields, 11);
 #else
-	  byte fields[8] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCSDT), p(UTCZONE)};
+	  byte fields[8] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE)};
 	  savegroup(fields, 8);
 #endif	  
 	  if( serverp.hasArg("rebootd") && String("y") == serverp.arg("rebootd") ){
@@ -1609,11 +1636,14 @@ void loadConfig() {
 		DEBUG_PRINTLN(F("EEPROM read error! EEPROM will be initialized, you must load a new valid system configuration."));
 		EEPROM.begin(FIXEDPARAMSLEN);
 		initEEPROM(FIXEDPARAMSLEN); 
+		
 		EEPROM.end();
 		varStrOfst[0] = varStrOfst[1] = varStrOfst[2] = varStrOfst[3] = varStrOfst[4] = varStrOfst[5] = FIXEDPARAMSLEN;
 		DEBUG_PRINT(F("FIXEDPARAMSLEN "));
 		DEBUG_PRINTLN(FIXEDPARAMSLEN);
+		
 		saveOnEEPROM(FIXEDPARAMSLEN);
+		
 		parsp[p(CONFLOADED)]->load(0);
 		delay(1000);
 	} else {
@@ -1631,15 +1661,15 @@ void loadConfig() {
 		
 		DEBUG_PRINT(F("Reading all variables params... "));
 		varStrOfst[0] = FIXEDPARAMSLEN;
-		for(i=USRMODIFICABLEFLAGS; i<VARCONFDIM + USRMODIFICABLEFLAGS; ++i){
+		for(i=0; i<VARCONFDIM; ++i){
 				varStrOfst[i+1] = EEPROMReadStr(varStrOfst[i], buf) + varStrOfst[i];
-				parsp[i]->load(String(buf));
+				parsp[p(i)]->load(String(buf));
 				DEBUG_PRINT(F("sensors CONFEXPR "));
 				DEBUG_PRINT(i);
 				DEBUG_PRINT(F(": "));
-				DEBUG_PRINTLN(parsp[i]->getStrVal());
+				DEBUG_PRINTLN(parsp[p(i)]->getStrVal());
 		}
-			
+		
 		parsp[p(CONFLOADED)]->load(1);
 		EEPROM.end();
 		DEBUG_PRINTLN(F("EEPROM configuration readed"));
@@ -1698,6 +1728,7 @@ void saveOnEEPROM(int len){
 	
 	DEBUG_PRINTLN(F("Fixed length params saved...."));
 	writeOnOffConditions();
+	
 	DEBUG_PRINTLN(F("Variable length params saved...."));
 }
 
@@ -1707,12 +1738,12 @@ void writeOnOffConditions(){
 	DEBUG_PRINTLN(F("writeOnOffConditions"));
 	eepromBegin();
 	varStrOfst[0] = FIXEDPARAMSLEN;  
-	for(i=USRMODIFICABLEFLAGS; i<VARCONFDIM + USRMODIFICABLEFLAGS; ++i){
-		varStrOfst[i+1] = EEPROMWriteStr(varStrOfst[i], (static_cast<ParVarStr*>(parsp[i])->val).c_str()) + varStrOfst[i];
+	for(i=0; i<VARCONFDIM; ++i){								
+		varStrOfst[i+1] = EEPROMWriteStr(varStrOfst[i],	(parsp[p(i)]->getStrVal()).c_str() ) + varStrOfst[i];
 		DEBUG_PRINT(F("Modified sensors CONFEXPR "));
 		DEBUG_PRINT(i);
 		DEBUG_PRINT(F(": "));
-		DEBUG_PRINTLN(parsp[i]->getStrVal());
+		DEBUG_PRINTLN(parsp[p(i)]->getStrVal());
 	}
 	EEPROMWriteInt(EEPROMLENOFST,varStrOfst[VARCONFDIM]);
 	DEBUG_PRINT(F("Modified sensors EEPROMLENOFST: "));
@@ -1725,11 +1756,11 @@ void printConfig(){
 		
 		DEBUG_PRINT(F("\nPrinting EEPROM configuration...."));
 		
-		for(i=USRMODIFICABLEFLAGS; i<VARCONFDIM + USRMODIFICABLEFLAGS; ++i){
+		for(i=0; i<VARCONFDIM; ++i){
 			DEBUG_PRINT(F("\nsensors CONFEXPR "));
 			DEBUG_PRINT(i);
 			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(parsp[i]->getStrVal());
+			DEBUG_PRINTLN(parsp[p(i)]->getStrVal());
 			DEBUG_PRINT(F("- len "));
 			DEBUG_PRINT(i);
 			DEBUG_PRINT(F(": "));
@@ -1812,7 +1843,7 @@ void saveConf(unsigned paramofst){
 			DEBUG_PRINT(F("Modified param: "));
 			DEBUG_PRINT(parsp[paramofst]->formname);
 			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(parsp[paramofst]->getStrVal());		
+			DEBUG_PRINTLN(parsp[paramofst]->getStrVal());			
 		}
 			
 		DEBUG_PRINTLN(F("---------------------------------"));
@@ -2035,19 +2066,16 @@ void ParStr32::writeParam(String str){
 	EEPROMWriteStr(eprom,str.c_str(),32);
 }
 void ParStr32::loadFromStr(String str){
-	this->val = (char *) str.c_str();
+	str.toCharArray(this->val, 32);
 }
 void ParStr32::load(char *str){
-	this->val = str;
+	memcpy(this->val, str, 32);
 }
 void ParStr32::loadFromEprom(){
-	char * buf = new char[32];
-	EEPROMReadStr(eprom, buf,32);
-	delete[] val;
-	this->val = buf;
+	EEPROMReadStr(eprom, this->val, 32);
 }
 void ParStr32::saveOnEprom(){
-	EEPROMWriteStr(eprom,val,32);
+	EEPROMWriteStr(eprom,this->val,32);
 }
 
 
@@ -2058,33 +2086,32 @@ void ParStr64::writeParam(String str){
 	EEPROMWriteStr(eprom,str.c_str(),64);
 }
 void ParStr64::loadFromStr(String str){
-	this->val = (char *) str.c_str();
+	str.toCharArray(this->val, 64);
 }
 void ParStr64::load(char *str){
-	this->val = str;
+	memcpy(this->val, str, 64);
 }
 void ParStr64::loadFromEprom(){
-	char * buf = new char[64];
-	EEPROMReadStr(eprom, buf,64);
-	delete[] val; 
-	this->val = buf;
+	EEPROMReadStr(eprom, this->val, 64);
 }
 void ParStr64::saveOnEprom(){
-	EEPROMWriteStr(eprom,val,64);
+	EEPROMWriteStr(eprom,this->val,64);
 }
 
 
 String ParVarStr::getStrVal(){
-	return String(this->val);
+	return this->val;
 }
 void ParVarStr::writeParam(String str){
-	EEPROMWriteStr(eprom,str.c_str(),64);
+	this->val = str;
+	writeOnOffConditions();
 }
 void ParVarStr::saveOnEprom(){
 	writeOnOffConditions();
 }
 void ParVarStr::loadFromStr(String str){
 	this->val = str;
+	writeOnOffConditions();
 }
 void ParVarStr::load(String str){
 	this->val = str;

@@ -14,6 +14,9 @@ String closesqr2 = "\"],\"";
 String closesqr3 = "\"],";
 String closebrk = "\"}";
 String enda = "\",";
+String end = "\"";
+String endbrk = "}";
+
 char IP[] = "xxx.xxx.xxx.xxx";          // buffer
 //end global string
 //stats variables
@@ -184,8 +187,8 @@ void calibrate_pwr() {
 
 	// Calibrate using a 60W bulb (pure resistive) on a 230V line
 	hlw8012.expectedActivePower(static_cast<ParFloat*>(pars[p(CALPWR)])->val);
-	hlw8012.expectedVoltage(static_cast<Parbyte*>(pars[p(ACVOLT)])->val);
-	hlw8012.expectedCurrent((float) static_cast<ParFloat*>(pars[p(CALPWR)])->val / static_cast<ParByte*>(pars[p(ACVOLT)]->val));
+	hlw8012.expectedVoltage(static_cast<ParByte*>(pars[p(ACVOLT)])->val);
+	hlw8012.expectedCurrent((float) static_cast<ParFloat*>(pars[p(CALPWR)])->val / static_cast<ParByte*>(pars[p(ACVOLT)])->val);
 	//Save parameter in the system array
 	pars[p(PWRMULT)]->load(hlw8012.getPowerMultiplier());
 	
@@ -331,32 +334,32 @@ inline void initOfst(){
 	/*2*/pars[MQTTDOWN1] = new ParByte(0, "down1", "down1", MQTTDOWN1OFST, 'j','i', new MQTTBTN_Evnt(MQTTDOWN1));
 	/*3*/pars[MQTTUP2] = new ParByte(0, "up2", "up2", MQTTUP2OFST, 'j','i', new MQTTBTN_Evnt(MQTTUP2));
 	/*4*/pars[MQTTDOWN2] = new ParByte(0, "down2", "down2", MQTTDOWN2OFST, 'j','i', new MQTTBTN_Evnt(MQTTDOWN2));
-	/*4*/pars[MQTTALL] = new ParByte(0, "all","all", 0,'n','n');
-	/*4*/pars[MQTTMAC] = new ParByte(0, "mac", "mac", 0,'n','n', new MQTTMAC_Evnt());
-	/*4*/pars[MQTTIP] = new ParByte(0, "ip", "ip", 0,'n','n', new MQTTIP_Evnt());
-	/*4*/pars[MQTTMQTTID] = new ParByte(0, "mqttid", "mqttid", 0,'n','n', new MQTTMQTTID_Evnt());
-	/*4*/pars[MQTTTEMP] = new ParByte(0, "temp", "temp", 0, 'n','n', new MQTTTEMP_Evnt());
-	/*4*/pars[MQTTMEANPWR] = new ParByte(0, "avgpwr", "avgpwr", 0,'n','n', new MQTTMEANPWR_Evnt());
-	/*4*/pars[MQTTPEAKPWR] = new ParByte(0, "peakpwr", "peakpwr", 0,'n','n', new MQTTPEAKPWR_Evnt());
-	/*4*/pars[MQTTTIME] = new ParByte(0, "time", "time", 0, 'n','n', new MQTTTIME_Evnt());
-	/*4*/pars[MQTTDATE] = new ParByte(0, "date", "date", 0, 'n','n');
+	/*4*/pars[MQTTALL] = new ParByte(0, "all","all", 2,'n','n');
+	/*4*/pars[MQTTMAC] = new ParByte(0, "mac", "mac", 2,'n','n', new MQTTMAC_Evnt());
+	/*4*/pars[MQTTIP] = new ParByte(0, "ip", "ip", 2,'n','n', new MQTTIP_Evnt());
+	/*4*/pars[MQTTMQTTID] = new ParByte(0, "mqttid", "mqttid", 2,'n','n', new MQTTMQTTID_Evnt());
+	/*4*/pars[MQTTTEMP] = new ParByte(0, "temp", "temp", 2, 'n','n', new MQTTTEMP_Evnt());
+	/*4*/pars[MQTTMEANPWR] = new ParByte(0, "avgpwr", "avgpwr", 2,'n','n', new MQTTMEANPWR_Evnt());
+	/*4*/pars[MQTTPEAKPWR] = new ParByte(0, "peakpwr", "peakpwr", 2,'n','n', new MQTTPEAKPWR_Evnt());
+	/*4*/pars[MQTTTIME] = new ParByte(0, "time", "time", 2, 'n','n', new MQTTTIME_Evnt());
+	/*4*/pars[MQTTDATE] = new ParByte(0, "date", "date", 2, 'n','n');
 #if (AUTOCAL_HLW8012) 
-	/*4*/pars[DOPWRCAL] = new ParByte(0, "dopwrcal", "dopwrcal", 0, 'n','n', new DOPWRCAL_Evnt());
-	/*4*/pars[INSTPWR] = new ParByte(0, "ipwr", "ipwr", 0,'n','n', new INSTPWR_Evnt());
-	/*4*/pars[INSTACV] = new ParByte(0, "iacvolt", "iacvolt", 0,'n','n', new INSTACV_Evnt());
+	/*4*/pars[DOPWRCAL] = new ParByte(0, "dopwrcal", "dopwrcal", 2, 'n','n', new DOPWRCAL_Evnt());
+	/*4*/pars[INSTPWR] = new ParByte(0, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
+	/*4*/pars[INSTACV] = new ParByte(0, "iacvolt", "iacvolt", 2,'n','n', new INSTACV_Evnt());
 	//------------------------------------------------------------------------------------------------------------------------------------
 	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'p','i');
 #else
-	/*4*/pars[DOPWRCAL] = new ParByte(0, "dopwrcal", "dopwrcal", 0, 'n','n');
-	/*4*/pars[INSTPWR] = new ParByte(0, "ipwr", "ipwr", 0,'n','n');
-	/*4*/pars[INSTACV] = new ParByte(0, "iacvolt", "iacvolt", 0,'n','n');
+	/*4*/pars[DOPWRCAL] = new ParByte(0, "dopwrcal", "dopwrcal", 2, 'n','n');
+	/*4*/pars[INSTPWR] = new ParByte(0, "ipwr", "ipwr", 2,'n','n');
+	/*4*/pars[INSTACV] = new ParByte(0, "iacvolt", "iacvolt", 2,'n','n');
 	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'n','n');
 #endif
-	/*5*/pars[p(LOCALIP)] = new ParStr32("ip", "localip","ip", 0);
+	/*5*/pars[p(LOCALIP)] = new ParStr32("ip", "localip","ip");
 	/*5*/pars[p(SWROLL1)] = new ParByte(ROLLMODE1, "swroll1", "swroll1", SWROLL1OFST, 'p', 'i');
 	/*6*/pars[p(SWROLL2)] = new ParByte(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i');
-	/*7*/pars[p(UTCSDT)] = new ParByte(1, "utcsdt", "utcsdt", NTPSDTOFST, 'p', 'i', new UTCSDT_Evnt());
-	/*8*/pars[p(UTCZONE)] = new ParByte(1, "utczone", "utczone", NTPZONEOFST, 'p','i', new UTCZONE_Evnt());
+	/*7*/pars[p(UTCSDT)] = new ParByte(1, "utcsdt", "utcsdt", NTPSDTOFST, 'p', 'n', new UTCSDT_Evnt());
+	/*8*/pars[p(UTCZONE)] = new ParInt(1, "utczone", "utczone", NTPZONEOFST, 'p','i', new UTCZONE_Evnt());
 	/*9*/pars[p(THALT1)] = new ParInt(thalt1,"thalt1", "thalt1", THALT1OFST, 'p','i');
 	/*10*/pars[p(THALT2)] = new ParInt(thalt2, "thalt2", "thalt2", THALT2OFST, 'p','i');
 	/*11*/pars[p(THALT3)] = new ParInt(thalt3,"thalt3", "thalt3", THALT3OFST, 'p','i');
@@ -367,7 +370,7 @@ inline void initOfst(){
 	/*16*/pars[p(TLENGTH)] = new ParFloat(53, "tlength","tlength", TLENGTHOFST, 'p','i');
 	/*17*/pars[p(BARRELRAD)] = new ParFloat(3.37, "barrelrad", "barrelrad", BARRELRADOFST, 'p','i');
 	/*18*/pars[p(THICKNESS)] = new ParFloat(1.5, "thickness", "thickness", THICKNESSOFST, 'p','i');
-	/*19*/pars[p(UTCADJ)] = new ParInt(0, "utcadj", "utcadj", NTPADJUSTOFST, 'p','i');
+	/*19*/pars[p(UTCADJ)] = new ParInt(0, "utcadj", "utcadj", NTPADJUSTOFST, 'p','i', new UTCADJ_Evnt());
 	/*20*/pars[p(SLATSRATIO)] = new ParFloat(0.8, "slatsratio", "slatsratio", SLATSRATIOFST, 'p','i');
 	/*21*/pars[p(UTCSYNC)] = new ParInt(50, "utcsync", "utcsync", NTPSYNCINTOFST, 'p','i', new UTCSYNC_Evnt());
 	/*22*/pars[p(MQTTID)] = new ParStr32(MQTTCLIENTID, "mqttid", "mqttid", MQTTIDOFST, 'p','i', new UTCADJ_Evnt());
@@ -378,37 +381,36 @@ inline void initOfst(){
 	/*27*/pars[p(CLNTSSID2)] = new ParStr32(SSID2, "clntssid2", "clntpsw1", WIFICLIENTSSIDOFST2, 'p','i');
 	/*28*/pars[p(CLNTPSW2)] = new ParStr32(PSW2, "clntpsw2", "clntpsw2", WIFICLIENTPSWOFST2, 'p','i');
 	/*29*/pars[p(APPSSID)] = new ParStr32(SSIDAP, "appssid", "appssid", WIFIAPSSIDOFST, 'p','i');
-	/*30*/pars[p(APPPSW)] = new ParStr32(PSWAP, "apppsw", "apppsw", WIFIAPPPSWOFST, 'p','i', new WEBUSR_Evnt());
-	/*31*/pars[p(WEBUSR)] = new ParStr32(WBUSR, "webusr", "webusr", WEBUSROFST, 'p','i', new WEBPSW_Evnt());
-	/*32*/pars[p(WEBPSW)] = new ParStr32(WBPSW, "webpsw", "webpsw", WEBPSWOFST, 'p','i');
+	/*30*/pars[p(APPPSW)] = new ParStr32(PSWAP, "apppsw", "apppsw", WIFIAPPPSWOFST, 'p','i');
+	/*31*/pars[p(WEBUSR)] = new ParStr32(WBUSR, "webusr", "webusr", WEBUSROFST, 'p','i', new WEBUSR_Evnt());
+	/*32*/pars[p(WEBPSW)] = new ParStr32(WBPSW, "webpsw", "webpsw", WEBPSWOFST, 'p','i', new WEBPSW_Evnt());
 	/*33*/pars[p(MQTTUSR)] = new ParStr32(MQUSR, "mqttusr", "mqttusr", MQTTUSROFST, 'p','i');
 	/*34*/pars[p(MQTTPSW)] = new ParStr32(MQPSW, "mqttpsw", "mqttpsw", MQTTPSWOFST, 'p','i');
 	/*35*/pars[p(MQTTADDR)] = new ParStr64(MQTTSRV, "mqttaddr", "mqttaddr", MQTTADDROFST, 'p','i');
 	/*36*/pars[p(MQTTPORT)] = new ParLong(MQTTPRT, "mqttport", "mqttport", MQTTPORTOFST, 'p','i');
 	/*37*/pars[p(WSPORT)] = new ParStr32(WSPRT, "wsport", "wsport", WSPORTOFST, 'p','i');
 	/*38*/pars[p(MQTTPROTO)] = new ParStr32(MQTTPT, "mqttproto", "mqttproto", MQTTPROTOFST, 'p','i');
-	/*39*/pars[p(NTPADDR1)] = new ParStr32(NTP1, "ntpaddr1", "ntpaddr1", NTP1ADDROFST, 'p','i');
-	/*40*/pars[p(NTPADDR2)] = new ParStr32(NTP2, "ntpaddr2", "ntpaddr2", NTP2ADDROFST, 'p','i');
+	/*39*/pars[p(NTPADDR1)] = new ParStr64(NTP1, "ntpaddr1", "ntpaddr1", NTP1ADDROFST, 'p','i');
+	/*40*/pars[p(NTPADDR2)] = new ParStr64(NTP2, "ntpaddr2", "ntpaddr2", NTP2ADDROFST, 'p','i');
 	/*41*/pars[p(PWRMULT)] = new ParFloat(1, "pwrmult", "pwrmult", PWRMULTOFST, 'p','i');
 	/*42*/pars[p(ACVOLT)] = new ParByte(230, "acvolt", "acvolt", ACVOLTOFST, 'p','i');
-	/*43*/pars[p(ONCOND1)] = new ParVarStr("-1", "oncond1", "oncond1", 0, 'n','n', new ONCOND1_Evnt());
-	/*44*/pars[p(ONCOND2)] = new ParVarStr("-1", "oncond2","oncond2", 0, 'n','n', new ONCOND2_Evnt());
-	/*45*/pars[p(ONCOND3)] = new ParVarStr("-1", "oncond3","oncond3", 0, 'n','n', new ONCOND3_Evnt());
-	/*46*/pars[p(ONCOND4)] = new ParVarStr("-1", "oncond4","oncond4", 0, 'n','n', new ONCOND4_Evnt());
+	/*43*/pars[p(ONCOND1)] = new ParVarStr("-1", "oncond1", "oncond1", 2, 'n','n', new ONCOND1_Evnt());
+	/*44*/pars[p(ONCOND2)] = new ParVarStr("-1", "oncond2","oncond2", 2, 'n','n', new ONCOND2_Evnt());
+	/*45*/pars[p(ONCOND3)] = new ParVarStr("-1", "oncond3","oncond3", 2, 'n','n', new ONCOND3_Evnt());
+	/*46*/pars[p(ONCOND4)] = new ParVarStr("-1", "oncond4","oncond4", 2, 'n','n', new ONCOND4_Evnt());
 	/*47*/pars[p(ONCOND5)] = new ParVarStr("(td1=4000)|(ma1=0)|(ma4=2)|(tsmpl4=4)|(oe1=1)", "oncond5","oncond5", 0, 'n','n', new ONCOND5_Evnt());
-	/*48*/pars[p(ACTIONEVAL)] = new ParStr32("","onaction","onaction", 0, 'n','n', new ACTIONEVAL_Evnt());
-	/*5*/pars[p(WIFICHANGED)] = new ParByte(0, "WIFICHANGED","",  0);
-	/*5*/pars[p(CONFLOADED)] = new ParByte(0, "CONFLOADED","", 0);
-	/*5*/pars[p(MQTTADDRMODFIED)] = new ParByte(0, "MQTTADDRMODFIED","", 0);
-	/*5*/pars[p(TOPICCHANGED)] = new ParByte(0, "TOPICCHANGED","", 0);
-	/*5*/pars[p(MQTTCONNCHANGED)] = new ParByte(0, "MQTTCONNCHANGED","", 0);
-	/*5*/pars[p(TIMINGCHANGED)] = new ParByte(0, "TIMINGCHANGED","", 0);
-	/*5*/pars[p(SWACTION1)] = new ParByte(0, "SWACTION1","", 0);
-	/*5*/pars[p(SWACTION2)] = new ParByte(0, "SWACTION2","", 0);
-	/*5*/pars[p(SWACTION3)] = new ParByte(0, "SWACTION3","", 0);
-	/*5*/pars[p(SWACTION4)] = new ParByte(0, "SWACTION4","", 0);
-	
-	/*5*/pars[p(UTCVAL)] = new ParLong(0, "UTCVAL","utcval", 0, 0);
+	/*48*/pars[p(ACTIONEVAL)] = new ParVarStr("-1","onaction","onaction", 2, 'n','n', new ACTIONEVAL_Evnt());
+	/*5*/pars[p(WIFICHANGED)] = new ParByte(0, "WIFICHANGED","");
+	/*5*/pars[p(CONFLOADED)] = new ParByte(0, "CONFLOADED","");
+	/*5*/pars[p(MQTTADDRMODFIED)] = new ParByte(0, "MQTTADDRMODFIED","");
+	/*5*/pars[p(TOPICCHANGED)] = new ParByte(0, "TOPICCHANGED","");
+	/*5*/pars[p(MQTTCONNCHANGED)] = new ParByte(0, "MQTTCONNCHANGED","");
+	/*5*/pars[p(TIMINGCHANGED)] = new ParByte(0, "TIMINGCHANGED","");
+	/*5*/pars[p(SWACTION1)] = new ParByte(0, "SWACTION1","");
+	/*5*/pars[p(SWACTION2)] = new ParByte(0, "SWACTION2","");
+	/*5*/pars[p(SWACTION3)] = new ParByte(0, "SWACTION3","");
+	/*5*/pars[p(SWACTION4)] = new ParByte(0, "SWACTION4","");
+	/*5*/pars[p(UTCVAL)] = new ParLong(0, "UTCVAL","utcval");
 
 	printparams();
 }
@@ -852,7 +854,7 @@ void mqttReconnect() {
 	}
 	DEBUG_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
 	/////noInterrupts ();
-	mqttClient = new MQTT((const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, (const char *)(static_cast<ParStr32*>(pars[p(MQTTADDR)]))->val, (unsigned int) (static_cast<ParLong*>(pars[p(MQTTPORT)]))->val);
+	mqttClient = new MQTT((const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, (const char *)(static_cast<ParStr64*>(pars[p(MQTTADDR)]))->val, (unsigned int) (static_cast<ParLong*>(pars[p(MQTTPORT)]))->val);
 	/////interrupts ();
     DEBUG_PRINTLN(F("Registro i callback dell'MQTT."));
 	DEBUG_PRINT(F("Attempting MQTT connection to: "));
@@ -962,6 +964,8 @@ void readStatesAndPub(bool all){
 	  if(blocked[0]>0){
 		  s+= (String) "blk1"+twodot+blocked[0]+comma;		//blk1
 	  }
+	  s+= (String) "pr1"+twodot+String(percfdbck(0))+comma;		//pr1
+	  s+= (String) "tr1"+twodot+String(getCronoCount(0))+comma;			//tr1
   }else{
 	  s += pars[MQTTUP1]->getStrJsonName()+twodot+(out[0]==HIGH)+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN1]->getStrJsonName()+twodot+(out[1]==HIGH)+comma;    //down1  DIRS=LOW
@@ -974,25 +978,23 @@ void readStatesAndPub(bool all){
 	  if(blocked[1]>0){
 		  s+= (String) "blk2"+twodot+blocked[1]+comma;		//blk2
 	  }
+	  s+= (String) "pr2"+twodot+String(percfdbck(1))+comma;		//pr2
+	  s+= (String) "tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
   }else{
 	  s += pars[MQTTUP2]->getStrJsonName()+twodot+(out[2]==HIGH)+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN2]->getStrJsonName()+twodot+(out[3]==HIGH)+comma;    //down1  DIRS=LOW
   }
-  s+= (String) "pr1"+twodot+String(percfdbck(0))+comma;		//pr1
-  s+= (String) "tr1"+twodot+String(getCronoCount(0))+comma;			//tr1
-  s+= (String) "pr2"+twodot+String(percfdbck(1))+comma;		//pr2
-  s+= (String) "tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
   s+= (String) "sp1"+twodot+String((long)getTapThalt(0))+comma;		//sp1
   s+= (String) "sp2"+twodot+String((long)getTapThalt(1));		//sp2
   if(all){
 	    s += comma;
 		s += pars[MQTTTEMP]->getStrJsonName()+twodot+String(asyncBuf[GTTEMP])+comma;
 		s += pars[MQTTMEANPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTMEANPWR1])+comma+String(asyncBuf[GTMEANPWR2])+closesqr2;
-		s += pars[MQTTPEAKPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTPEAKPWR1])+comma+String(asyncBuf[GTPEAKPWR2])+"\"],";
+		s += pars[MQTTPEAKPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTPEAKPWR1])+comma+String(asyncBuf[GTPEAKPWR2])+"\"]";
   }else{
-		s+=enda;
+		s+=end;
   }
-  publishStr(s);
+  publishStr2(s);
 }
 
 inline byte percfdbck(byte n){
@@ -1050,7 +1052,7 @@ void readParamAndPub(byte parid, char* str){
   //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
   String s=openbrk;
   //char sd[300];
-  s+=pars[parid]->getStrJsonName()+twodot+String(str)+enda;
+  s+=pars[parid]->getStrJsonName()+twodot+String(str)+end;
 //sprintf(sd,"%s%s%s%f%s",openbrk,mqttJson[MQTTJSONTEMP].c_str(),twodot,asyncBuf[GTTEMP],closebrk);
   //s=String(sd);
   //DEBUG_PRINTLN(s);
@@ -1061,7 +1063,7 @@ void readTempAndPub(){
   //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
   String s=openbrk;
   //char sd[300];
-  s+=pars[MQTTTEMP]->getStrJsonName()+twodot+String(asyncBuf[GTTEMP])+enda;
+  s+=pars[MQTTTEMP]->getStrJsonName()+twodot+String(asyncBuf[GTTEMP])+end;
 //sprintf(sd,"%s%s%s%f%s",openbrk,mqttJson[MQTTJSONTEMP].c_str(),twodot,asyncBuf[GTTEMP],closebrk);
   //s=String(sd);
   publishStr(s);
@@ -1106,7 +1108,7 @@ void inline readActionConfAndSet(){
 void publishStr(String &str){
   //pubblica sul broker la stringa JSON
   //informazioni mittente
-  str += "\"";
+  str += ",\"";
   str += pars[MQTTTIME]->getStrJsonName()+twodot+String(millis())+comma; 
   str += pars[MQTTMAC]->getStrJsonName()+twodot+String(WiFi.macAddress())+comma;
   str += pars[MQTTIP]->getStrJsonName()+twodot+pars[p(LOCALIP)]->getStrVal()+comma;
@@ -1116,6 +1118,30 @@ void publishStr(String &str){
   str += pars[INSTACV]->getStrJsonName()+twodot+hlw8012.getVoltage()+comma;
  #endif
   str += pars[MQTTDATE]->getStrJsonName()+twodot+printUNIXTimeMin(gbuf)+closebrk;
+  
+  if(mqttClient==NULL){
+	  DEBUG_PRINTLN(F("ERROR on publishStr MQTT client is not allocated."));
+  }
+  else
+  {
+	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str, 32);
+	  DEBUG_PRINTLN(F("Published data: "));
+	  DEBUG_PRINTLN(str);
+  }
+  //if(!webSocket){
+	  //DEBUG_PRINTLN(F("ERROR on readStatesAndPub webSocket server is not allocated."));
+  //}
+  //else
+  //{
+  webSocket.broadcastTXT(str);
+  //}
+}
+
+void publishStr2(String &str){
+  //pubblica sul broker la stringa JSON
+  //informazioni mittente
+  //str += "\"";
+  str += endbrk;
   
   if(mqttClient==NULL){
 	  DEBUG_PRINTLN(F("ERROR on publishStr MQTT client is not allocated."));
@@ -1168,14 +1194,14 @@ void setup(){
   //inizializza la seriale
   Serial.begin(115200);
   //importante per il _DEBUG1 del WIFI!
-  //Serial.setDebugOutput(true);
-  //WiFi.printDiag(Serial);
+  Serial.setDebugOutput(true);
+  WiFi.printDiag(Serial);
   //carica la configurazione dalla EEPROM
   //DEBUG_PRINTLN(F("Carico configurazione."));
   //for(int i=0;i<CONFDIM;i++)
   DEBUG_PRINTLN(F("initCommon."));
   initCommon(&server,pars);
-  delay(10000);
+  delay(7000);
   initOfst();
   DEBUG_PRINTLN(F("loadConfig."));
   loadConfig();
@@ -1188,7 +1214,7 @@ void setup(){
   //delay(100);
   //WiFi.persistent(true);
   //WiFi.softAPdisconnect(true);
-  //ESP.eraseConfig();
+  ESP.eraseConfig();
   WiFi.persistent(false);
   //ESP.eraseConfig();
   //WiFi.softAPdisconnect(true);
@@ -1412,6 +1438,7 @@ void httpSetup(){
 #endif
 }
 
+#if (AUTOCAL_ACS712) 
 void zeroDetect(){
 	for(int i = 0, m = 0; i < 2000; i++) {
 		m = (float) m + analogRead(A0);
@@ -1423,6 +1450,10 @@ void zeroDetect(){
 	maxx = 0;
 }
 
+void resetZeroDetectCnt(){
+	zeroCnt = 0;
+}
+#endif
 
 void loop(){
 	if(boot == false){
@@ -1470,12 +1501,11 @@ inline void loop2() {
 	step = (step + 1) % nsteps;
 	
 #if (AUTOCAL) 
-	if(dosmpl){//solo a motore in moto
 #if (AUTOCAL_ACS712) 
+	if(dosmpl){//solo a motore in moto
 		currentPeakDetector();
-#endif
 	}
-
+#endif
 	//---------------------------------------------------------------------
 	// 10-20 msec scheduler
 	//---------------------------------------------------------------------
@@ -1525,9 +1555,6 @@ inline void loop2() {
 	// 50-60 msec scheduler
 	//---------------------------------------------------------------------
 	if(!(step % MAINPROCSTEP)){	
-		if(in[0]>0){
-			DEBUG_PRINTLN(F("\ntasto 0 premuto..."));
-		}
 		//leggi ingressi locali e mette il loro valore sull'array val[]
 		leggiTastiLocali();
 		//leggiTastiLocaliRemoto();
@@ -1695,8 +1722,7 @@ inline void automaticStopManager(){
 			//automatic stop manager
 #if (AUTOCAL_ACS712) 
 			dd = maxx - minx;
-#endif
-#if (AUTOCAL_HLW8012) 
+#elif (AUTOCAL_HLW8012) 
 			//dd = hlw8012.getActivePower();
 			dd = hlw8012.getExtimActivePower();
 			//dd = hlw8012.getAvgdExtimActivePower();
@@ -1859,7 +1885,7 @@ inline void automaticStopManager(){
 #if (AUTOCAL_ACS712) 
 			//zero detection manager
 			//zero detection scheduler
-			zeroCnt = (zeroCnt + 1) % 50;
+			zeroCnt = (zeroCnt + 1) % ZEROSMPL;
 			dosmpl = false;
 			//all motors are stopped
 			if(zeroCnt < 3){
@@ -2524,15 +2550,15 @@ void MQTTBTN_Evnt::doaction(){
 	int n = i / TIMERDIM;
 	int sw = i % TIMERDIM;
 	
-	//DEBUG_PRINT("\npid: ");
-	//DEBUG_PRINT(i);
-	//DEBUG_PRINT(" val: ");
-	//DEBUG_PRINTLN(v);
+	DEBUG_PRINT("\npid: ");
+	DEBUG_PRINT(i);
+	DEBUG_PRINT(" val: ");
+	DEBUG_PRINTLN(v);
 	(in[i]) && (in[i] = 255);
 	(v) && (in[i] = v);
 	static_cast<ParByte*>(pars[i])->load(0); //flag reset
-	//DEBUG_PRINT(" inval: ");
-	//DEBUG_PRINTLN(in[i]);
+	DEBUG_PRINT(" inval: ");
+	DEBUG_PRINTLN(in[i]);
 	
 	if(roll[n]){
 		//DEBUG_PRINTLN("\ncmdLogic: switchLogic");
