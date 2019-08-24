@@ -24,6 +24,7 @@ char IP[] = "xxx.xxx.xxx.xxx";          // buffer
 int samples[10];
 byte indx = 0;
 byte stat;
+bool mov = false;
 float vcosfi = 220*0.8;
 double ACSVolt;
 unsigned int mVperAmp = 185;   // 185 for 5A, 100 for 20A and 66 for 30A Module
@@ -164,11 +165,11 @@ HLW8012 hlw8012;
 
 // When using interrupts we have to call the library entry point
 		// whenever an interrupt is triggered
-void ICACHE_RAM_ATTR hlw8012_cf1_interrupt() {
+inline void ICACHE_RAM_ATTR hlw8012_cf1_interrupt() {
 	hlw8012.cf1_interrupt();
 }
 
-void ICACHE_RAM_ATTR hlw8012_cf_interrupt() {
+inline void ICACHE_RAM_ATTR hlw8012_cf_interrupt() {
 	hlw8012.cf_interrupt();
 }
 
@@ -706,7 +707,8 @@ void scriviOutDaStato(){
 	digitalWrite(OUT2DD,out[3]);		
 #endif
 	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0];				//sempre falso se si è in modalità switch!			
-	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1];		//sempre falso se si è in modalità switch!	
+	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1];		//sempre falso se si è in modalità switch!
+	mov = isrun[0] || isrun[1];
 }
 
 void setup_AP(bool apmode) {
@@ -1518,7 +1520,7 @@ inline void loop2() {
 
 #if (MCP2317) 
 	if(!(step % LED_STEP)){		
-		 //printOut();
+		 printOut();
 	}//END LED_STEP scheduler--------------------------------------------------
 #endif
 
@@ -1529,7 +1531,7 @@ inline void loop2() {
 		updateCounters();
 		
 		//sempre vero se si è in modalità switch!	
-		if(!(isrun[0] || isrun[1])){//solo a motore fermo! Per evitare contemporaneità col currentPeakDetector
+		if(!mov){//solo a motore fermo! Per evitare contemporaneità col currentPeakDetector
 			aggiornaTimer(RESETTIMER);
 			aggiornaTimer(APOFFTIMER);
 			pushCnt++;
@@ -1579,7 +1581,7 @@ inline void loop2() {
 		//Finestra idle di riconnessione (necessaria se il loop è molto denso di eventi e il wifi non si aggancia!!!)
 		//------------------------------------------------------------------------------------------------------------
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
-		if((wifiConn == false && !(isrun[0] || isrun[1]))){ //sempre vero se si è in modalità switch!	
+		if(wifiConn == false && !mov){ //sempre vero se si è in modalità switch!	
 //#if (AUTOCAL_ACS712) 
 			DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
 			delay(30);//give 30ms to the ESP stack for wifi connect
@@ -1721,7 +1723,7 @@ inline void sensorStatePoll(){
 }
 
 inline void automaticStopManager(){
-	if((isrun[0] || isrun[1])){ //sempre falso se si è in modalità switch!	
+	if(mov){ //sempre falso se si è in modalità switch!	
 			//automatic stop manager
 #if (AUTOCAL_ACS712) 
 			dd = maxx - minx;
@@ -1758,21 +1760,7 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(ex[0]);
 					DEBUG_PRINT(F(" - diff: "));
 					DEBUG_PRINT(dd);
-					//DEBUG_PRINT(F("\n("));
-					//DEBUG_PRINT(0);
-					//DEBUG_PRINT(F(") Samples: "));
-					//for(int i=0;i<10;i++){
-					//	DEBUG_PRINT(samples[i]);
-					//	DEBUG_PRINT(F(", "));
-					//	samples[i] = 0;
-					//}
-					//DEBUG_PRINT(F("\nSample count: "));
-					//DEBUG_PRINTLN(sampleCount);
-					//sampleCount = 0;
 					chk[0] = checkRange((double) ex[0]*(1 - weight[1]*isMoving(1)),0);
-					//DEBUG_PRINT(F("Ampere: "));
-					//float amp = getAmpRMS();
-					//DEBUG_PRINTLN(amp);
 					if(chk[0] != 0){
 						DEBUG_PRINT(F("\n("));
 						DEBUG_PRINT(0);
@@ -1836,9 +1824,6 @@ inline void automaticStopManager(){
 					DEBUG_PRINT(ex[1]);
 					DEBUG_PRINT(F(" - ADC enable: "));
 					DEBUG_PRINT(dosmpl);
-					//DEBUG_PRINT(F("\nSample count: "));
-					//DEBUG_PRINTLN(sampleCount);
-					//sampleCount = 0;
 					chk[1] = checkRange((double) ex[1]*(1 - weight[0]*isMoving(0)),1);
 					if(chk[1] != 0){
 						DEBUG_PRINT(F("\n("));
@@ -1862,21 +1847,9 @@ inline void automaticStopManager(){
 						readStatesAndPub();
 						yield();
 					}
-				}else{
-					//DEBUG_PRINT(F("\n("));
-					//DEBUG_PRINT(1);
-					//DEBUG_PRINT(F(") aspetto: "));
-					//DEBUG_PRINT(isrundelay[1]);
-					//DEBUG_PRINT(F(" - minx sensor: "));
-					//DEBUG_PRINT(minx);
-					//DEBUG_PRINT(F(" - maxx sensor: "));
-					//DEBUG_PRINT(maxx);
-					//DEBUG_PRINT(F(" - Peak: "));
-					//DEBUG_PRINT(ex[1]);
+				}else{		
 					isrundelay[1]--;
 					ex[1] = dd;
-					//DEBUG_PRINT(F(" - dd: "));
-					//DEBUG_PRINT(dd);
 				}
 			}else{
 				isrundelay[1] = RUNDELAY;
@@ -1911,11 +1884,8 @@ inline void automaticStopManager(){
 				//running mean calculation
 				smplcnt++;
 				smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
-				//DEBUG_PRINT(F("\nZero peak sensor: "));
-				//DEBUG_PRINT(x);
-				//DEBUG_PRINT(F(" - Zero mean sensor: "));
-				//DEBUG_PRINT(m);
 			}
+			DEBUG_PRINT(F("\nBHOOOOOOOO: "));
 		}
 #endif
 }

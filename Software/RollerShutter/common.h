@@ -372,7 +372,7 @@
 #define MAINPROCSTEP	2
 #define ONESEC_STEP		50
 #define	LED_STEP		10
-#define STOP_STEP		2
+#define STOP_STEP		4
 #define SEL_PIN			5
 #define CF1_PIN			13
 #define CF_PIN			14
@@ -380,7 +380,7 @@
 // This is the case for Itead's Sonoff POW, where a
 // the SEL_PIN drives a transistor that pulls down
 // the SEL pin in the HLW8012 when closed
-#define CURRENT_MODE                    HIGH
+#define CURRENT_MODE                    LOW
 
 // These are the nominal values for the resistors in the circuit
 #define CURRENT_RESISTOR                0.001
