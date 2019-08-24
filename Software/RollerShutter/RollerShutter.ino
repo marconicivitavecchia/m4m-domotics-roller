@@ -245,7 +245,8 @@ void printOut(){
 	if(ledpause == 0){
 		if(ledcnt > 0){
 			if((ledcnt % 2) == 0)
-				(mcp.digitalRead(ledslct+BTN1U))?setColor(cols[1]):setColor(cols[0]);
+				//(mcp.digitalRead(ledslct+BTN1U))?setColor(cols[1]):setColor(cols[0]);
+				(out[ledslct+BTN1U])?setColor(cols[1]):setColor(cols[0]);
 			else
 				setColor(cols[7]);
 			ledcnt--;
@@ -704,8 +705,8 @@ void scriviOutDaStato(){
 	digitalWrite(OUT2EU,out[2]);	
 	digitalWrite(OUT2DD,out[3]);		
 #endif
-	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0];					
-	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1];
+	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0];				//sempre falso se si è in modalità switch!			
+	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1];		//sempre falso se si è in modalità switch!	
 }
 
 void setup_AP(bool apmode) {
@@ -1517,7 +1518,7 @@ inline void loop2() {
 
 #if (MCP2317) 
 	if(!(step % LED_STEP)){		
-		 printOut();
+		 //printOut();
 	}//END LED_STEP scheduler--------------------------------------------------
 #endif
 
@@ -1527,6 +1528,7 @@ inline void loop2() {
 	if(!(step % ONESEC_STEP)){
 		updateCounters();
 		
+		//sempre vero se si è in modalità switch!	
 		if(!(isrun[0] || isrun[1])){//solo a motore fermo! Per evitare contemporaneità col currentPeakDetector
 			aggiornaTimer(RESETTIMER);
 			aggiornaTimer(APOFFTIMER);
@@ -1577,7 +1579,7 @@ inline void loop2() {
 		//Finestra idle di riconnessione (necessaria se il loop è molto denso di eventi e il wifi non si aggancia!!!)
 		//------------------------------------------------------------------------------------------------------------
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
-		if((wifiConn == false && !(isrun[0] || isrun[1]))){
+		if((wifiConn == false && !(isrun[0] || isrun[1]))){ //sempre vero se si è in modalità switch!	
 //#if (AUTOCAL_ACS712) 
 			DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
 			delay(30);//give 30ms to the ESP stack for wifi connect
@@ -1719,14 +1721,15 @@ inline void sensorStatePoll(){
 }
 
 inline void automaticStopManager(){
-	if((isrun[0] || isrun[1])){
+	if((isrun[0] || isrun[1])){ //sempre falso se si è in modalità switch!	
 			//automatic stop manager
 #if (AUTOCAL_ACS712) 
 			dd = maxx - minx;
 #elif (AUTOCAL_HLW8012) 
 			//dd = hlw8012.getActivePower();
-			dd = hlw8012.getExtimActivePower();
+			//dd = hlw8012.getExtimActivePower();
 			//dd = hlw8012.getAvgdExtimActivePower();
+			dd = 10;
 #endif
 			//EMA calculation
 			//ACSVolt = (double) ex/2.0;
@@ -1888,8 +1891,9 @@ inline void automaticStopManager(){
 			dosmpl = true;
 #endif
 			//DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
-		}else{
-#if (AUTOCAL_ACS712) 
+		}
+#if (AUTOCAL_ACS712) 		
+		else{ //sempre vero se si è in modalità switch!	
 			//zero detection manager
 			//zero detection scheduler
 			zeroCnt = (zeroCnt + 1) % ZEROSMPL;
@@ -1912,8 +1916,8 @@ inline void automaticStopManager(){
 				//DEBUG_PRINT(F(" - Zero mean sensor: "));
 				//DEBUG_PRINT(m);
 			}
+		}
 #endif
-		}	
 }
 
 inline void wifiFailoverManager(){
