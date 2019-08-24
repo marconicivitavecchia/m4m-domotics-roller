@@ -187,7 +187,9 @@
 #define GTMEANPWR2	2
 #define GTPEAKPWR1	3
 #define GTPEAKPWR2	4
-#define GATEND 		5	//OVERALL NUMBER OF GATES
+#define GTIPWR		5
+#define GTIVAC		6
+#define GATEND 		7	//OVERALL NUMBER OF GATES
 //Async R/W buffers
 #define ASYNCDIM	5	//OVERALL NUMBER OF R/W BUFFERS
 #define TEMPRND			0
@@ -195,6 +197,8 @@
 #define MEANPWR2RND		1	
 #define PEAKPWR1RND		1
 #define PEAKPWR2RND		1
+#define IPWRRND			2  //W
+#define IVACRND			1  //V
 //--------------------------EEPROM offsets-------------------------------------------
 //First two byte reserved for EEPROM check
 //1 byte offets (char)

@@ -272,7 +272,7 @@ void rstldcnt(byte n){
 } 
 
 #endif
-
+/*
 void testparam(int i){
 	char * param;
 	
@@ -292,7 +292,7 @@ void printparams(){
 		testparam(i);
 	}
 }
-
+*/
 unsigned getConfofstFromParamofst(unsigned pofst){
 	if(pars[pofst] != NULL){
 		if(pofst < USRMODIFICABLEFLAGS)
@@ -414,7 +414,7 @@ inline void initOfst(){
 	/*5*/pars[p(SWACTION4)] = new ParByte(0, "SWACTION4","");
 	/*5*/pars[p(UTCVAL)] = new ParLong(0, "UTCVAL","utcval");
 
-	printparams();
+	//printparams();
 }
 
 inline bool switchdfn(byte val, byte n){
@@ -442,6 +442,7 @@ inline byte cmdLogic(byte n){
 	}
 }
 
+#if (AUTOCAL_ACS712) 	
 float getAmpRMS(float ACSVolt){
 	ACSVolt = (double) (ACSVolt * 5.0) / 1024.0;
 	VRMS = ACSVolt * 0.707;
@@ -451,6 +452,7 @@ float getAmpRMS(float ACSVolt){
 	}
 	return AmpsRMS*vcosfi;
 }
+#endif
 
 void setSWMode(byte mode,byte n){
 	roll[n] = mode;
@@ -669,11 +671,13 @@ float variables(char *key){
 			result = pinger.Ping(ip);
 		}
 	}else if(key[0] =='i'){
+#if (AUTOCAL_ACS712) 
 		if(strcmp(key,"p1")==0){
 			result = getAmpRMS(getAVG(0)/2);
 		}else if(strcmp(key,"p2")==0){
 			result = getAmpRMS(getAVG(1)/2);
 		}
+#endif
 	}else if(key[0]=='p'){
 		char *app;
 		if(strcmp(key,"isPM")==0){
@@ -693,13 +697,19 @@ float variables(char *key){
 	return result;
 }
 
+void printMcpRealOut(){
+	char s[47];
+	sprintf(s, "Lettura uscite MCP: - up1: %d, down1: %d, up2: %d, down2: %d\n", mcp.digitalRead(OUT1EU), mcp.digitalRead(OUT1DD), mcp.digitalRead(OUT2EU), mcp.digitalRead(OUT2DD));
+	DEBUG_PRINT(s);
+}
+
 void scriviOutDaStato(){
 #if (MCP2317) 
 	mcp.digitalWrite(OUT1EU,out[0]);	
 	mcp.digitalWrite(OUT1DD,out[1]);		
 	mcp.digitalWrite(OUT2EU,out[2]);	
 	mcp.digitalWrite(OUT2DD,out[3]);
-	rstldcnt(0);
+	rstldcnt(0);;
 #else										
 	digitalWrite(OUT1EU,out[0]);	
 	digitalWrite(OUT1DD,out[1]);		
@@ -996,6 +1006,7 @@ void readStatesAndPub(bool all){
 		s+=end;
   }
   publishStr2(s);
+  printMcpRealOut();
 }
 
 inline byte percfdbck(byte n){
@@ -1552,6 +1563,7 @@ inline void loop2() {
 		}
 		if(sampleCurrTime()){//1min
 			readParamAndPub(MQTTDATE,printUNIXTimeMin(gbuf));
+			readStatesAndPub(true);
 		}
 		leggiTastiLocaliDaExp();
 	}//END 1 sec scheduler-----------------------------------------------------
@@ -1688,13 +1700,26 @@ inline void currentPeakDetector(){
 }
 #endif
 
+
 inline void sensorStatePoll(){
 	//sensor variation polling management
 	//on events basis push of reports
+
 	if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
 		readTempAndPub();
 		DEBUG_PRINT(F("\nTemperatura cambiata"));
 	}
+#if (AUTOCAL_HLW8012) 	
+	if(gatedfn(hlw8012.getActivePower(),GTIPWR, IPWRRND)){
+		readIpAndPub();
+		DEBUG_PRINT(F("\nPotenza camiata"));
+	}
+	if(gatedfn(hlw8012.getVoltage(),GTIVAC, IVACRND)){
+		readIpAndPub();
+		DEBUG_PRINT(F("\nVolt cambiati"));
+	}
+#endif	
+/*
 	bool updatePwr = false;
 	if(gatedfn(getAmpRMS(getAVG(0)/2),GTMEANPWR1, MEANPWR1RND)){
 		updatePwr == true;
@@ -1715,12 +1740,15 @@ inline void sensorStatePoll(){
 	if(updatePwr){
 		readPeakPowerAndPub();
 	}
+	
 	//periodic push of all reports
 	if(pushCnt == PUSHINTERV){
 		pushCnt = 0;
 		readStatesAndPub(true);
 	}
+	*/
 }
+
 
 inline void automaticStopManager(){
 	if(mov){ //sempre falso se si è in modalità switch!	
