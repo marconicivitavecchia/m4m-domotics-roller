@@ -447,6 +447,17 @@
 #define p(x) 	x + USRMODIFICABLEFLAGS
 #define pp(x) 	(x < USRMODIFICABLEFLAGS)?x:x + USRMODIFICABLEFLAGS
 
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte)  \
+  (byte & 0x80 ? '1' : '0'), \
+  (byte & 0x40 ? '1' : '0'), \
+  (byte & 0x20 ? '1' : '0'), \
+  (byte & 0x10 ? '1' : '0'), \
+  (byte & 0x08 ? '1' : '0'), \
+  (byte & 0x04 ? '1' : '0'), \
+  (byte & 0x02 ? '1' : '0'), \
+  (byte & 0x01 ? '1' : '0') 
+
 #if (_DEBUG1)
  //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
  #define DEBUG_PRINT(x)   Serial.print (x);telnet.print(x)	

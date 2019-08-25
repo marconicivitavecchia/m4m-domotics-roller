@@ -699,7 +699,13 @@ float variables(char *key){
 
 void printMcpRealOut(){
 	char s[47];
-	sprintf(s, "Lettura uscite MCP: - up1: %d, down1: %d, up2: %d, down2: %d\n", mcp.digitalRead(OUT1EU), mcp.digitalRead(OUT1DD), mcp.digitalRead(OUT2EU), mcp.digitalRead(OUT2DD));
+	uint16_t m;
+	
+	m = mcp.readGPIOAB();
+	//sprintf(s, "Lettura uscite MCP: - up1: %d, down1: %d, up2: %d, down2: %d\n", mcp.digitalRead(OUT1EU), mcp.digitalRead(OUT1DD), mcp.digitalRead(OUT2EU), mcp.digitalRead(OUT2DD));
+	//sprintf(s, "Lettura registri AB MCP: %d",);
+	//printf(s,"Leading text "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(byte));
+	sprintf(s,"readGPIOAB: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
 	DEBUG_PRINT(s);
 }
 
