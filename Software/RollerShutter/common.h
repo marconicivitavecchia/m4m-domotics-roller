@@ -33,9 +33,8 @@
 //wifi config----------------------------------------------
 #define OUTTOPIC		"sonoff17/out"
 #define INTOPIC			"sonoff17/in"
-//#define SSID1			"WebPocket-E280"
-#define SSID1			"D-Link-6A30CC"
-#define PSW1			"FabSeb050770250368120110"
+#define SSID1			"WebPocket-E280"
+#define PSW1			"dorabino.7468!"
 #define SSID2			"AndroidAP1"
 #define PSW2			"pippo2503"
 #define SSIDAP			"admin"
@@ -61,8 +60,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				0
-#define ROLLERSHUTTER 			1
+#define SONOFF_4CH				1
+#define ROLLERSHUTTER 			0
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------NON MODIFICARE LA PARTE SOTTOSTATNTE------------------------------------------------------------------------------------------------
 //#define AUTOCAL_HLW8012			0
@@ -266,7 +265,7 @@
 //flag di segnalazione arrivo in INPUT: richieste di valori di parametri, richieste di esecuzione di comandi.
 //valori di risposta in OUTPUT: feedbacks broadcast di arrivo di un nuovo comando, parametro o richiesta, valori di risposta all'esecuzione di un comando, 
 //valori di risposta alla richiesta di lettura di un parametro (si noti che tutti questi, non dovendo essere processati dal parser MQTT, 
-//potrebbero alternativamente essere hardcoded, √® opportuno che stiano qu√¨ se il loro nome COINCIDE con quello di un corrispondente flag di richiesta).
+//potrebbero alternativamente essere hardcoded, Ë opportuno che stiano quÏ se il loro nome COINCIDE con quello di un corrispondente flag di richiesta).
 #define MQTTUP1				0
 #define MQTTDOWN1			1
 #define MQTTUP2				2
@@ -430,7 +429,7 @@
 //#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
 //#define PGMT( pgm_ptr ) ( reinterpret_cast< const __FlashStringHelper * >( pgm_ptr ) )
 
-//legge gli ingressi dei tasti gi√† puliti dai rimbalzi
+//legge gli ingressi dei tasti gi‡ puliti dai rimbalzi
 
 #if (MCP2317) 
     #define leggiTastiLocali()  in[BTN1IN] = !mcp.digitalRead(BTN1U);	\		
@@ -446,6 +445,10 @@
 	
 #define p(x) 	x + USRMODIFICABLEFLAGS
 #define pp(x) 	(x < USRMODIFICABLEFLAGS)?x:x + USRMODIFICABLEFLAGS
+#define ESP8266_REG(addr) *((volatile uint32_t *)(0x60000000+(addr)))
+#define GPI    ESP8266_REG(0x318) //GPIO_IN RO (Read Input Level)
+#define GPIP(p) ((GPI & (1 << ((p) & 0xF))) != 0)
+
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \
@@ -485,6 +488,7 @@ class MQTTBTN_Evnt: public BaseEvnt{
 	public:
 		MQTTBTN_Evnt(unsigned x = 0):BaseEvnt(x){};
 		void doaction();
+		//void loadPid(byte);
 };
 
 class MQTTMAC_Evnt: public BaseEvnt{
@@ -827,7 +831,7 @@ void writeHaltDelay(unsigned int, byte);
 
      GPIO_USER,        // GPIO01 Serial RXD and Optional sensor
 
-     GPIO_USER,        // GPIO02 Optional sensor (riservato alla selezione del boot mode, pu√≤ essere in o out ma al boot deve essere sempre alto)
+     GPIO_USER,        // GPIO02 Optional sensor (riservato alla selezione del boot mode, puÚ essere in o out ma al boot deve essere sempre alto)
 
      GPIO_USER,        // GPIO03 Serial TXD and Optional sensor
 

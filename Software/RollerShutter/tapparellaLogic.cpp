@@ -60,7 +60,7 @@ byte switchLogic(byte sw, byte n){
 	int toffset=n*TIMERDIM;
 	int poffset=n*BTNDIM;
 	byte changed = 0;
-	
+
 	//pulsante UP o DOWN (sw: 0 o 1)
 	if(switchdfn(inp[BTN1IN+poffset+sw],BTN1IN+poffset+sw))
 	{

@@ -52,7 +52,6 @@ double ex[2] = {0,0};
 double calAvg[2] = {0,0};
 double weight[2] = {0,0};
 short chk[2]={0,0};
-//unsigned x20ms, x60ms, x1s;
 #endif
 bool isrun[2]={false,false};
 volatile bool dosmpl = false;
@@ -417,14 +416,6 @@ inline void initOfst(){
 	//printparams();
 }
 
-inline bool switchdfn(byte val, byte n){
-	//n: numero di pulsanti
-	val = (val>0);								//SEMPLICE!!!!
-	bool changed = (val != dprecval2[n]);
-	dprecval2[n] = val;            // valore di val campionato al loop precedente 
-	return changed;
-}
-
 inline bool gatedfn(float val, byte n, float rnd){
 	//n: numero di porte
 	bool changed = (val < asyncBuf[n] - rnd || val > asyncBuf[n] + rnd);
@@ -457,9 +448,11 @@ float getAmpRMS(float ACSVolt){
 void setSWMode(byte mode,byte n){
 	roll[n] = mode;
 	isrun[n] = false;
-	DEBUG_PRINT("setSWMode: ");
-	DEBUG_PRINTLN(mode);
+	DEBUG_PRINT("setSWMode");
 	DEBUG_PRINTLN(n);
+	DEBUG_PRINT(": ");
+	DEBUG_PRINTLN(mode);
+	
 	//readModeAndPub(n);
 }
 
@@ -700,13 +693,19 @@ float variables(char *key){
 void printMcpRealOut(){
 	char s[47];
 	uint16_t m;
-	
+
+#if (MCP2317)	
 	m = mcp.readGPIOAB();
 	//sprintf(s, "Lettura uscite MCP: - up1: %d, down1: %d, up2: %d, down2: %d\n", mcp.digitalRead(OUT1EU), mcp.digitalRead(OUT1DD), mcp.digitalRead(OUT2EU), mcp.digitalRead(OUT2DD));
 	//sprintf(s, "Lettura registri AB MCP: %d",);
 	//printf(s,"Leading text "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(byte));
 	sprintf(s,"readGPIOAB: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
 	DEBUG_PRINT(s);
+#else
+	m = (uint16_t)GPI;
+	sprintf(s,"GPIO: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
+	DEBUG_PRINT(s);
+#endif
 }
 
 void scriviOutDaStato(){
@@ -722,8 +721,8 @@ void scriviOutDaStato(){
 	digitalWrite(OUT2EU,out[2]);	
 	digitalWrite(OUT2DD,out[3]);		
 #endif
-	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0];				//sempre falso se si √® in modalit√† switch!			
-	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1];		//sempre falso se si √® in modalit√† switch!
+	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0] > 0;				//sempre falso se si Ë in modalit‡ switch!			
+	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1] > 0;		//sempre falso se si Ë in modalit‡ switch!
 	mov = isrun[0] || isrun[1];
 }
 
@@ -892,7 +891,7 @@ void mqttReconnect() {
 		mqttClient->onConnected([]() {
 		DEBUG_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
 			mqttcnt = 0;
-			//Altrimenti dice che √® connesso ma non comunica
+			//Altrimenti dice che Ë connesso ma non comunica
 			mqttClient->subscribe(static_cast<ParStr32*>(pars[p(MQTTINTOPIC)])->val); 
 			mqttClient->publish((const char *)(static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)]))->val, (const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, 32);
 			//mqttConnected=true;
@@ -916,7 +915,7 @@ void mqttReconnect() {
 void mqttCallback(String &topic, String &response) {
 	//funzione eseguita dal subscriber all'arrivo di una notifica
 	//decodifica la stringa JSON e la trasforma nel nuovo vettore degli stati
-	//il vettore corrente degli stati verr√† sovrascritto
+	//il vettore corrente degli stati verr‡ sovrascritto
 	//applica la logica ricevuta da remoto sulle uscite locali (led)
     
 	int v;
@@ -1186,6 +1185,11 @@ void initIiming(bool first){
   edelay[1] = static_cast<ParLong*>(pars[p(STDEL2)])->val;
   roll[0] = static_cast<ParByte*>(pars[p(SWROLL1)])->val;
   roll[1] = static_cast<ParByte*>(pars[p(SWROLL2)])->val;
+  DEBUG_PRINT(F("Roll1: "));
+  DEBUG_PRINTLN(roll[0]);
+  DEBUG_PRINT(F("Roll2: "));
+  DEBUG_PRINTLN(roll[1]);
+  mov = false;
   initTapparellaLogic(in,out,outLogic,pars,first);
 #if (AUTOCAL)  
   resetAVGStats(0,0);
@@ -1256,20 +1260,18 @@ void setup(){
   DEBUG_PRINTLN(F("Activated remote _DEBUG1"));
 #endif  
   DEBUG_PRINTLN(F("Inizializzo i pulsanti."));
-  initdfn(LOW, 0);  //pull DOWN init (in realt√† √® un pull up, c'√® un not in ogni ingresso sui pulsanti)
+  initdfn(LOW, 0);  //pull DOWN init (in realt‡ Ë un pull up, c'Ë un not in ogni ingresso sui pulsanti)
   initdfn(LOW, 1);
   initdfn(LOW, 2);
   initdfn(LOW, 3);
-  initdfn(LOW, 4);
-  //initdfn((byte) WL_DISCONNECTED, CONNSTATSW);
-
   //Timing init
   setupTimer(static_cast<ParLong*>(pars[p(THALT1)])->val,TMRHALT);				//function timer switch1
   setupTimer(static_cast<ParLong*>(pars[p(THALT2)])->val,TMRHALT+TIMERDIM);	//function timer switch2 
   setupTimer(RSTTIME*1000,RESETTIMER);						//special timer btn1 
   setupTimer(APOFFT*1000,APOFFTIMER);						//special timer btn1
-  setSWMode(static_cast<ParByte*>(pars[p(SWROLL1)])->val,0);
-  setSWMode(static_cast<ParByte*>(pars[p(SWROLL2)])->val,1);
+  initIiming(true);
+  setSWMode(roll[0],0);
+  setSWMode(roll[1],1);
 #if (AUTOCAL)
   weight[0] =  static_cast<ParFloat*>(pars[p(VALWEIGHT)])->val;
   weight[1] = 1 - weight[0];
@@ -1353,8 +1355,6 @@ void setup(){
 	  static_cast<ParByte*>(pars[i])->load(LOW);
   for(int i=0;i<4;i++)
 	  acts[i]=LOW;
-  
-  initIiming(true);
   // Register event handlers.
   // Callback functions will be called as long as these handler objects exist.
   // Call "onStationConnected" each time a station connects
@@ -1475,6 +1475,67 @@ void resetZeroDetectCnt(){
 	zeroCnt = 0;
 }
 
+void leggiTastiLocali2(){
+
+#if (MCP2317) 
+	char s[18];
+	uint8_t regA = mcp.readGPIO(0);
+	uint8_t inmask = regA & 0xF;	//00001111 (15)
+	if(DEBUG_PRINT(s); != 15){ //pullup!
+		DEBUG_PRINT(F("\nInmask: "));
+		DEBUG_PRINTLN(inmask);
+		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(regA));
+		DEBUG_PRINT(s);
+		pars[MQTTUP1]->load((byte)((regA >> BTN1U) & 0x1)?0:255); 
+		pars[MQTTUP1]->doaction();
+		pars[MQTTDOWN1]->load((byte)(regA >> BTN1D) & 0x1)?0:255); 
+		pars[MQTTDOWN1]->doaction();
+		pars[MQTTUP2]->load((byte)((regA >> BTN2U) & 0x1)?0:255); 
+		pars[MQTTUP2]->doaction();
+		pars[MQTTDOWN2]->load((byte)(regA >> BTN2D) & 0x1)?0:255);
+		pars[MQTTDOWN2]->doaction();
+	}else{
+		in[BTN1IN] = LOW;
+		in[BTN2IN] = LOW;
+		in[BTN1IN+BTNDIM] = LOW;
+		in[BTN2IN+BTNDIM] = LOW;
+		switchLogic(0,0);
+		switchLogic(0,1);
+		switchLogic(1,0);
+		switchLogic(1,1);
+	}
+#else	
+	uint16_t gpioread = (uint16_t)GPI;
+	uint16_t inmask = gpioread & 0x4601; //01000110 00000001 (17921)
+										 //10111001 1
+	char s[26];
+	if(inmask != 17921){ //pullup!
+		DEBUG_PRINT(F("\nInmask: "));
+		DEBUG_PRINTLN(inmask);
+		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(inmask>>8), BYTE_TO_BINARY(inmask));
+		DEBUG_PRINT(s);
+		//pars[MQTTUP1]->load((byte)(GPIP(BTN1U))?0:255); 
+		static_cast<ParByte*>(pars[MQTTUP1])->load((byte)(GPIP(BTN1U))?0:255); 
+		static_cast<ParByte*>(pars[MQTTUP1])->doaction();
+		static_cast<ParByte*>(pars[MQTTDOWN1])->load((byte)(GPIP(BTN1D))?0:255); 
+		static_cast<ParByte*>(pars[MQTTDOWN1])->doaction();
+		static_cast<ParByte*>(pars[MQTTUP2])->load((byte)(GPIP(BTN2U))?0:255);
+		static_cast<ParByte*>(pars[MQTTUP2])->doaction();
+		static_cast<ParByte*>(pars[MQTTDOWN2])->load((byte)(GPIP(BTN2D))?0:255);  
+		static_cast<ParByte*>(pars[MQTTDOWN2])->doaction();
+	}else{
+		in[BTN1IN] = LOW;
+		in[BTN2IN] = LOW;
+		in[BTN1IN+BTNDIM] = LOW;
+		in[BTN2IN+BTNDIM] = LOW;
+		switchLogic(0,0);
+		switchLogic(0,1);
+		switchLogic(1,0);
+		switchLogic(1,1);
+	}
+#endif	
+}
+
 
 void loop(){
 	if(boot == false){
@@ -1508,8 +1569,8 @@ inline void loop2() {
   //Linee guida:
   //- azioni pesanti si dovrebbero eseguire molto raramente (o per pochi loop)
   //- azioni leggere possono essere eseguite molto frequentemente (o per molti loop)
-  //- vie di mezzo di complessit√† da eseguire con tempi intermedi
-  //- evitare il pi√π possibile la contemporaneit√† di azioni pesanti 
+  //- vie di mezzo di complessit‡ da eseguire con tempi intermedi
+  //- evitare il pi˘ possibile la contemporaneit‡ di azioni pesanti 
   //-----------------------------------------------------------------------------------------------
   
   //---------------------------------------------------------------------
@@ -1547,8 +1608,8 @@ inline void loop2() {
 	if(!(step % ONESEC_STEP)){
 		updateCounters();
 		
-		//sempre vero se si √® in modalit√† switch!	
-		if(!mov){//solo a motore fermo! Per evitare contemporaneit√† col currentPeakDetector
+		//sempre vero se si Ë in modalit‡ switch!	
+		if(!mov){//solo a motore fermo! Per evitare contemporaneit‡ col currentPeakDetector
 			aggiornaTimer(RESETTIMER);
 			aggiornaTimer(APOFFTIMER);
 			pushCnt++;
@@ -1579,11 +1640,11 @@ inline void loop2() {
 	//---------------------------------------------------------------------
 	if(!(step % MAINPROCSTEP)){	
 		//leggi ingressi locali e mette il loro valore sull'array val[]
-		leggiTastiLocali();
+		leggiTastiLocali2();
 		//leggiTastiLocaliRemoto();
-		//se uno dei tasti delle tapparelle √® stato premuto
-		//o se √® arrivato un comando dalla mqttCallback
-		if(cmdLogic(TAP1) == 1 ||  cmdLogic(TAP2) == 1){ 
+		//se uno dei tasti delle tapparelle Ë stato premuto
+		//o se Ë arrivato un comando dalla mqttCallback
+		/*if(cmdLogic(TAP1) == 1 ||  cmdLogic(TAP2) == 1){ 
 			//once any button is pressed
 			//legge lo stato finale e lo scrive sulle uscite
 			scriviOutDaStato();
@@ -1591,15 +1652,15 @@ inline void loop2() {
 			readStatesAndPub();
 			//DEBUG_PRINTLN("Fine callback MQTT.");
 			blocked[0]=blocked[1]=false;
-		}
+		}*/
 		//provenienti dalla mqttCallback
 		//remote pressed button event
 		//leggiTastiRemoti();
 		//------------------------------------------------------------------------------------------------------------
-		//Finestra idle di riconnessione (necessaria se il loop √® molto denso di eventi e il wifi non si aggancia!!!)
+		//Finestra idle di riconnessione (necessaria se il loop Ë molto denso di eventi e il wifi non si aggancia!!!)
 		//------------------------------------------------------------------------------------------------------------
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
-		if(wifiConn == false && !mov){ //sempre vero se si √® in modalit√† switch!	
+		if(wifiConn == false && !mov){ //sempre vero se si Ë in modalit‡ switch!	
 //#if (AUTOCAL_ACS712) 
 			DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
 			delay(30);//give 30ms to the ESP stack for wifi connect
@@ -1632,7 +1693,7 @@ inline void updateCounters(){
 //inr: memoria tampone per l'evento asincrono scrittura da remoto
 //si deve mischiare con la lettura locale DOPO che questa viene scritta
 //al giro di loop() successivo in[] locale riporta a livello basso l'eccitazione remota
-//legge gli ingressi dei tasti gi√† puliti dai rimbalzi	
+//legge gli ingressi dei tasti gi‡ puliti dai rimbalzi	
 /*inline void leggiTastiLocaliRemoto(){
 	for(int i=0;i<4;i++){
 		(in[i]) && (in[i] = 255);
@@ -1643,7 +1704,7 @@ inline void updateCounters(){
 //legge PERIODICAMENTE il parser delle condizioni sui sensori
 inline void leggiTastiLocaliDaExp(){
 	if(roll[0] == false){
-		//modalit√† switch generico
+		//modalit‡ switch generico
 		if(testUpCntEvnt(0,true,SMPLCNT1))
 			setActionLogic(eval(((String) pars[p(0)]->getStrVal()).c_str()),0);
 		if(testUpCntEvnt(0,true,SMPLCNT2))
@@ -1653,13 +1714,13 @@ inline void leggiTastiLocaliDaExp(){
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
 	}else{
-		//modalit√† tapparella
+		//modalit‡ tapparella
 		//simula pressione di un tasto locale
 		in[0] = eval(((String) pars[p(0)]->getStrVal()).c_str());
 		in[1] = eval(((String) pars[p(1)]->getStrVal()).c_str());
 	}
 	if(roll[1] == false){
-		//modalit√† switch generico
+		//modalit‡ switch generico
 		if(testUpCntEvnt(0,true,SMPLCNT3))
 			setActionLogic(eval(((String) pars[p(2)]->getStrVal()).c_str()),2);
 		if(testUpCntEvnt(1,true,SMPLCNT4)){
@@ -1671,7 +1732,7 @@ inline void leggiTastiLocaliDaExp(){
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
 	}else{
-		//modalit√† tapparella
+		//modalit‡ tapparella
 		//simula pressione di un tasto locale
 		in[2] = eval(((String) pars[p(2)]->getStrVal()).c_str());
 		in[3] = eval(((String) pars[p(3)]->getStrVal()).c_str());
@@ -1757,7 +1818,7 @@ inline void sensorStatePoll(){
 
 
 inline void automaticStopManager(){
-	if(mov){ //sempre falso se si √® in modalit√† switch!	
+	if(mov){ //sempre falso se si Ë in modalit‡ switch!	
 			//automatic stop manager
 #if (AUTOCAL_ACS712) 
 			dd = maxx - minx;
@@ -1900,7 +1961,7 @@ inline void automaticStopManager(){
 			//DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}
 #if (AUTOCAL_ACS712) 		
-		else{ //sempre vero se si √® in modalit√† switch!	
+		else{ //sempre vero se si Ë in modalit‡ switch!	
 			//zero detection manager
 			//zero detection scheduler
 			zeroCnt = (zeroCnt + 1) % ZEROSMPL;
@@ -1919,7 +1980,6 @@ inline void automaticStopManager(){
 				smplcnt++;
 				smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
 			}
-			DEBUG_PRINT(F("\nBHOOOOOOOO: "));
 		}
 #endif
 }
@@ -2021,7 +2081,7 @@ inline void MQTTReconnectManager(){
 					mqttofst = 10;
 				}else{
 					if(!(mqttcnt % mqttofst)){
-						//non si pu√≤ fare perch√® dopo pochi loop crasha
+						//non si puÚ fare perchË dopo pochi loop crasha
 						if(dscnct){
 							dscnct=false;
 							DEBUG_PRINT(F("eseguo la MQTT connect()...Cnt: "));
@@ -2043,7 +2103,7 @@ inline void MQTTReconnectManager(){
 						DEBUG_PRINT(F(" - Passo: "));
 						DEBUG_PRINTLN(mqttofst);
 					}
-					//non si pu√≤ fare senza disconnect perch√® dopo pochi loop crasha
+					//non si puÚ fare senza disconnect perchË dopo pochi loop crasha
 					//mqttClient->setUserPwd((confcmd[MQTTUSR]).c_str(), (confcmd[MQTTPSW]).c_str());
 				}
 			}
@@ -2051,7 +2111,7 @@ inline void MQTTReconnectManager(){
 
 inline void paramsModificationPoll(){
 	//actions on parametrs saving
-		//is else if per gestione priorit√†, l'ordine √® importante! vanno fatti in momenti successivi
+		//is else if per gestione priorit‡, l'ordine Ë importante! vanno fatti in momenti successivi
 		if((byte) static_cast<ParByte*>(pars[p(WIFICHANGED)])->val == 1){
 			pars[p(WIFICHANGED)]->load(0);
 			wifindx=0;
@@ -2143,12 +2203,12 @@ void onElapse(byte nn, unsigned long tm){
 	DEBUG_PRINT(F("  con sw: "));
 	DEBUG_PRINTLN(sw);
 	
-	if(nn != RESETTIMER || nn != APOFFTIMER) //se √® scaduto il timer di attesa o di blocco  (0,1) --> state n
+	if(nn != RESETTIMER || nn != APOFFTIMER) //se Ë scaduto il timer di attesa o di blocco  (0,1) --> state n
 	{   
 		DEBUG_PRINT(F("\nCount value: "));
 		DEBUG_PRINTLN(getCntValue(nn));
 		if(getCntValue(nn) == 1){ 
-			if(roll[n]){//se √® in modalit√† tapparella!
+			if(roll[n]){//se Ë in modalit‡ tapparella!
 				if(getGroupState(nn)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
 					DEBUG_PRINTLN(F("stato 0 roll mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 					secondPress(n);
@@ -2163,7 +2223,7 @@ void onElapse(byte nn, unsigned long tm){
 					scriviOutDaStato();
 				}
 	#if (!AUTOCAL)	
-				else if(getGroupState(nn)==2){//se il motore √® in moto a vuoto
+				else if(getGroupState(nn)==2){//se il motore Ë in moto a vuoto
 					DEBUG_PRINTLN(F("onElapse roll mode manual:  timer di corsa a vuoto scaduto"));
 					///setGroupState(3,n);	//il motore va in moto cronometrato
 					startEndOfRunTimer(n);
@@ -2171,7 +2231,7 @@ void onElapse(byte nn, unsigned long tm){
 					readStatesAndPub();
 				}
 	#else
-				else if(getGroupState(nn)==2){//se il motore √® in moto a vuoto
+				else if(getGroupState(nn)==2){//se il motore Ë in moto a vuoto
 					DEBUG_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
 					secondPress(n,0,true);
 					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
@@ -2180,12 +2240,12 @@ void onElapse(byte nn, unsigned long tm){
 					readStatesAndPub();
 				}
 	#endif
-			}else{//se √® in modalit√† switch
+			}else{//se Ë in modalit‡ switch
 				if(getGroupState(nn)==1){//se lo switch era inibito (timer di attesa scaduto)
 					DEBUG_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
 					startSimpleSwitchDelayTimer(nn);
 					//adesso commuta...
-				}else if(getGroupState(nn)==2){ //se lo switch √® monostabile (timer di eccitazione scaduto)
+				}else if(getGroupState(nn)==2){ //se lo switch Ë monostabile (timer di eccitazione scaduto)
 					DEBUG_PRINTLN(F("stato 0 switch mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 					endPress(nn);
 				}
@@ -2194,7 +2254,7 @@ void onElapse(byte nn, unsigned long tm){
 				//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 				readStatesAndPub();
 			}
-		}else if(getCntValue(nn) > 1){ //in tutte le modalit√†
+		}else if(getCntValue(nn) > 1){ //in tutte le modalit‡
 			if(n == 0){
 				DEBUG_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
 				if(getCntValue(nn)==3){
@@ -2246,7 +2306,7 @@ void onElapse(byte nn, unsigned long tm){
 					DEBUG_PRINTLN(F("-----------------------------"));
 					ESP.eraseConfig(); //do the erasing of wifi credentials
 					ESP.restart();
-				}else if(getCntValue(nn)==5 && roll[n]){ //solo in modalit√† tapparella!
+				}else if(getCntValue(nn)==5 && roll[n]){ //solo in modalit‡ tapparella!
 					DEBUG_PRINTLN(F("-----------------------------"));
 					DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
 					DEBUG_PRINTLN(F("-----------------------------"));
@@ -2271,7 +2331,7 @@ void onElapse(byte nn, unsigned long tm){
 				}
 				//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
 				resetCnt(nn);
-			}else if(roll[n]){ //solo in modalit√† tapparella!
+			}else if(roll[n]){ //solo in modalit‡ tapparella!
 				DEBUG_PRINTLN(F("onElapse:  timer 2 dei servizi a conteggio scaduto"));
 				if(getCntValue(CNTSERV3)==5){
 					DEBUG_PRINTLN(F("-----------------------------"));
@@ -2299,7 +2359,7 @@ void onElapse(byte nn, unsigned long tm){
 			//mqttReconnect();
 			//wifi_station_dhcpc_start();
 			DEBUG_PRINTLN(F("-----------------------------"));
-			DEBUG_PRINTLN(F("Nussun client si √® ancora connesso, disatttivato AP mode"));
+			DEBUG_PRINTLN(F("Nussun client si Ë ancora connesso, disatttivato AP mode"));
 			DEBUG_PRINTLN(F("-----------------------------"));
 		}
 		//setGroupState(0,n%2);				 								//stato 0: il motore va in stato fermo
@@ -2559,6 +2619,9 @@ void INSTACV_Evnt::doaction(){
 //----------------------------------------------------------------------------
 //richieste da remoto di valori locali
 //----------------------------------------------------------------------------
+//void BaseEvnt::loadPid(byte id){
+//	this->pid = id;
+//}
 void MQTTBTN_Evnt::doaction(){
 	unsigned i = this->pid;
 	byte v = static_cast<ParByte*>(pars[i])->val;
@@ -2569,9 +2632,8 @@ void MQTTBTN_Evnt::doaction(){
 	DEBUG_PRINT(i);
 	DEBUG_PRINT(" val: ");
 	DEBUG_PRINTLN(v);
-	(in[i]) && (in[i] = 255);
-	(v) && (in[i] = v);
-	static_cast<ParByte*>(pars[i])->load(0); //flag reset
+	in[i] = v;
+	static_cast<ParByte*>(pars[i])->load((byte) 0); //flag reset
 	DEBUG_PRINT(" inval: ");
 	DEBUG_PRINTLN(in[i]);
 	
@@ -2596,6 +2658,9 @@ void MQTTBTN_Evnt::doaction(){
 			blocked[0]=blocked[1]=false;
 		}
 	}
+	//initdfn(LOW, i);
+	//in[i] = 0;
+	//resetTimer(RESETTIMER);
 }
 void UTCVAL_Evnt::doaction(){
 	updateNTP(static_cast<ParLong*>(pars[p(UTCVAL)])->val);
