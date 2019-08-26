@@ -1481,19 +1481,19 @@ void leggiTastiLocali2(){
 	char s[18];
 	uint8_t regA = mcp.readGPIO(0);
 	uint8_t inmask = regA & 0xF;	//00001111 (15)
-	if(DEBUG_PRINT(s); != 15){ //pullup!
+	if(inmask != 15){ //pullup!
 		DEBUG_PRINT(F("\nInmask: "));
 		DEBUG_PRINTLN(inmask);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(regA));
 		DEBUG_PRINT(s);
-		pars[MQTTUP1]->load((byte)((regA >> BTN1U) & 0x1)?0:255); 
-		pars[MQTTUP1]->doaction();
-		pars[MQTTDOWN1]->load((byte)(regA >> BTN1D) & 0x1)?0:255); 
-		pars[MQTTDOWN1]->doaction();
-		pars[MQTTUP2]->load((byte)((regA >> BTN2U) & 0x1)?0:255); 
-		pars[MQTTUP2]->doaction();
-		pars[MQTTDOWN2]->load((byte)(regA >> BTN2D) & 0x1)?0:255);
-		pars[MQTTDOWN2]->doaction();
+		static_cast<ParByte*>(pars[MQTTUP1])->load((byte)((regA >> BTN1U) & 0x1)?0:255); 
+		static_cast<ParByte*>(pars[MQTTUP1])->doaction();
+		static_cast<ParByte*>(pars[MQTTDOWN1])->load((byte)((regA >> BTN1D) & 0x1)?0:255); 
+		static_cast<ParByte*>(pars[MQTTDOWN1])->doaction();
+		static_cast<ParByte*>(pars[MQTTUP2])->load((byte)((regA >> BTN2U) & 0x1)?0:255); 
+		static_cast<ParByte*>(pars[MQTTUP2])->doaction();
+		static_cast<ParByte*>(pars[MQTTDOWN2])->load((byte)((regA >> BTN2D) & 0x1)?0:255);
+		static_cast<ParByte*>(pars[MQTTDOWN2])->doaction();
 	}else{
 		in[BTN1IN] = LOW;
 		in[BTN2IN] = LOW;
@@ -1514,7 +1514,6 @@ void leggiTastiLocali2(){
 		DEBUG_PRINTLN(inmask);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(inmask>>8), BYTE_TO_BINARY(inmask));
 		DEBUG_PRINT(s);
-		//pars[MQTTUP1]->load((byte)(GPIP(BTN1U))?0:255); 
 		static_cast<ParByte*>(pars[MQTTUP1])->load((byte)(GPIP(BTN1U))?0:255); 
 		static_cast<ParByte*>(pars[MQTTUP1])->doaction();
 		static_cast<ParByte*>(pars[MQTTDOWN1])->load((byte)(GPIP(BTN1D))?0:255); 
@@ -2639,28 +2638,11 @@ void MQTTBTN_Evnt::doaction(){
 	
 	if(roll[n]){
 		//DEBUG_PRINTLN("\ncmdLogic: switchLogic");
-		if(switchLogic(sw,n)){
-			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato();
-			//legge lo stato finale e lo pubblica su MQTT
-			readStatesAndPub();
-			//DEBUG_PRINTLN("Fine callback MQTT.");
-			blocked[0]=blocked[1]=false;
-		}
+		switchLogic(sw, n);
 	}else{
 		//DEBUG_PRINTLN("\ncmdLogic: toggleLogic");
-		if(toggleLogic(sw, n)){
-			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato();
-			//legge lo stato finale e lo pubblica su MQTT
-			readStatesAndPub();
-			//DEBUG_PRINTLN("Fine callback MQTT.");
-			blocked[0]=blocked[1]=false;
-		}
+		toggleLogic(sw, n);
 	}
-	//initdfn(LOW, i);
-	//in[i] = 0;
-	//resetTimer(RESETTIMER);
 }
 void UTCVAL_Evnt::doaction(){
 	updateNTP(static_cast<ParLong*>(pars[p(UTCVAL)])->val);

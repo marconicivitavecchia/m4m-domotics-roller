@@ -60,8 +60,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				1
-#define ROLLERSHUTTER 			0
+#define SONOFF_4CH				0
+#define ROLLERSHUTTER 			1
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------NON MODIFICARE LA PARTE SOTTOSTATNTE------------------------------------------------------------------------------------------------
 //#define AUTOCAL_HLW8012			0
@@ -618,6 +618,7 @@ class Par{
 		virtual String getStrVal() = 0;			//late binding abstract
 		virtual void loadFromEprom() = 0;		//late binding abstract
 		virtual void load(byte); 				//late binding
+		
 		virtual void load(int);					//late binding
 		virtual void load(unsigned long);		//late binding
 		virtual void load(float);				//late binding
