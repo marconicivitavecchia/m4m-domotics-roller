@@ -1476,12 +1476,11 @@ void resetZeroDetectCnt(){
 }
 
 void leggiTastiLocali2(){
-
 #if (MCP2317) 
 	char s[18];
 	uint8_t regA = mcp.readGPIO(0);
-	uint8_t inmask = regA & 0xF;	//00001111 (15)
-	if(inmask != 15){ //pullup!
+	uint8_t inmask = regA & 0xF0;	//00001111 (15)
+	if(inmask != 240){ //pullup!
 		DEBUG_PRINT(F("\nInmask: "));
 		DEBUG_PRINTLN(inmask);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(regA));
