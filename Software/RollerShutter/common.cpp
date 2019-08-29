@@ -338,7 +338,53 @@ const char HTTP_FORM_WIFI[] PROGMEM =
 				"</div>"
 			"</div>"
         "</form>"
-	"</div></div></body></html>";
+	"</div></body></html>";
+
+const char HTTP_FORM_LOG[] PROGMEM =	
+	"<html>{HD}<body>"
+	"<div class='header' id='logo'><h1>MyTapparella</h1></div>"
+	"<div id='form'>"
+        "<form action='/login' method='POST'>"
+			"<div class='grid-container'>"
+				"<div class='col-6 col-s-12'><label for='serlog'>Set serial log</label>"
+					 "<select id='serlog' name='serlog'>"
+						  "<option value='0'>No log</option>"
+						  "<option value='1'>Level 1 only</option>"
+						  "<option value='2'>Level 1 and level 2</option>"
+					 "</select><br>"
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='tlntlog'>Set telnet log</label>"
+					 "<select id='tlntlog' name='tlntlog'>"
+						  "<option value='0'>No log</option>"
+						  "<option value='1'>Level 1 only</option>"
+						  "<option value='2'>Level 1 and level 2</option>"
+					 "</select><br>"
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='mqttlog'>Set MQTT log</label>"
+					 "<select id='mqttlog' name='mqttlog'>"
+						  "<option value='0'>No log</option>"
+						  "<option value='1'>Level 1 only</option>"
+						  "<option value='2'>Level 1 and level 2</option>"
+					 "</select><br>"
+				"</div>"
+				"<div class='col-2'></div>"
+					"<div class='col-2 col-s-12'>"
+						"<input type='submit' name='svlog' value='Save' formaction='/modify' formmethod='post'>"
+					"</div>"
+					"<div class='col-4'></div>"
+					"<div class='col-2 col-s-12'>"
+						"<input type='submit' value='Back'>"
+					"</div>"
+				"</div>"
+			"</div>"
+        "</form>"
+	"</div>"
+	"<script>"		
+		"document.getElementById('serlog').selectedIndex='{L1}';"
+		"document.getElementById('tlntlog').selectedIndex='{L2}';"
+		"document.getElementById('mqttlog').selectedIndex='{L3}';"
+	"</script>"
+	"</body></html>";
 	
 const char HTTP_FORM_SYSTEM[] PROGMEM =	
 	"<html>{HD}<body onload = 'loadTimeZoneList();showLoaded()';>"
@@ -411,6 +457,7 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 					"<div class='col-4'></div>"
 					"<div class='col-2 col-s-12'>"
 						"<input type='submit' value='Back'>"
+					"</div>"
 				"</div>"
 			"</div>"
         "</form>"
@@ -805,10 +852,11 @@ const char HTTP_FORM_LOGIN[] PROGMEM =
 		"<div id='form' class='col-6 col-s-12'>"
 			"<form action='/login' method='POST'>"
 				"<input type='submit' formaction='systconf' formmethod='post' value='System configuration'>"
-				"<input type='submit' formaction='/wificonf' formmethod='post' value='WiFi configuration'>"
+				"<input type='submit' formaction='wificonf' formmethod='post' value='WiFi configuration'>"
 				"<br><input type='submit' formaction='mqttconf' formmethod='post' value='MQTT configuration'>"
 				"<br><input type='submit' formaction='logicconf' formmethod='post' value='Logic configuration'>"
 				"<br><input type='submit' formaction='eventconf' formmethod='post' value='Events configuration'>"
+				"<br><input type='submit' formaction='logconf' formmethod='post' value='Log configuration'>"
 				"<br><input type='submit' value='Exit' name='disconnect'>"
 			"</form>"
 		"</div>"
@@ -1359,12 +1407,12 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 		page.replace(F("{TD}"), parsp[p(THALT2)]->getStrVal());
 		page.replace(F("{DU}"), parsp[p(THALT3)]->getStrVal());
 		page.replace(F("{DD}"), parsp[p(THALT4)]->getStrVal());
-		if(static_cast<ParByte*>(parsp[SWROLL1])->val == 0){
+		if(static_cast<ParUint8*>(parsp[SWROLL1])->val == 0){
 			page.replace(F("{H3}"), "disabled");
 		}else{
 			page.replace(F("{H3}"), "");
 		}
-		if(static_cast<ParByte*>(parsp[SWROLL2])->val == 0){
+		if(static_cast<ParUint8*>(parsp[SWROLL2])->val == 0){
 			page.replace(F("{H4}"), "disabled");
 		}else{
 			page.replace(F("{H4}"), "");
@@ -1375,9 +1423,53 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 		page.replace(F("{SR}"), parsp[p(SLATSRATIO)]->getStrVal());
 		page.replace(F("{H1}"), (parsp[p(SWROLL1)]->getStrVal() == "0")?"checked":"");
 		page.replace(F("{H2}"), (parsp[p(SWROLL2)]->getStrVal() == "0")?"checked":"");
-		//set cookies OK
-		//DEBUG_PRINTLN(page);
-		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
+		
+		serverp.sendHeader("Cache-Control", "no-cache");
+		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
+		serverp.send(200, "text/html", page);
+  } else {   
+		DEBUG_PRINTLN(F("Login non consentito "));
+		serverp.sendHeader("Location", "/");
+		serverp.sendHeader("Cache-Control", "no-cache");
+		serverp.send(301);
+  }
+}
+
+void handleLogConf() {  // If a POST request is made to URI /login
+  resetZeroDetectCnt();
+  //I parametri NON devono essere modificati
+  bool ok=false;
+
+  DEBUG_PRINTLN(F("Enter handleMQTTConf"));
+  if(is_authentified(serverp)) 
+  {
+#if (DEBUG)	
+	DEBUG_PRINT(F("handleMQTTConf: found cookie: "));
+    String cookie = serverp.header("Cookie");
+    DEBUG_PRINTLN(cookie);
+#endif
+	ok=true;
+  }
+  String page = FPSTR(HTTP_FORM_LOG);
+  
+  if(ok) { 
+		//Head placeholders
+		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
+		//Body placeholders
+		uint8_t num = static_cast<ParUint8*>(parsp[p(LOGSLCT)])->val;
+		page.replace(F("{L1}"), String((num >> 0) & 0x3));
+		page.replace(F("{L2}"), String((num >> 2) & 0x3));
+		page.replace(F("{L3}"), String((num >> 4) & 0x3));
+		
+		DEBUG_PRINT(F("{L1]: "));
+		DEBUG_PRINTLN(String((num >> 0) & 0x3));
+		
+		DEBUG_PRINT(F("{L2]: "));
+		DEBUG_PRINTLN(String((num >> 2) & 0x3));
+		
+		DEBUG_PRINT(F("{L3]: "));
+		DEBUG_PRINTLN(String((num >> 4) & 0x3));
+
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
 		serverp.send(200, "text/html", page);
@@ -1430,12 +1522,12 @@ void handleEventConf() {  // If a POST request is made to URI /login
 		page.replace(F("{S2}"), String(getCntValue(2)));
 		page.replace(F("{S3}"), String(getCntValue(3)));
 		page.replace(F("{S4}"), String(getCntValue(4)));
-		if(static_cast<ParByte*>(parsp[SWROLL1])->val == 0){
+		if(static_cast<ParUint8*>(parsp[SWROLL1])->val == 0){
 			page.replace(F("{V1}"), "style=\"display:block\"");
 		}else{
 			page.replace(F("{V1}"), "style=\"display:none\"");
 		}
-		if(static_cast<ParByte*>(parsp[SWROLL2])->val == 0){
+		if(static_cast<ParUint8*>(parsp[SWROLL2])->val == 0){
 			page.replace(F("{V2}"), "style=\"display:block\"");
 		}else{
 			page.replace(F("{V2}"), "style=\"display:none\"");
@@ -1536,7 +1628,7 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 	serverp.send(200, "text/html", page);
 }
 
-inline void savegroup(byte fields[], byte len){
+inline void savegroup(uint8_t fields[], uint8_t len){
 	for(int i=0; i<len; i++){
 		saveParamFromForm(fields[i]);		//save param on eeprom
 		parsp[fields[i]]->doaction();		//execute onreceive param event manager
@@ -1556,19 +1648,19 @@ void handleModify(){
   eepromBegin();
   if(serverp.hasArg("svwifi")){
 	  DEBUG_PRINTLN(F("savegroup svwifi"));
-	  byte fields[6] ={p(APPSSID), p(APPPSW), p(CLNTSSID1), p(CLNTPSW1), p(CLNTSSID2), p(CLNTPSW2)};
+	  uint8_t fields[6] ={p(APPSSID), p(APPPSW), p(CLNTSSID1), p(CLNTPSW1), p(CLNTSSID2), p(CLNTPSW2)};
 	  savegroup(fields, 6);
   }else if(serverp.hasArg("svmqtt")){
 	  DEBUG_PRINTLN(F("savegroup svmqtt"));
-	  byte fields[9] ={p(MQTTADDR), p(MQTTID), p(MQTTOUTTOPIC), p(MQTTINTOPIC), p(MQTTUSR), p(MQTTPSW), p(MQTTPORT), p(WSPORT), p(MQTTPROTO)};
+	  uint8_t fields[9] ={p(MQTTADDR), p(MQTTID), p(MQTTOUTTOPIC), p(MQTTINTOPIC), p(MQTTUSR), p(MQTTPSW), p(MQTTPORT), p(WSPORT), p(MQTTPROTO)};
 	  savegroup(fields, 9);
   }else if(serverp.hasArg("svsystem")){
 	  DEBUG_PRINTLN(F("savegroup svsystem"));
 #if (AUTOCAL_HLW8012) 
-	  byte fields[11] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE), p(ACVOLT), p(CALPWR)};
+	  uint8_t fields[11] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE), p(ACVOLT), p(CALPWR)};
 	  savegroup(fields, 11);
 #else
-	  byte fields[8] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE)};
+	  uint8_t fields[8] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE)};
 	  savegroup(fields, 8);
 #endif	  
 	  if( serverp.hasArg("rebootd") && String("y") == serverp.arg("rebootd") ){
@@ -1587,7 +1679,7 @@ void handleModify(){
 	  }
   }else if(serverp.hasArg("svlogic")){
 	  DEBUG_PRINTLN(F("savegroup svlogic"));
-	  byte fields[11] ={p(THALT1), p(THALT2), p(THALT3), p(THALT4), p(STDEL1), p(STDEL2), p(VALWEIGHT), p(TLENGTH), p(BARRELRAD), p(THICKNESS), p(SLATSRATIO)};
+	  uint8_t fields[11] ={p(THALT1), p(THALT2), p(THALT3), p(THALT4), p(STDEL1), p(STDEL2), p(VALWEIGHT), p(TLENGTH), p(BARRELRAD), p(THICKNESS), p(SLATSRATIO)};
 	  savegroup(fields, 11);
 	  
 	  if( serverp.hasArg("swroll1") && String("1") == serverp.arg("swroll1") ){
@@ -1606,6 +1698,36 @@ void handleModify(){
 		setSWMode(1,1);	
 		updtConf(p(SWROLL2), String("1"));
 	  }
+  }else if(serverp.hasArg("svlog")){
+	  uint8_t num = static_cast<ParUint8*>(parsp[p(LOGSLCT)])->val;
+	  uint8_t oldNum = num;
+		DEBUG_PRINT(F("{L1]: "));
+		DEBUG_PRINTLN(String((num >> 0) & 0x3));
+		
+		DEBUG_PRINT(F("{L2]: "));
+		DEBUG_PRINTLN(String((num >> 2) & 0x3));
+		
+		DEBUG_PRINT(F("{L3]: "));
+		DEBUG_PRINTLN(String((num >> 4) & 0x3));
+	  if( serverp.hasArg("serlog") && String((num >> 0) & 0x3) != serverp.arg("serlog") ){
+		num -= (num >>0) & 0x3;
+		num += serverp.arg("serlog").toInt();
+	  } 
+	  if( serverp.hasArg("tlntlog") && String((num >> 2) & 0x3) != serverp.arg("tlntlog") ){
+		num -= ((num >> 2) & 0x3)*4;
+		num += serverp.arg("tlntlog").toInt()*4;
+	  }
+	  if( serverp.hasArg("mqttlog") &&String((num >> 4) & 0x3) != serverp.arg("mqttlog") ){
+		num -= ((num >> 4) & 0x3)*16; 
+		num += serverp.arg("mqttlog").toInt()*16;
+	  }
+	  if(oldNum != num){
+		  DEBUG_PRINT(F("num: "));
+		  DEBUG_PRINTLN(String(num));
+		  static_cast<ParUint8*>(parsp[p(LOGSLCT)])->load(num);
+		  saveSingleConf(LOGSLCT);
+		  static_cast<ParUint8*>(parsp[p(LOGSLCT)])->doaction();
+	  }
   }
   EEPROM.end();
   
@@ -1618,7 +1740,7 @@ void handleModify(){
   page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
   serverp.send(200, "text/html", page);
 	
-  if(static_cast<ParByte*>(parsp[TIMINGCHANGED])->val == 1){
+  if(static_cast<ParUint8*>(parsp[TIMINGCHANGED])->val == 1){
 	parsp[TIMINGCHANGED]->load(0);
 	initIiming(false);
   } 
@@ -1967,7 +2089,7 @@ void Par::doaction(){
 		e->doaction();
 }
 
-void Par::load(byte f){};
+void Par::load(uint8_t f){};
 void Par::load(int f){};
 void Par::load(unsigned long f){};
 void Par::load(float f){};
@@ -1981,27 +2103,27 @@ String Par::getStrJsonName(){
 String Par::getStrFormName(){
 	return String(formname);
 }
-byte Par::getType(){
+uint8_t Par::getType(){
 	return partype;
 }
 
-String ParByte::getStrVal(){
+String ParUint8::getStrVal(){
 	return String(this->val);
 }
-void ParByte::writeParam(String str){
-	byte app = str.toInt();
+void ParUint8::writeParam(String str){
+	uint8_t app = str.toInt();
 	EEPROM.write(eprom, app);
 }
-void ParByte::load(byte b){
+void ParUint8::load(uint8_t b){
 	this->val = b;
 }
-void ParByte::loadFromEprom(){
+void ParUint8::loadFromEprom(){
 	this->val = EEPROM.read(eprom);
 }
-void ParByte::saveOnEprom(){
+void ParUint8::saveOnEprom(){
 	EEPROM.write(eprom, this->val);
 }
-void ParByte::loadFromStr(String str){
+void ParUint8::loadFromStr(String str){
 	this->val = str.toInt();
 }
 
@@ -2131,9 +2253,9 @@ void ParVarStr::loadFromEprom(){
 }
 
 
-byte saveByteConf(unsigned confofst){
+uint8_t saveByteConf(unsigned confofst){
 	saveConf(p(confofst));
-	return (byte) static_cast<ParByte*>(parsp[p(confofst)])->val;
+	return (uint8_t) static_cast<ParUint8*>(parsp[p(confofst)])->val;
 }
 
 int saveIntConf(unsigned confofst){
@@ -2150,4 +2272,105 @@ float saveFloatConf(unsigned confofst){
 	saveConf(p(confofst));
 	return  static_cast<ParFloat*>(parsp[p(confofst)])->val;
 }
+
+void BaseLog::print(char* topic,  char* msg){};
+void BaseLog::println(char* topic,  char* msg){};
+
+void BaseLog::append(char*result, char* topic, char* msg){
+	strcpy(result,topic); // copy string one into the result.
+	strcat(result,"]: "); // append string two to the result.
+	strcat(result,msg); // append string two to the result.
+}
+//SerialLog
+void SerialLog::print(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	Serial.print(result);
+};
+void SerialLog::println(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	Serial.println(result);
+};
+//TelnetLog
+void TelnetLog::print(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	tel->println(result);
+};
+void TelnetLog::println(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	tel->print(result);
+};
+//MQTTLog
+void MQTTLog::print(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	mqttc->publish((const char *) "log", (const char *) msg, strlen(msg));
+};
+void MQTTLog::println(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	strcat(result,"\n");
+	mqttc->publish((const char *) "log", (const char *) msg, strlen(msg));
+};
+//SerialTelnetLog
+void SerialTelnetLog::print(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	Serial.print(result);
+	tel->print(result);
+};
+void SerialTelnetLog::println(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	Serial.println(result);
+	tel->println(result);
+};
+//SerialMqttLog
+void SerialMQTTLog::print(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	Serial.print(result);
+	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+};
+void SerialMQTTLog::println(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	Serial.println(result);
+	strcat(result,"\n");
+	Serial.print(result);
+	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+};
+//TelnetMQTTLog
+void TelnetMQTTLog::print(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	tel->print(result);
+	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+};
+void TelnetMQTTLog::println(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	strcat(result,"\n");
+	tel->print(result);
+	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+};
+//SerialTelnetMQTTLog
+void SerialTelnetMQTTLog::print(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	Serial.print(result);
+	tel->print(result);
+	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+};
+void SerialTelnetMQTTLog::println(char* topic,  char* msg){
+	char result[100] = "[";
+	append(result, topic, msg);
+	strcat(result,"\n");
+	Serial.print(result);
+	tel->print(result);
+	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+};
 

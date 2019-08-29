@@ -17,13 +17,16 @@ String enda = "\",";
 String end = "\"";
 String endbrk = "}";
 
+BaseLog* dbg1 = NULL;
+BaseLog* dbg2 = NULL;
+
 char IP[] = "xxx.xxx.xxx.xxx";          // buffer
 //end global string
 //stats variables
 #if (AUTOCAL)
 int samples[10];
-byte indx = 0;
-byte stat;
+uint8_t indx = 0;
+uint8_t stat;
 bool mov = false;
 float vcosfi = 220*0.8;
 double ACSVolt;
@@ -34,6 +37,7 @@ double VRMS = 0;
 double VMCU = 0;
 double AmpsRMS = 0;
 int zero, l=0, h=1024;
+unsigned wificnt = 0;
 unsigned long smplcnt; //sampleCount;
 unsigned short zeroCnt = 0;
 unsigned long mqttcnt = 0;
@@ -55,28 +59,28 @@ short chk[2]={0,0};
 #endif
 bool isrun[2]={false,false};
 volatile bool dosmpl = false;
-byte cont=0;
+uint8_t cont=0;
 //end of stats variables
 unsigned long prec=0;
 unsigned long current = 0;
 wl_status_t wfs;
-byte wifiState = WIFISTA;
+uint8_t wifiState = WIFISTA;
 volatile bool wifiConn, keepConn, startWait, endWait;
 unsigned long _connectTimeout  = 10*1000;
 //int haltPrm[2] = {THALT1,THALT2};
 //int haltOfs[2] = {THALT1OFST,THALT2OFST};
-byte blocked[2]={0,0};
+uint8_t blocked[2]={0,0};
 unsigned long edelay[2]={0,0};
-byte wsnconn = 0;
+uint8_t wsnconn = 0;
 IPAddress myip(192, 168, 43, 1);
 IPAddress mygateway(192, 168, 43, 1);
 IPAddress mysubnet(255, 255, 255, 0);
 bool roll[2] = {true, true};
 
-byte cols[] = {7,4,2,1,6,5,3,0};
-byte ledcnt = 0;
-byte ledslct = 0;
-byte ledpause = 0;
+uint8_t cols[] = {7,4,2,1,6,5,3,0};
+uint8_t ledcnt = 0;
+uint8_t ledslct = 0;
+uint8_t ledpause = 0;
 
 #if(LARGEFW)
 RemoteDebug telnet;
@@ -102,8 +106,9 @@ unsigned int thalt4=5000;
 //{"OUTSLED":"0","up1":"1","down1":"0","up2":"50","down2":"0", pr1:"12", pr2:"76"}
 int ncifre=4;
 //vettori di ingresso, uscite e stato
-byte in[NBTN*BTNDIM], outPorts[NBTN*BTNDIM], out[NBTN*BTNDIM];
+uint8_t in[NBTN*BTNDIM], outPorts[NBTN*BTNDIM], out[NBTN*BTNDIM];
 Par *pars[PARAMSDIM];
+unsigned long *inl = (unsigned long *)in;
 
 ESP8266WebServer server(80);    	// Create a webserver object that listens for HTTP request on port 80
 WebSocketsServer webSocket(81);	    // create a websocket server on port 81
@@ -125,14 +130,14 @@ Pinger pinger;
 //Port config----------------------------------------------
 //LED and relays switches
 bool boot=true;
-byte swcount=0;
-byte wifindx=0;
+uint8_t swcount=0;
+uint8_t wifindx=0;
 //End port config------------------------------------------
 unsigned int step;
 //bool extCmd=false;
-byte acts[4];
+uint8_t acts[4];
 //numerazione porte
-byte outLogic[NBTN*STATUSDIM];
+uint8_t outLogic[NBTN*STATUSDIM];
 //inizio variabili globali antirimbalzo----------------------------------------------
 //fine variabili globali antirimbalzo----------------------------------------------
 //dichiara una variabile oggetto della classe WiFiClient (instanzia il client WiFi)
@@ -187,8 +192,8 @@ void calibrate_pwr() {
 
 	// Calibrate using a 60W bulb (pure resistive) on a 230V line
 	hlw8012.expectedActivePower(static_cast<ParFloat*>(pars[p(CALPWR)])->val);
-	hlw8012.expectedVoltage(static_cast<ParByte*>(pars[p(ACVOLT)])->val);
-	hlw8012.expectedCurrent((float) static_cast<ParFloat*>(pars[p(CALPWR)])->val / static_cast<ParByte*>(pars[p(ACVOLT)])->val);
+	hlw8012.expectedVoltage(static_cast<ParUint8*>(pars[p(ACVOLT)])->val);
+	hlw8012.expectedCurrent((float) static_cast<ParFloat*>(pars[p(CALPWR)])->val / static_cast<ParUint8*>(pars[p(ACVOLT)])->val);
 	//Save parameter in the system array
 	pars[p(PWRMULT)]->load(hlw8012.getPowerMultiplier());
 	
@@ -224,16 +229,16 @@ void HLW8012_init(){
 #endif
 
 #if (MCP2317) 
-inline void getbits(byte num, byte &r, byte &g, byte &b) 
+inline void getbits(uint8_t num, uint8_t &r, uint8_t &g, uint8_t &b) 
 { 
     r = (num >> 2) & 1;
 	g = (num >> 1) & 1;
 	b = num & 1;
 }
 	
-inline void setColor(byte num) 
+inline void setColor(uint8_t num) 
 {   
-	byte r,g,b;
+	uint8_t r,g,b;
 
     getbits(num, r, g, b);
 	mcp.digitalWrite(GREEN,g);	
@@ -264,7 +269,7 @@ void printOut(){
 	}
 }
 
-void rstldcnt(byte n){   
+void rstldcnt(uint8_t n){   
 	ledcnt = 2*(n+1);
 	ledslct = n;
 	ledpause = 0;
@@ -309,7 +314,7 @@ inline void initOfst(){
 	//pars[i][1] - type of eeprom saved data
 	//------------------------------------------
 	//i:integer
-	//b:byte
+	//b:uint8_t
 	//f:float
 	//s:string 32
 	//t:string 64
@@ -330,36 +335,36 @@ inline void initOfst(){
 	//----------------------------------------------
 	for(int i=0; i<PARAMSDIM; i++){
 		pars[i] = NULL;
-	} 
-	/*1*/pars[MQTTUP1] = new ParByte(0, "up1", "up1", MQTTUP1OFST, 'j','i', new MQTTBTN_Evnt(MQTTUP1));
-	/*2*/pars[MQTTDOWN1] = new ParByte(0, "down1", "down1", MQTTDOWN1OFST, 'j','i', new MQTTBTN_Evnt(MQTTDOWN1));
-	/*3*/pars[MQTTUP2] = new ParByte(0, "up2", "up2", MQTTUP2OFST, 'j','i', new MQTTBTN_Evnt(MQTTUP2));
-	/*4*/pars[MQTTDOWN2] = new ParByte(0, "down2", "down2", MQTTDOWN2OFST, 'j','i', new MQTTBTN_Evnt(MQTTDOWN2));
-	/*4*/pars[MQTTALL] = new ParByte(0, "all","all", 2,'n','n');
-	/*4*/pars[MQTTMAC] = new ParByte(0, "mac", "mac", 2,'n','n', new MQTTMAC_Evnt());
-	/*4*/pars[MQTTIP] = new ParByte(0, "ip", "ip", 2,'n','n', new MQTTIP_Evnt());
-	/*4*/pars[MQTTMQTTID] = new ParByte(0, "mqttid", "mqttid", 2,'n','n', new MQTTMQTTID_Evnt());
-	/*4*/pars[MQTTTEMP] = new ParByte(0, "temp", "temp", 2, 'n','n', new MQTTTEMP_Evnt());
-	/*4*/pars[MQTTMEANPWR] = new ParByte(0, "avgpwr", "avgpwr", 2,'n','n', new MQTTMEANPWR_Evnt());
-	/*4*/pars[MQTTPEAKPWR] = new ParByte(0, "peakpwr", "peakpwr", 2,'n','n', new MQTTPEAKPWR_Evnt());
-	/*4*/pars[MQTTTIME] = new ParByte(0, "time", "time", 2, 'n','n', new MQTTTIME_Evnt());
-	/*4*/pars[MQTTDATE] = new ParByte(0, "date", "date", 2, 'n','n');
+	}
+	/*1*/pars[MQTTUP1] = new ParUint8(0, "up1", "up1", MQTTUP1OFST, 'j','i', new MQTTBTN_Evnt(MQTTUP1));
+	/*2*/pars[MQTTDOWN1] = new ParUint8(0, "down1", "down1", MQTTDOWN1OFST, 'j','i', new MQTTBTN_Evnt(MQTTDOWN1));
+	/*3*/pars[MQTTUP2] = new ParUint8(0, "up2", "up2", MQTTUP2OFST, 'j','i', new MQTTBTN_Evnt(MQTTUP2));
+	/*4*/pars[MQTTDOWN2] = new ParUint8(0, "down2", "down2", MQTTDOWN2OFST, 'j','i', new MQTTBTN_Evnt(MQTTDOWN2));
+	/*4*/pars[MQTTALL] = new ParUint8(0, "all","all", 2,'n','n');
+	/*4*/pars[MQTTMAC] = new ParUint8(0, "mac", "mac", 2,'n','n', new MQTTMAC_Evnt());
+	/*4*/pars[MQTTIP] = new ParUint8(0, "ip", "ip", 2,'n','n', new MQTTIP_Evnt());
+	/*4*/pars[MQTTMQTTID] = new ParUint8(0, "mqttid", "mqttid", 2,'n','n', new MQTTMQTTID_Evnt());
+	/*4*/pars[MQTTTEMP] = new ParUint8(0, "temp", "temp", 2, 'n','n', new MQTTTEMP_Evnt());
+	/*4*/pars[MQTTMEANPWR] = new ParUint8(0, "avgpwr", "avgpwr", 2,'n','n', new MQTTMEANPWR_Evnt());
+	/*4*/pars[MQTTPEAKPWR] = new ParUint8(0, "peakpwr", "peakpwr", 2,'n','n', new MQTTPEAKPWR_Evnt());
+	/*4*/pars[MQTTTIME] = new ParUint8(0, "time", "time", 2, 'n','n', new MQTTTIME_Evnt());
+	/*4*/pars[MQTTDATE] = new ParUint8(0, "date", "date", 2, 'n','n');
 #if (AUTOCAL_HLW8012) 
-	/*4*/pars[DOPWRCAL] = new ParByte(0, "dopwrcal", "dopwrcal", 2, 'n','n', new DOPWRCAL_Evnt());
-	/*4*/pars[INSTPWR] = new ParByte(10, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
-	/*4*/pars[INSTACV] = new ParByte(230, "iacvolt", "iacvolt", 2,'n','n', new INSTACV_Evnt());
+	/*4*/pars[DOPWRCAL] = new ParUint8(0, "dopwrcal", "dopwrcal", 2, 'n','n', new DOPWRCAL_Evnt());
+	/*4*/pars[INSTPWR] = new ParUint8(10, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
+	/*4*/pars[INSTACV] = new ParUint8(230, "iacvolt", "iacvolt", 2,'n','n', new INSTACV_Evnt());
 	//------------------------------------------------------------------------------------------------------------------------------------
 	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'p','i');
 #else
-	/*4*/pars[DOPWRCAL] = new ParByte(0, "dopwrcal", "dopwrcal", 2, 'n','n');
-	/*4*/pars[INSTPWR] = new ParByte(0, "ipwr", "ipwr", 2,'n','n');
-	/*4*/pars[INSTACV] = new ParByte(0, "iacvolt", "iacvolt", 2,'n','n');
+	/*4*/pars[DOPWRCAL] = new ParUint8(0, "dopwrcal", "dopwrcal", 2, 'n','n');
+	/*4*/pars[INSTPWR] = new ParUint8(0, "ipwr", "ipwr", 2,'n','n');
+	/*4*/pars[INSTACV] = new ParUint8(0, "iacvolt", "iacvolt", 2,'n','n');
 	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'n','n');
 #endif
 	/*5*/pars[p(LOCALIP)] = new ParStr32("ip", "localip","ip");
-	/*5*/pars[p(SWROLL1)] = new ParByte(ROLLMODE1, "swroll1", "swroll1", SWROLL1OFST, 'p', 'i');
-	/*6*/pars[p(SWROLL2)] = new ParByte(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i');
-	/*7*/pars[p(UTCSDT)] = new ParByte(1, "utcsdt", "utcsdt", NTPSDTOFST, 'p', 'n', new UTCSDT_Evnt());
+	/*5*/pars[p(SWROLL1)] = new ParUint8(ROLLMODE1, "swroll1", "swroll1", SWROLL1OFST, 'p', 'i');
+	/*6*/pars[p(SWROLL2)] = new ParUint8(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i');
+	/*7*/pars[p(UTCSDT)] = new ParUint8(1, "utcsdt", "utcsdt", NTPSDTOFST, 'p', 'n', new UTCSDT_Evnt());
 	/*8*/pars[p(UTCZONE)] = new ParInt(1, "utczone", "utczone", NTPZONEOFST, 'p','i', new UTCZONE_Evnt());
 	/*9*/pars[p(THALT1)] = new ParInt(thalt1,"thalt1", "thalt1", THALT1OFST, 'p','i');
 	/*10*/pars[p(THALT2)] = new ParInt(thalt2, "thalt2", "thalt2", THALT2OFST, 'p','i');
@@ -394,36 +399,37 @@ inline void initOfst(){
 	/*39*/pars[p(NTPADDR1)] = new ParStr64(NTP1, "ntpaddr1", "ntpaddr1", NTP1ADDROFST, 'p','i');
 	/*40*/pars[p(NTPADDR2)] = new ParStr64(NTP2, "ntpaddr2", "ntpaddr2", NTP2ADDROFST, 'p','i');
 	/*41*/pars[p(PWRMULT)] = new ParFloat(1, "pwrmult", "pwrmult", PWRMULTOFST, 'p','i');
-	/*42*/pars[p(ACVOLT)] = new ParByte(230, "acvolt", "acvolt", ACVOLTOFST, 'p','i');
+	/*42*/pars[p(ACVOLT)] = new ParUint8(230, "acvolt", "acvolt", ACVOLTOFST, 'p','i');
 	/*43*/pars[p(ONCOND1)] = new ParVarStr("-1", "oncond1", "oncond1", 2, 'n','n', new ONCOND1_Evnt());
 	/*44*/pars[p(ONCOND2)] = new ParVarStr("-1", "oncond2","oncond2", 2, 'n','n', new ONCOND2_Evnt());
 	/*45*/pars[p(ONCOND3)] = new ParVarStr("-1", "oncond3","oncond3", 2, 'n','n', new ONCOND3_Evnt());
 	/*46*/pars[p(ONCOND4)] = new ParVarStr("-1", "oncond4","oncond4", 2, 'n','n', new ONCOND4_Evnt());
 	/*47*/pars[p(ONCOND5)] = new ParVarStr("(td1=4000)|(ma1=0)|(ma4=2)|(tsmpl4=4)|(oe1=1)", "oncond5","oncond5", 0, 'n','n', new ONCOND5_Evnt());
 	/*48*/pars[p(ACTIONEVAL)] = new ParVarStr("-1","onaction","onaction", 2, 'n','n', new ACTIONEVAL_Evnt());
-	/*5*/pars[p(WIFICHANGED)] = new ParByte(0, "WIFICHANGED","");
-	/*5*/pars[p(CONFLOADED)] = new ParByte(0, "CONFLOADED","");
-	/*5*/pars[p(MQTTADDRMODFIED)] = new ParByte(0, "MQTTADDRMODFIED","");
-	/*5*/pars[p(TOPICCHANGED)] = new ParByte(0, "TOPICCHANGED","");
-	/*5*/pars[p(MQTTCONNCHANGED)] = new ParByte(0, "MQTTCONNCHANGED","");
-	/*5*/pars[p(TIMINGCHANGED)] = new ParByte(0, "TIMINGCHANGED","");
-	/*5*/pars[p(SWACTION1)] = new ParByte(0, "SWACTION1","");
-	/*5*/pars[p(SWACTION2)] = new ParByte(0, "SWACTION2","");
-	/*5*/pars[p(SWACTION3)] = new ParByte(0, "SWACTION3","");
-	/*5*/pars[p(SWACTION4)] = new ParByte(0, "SWACTION4","");
+	/*5*/pars[p(WIFICHANGED)] = new ParUint8(0, "WIFICHANGED","");
+	/*5*/pars[p(CONFLOADED)] = new ParUint8(0, "CONFLOADED","");
+	/*5*/pars[p(MQTTADDRMODFIED)] = new ParUint8(0, "MQTTADDRMODFIED","");
+	/*5*/pars[p(TOPICCHANGED)] = new ParUint8(0, "TOPICCHANGED","");
+	/*5*/pars[p(MQTTCONNCHANGED)] = new ParUint8(0, "MQTTCONNCHANGED","");
+	/*5*/pars[p(TIMINGCHANGED)] = new ParUint8(0, "TIMINGCHANGED","");
+	/*5*/pars[p(SWACTION1)] = new ParUint8(0, "SWACTION1","");
+	/*5*/pars[p(SWACTION2)] = new ParUint8(0, "SWACTION2","");
+	/*5*/pars[p(SWACTION3)] = new ParUint8(0, "SWACTION3","");
+	/*5*/pars[p(SWACTION4)] = new ParUint8(0, "SWACTION4","");
 	/*5*/pars[p(UTCVAL)] = new ParLong(0, "UTCVAL","utcval");
+	/*5*/pars[p(LOGSLCT)] = new ParUint8(42, "logslct","logslct", LOGSLCTOFST, 'n', 'n', new LOGSLCT_Evnt());
 
 	//printparams();
 }
 
-inline bool gatedfn(float val, byte n, float rnd){
+inline bool gatedfn(float val, uint8_t n, float rnd){
 	//n: numero di porte
 	bool changed = (val < asyncBuf[n] - rnd || val > asyncBuf[n] + rnd);
 	asyncBuf[n] = val;            // valore di val campionato al loop precedente 
 	return changed;
 }
 
-inline byte cmdLogic(byte n){
+inline uint8_t cmdLogic(uint8_t n){
 	if(roll[n]){
 		//DEBUG_PRINTLN("\ncmdLogic: switchLogic");
 		return (switchLogic(0,n) + switchLogic(1,n));
@@ -445,7 +451,7 @@ float getAmpRMS(float ACSVolt){
 }
 #endif
 
-void setSWMode(byte mode,byte n){
+void setSWMode(uint8_t mode,uint8_t n){
 	roll[n] = mode;
 	isrun[n] = false;
 	DEBUG_PRINT("setSWMode");
@@ -456,7 +462,7 @@ void setSWMode(byte mode,byte n){
 	//readModeAndPub(n);
 }
 
-byte inline getSWMode(byte n){
+uint8_t inline getSWMode(uint8_t n){
 	return roll[n];
 }
 
@@ -479,7 +485,7 @@ float getTemperature(){
 //configurazioni provenienti da eventi locali
 float actions(char *key, float val)
 {	
-	byte n=-1;
+	uint8_t n=-1;
 	if(key[0]=='t'){
 		if(roll[0] == false){
 			if(strcmp(key,"tsmpl1")==0){
@@ -523,7 +529,7 @@ float actions(char *key, float val)
 			}
 		}
 	}else if(key[0]=='m'){
-		byte act=0;
+		uint8_t act=0;
 		if(key[1]=='a'){
 			if(roll[0] == false){
 				if(key[2]=='1'){
@@ -595,7 +601,7 @@ float actions(char *key, float val)
 	}else if(key[0]=='s'){
 		if(strcmp(key,"sdt")==0){
 			updtConf(UTCSDT, String(val));
-			setSDT((byte) val);
+			setSDT((uint8_t) val);
 		}
 		return val;
 	}
@@ -698,7 +704,7 @@ void printMcpRealOut(){
 	m = mcp.readGPIOAB();
 	//sprintf(s, "Lettura uscite MCP: - up1: %d, down1: %d, up2: %d, down2: %d\n", mcp.digitalRead(OUT1EU), mcp.digitalRead(OUT1DD), mcp.digitalRead(OUT2EU), mcp.digitalRead(OUT2DD));
 	//sprintf(s, "Lettura registri AB MCP: %d",);
-	//printf(s,"Leading text "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(byte));
+	//printf(s,"Leading text "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(uint8_t));
 	sprintf(s,"readGPIOAB: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
 	DEBUG_PRINT(s);
 #else
@@ -1014,7 +1020,7 @@ void readStatesAndPub(bool all){
   printMcpRealOut();
 }
 
-inline byte percfdbck(byte n){
+inline uint8_t percfdbck(uint8_t n){
 	//DEBUG_PRINT(F("Posdelta:"));
 	//DEBUG_PRINTLN(getPosdelta());
 	if(getDelayedCmd(n) <= 100){
@@ -1024,7 +1030,7 @@ inline byte percfdbck(byte n){
 	}
 }
 
-void readActModeAndPub(byte n){
+void readActModeAndPub(uint8_t n){
   //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
   String s=openbrk;
   //char sd[300];
@@ -1034,7 +1040,7 @@ void readActModeAndPub(byte n){
   publishStr(s);
 }
 
-void readModeAndPub(byte n){
+void readModeAndPub(uint8_t n){
   //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
   String s=openbrk;
   //char sd[300];
@@ -1065,7 +1071,7 @@ void readPeakPowerAndPub(){
   publishStr(s);
 }
 
-void readParamAndPub(byte parid, char* str){
+void readParamAndPub(uint8_t parid, char* str){
   //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
   String s=openbrk;
   //char sd[300];
@@ -1183,8 +1189,8 @@ void publishStr2(String &str){
 void initIiming(bool first){
   edelay[0] = static_cast<ParLong*>(pars[p(STDEL1)])->val; 
   edelay[1] = static_cast<ParLong*>(pars[p(STDEL2)])->val;
-  roll[0] = static_cast<ParByte*>(pars[p(SWROLL1)])->val;
-  roll[1] = static_cast<ParByte*>(pars[p(SWROLL2)])->val;
+  roll[0] = static_cast<ParUint8*>(pars[p(SWROLL1)])->val;
+  roll[1] = static_cast<ParUint8*>(pars[p(SWROLL2)])->val;
   DEBUG_PRINT(F("Roll1: "));
   DEBUG_PRINTLN(roll[0]);
   DEBUG_PRINT(F("Roll2: "));
@@ -1201,7 +1207,7 @@ inline void setupNTP() {
   setNtpServer(0,(const char*) static_cast<ParStr32*>(pars[p(NTPADDR1)])->val);
   setNtpServer(1,(const char*) static_cast<ParStr32*>(pars[p(NTPADDR2)])->val); 
   setSyncInterval((unsigned long) static_cast<ParLong*>(pars[p(UTCSYNC)])->val);
-  setSDT((byte) static_cast<ParByte*>(pars[p(UTCSDT)])->val);
+  setSDT((uint8_t) static_cast<ParUint8*>(pars[p(UTCSDT)])->val);
   adjustTime((unsigned long) static_cast<ParLong*>(pars[p(UTCADJ)])->val); 
   setTimeZone((int) static_cast<ParInt*>(pars[p(UTCZONE)])->val);
   sntpInit();  
@@ -1352,7 +1358,7 @@ void setup(){
   for(int i=0;i<NBTN*STATUSDIM;i++)
 	  outLogic[i]=LOW;
   for(int i=0;i<MQTTDIM;i++)
-	  static_cast<ParByte*>(pars[i])->load(LOW);
+	  static_cast<ParUint8*>(pars[i])->load(LOW);
   for(int i=0;i<4;i++)
 	  acts[i]=LOW;
   // Register event handlers.
@@ -1410,8 +1416,17 @@ void setup(){
   DEBUG_PRINTLN(F("Last reset reason: "));
   DEBUG_PRINTLN(ESP.getResetReason());
   
-  if(WiFi.status() == WL_CONNECTED)
-		mqttReconnect();
+  if(WiFi.status() == WL_CONNECTED){
+	  IPAddress ip = WiFi.localIP();
+	  ip.toString().toCharArray(IP, 16);
+	  pars[p(LOCALIP)]->load(IP);
+	  Serial.print(F("AP client IP address = "));
+	  Serial.println(((ParStr32*)pars[p(LOCALIP)])->val);
+	  mqttReconnect();
+	  wifiConn = true;	
+  }else{
+	  wifiConn = false;
+  }
   boot = false;
   
   DEBUG_PRINTLN(F("sampleCurrTime()"));
@@ -1429,6 +1444,7 @@ void httpSetup(){
   server.on("/wificonf", HTTP_POST, handleWifiConf);
   server.on("/mqttconf", HTTP_POST, handleMQTTConf);
   server.on("/logicconf", HTTP_POST, handleLogicConf);
+  server.on("/logconf", HTTP_POST, handleLogConf);
   server.on("/eventconf", HTTP_POST, handleEventConf);
   server.on("/cmd", HTTP_GET, handleCmd);
   server.on("/mqttcmd", HTTP_GET, handleMqttCmd);
@@ -1472,7 +1488,7 @@ void zeroDetect(){
 #endif
 
 void resetZeroDetectCnt(){
-	zeroCnt = 0;
+	zeroCnt = 4;
 }
 
 void leggiTastiLocali2(){
@@ -1480,28 +1496,33 @@ void leggiTastiLocali2(){
 	char s[18];
 	uint8_t regA = mcp.readGPIO(0);
 	uint8_t inmask = regA & 0xF0;	//00001111 (15)
-	if(inmask != 240){ //pullup!
+	//uint8_t inmask = regA & 0xF;	//00001111 (15)
+	if(inmask != 15){ //pullup!
+	//if(inmask != 240){ //pullup!
 		DEBUG_PRINT(F("\nInmask: "));
 		DEBUG_PRINTLN(inmask);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(regA));
 		DEBUG_PRINT(s);
-		static_cast<ParByte*>(pars[MQTTUP1])->load((byte)((regA >> BTN1U) & 0x1)?0:255); 
-		static_cast<ParByte*>(pars[MQTTUP1])->doaction();
-		static_cast<ParByte*>(pars[MQTTDOWN1])->load((byte)((regA >> BTN1D) & 0x1)?0:255); 
-		static_cast<ParByte*>(pars[MQTTDOWN1])->doaction();
-		static_cast<ParByte*>(pars[MQTTUP2])->load((byte)((regA >> BTN2U) & 0x1)?0:255); 
-		static_cast<ParByte*>(pars[MQTTUP2])->doaction();
-		static_cast<ParByte*>(pars[MQTTDOWN2])->load((byte)((regA >> BTN2D) & 0x1)?0:255);
-		static_cast<ParByte*>(pars[MQTTDOWN2])->doaction();
-	}else{
-		in[BTN1IN] = LOW;
-		in[BTN2IN] = LOW;
-		in[BTN1IN+BTNDIM] = LOW;
-		in[BTN2IN+BTNDIM] = LOW;
-		switchLogic(0,0);
-		switchLogic(0,1);
-		switchLogic(1,0);
-		switchLogic(1,1);
+		static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)((regA >> BTN1U) & 0x1)?0:255); 
+		static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
+		static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t)((regA >> BTN1D) & 0x1)?0:255); 
+		static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction();
+		static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t)((regA >> BTN2U) & 0x1)?0:255); 
+		static_cast<ParUint8*>(pars[MQTTUP2])->doaction();
+		static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)((regA >> BTN2D) & 0x1)?0:255);
+		static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
+	}else if(inl[0] != 0){
+		//in[BTN1IN] = LOW;
+		//in[BTN2IN] = LOW;
+		//in[BTN1IN+BTNDIM] = LOW;
+		//in[BTN2IN+BTNDIM] = LOW;
+		*inl = (unsigned long) 0UL;
+		initdfnUL(0UL,0);
+		resetTimer(RESETTIMER);
+		//switchLogic(0,0);
+		//switchLogic(0,1);
+		//switchLogic(1,0);
+		//switchLogic(1,1);
 	}
 #else	
 	uint16_t gpioread = (uint16_t)GPI;
@@ -1513,23 +1534,18 @@ void leggiTastiLocali2(){
 		DEBUG_PRINTLN(inmask);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(inmask>>8), BYTE_TO_BINARY(inmask));
 		DEBUG_PRINT(s);
-		static_cast<ParByte*>(pars[MQTTUP1])->load((byte)(GPIP(BTN1U))?0:255); 
-		static_cast<ParByte*>(pars[MQTTUP1])->doaction();
-		static_cast<ParByte*>(pars[MQTTDOWN1])->load((byte)(GPIP(BTN1D))?0:255); 
-		static_cast<ParByte*>(pars[MQTTDOWN1])->doaction();
-		static_cast<ParByte*>(pars[MQTTUP2])->load((byte)(GPIP(BTN2U))?0:255);
-		static_cast<ParByte*>(pars[MQTTUP2])->doaction();
-		static_cast<ParByte*>(pars[MQTTDOWN2])->load((byte)(GPIP(BTN2D))?0:255);  
-		static_cast<ParByte*>(pars[MQTTDOWN2])->doaction();
-	}else{
-		in[BTN1IN] = LOW;
-		in[BTN2IN] = LOW;
-		in[BTN1IN+BTNDIM] = LOW;
-		in[BTN2IN+BTNDIM] = LOW;
-		switchLogic(0,0);
-		switchLogic(0,1);
-		switchLogic(1,0);
-		switchLogic(1,1);
+		static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)(GPIP(BTN1U))?0:255); 
+		static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
+		static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t)(GPIP(BTN1D))?0:255); 
+		static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction();
+		static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t)(GPIP(BTN2U))?0:255);
+		static_cast<ParUint8*>(pars[MQTTUP2])->doaction();
+		static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)(GPIP(BTN2D))?0:255);  
+		static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
+	}else if(inl[0] != 0){
+		*inl = (unsigned long) 0UL;
+		initdfnUL(0UL,0);
+		resetTimer(RESETTIMER);
 	}
 #endif	
 }
@@ -1658,11 +1674,16 @@ inline void loop2() {
 		//Finestra idle di riconnessione (necessaria se il loop è molto denso di eventi e il wifi non si aggancia!!!)
 		//------------------------------------------------------------------------------------------------------------
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
-		if(wifiConn == false && !mov){ //sempre vero se si è in modalità switch!	
+		if(wifiConn == false && !mov && zeroCnt > 4){ //sempre vero se si è in modalità switch!	
 //#if (AUTOCAL_ACS712) 
-			DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
-			delay(30);//give 30ms to the ESP stack for wifi connect
-//#endif  
+			if(wificnt > 1000 / (MAINPROCSTEP+1)){
+				wificnt = 0;
+				DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
+				delay(30);//give 30ms to the ESP stack for wifi connect
+	//#endif  
+			}else{
+				wificnt++;
+			}
 			wifiConn = (WiFi.status() == WL_CONNECTED);
 		}
 		//------------------------------------------------------------------------------------------------------------
@@ -1695,8 +1716,8 @@ inline void updateCounters(){
 /*inline void leggiTastiLocaliRemoto(){
 	for(int i=0;i<4;i++){
 		(in[i]) && (in[i] = 255);
-		(static_cast<ParByte*>(pars[i])->val) && (in[i] = static_cast<ParByte*>(pars[i])->val);
-		static_cast<ParByte*>(pars[i])->load(LOW);
+		(static_cast<ParUint8*>(pars[i])->val) && (in[i] = static_cast<ParUint8*>(pars[i])->val);
+		static_cast<ParUint8*>(pars[i])->load(LOW);
 	}
 }*/
 //legge PERIODICAMENTE il parser delle condizioni sui sensori
@@ -1977,6 +1998,7 @@ inline void automaticStopManager(){
 				//running mean calculation
 				smplcnt++;
 				smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
+				DEBUG_PRINTLN(F("Zero detection manager"));	
 			}
 		}
 #endif
@@ -2037,7 +2059,7 @@ inline void MQTTReconnectManager(){
 			//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
 			if(wifiConn && mqttClient!=NULL){
 				//noInterrupts ();
-				byte mqttStat = mqttClient->isConnected();
+				uint8_t mqttStat = mqttClient->isConnected();
 				//interrupts ();
 				//delay(50);
 				//noInterrupts ();
@@ -2110,7 +2132,7 @@ inline void MQTTReconnectManager(){
 inline void paramsModificationPoll(){
 	//actions on parametrs saving
 		//is else if per gestione priorità, l'ordine è importante! vanno fatti in momenti successivi
-		if((byte) static_cast<ParByte*>(pars[p(WIFICHANGED)])->val == 1){
+		if((uint8_t) static_cast<ParUint8*>(pars[p(WIFICHANGED)])->val == 1){
 			pars[p(WIFICHANGED)]->load(0);
 			wifindx=0;
 			Serial.println(F("Doing WiFi disconnection"));
@@ -2121,11 +2143,11 @@ inline void paramsModificationPoll(){
 			wifindx = 0;
 		}
 	
-		if((byte) static_cast<ParByte*>(pars[p(MQTTADDRMODFIED)])->val == 1){ 
+		if((uint8_t) static_cast<ParUint8*>(pars[p(MQTTADDRMODFIED)])->val == 1){ 
 			pars[p(MQTTADDRMODFIED)]->load(0);
 			DEBUG_PRINTLN(F("confcmd[MQTTADDRMODFIED] eseguo la reconnect()"));
 			mqttReconnect();
-		}else if((byte) static_cast<ParByte*>(pars[p(MQTTCONNCHANGED)])->val == 1){ 
+		}else if((uint8_t) static_cast<ParUint8*>(pars[p(MQTTCONNCHANGED)])->val == 1){ 
 			pars[p(MQTTCONNCHANGED)]->load(0);
 			if(mqttClient==NULL){
 				DEBUG_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
@@ -2156,7 +2178,7 @@ inline void paramsModificationPoll(){
 			#endif		
 				mqttClient->publish((const char*) static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
 			}
-		}else if((byte) static_cast<ParByte*>(pars[p(TOPICCHANGED)])->val == 1){
+		}else if((uint8_t) static_cast<ParUint8*>(pars[p(TOPICCHANGED)])->val == 1){
 			pars[p(TOPICCHANGED)]->load(0);
 			if(mqttClient==NULL){
 				DEBUG_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
@@ -2186,7 +2208,7 @@ inline void paramsModificationPoll(){
 
 //-----------------------------------------------INIZIO TIMER----------------------------------------------------------------------
 //azione da compiere allo scadere di uno dei timer dell'array	
-void onElapse(byte nn, unsigned long tm){
+void onElapse(uint8_t nn, unsigned long tm){
 	int n = nn / TIMERDIM;
 	int sw = nn % TIMERDIM;
 	
@@ -2349,7 +2371,7 @@ void onElapse(byte nn, unsigned long tm){
 	}else if(nn == APOFFTIMER){
 		if(WiFi.softAPgetStationNum() == 0){
 			DEBUG_PRINTLN(F("WIFI: reconnecting to AP"));
-			byte stat = WiFi.status();
+			uint8_t stat = WiFi.status();
 			wifiConn = (stat == WL_CONNECTED);	
 			WiFi.mode(WIFI_STA);	
 			wifiState = WIFISTA;
@@ -2367,13 +2389,13 @@ void onElapse(byte nn, unsigned long tm){
 	//DEBUG_PRINTLN(F("Fine timer"));
 }
 
-void onTapStop(byte n){
+void onTapStop(uint8_t n){
 #if (AUTOCAL)
 	resetStatDelayCounter(n);
 #endif
 }
 		
-void onCalibrEnd(unsigned long app, byte n){
+void onCalibrEnd(unsigned long app, uint8_t n){
 	pars[p(THALT1 + n)]->load(app);
 	//initTapparellaLogic(in,inr,outLogic,(confcmd[THALT1]).toInt(),(confcmd[THALT2]).toInt(),(confcmd[STDEL1]).toInt(),(confcmd[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
 	setTapThalt(app, n);
@@ -2397,7 +2419,7 @@ void onCalibrEnd(unsigned long app, byte n){
 	DEBUG_PRINTLN(pars[p(THALT1 + n)]->getStrVal());
 }
 
-void manualCalibration(byte btn){
+void manualCalibration(uint8_t btn){
 	setGroupState(0,btn);	
 	//activate the learning of the running statistics
 	//setStatsLearnMode();
@@ -2442,7 +2464,7 @@ void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
 	if(WiFi.softAPgetStationNum() == 0){
 		resetTimer(APOFFTIMER);
 		DEBUG_PRINTLN(F("WIFI: reconnecting to AP"));
-		byte stat = WiFi.status();
+		uint8_t stat = WiFi.status();
 		wifiConn = (stat == WL_CONNECTED);	
 		WiFi.mode(WIFI_STA);	
 		wifiState = WIFISTA;
@@ -2557,9 +2579,9 @@ void testFlash(){
   
   sprintf(s,"\nFlash real id:   %08X\n", ESP.getFlashChipId());
   DEBUG_PRINT(s);
-  sprintf(s,"Flash real size: %u bytes\n", realSize);
+  sprintf(s,"Flash real size: %u uint8_ts\n", realSize);
   DEBUG_PRINT(s);
-  sprintf(s,"Flash ide  size: %u bytes\n", ideSize);
+  sprintf(s,"Flash ide  size: %u uint8_ts\n", ideSize);
   DEBUG_PRINT(s);
   sprintf(s,"Flash ide speed: %u Hz\n", ESP.getFlashChipSpeed());
   DEBUG_PRINT(s);
@@ -2617,12 +2639,12 @@ void INSTACV_Evnt::doaction(){
 //----------------------------------------------------------------------------
 //richieste da remoto di valori locali
 //----------------------------------------------------------------------------
-//void BaseEvnt::loadPid(byte id){
+//void BaseEvnt::loadPid(uint8_t id){
 //	this->pid = id;
 //}
 void MQTTBTN_Evnt::doaction(){
 	unsigned i = this->pid;
-	byte v = static_cast<ParByte*>(pars[i])->val;
+	uint8_t v = static_cast<ParUint8*>(pars[i])->val;
 	int n = i / TIMERDIM;
 	int sw = i % TIMERDIM;
 	
@@ -2631,7 +2653,7 @@ void MQTTBTN_Evnt::doaction(){
 	DEBUG_PRINT(" val: ");
 	DEBUG_PRINTLN(v);
 	in[i] = v;
-	static_cast<ParByte*>(pars[i])->load((byte) 0); //flag reset
+	static_cast<ParUint8*>(pars[i])->load((uint8_t) 0); //flag reset
 	DEBUG_PRINT(" inval: ");
 	DEBUG_PRINTLN(in[i]);
 	
@@ -2684,6 +2706,156 @@ void ONCOND5_Evnt::doaction(){
 	//save confs and actions on new config received event
 	writeOnOffConditions();
 }
+void LOGSLCT_Evnt::doaction(){
+	uint8_t ser, tlnt, mqtt, num;
+	
+	ser = (num >> 0) & 0x3;
+	tlnt = (num >> 2) & 0x3;
+	mqtt = (num >> 4) & 0x3;
+	
+	if(ser && !tlnt & !mqtt){
+		//00 00 01
+		//00 00 10
+		if(ser == 1){
+			dbg1 = new SerialLog(1);
+			dbg2 = new BaseLog(2);
+		}else if(ser == 2){
+			dbg1 = new SerialLog(1);
+			dbg2 = new SerialLog(2);
+		}
+	}else if(!ser && tlnt & !mqtt){
+		//00 01 00
+		//00 10 00
+		if(tlnt == 1){
+			dbg1 = new TelnetLog(1, &telnet);
+			dbg2 = new BaseLog(2);
+		}else if(tlnt == 2){
+			dbg1 = new TelnetLog(1, &telnet);
+			dbg2 = new TelnetLog(2, &telnet);
+		}
+	}else if(!ser && !tlnt && mqtt){
+		//01 00 00
+		//10 00 00
+		if(mqtt == 1){
+			dbg1 = new MQTTLog(1, mqttClient);
+			dbg2 = new BaseLog(2);
+		}else if(mqtt == 2){
+			dbg1 = new MQTTLog(1, mqttClient);
+			dbg2 = new MQTTLog(2, mqttClient);
+		}
+	}else if(ser && tlnt & !mqtt){
+		serialTelnet(ser, tlnt);
+	}else if(ser && mqtt & !tlnt){
+		serialMQTT(ser, mqtt);
+	}else if(tlnt && mqtt & !ser){
+		telnetMQTT(tlnt, mqtt);
+	}else if(tlnt == 2 && mqtt == 2 & ser == 2){
+		dbg1 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
+		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
+	}else if(tlnt == 2 && mqtt & ser){
+		serialMQTT2(ser, mqtt);
+	}else if(ser == 2 && tlnt & mqtt){
+		telnetMQTT2(tlnt, mqtt);
+	}else if(mqtt == 2 && tlnt & ser){
+		serialTelnet2(ser, tlnt);
+	}
+}
+
+void serialTelnet(uint8_t ser, uint8_t tlnt){
+	if(ser == 1 && tlnt == 1){
+		dbg1 = new SerialTelnetLog(1, &telnet);
+		dbg2 = new BaseLog(2);
+	}else if(ser == 2 && tlnt == 2){
+		dbg1 = new SerialTelnetLog(1, &telnet);
+		dbg2 = new SerialTelnetLog(2, &telnet);
+	}else if(ser == 2 && tlnt == 1){
+		dbg1 = new SerialTelnetLog(1, &telnet);
+		dbg2 = new SerialLog(2);
+	}else if(ser == 1 && tlnt == 2){
+		dbg1 = new SerialTelnetLog(1, &telnet);
+		dbg2 = new TelnetLog(2, &telnet);
+	}
+}
+
+void telnetMQTT(uint8_t tlnt, uint8_t mqtt){
+	if(tlnt == 1 && mqtt == 1){
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new BaseLog(2);
+	}else if(tlnt == 2 && mqtt == 2){
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new TelnetMQTTLog(2, &telnet, mqttClient);
+	}else if(tlnt == 2 && mqtt == 1){
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new TelnetLog(2, &telnet);
+	}else if(tlnt == 1 && mqtt == 2){
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new MQTTLog(2, mqttClient);
+	}
+}
+
+void serialMQTT(uint8_t ser, uint8_t mqtt){
+	if(ser == 1 && mqtt == 1){
+		dbg1 = new SerialMQTTLog(1, mqttClient);
+		dbg2 = new BaseLog(ser);
+	}else if(ser == 2 && mqtt == 2){
+		dbg1 = new SerialMQTTLog(1, mqttClient);
+		dbg2 = new SerialMQTTLog(2, mqttClient);
+	}else if(ser == 2 && mqtt == 1){
+		dbg1 = new SerialMQTTLog(1, mqttClient);
+		dbg2 = new SerialLog(2);
+	}else if(ser == 1 && mqtt == 2){
+		dbg1 = new SerialMQTTLog(1, mqttClient);
+		dbg2 = new MQTTLog(2, mqttClient);
+	}
+}
+
+void serialTelnet2(uint8_t ser, uint8_t tlnt){
+	if(ser == 1 && tlnt == 1){
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new BaseLog(2);
+	}else if(ser == 2 && tlnt == 2){
+		dbg1 = new SerialTelnetLog(1, &telnet);
+		dbg2 = new SerialTelnetLog(2, &telnet);
+	}else if(ser == 2 && tlnt == 1){
+		dbg1 = new SerialTelnetLog(1, &telnet);
+		dbg2 = new SerialLog(2);
+	}else if(ser == 1 && tlnt == 2){
+		dbg1 = new SerialTelnetLog(1, &telnet);
+		dbg2 = new TelnetLog(2, &telnet);
+	}
+}
+
+void telnetMQTT2(uint8_t tlnt, uint8_t mqtt){
+	if(tlnt == 1 && mqtt == 1){
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new BaseLog(2);
+	}else if(tlnt == 2 && mqtt == 2){
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new TelnetMQTTLog(2, &telnet, mqttClient);
+	}else if(tlnt == 2 && mqtt == 1){
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new TelnetLog(2, &telnet);
+	}else if(tlnt == 1 && mqtt == 2){
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new MQTTLog(2, mqttClient);
+	}
+}
+
+void serialMQTT2(uint8_t ser, uint8_t mqtt){
+	if(ser == 1 && mqtt == 1){
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new BaseLog(2);
+	}else if(ser == 2 && mqtt == 2){
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
+	}else if(ser == 2 && mqtt == 1){
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new SerialLog(2);
+	}else if(ser == 1 && mqtt == 2){
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
+		dbg2 = new MQTTLog(2, mqttClient);
+	}
+}
 /*
 void WEBUSR_Evnt::doaction(){
 	//save confs and actions on new config received event
@@ -2700,6 +2872,7 @@ void CALPWR_Evnt::doaction(){
 	saveSingleConf(CALPWR);
 }
 #endif
+
 //-----------------------------------------------------------------------------------------------------------------------------
 /*inline void leggiTastiRemoti(){
 	//--------------------------------------------------------------------------------------------------

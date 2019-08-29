@@ -39,9 +39,9 @@ void parseJsonFieldArrayToStr(String srcJSONStr, Par*p[], int valueLen, int arrL
 			DEBUG_PRINT(F(" - "));
 			
 			if(p[i-first]->getType() == 'j'){
-				static_cast<ParByte*>(p[i-first])->loadFromStr(srcJSONStr.substring(start, ends)); 
+				static_cast<ParUint8*>(p[i-first])->loadFromStr(srcJSONStr.substring(start, ends)); 
 				DEBUG_PRINT(F("val: "));
-				DEBUG_PRINTLN(((ParByte*)p[i-first])->val);
+				DEBUG_PRINTLN(((ParUint8*)p[i-first])->val);
 			}else if(p[i-first]->getType() == 'p'){
 				if(app[1] != delim){//default append
 					p[i-first]->loadFromStr(app);
@@ -57,7 +57,7 @@ void parseJsonFieldArrayToStr(String srcJSONStr, Par*p[], int valueLen, int arrL
 						app1 += " " + op + " "+ app.substring(2);
 						p[i-first]->loadFromStr(app1);
 						DEBUG_PRINT(F("\val: "));
-						DEBUG_PRINTLN(((ParByte*)p[i])->val);
+						DEBUG_PRINTLN(((ParUint8*)p[i])->val);
 					}
 				}
 			}
@@ -110,9 +110,9 @@ bool parseJsonFieldArrayToInt(String srcJSONStr, Par*p[], int valueLen, int arrL
 			//calcola la fine del valore 
 			//estrae il campo e lo converte in intero e aggiorna gli ingressi dello switchf X
 			//p[i-first]->loadFromStr(srcJSONStr.substring(start, ends)); 
-			static_cast<ParByte*>(p[i-first])->loadFromStr(srcJSONStr.substring(start, ends)); 
+			static_cast<ParUint8*>(p[i-first])->loadFromStr(srcJSONStr.substring(start, ends)); 
 			DEBUG_PRINT(F("val: "));
-			DEBUG_PRINTLN(((ParByte*)p[i-first])->val);
+			DEBUG_PRINTLN(((ParUint8*)p[i-first])->val);
 			/*if(destIntArr[i-first] == 0){ //se è 1 è sicuramente un num, ma se è 0 è un num o stringa?
 				DEBUG_PRINT(F("\n:Stringa to num "));
 				DEBUG_PRINTLN(srcJSONStr.charAt(start));

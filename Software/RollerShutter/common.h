@@ -199,24 +199,24 @@
 #define IPWRRND			2  //W
 #define IVACRND			1  //V
 //--------------------------EEPROM offsets-------------------------------------------
-//First two byte reserved for EEPROM check
-//1 byte offets (char)
+//First two uint8_t reserved for EEPROM check
+//1 uint8_t offets (char)
 #define DONOTUSE				2
 #define RESERVEBYTE2OFST		3
-#define RESERVEBYTE3OFST		4
+#define LOGSLCTOFST				4
 #define ACVOLTOFST				5
 #define SWROLL1OFST				6
 #define SWROLL2OFST				7
 #define NTPSDTOFST				8
 #define NTPZONEOFST				9
-//2 byte offets (int)
+//2 uint8_t offets (int)
 #define EEPROMLENOFST			10
 #define THALT1OFST             	12
 #define THALT2OFST				14
 #define THALT3OFST				16
 #define THALT4OFST				18
 #define NTPADJUSTOFST  			20
-//4 byte offets (float)
+//4 uint8_t offets (float)
 #define PWRMULTOFST				22
 #define STDEL1OFST				26
 #define STDEL2OFST				30
@@ -228,7 +228,7 @@
 #define NTPSYNCINTOFST			54
 #define CALPWROFST				58
 #define RESERVED1FLOTAFST		62
-//32 byte offsets (fixed medium String)
+//32 uint8_t offsets (fixed medium String)
 #define	MQTTIDOFST				66
 #define	OUTTOPICOFST			98
 #define	INTOPICOFST				130
@@ -250,14 +250,14 @@
 #define	WEBPSWOFST				642
 #define	MQTTUSROFST				674
 #define	MQTTPSWOFST				706
-//64 byte offsets (fixed long String)
+//64 uint8_t offsets (fixed long String)
 #define MQTTADDROFST			738
 #define NTP1ADDROFST			802
 #define NTP2ADDROFST			866
 #define NTP3ADDROFST			930
 //end fixed lenght params
 #define FIXEDPARAMSLEN			994
-//x byte offsets (variable String)
+//x uint8_t offsets (variable String)
 //--------------------------Fine EEPROM offsets-------------------------------------------
 
 //--------------------------Inizio MQTT array indexes-----------------------------------
@@ -348,21 +348,22 @@
 #define NTPADDR2			44
 #define PWRMULT				45  
 #define ACVOLT				46
+#define	LOGSLCT				47
 //parametri di stato (da non esporre)
-#define WIFICHANGED			47
-#define CONFLOADED			48
-#define MQTTADDRMODFIED		49
-#define TOPICCHANGED		50
-#define MQTTCONNCHANGED		51
-#define	TIMINGCHANGED		52
-#define SWACTION1			53
-#define SWACTION2			54
-#define SWACTION3			55
-#define SWACTION4			56
-#define CONFDIM				57
+#define WIFICHANGED			48
+#define CONFLOADED			49
+#define MQTTADDRMODFIED		50
+#define TOPICCHANGED		51
+#define MQTTCONNCHANGED		52
+#define	TIMINGCHANGED		53
+#define SWACTION1			54
+#define SWACTION2			55
+#define SWACTION3			56
+#define SWACTION4			57
+#define CONFDIM				58
 #define VARCONFDIM			6
 #define EXTCONFDIM			14 + 16
-#define TOSAVEPARAMS		46
+#define TOSAVEPARAMS		48
 //#define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
 #define PARAMSDIM 			CONFDIM + USRMODIFICABLEFLAGS
 //--------------------------Fine array indexes-----------------------------------
@@ -371,11 +372,11 @@
 #endif
 
 #if (AUTOCAL_HLW8012) 
-#define TBASE 			20	
+#define TBASE 			25	
 #define MAINPROCSTEP	2
-#define ONESEC_STEP		50
+#define ONESEC_STEP		40
 #define	LED_STEP		10
-#define STOP_STEP		4
+#define STOP_STEP		3
 #define SEL_PIN			5
 #define CF1_PIN			13
 #define CF_PIN			14
@@ -393,7 +394,7 @@
 
 #if (AUTOCAL_ACS712) 
 #define TBASE 			2
-#define MAINPROCSTEP 	20
+#define MAINPROCSTEP 	25
 #define ONESEC_STEP		50
 #define STOP_STEP		20
 #define ZEROSMPL		200		//per non interrompere il caricamento delle pagine durante
@@ -451,15 +452,15 @@
 
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
-#define BYTE_TO_BINARY(byte)  \
-  (byte & 0x80 ? '1' : '0'), \
-  (byte & 0x40 ? '1' : '0'), \
-  (byte & 0x20 ? '1' : '0'), \
-  (byte & 0x10 ? '1' : '0'), \
-  (byte & 0x08 ? '1' : '0'), \
-  (byte & 0x04 ? '1' : '0'), \
-  (byte & 0x02 ? '1' : '0'), \
-  (byte & 0x01 ? '1' : '0') 
+#define BYTE_TO_BINARY(uint8_t)  \
+  (uint8_t & 0x80 ? '1' : '0'), \
+  (uint8_t & 0x40 ? '1' : '0'), \
+  (uint8_t & 0x20 ? '1' : '0'), \
+  (uint8_t & 0x10 ? '1' : '0'), \
+  (uint8_t & 0x08 ? '1' : '0'), \
+  (uint8_t & 0x04 ? '1' : '0'), \
+  (uint8_t & 0x02 ? '1' : '0'), \
+  (uint8_t & 0x01 ? '1' : '0') 
 
 #if (_DEBUG1)
  //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
@@ -488,7 +489,7 @@ class MQTTBTN_Evnt: public BaseEvnt{
 	public:
 		MQTTBTN_Evnt(unsigned x = 0):BaseEvnt(x){};
 		void doaction();
-		//void loadPid(byte);
+		//void loadPid(uint8_t);
 };
 
 class MQTTMAC_Evnt: public BaseEvnt{
@@ -578,6 +579,10 @@ class ONCOND5_Evnt: public BaseEvnt{
 	public:
 		void doaction();
 };
+class LOGSLCT_Evnt: public BaseEvnt{
+	public:
+		void doaction();
+};
 /*
 class WEBUSR_Evnt: public BaseEvnt{
 	public:
@@ -604,21 +609,20 @@ class Par{
 		char formfield;
 		char partype;
 		BaseEvnt *e = NULL;
-		byte val = 0;  //Attention! shadowed property, is referred by early binding on base class! (you must use static cast for read access)
+		uint8_t val = 0;  //Attention! shadowed property, is referred by early binding on base class! (you must use static cast for read access)
 		
 		Par(const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL);
 		
 		String getStrFormName();				//base class version
 		String getStrJsonName();				//base class version
-		byte getType();
+		uint8_t getType();
 		void doaction();						//base class version
 		virtual void writeParam(String) = 0;	//late binding abstract
 		virtual void loadFromStr(String) = 0;	//late binding abstract
 		virtual void saveOnEprom() = 0;			//late binding abstract
 		virtual String getStrVal() = 0;			//late binding abstract
 		virtual void loadFromEprom() = 0;		//late binding abstract
-		virtual void load(byte); 				//late binding
-		
+		virtual void load(uint8_t); 				//late binding
 		virtual void load(int);					//late binding
 		virtual void load(unsigned long);		//late binding
 		virtual void load(float);				//late binding
@@ -627,18 +631,18 @@ class Par{
 		virtual void load(String);				//late binding
 };
 
-class ParByte : public Par{
+class ParUint8 : public Par{
 	 
 	public:
-		byte val;
-		ParByte(byte v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
+		uint8_t val;
+		ParUint8(uint8_t v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
 		
 		String getStrVal();
 		void writeParam(String);
 		void loadFromStr(String);
 		void loadFromEprom();
 		void saveOnEprom();
-		void load(byte);
+		void load(uint8_t);
 };
 
 class ParInt : public Par{
@@ -721,7 +725,72 @@ class ParVarStr : public Par{
 		void load(String);
 };
 //End of event classes------------------------------------------------------------------------------------------------------------
+class BaseLog{
+	protected:
+		void append(char*, char*, char*);
+	public:
+		uint8_t level;
+		BaseLog(uint8_t lev){level = lev;};
+		virtual void print(char *, char*);
+		virtual void println(char *, char*);
+};
 
+class SerialLog: public BaseLog{
+	public:
+		SerialLog(uint8_t x):BaseLog(x){};
+		void print(char *, char*);
+		void println(char *, char*);
+};
+class TelnetLog: public BaseLog{
+	private:
+		RemoteDebug *tel;
+	public:
+		TelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y;};
+		void print(char *, char*);
+		void println(char *, char*);
+};
+class MQTTLog: public BaseLog{
+	private:
+		MQTT *mqttc;
+	public:
+		MQTTLog(uint8_t x, MQTT *y):BaseLog(x){mqttc = y;};
+		void print(char *, char*);
+		void println(char *, char*);
+};
+class SerialTelnetLog: public BaseLog{
+	private:
+		RemoteDebug *tel;
+	public:
+		SerialTelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y;};
+		void print(char *, char*);
+		void println(char *, char*);
+};
+class SerialMQTTLog: public BaseLog{
+	private:
+		MQTT *mqttc;
+	public:
+		SerialMQTTLog(uint8_t x, MQTT *y):BaseLog(x){mqttc = y;};
+		void print(char *, char*);
+		void println(char *, char*);
+};
+class TelnetMQTTLog: public BaseLog{
+	private:
+		RemoteDebug *tel;
+		MQTT *mqttc;
+	public:
+		TelnetMQTTLog(uint8_t x, RemoteDebug* y, MQTT *z):BaseLog(x){tel = y; mqttc = z;};
+		void print(char *, char*);
+		void println(char *, char*);
+};
+class SerialTelnetMQTTLog: public BaseLog{
+	private:
+		RemoteDebug *tel;
+		MQTT *mqttc;
+	public:
+		SerialTelnetMQTTLog(uint8_t x, RemoteDebug* y, MQTT *z):BaseLog(x){tel = y; mqttc = z;};
+		void print(char*, char*);
+		void println(char*, char*);
+};
 
 //PRIMA DEFINISCO LE COSTANTI, POI INCLUDO I FILES HEADERS (.h) CHE LE USANO
 #include "tapparellaLogic.h"
@@ -745,9 +814,9 @@ void readMacAndPub();
 void readIpAndPub();
 void readTimeAndPub();
 void readMQTTIdAndPub();
-void readParamAndPub(byte, char*);
-void readModeAndPub(byte);
-void readActModeAndPub(byte);
+void readParamAndPub(uint8_t, char*);
+void readModeAndPub(uint8_t);
+void readActModeAndPub(uint8_t);
 void readPwrCalAndPub();
 void publishStr(String &);
 void publishStr2(String &);
@@ -765,7 +834,7 @@ void initIiming(bool);
 void printConfig();
 void processCmdRemoteDebug();
 void webSocketEvent(uint8_t, WStype_t, uint8_t *, size_t);
-void setSWMode(byte, byte);
+void setSWMode(uint8_t, uint8_t);
 void saveConf(unsigned);
 void loadConf(unsigned);
 void saveSingleConf(unsigned);
@@ -777,11 +846,11 @@ float writeFloatConf(unsigned, float);
 float saveFloatConf(unsigned);
 long saveLongConf(unsigned);
 int saveIntConf(unsigned);
-byte saveByteConf(unsigned);
+uint8_t saveByteConf(unsigned);
 void updtConf(unsigned, String);
 unsigned getConfofstFromParamofst(unsigned);
 void printOut();
-void rstldcnt(byte);
+void rstldcnt(uint8_t);
 #if (AUTOCAL_HLW8012) 
 void calibrate_pwr();
 void readIpwrAndPub();
@@ -807,6 +876,7 @@ bool is_authentified(ESP8266WebServer&);
 // function prototypes for HTTP handlers
 void initCommon(ESP8266WebServer *,  Par**);
 
+void handleLogConf();
 void handleMqttCmd();
 void handleRoot();              
 void handleLogin();
@@ -820,9 +890,9 @@ void handleLogicConf();
 void handleModify();
 void handleEventConf();
 void writeOnOffConditions();
-void writeOnOffAction(byte, byte);
-void writeSWMode(byte, byte);
-void writeHaltDelay(unsigned int, byte);
+void writeOnOffAction(uint8_t, uint8_t);
+void writeSWMode(uint8_t, uint8_t);
+void writeHaltDelay(unsigned int, uint8_t);
 //void readMqttConfAndSet(int);
 #endif
 /*

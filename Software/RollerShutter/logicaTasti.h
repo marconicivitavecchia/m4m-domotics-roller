@@ -33,7 +33,7 @@
 extern byte dprecval2[SWITCHND]; 
 extern float asyncBuf[GATEND]; 
 void initdfn(byte,  byte);
-
+void initdfnUL(unsigned long, byte);
 //void initTogglen(byte,  byte);
 
 //switch per un solo pulsante attivo sui fronti
