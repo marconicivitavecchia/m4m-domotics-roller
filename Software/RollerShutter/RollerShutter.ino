@@ -38,6 +38,7 @@ double VMCU = 0;
 double AmpsRMS = 0;
 int zero, l=0, h=1024;
 unsigned wificnt = 0;
+boolean pageLoad = 0;
 unsigned long smplcnt; //sampleCount;
 unsigned short zeroCnt = 0;
 unsigned long mqttcnt = 0;
@@ -1487,8 +1488,12 @@ void zeroDetect(){
 }
 #endif
 
-void resetZeroDetectCnt(){
-	zeroCnt = 4;
+void startPageLoad(){
+	pageLoad = true;
+}
+
+void stopPageLoad(){
+	pageLoad = false;
 }
 
 void leggiTastiLocali2(){
@@ -1638,7 +1643,9 @@ inline void loop2() {
 			//DEBUG_PRINTLN(WiFi.getMode());
 			
 			sensorStatePoll();
-			wifiFailoverManager();
+			if(wificnt > WIFISTEP){
+				wifiFailoverManager();
+			}
 			MQTTReconnectManager();
 			paramsModificationPoll();
 		}
@@ -1674,9 +1681,9 @@ inline void loop2() {
 		//Finestra idle di riconnessione (necessaria se il loop è molto denso di eventi e il wifi non si aggancia!!!)
 		//------------------------------------------------------------------------------------------------------------
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
-		if(wifiConn == false && !mov && zeroCnt > 4){ //sempre vero se si è in modalità switch!	
+		if(wifiConn == false && !mov && pageLoad == false){ //sempre vero se si è in modalità switch!	
 //#if (AUTOCAL_ACS712) 
-			if(wificnt > 1000 / (MAINPROCSTEP+1)){
+			if(wificnt > WIFISTEP){
 				wificnt = 0;
 				DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
 				delay(30);//give 30ms to the ESP stack for wifi connect
@@ -1986,7 +1993,7 @@ inline void automaticStopManager(){
 			zeroCnt = (zeroCnt + 1) % ZEROSMPL;
 			dosmpl = false;
 			//all motors are stopped
-			if(zeroCnt < 3){
+			if(zeroCnt < 3 && pageLoad == false){
 				//zero detection activation (2 values every second)
 				system_soft_wdt_stop();
 				ets_intr_lock( ); //close interrupt

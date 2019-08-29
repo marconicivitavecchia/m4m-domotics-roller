@@ -1143,13 +1143,13 @@ const char HTTP_FORM_CMD[] PROGMEM =
 //fine variabili globali
 
 void handleNotFound(){
-	resetZeroDetectCnt();
+	startPageLoad();
 	DEBUG_PRINTLN(F("Enter handleNotFound"));
 	is_authentified(serverp);
 }
 	
 void handleRoot() {   // When URI / is requested, send a web page with a button to toggle the LED
-    resetZeroDetectCnt();
+    startPageLoad();
 	
 	String page = FPSTR(HTTP_FORM_ROOT);
 	page.replace(F("{HD}"),  FPSTR(HTTP_FORM_HEAD));
@@ -1166,10 +1166,11 @@ void handleRoot() {   // When URI / is requested, send a web page with a button 
 		serverp.send(301);
 		
 	}
+	stopPageLoad();
 }
 
 void handleLogin() {  // If a POST request is made to URI /login
-  resetZeroDetectCnt();
+  startPageLoad();
   DEBUG_PRINTLN(F("Enter handleLogin"));
   //I parametri NON devono essere modificati
   bool ok=false;
@@ -1234,10 +1235,11 @@ void handleLogin() {  // If a POST request is made to URI /login
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
   }
+  stopPageLoad();
 }
 
 void handleWifiConf() {  // If a POST request is made to URI /login
-  resetZeroDetectCnt();
+  startPageLoad();
   //I parametri NON devono essere modificati
   bool ok=false;
 
@@ -1276,10 +1278,11 @@ void handleWifiConf() {  // If a POST request is made to URI /login
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
   }
+  stopPageLoad();
 }
 
 void handleSystemConf() {  // If a POST request is made to URI /login
-  resetZeroDetectCnt();
+  startPageLoad();
   //I parametri NON devono essere modificati
   bool ok=false;
 
@@ -1332,10 +1335,11 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
   }
+  stopPageLoad();
 }
 
 void handleMQTTConf() {  // If a POST request is made to URI /login
-  resetZeroDetectCnt();
+  startPageLoad();
   //I parametri NON devono essere modificati
   bool ok=false;
 
@@ -1379,10 +1383,11 @@ void handleMQTTConf() {  // If a POST request is made to URI /login
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
   }
+  stopPageLoad();
 }
 
 void handleLogicConf() {  // If a POST request is made to URI /login
-  resetZeroDetectCnt();
+  startPageLoad();
   //I parametri NON devono essere modificati
   bool ok=false;
 
@@ -1433,10 +1438,11 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
   }
+  stopPageLoad();
 }
 
 void handleLogConf() {  // If a POST request is made to URI /login
-  resetZeroDetectCnt();
+  startPageLoad();
   //I parametri NON devono essere modificati
   bool ok=false;
 
@@ -1479,11 +1485,12 @@ void handleLogConf() {  // If a POST request is made to URI /login
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
   }
+  stopPageLoad();
 }
 
 //EVENT MANAGEMENT
 void handleEventConf() {  // If a POST request is made to URI /login
-	resetZeroDetectCnt();
+	startPageLoad();
 	
   //I parametri NON devono essere modificati
   bool ok=false;
@@ -1554,11 +1561,12 @@ void handleEventConf() {  // If a POST request is made to URI /login
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
   }
+  stopPageLoad();
 }
 //END EVENT MANAGEMENT*/
 
 void handleCmd() {  // If a POST request is made to URI /login
-	resetZeroDetectCnt();
+	startPageLoad();
 
 	String page = FPSTR(HTTP_FORM_CMD);
 	//Head placeholders
@@ -1587,7 +1595,7 @@ void handleCmd() {  // If a POST request is made to URI /login
 }
 
 void handleMqttCmd() {  // If a POST request is made to URI /login
-	resetZeroDetectCnt();
+	startPageLoad();
 
 	String page = FPSTR(HTTP_FORM_CMD);
 	//Head placeholders
@@ -1636,7 +1644,7 @@ inline void savegroup(uint8_t fields[], uint8_t len){
 }
 
 void handleModify(){
-	resetZeroDetectCnt();
+	startPageLoad();
   
   if (!is_authentified(serverp)) {
 		serverp.sendHeader("Location", "/");

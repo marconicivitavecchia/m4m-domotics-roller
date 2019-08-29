@@ -60,8 +60,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				0
-#define ROLLERSHUTTER 			1
+#define SONOFF_4CH				1
+#define ROLLERSHUTTER 			0
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------NON MODIFICARE LA PARTE SOTTOSTATNTE------------------------------------------------------------------------------------------------
 //#define AUTOCAL_HLW8012			0
@@ -395,11 +395,13 @@
 #if (AUTOCAL_ACS712) 
 #define TBASE 			2
 #define MAINPROCSTEP 	25
-#define ONESEC_STEP		50
+#define ONESEC_STEP		500
 #define STOP_STEP		20
-#define ZEROSMPL		200		//per non interrompere il caricamento delle pagine durante
+#define ZEROSMPL		400		//per non interrompere il caricamento delle pagine durante
 								//il campionamento dello zero
 #endif
+
+#define WIFISTEP 	1000 / (MAINPROCSTEP+1)
 
 #if (LARGEFW)
 	#if (AUTOCAL_HLW8012) 
@@ -858,7 +860,8 @@ void readIacvoltAndPub();
 #elif (AUTOCAL_ACS712) 
 void zeroDetect();
 #endif
-void resetZeroDetectCnt();
+void stopPageLoad();
+void startPageLoad();
 /*
 //http server callback function prototypes
 void handleRoot(ESP8266WebServer (&), String const (&)[PARAMSDIM]);        // function prototypes for HTTP handlers
