@@ -1505,7 +1505,7 @@ void leggiTastiLocali2(){
 		DEBUG1_PRINT(F("Inmask: "));
 		DEBUG1_PRINTLN(inmask2);
 		sprintf(s,"MASK  : "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(inmask2));
-		DEBUG1_PRINTLN(inmask);
+		DEBUG1_PRINT(s);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(regA));
 		DEBUG1_PRINT(s);
 		static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)((regA >> BTN1U) & 0x1)?0:255); 
@@ -2750,7 +2750,7 @@ void LOGSLCT_Evnt:: doaction(bool save){
 	dbg1 = NULL;
 	dbg2 = NULL;
 	
-	DEBUG_PRINT(F("Oggetti log NULL "));
+	DEBUG_PRINTLN(F("Oggetti log NULL "));
 	
 	if(ser > 0 && !tlnt & !mqtt){
 		DEBUG_PRINTLN(F("if(ser && !tlnt & !mqtt)"));
