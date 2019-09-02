@@ -1496,10 +1496,15 @@ void leggiTastiLocali2(){
 	char s[18];
 	uint8_t regA = mcp.readGPIO(0);
 	uint8_t inmask = regA & 0xF0;	//00001111 (15)
+	uint8_t inmask2;
+	
 	//uint8_t inmask = regA & 0xF;	//00001111 (15)
 	if(inmask != 15){ //pullup!
 	//if(inmask != 240){ //pullup!
+		inmask2 = 15;
 		DEBUG1_PRINT(F("Inmask: "));
+		DEBUG1_PRINTLN(inmask2);
+		sprintf(s,"MASK  : "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(inmask2));
 		DEBUG1_PRINTLN(inmask);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(regA));
 		DEBUG1_PRINT(s);
@@ -1527,11 +1532,15 @@ void leggiTastiLocali2(){
 #else	
 	uint16_t gpioread = (uint16_t)GPI;
 	uint16_t inmask = gpioread & 0x4601; //01000110 00000001 (17921)
-										 //10111001 1
+	uint16_t inmask2;									 //10111001 1
 	char s[26];
+	
 	if(inmask != 17921){ //pullup!
+		inmask2 = 17921;
 		DEBUG1_PRINT(F("Inmask: "));
-		DEBUG1_PRINTLN(inmask);
+		DEBUG1_PRINTLN(inmask2);
+		sprintf(s,"MASK  : "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(inmask2>>8), BYTE_TO_BINARY(inmask2));
+		DEBUG1_PRINT(s);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(inmask>>8), BYTE_TO_BINARY(inmask));
 		DEBUG1_PRINT(s);
 		static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)(GPIP(BTN1U))?0:255); 
