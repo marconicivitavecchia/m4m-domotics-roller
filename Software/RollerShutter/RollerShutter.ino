@@ -1991,7 +1991,7 @@ inline void automaticStopManager(){
 				//running mean calculation
 				smplcnt++;
 				smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
-				DEBUG1_PRINTLN(F("Zero detection manager"));	
+				DEBUG2_PRINTLN(F("Zero detection manager"));	
 			}
 		}
 #endif
@@ -2742,65 +2742,65 @@ void LOGSLCT_Evnt:: doaction(bool save){
 	DEBUG_PRINT("\nOggetti log NULL ");
 	
 	if(ser > 0 && !tlnt & !mqtt){
-		DEBUG_PRINTLN("\nif(ser && !tlnt & !mqtt)");
+		DEBUG_PRINTLN("if(ser && !tlnt & !mqtt)");
 		//00 00 01
 		//00 00 10
 		if(ser == 1){
-			DEBUG_PRINTLN("\nif(ser == 1) ");
+			DEBUG_PRINTLN("if(ser == 1) ");
 			dbg1 = new SerialLog(1);
 			dbg2 = new BaseLog(2);
 		}else if(ser == 2){
-			DEBUG_PRINTLN("\nif(ser == 2)");
+			DEBUG_PRINTLN("if(ser == 2)");
 			dbg1 = new SerialLog(1);
 			dbg2 = new SerialLog(2);
 		}
 	}else if(!ser && tlnt > 0 & !mqtt){
-		DEBUG_PRINTLN("\nif(!ser && tlnt & !mqtt)");
+		DEBUG_PRINTLN("if(!ser && tlnt & !mqtt)");
 		//00 01 00
 		//00 10 00
 		if(tlnt == 1){
-			DEBUG_PRINTLN("\niif(tlnt == 1)");
+			DEBUG_PRINTLN("iif(tlnt == 1)");
 			dbg1 = new TelnetLog(1, &telnet);
 			dbg2 = new BaseLog(2);
 		}else if(tlnt == 2){
-			DEBUG_PRINTLN("\niif(tlnt == 2)");
+			DEBUG_PRINTLN("if(tlnt == 2)");
 			dbg1 = new TelnetLog(1, &telnet);
 			dbg2 = new TelnetLog(2, &telnet);
 		}
 	}else if(!ser && !tlnt && mqtt > 0){
-		DEBUG_PRINTLN("\nif(!ser && !tlnt && mqtt)");
+		DEBUG_PRINTLN("if(!ser && !tlnt && mqtt)");
 		//01 00 00
 		//10 00 00
 		if(mqtt == 1){
-			DEBUG_PRINTLN("\nif(mqtt == 1)");
+			DEBUG_PRINTLN("if(mqtt == 1)");
 			dbg1 = new MQTTLog(1, mqttClient);
 			dbg2 = new BaseLog(2);
 		}else if(mqtt == 2){
-			DEBUG_PRINTLN("\niif(mqtt == 2)");
+			DEBUG_PRINTLN("iif(mqtt == 2)");
 			dbg1 = new MQTTLog(1, mqttClient);
 			dbg2 = new MQTTLog(2, mqttClient);
 		}
 	}else if(ser > 0 && tlnt > 0 & !mqtt){
-		DEBUG_PRINTLN("\nif(ser && tlnt & !mqtt)");
+		DEBUG_PRINTLN("if(ser && tlnt & !mqtt)");
 		serialTelnet(ser, tlnt);
 	}else if(ser > 0 && mqtt > 0 & !tlnt){
-		DEBUG_PRINTLN("\nif(ser && mqtt & !tlnt)");
+		DEBUG_PRINTLN("if(ser && mqtt & !tlnt)");
 		serialMQTT(ser, mqtt);
 	}else if(tlnt > 0 && mqtt > 0 & !ser){
-		DEBUG_PRINTLN("\if(tlnt && mqtt & !ser)");
+		DEBUG_PRINTLN("f(tlnt && mqtt & !ser)");
 		telnetMQTT(tlnt, mqtt);
 	}else if(tlnt == 2 && mqtt == 2 & ser == 2){
-		DEBUG_PRINTLN("\nif(tlnt == 2 && mqtt == 2 & ser == 2)");
+		DEBUG_PRINTLN("if(tlnt == 2 && mqtt == 2 & ser == 2)");
 		dbg1 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
 		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
 	}else if(tlnt == 2 && mqtt > 0 & ser > 0){
-		DEBUG_PRINTLN("\nif(tlnt == 2 && mqtt & ser)");
+		DEBUG_PRINTLN("if(tlnt == 2 && mqtt & ser)");
 		serialMQTT2(ser, mqtt);
 	}else if(ser == 2 && tlnt > 0 & mqtt > 0){
-		DEBUG_PRINTLN("\nif(ser == 2 && tlnt & mqtt)");
+		DEBUG_PRINTLN("if(ser == 2 && tlnt & mqtt)");
 		telnetMQTT2(tlnt, mqtt);
 	}else if(mqtt == 2 && tlnt > 0 & ser > 0){
-		DEBUG_PRINTLN("\nif(mqtt == 2 && tlnt & ser)");
+		DEBUG_PRINTLN("if(mqtt == 2 && tlnt & ser)");
 		serialTelnet2(ser, tlnt);
 	}else{
 		dbg1 = new BaseLog(1);
