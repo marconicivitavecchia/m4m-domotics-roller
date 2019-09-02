@@ -1528,7 +1528,7 @@ void leggiTastiLocali2(){
 										 //10111001 1
 	char s[26];
 	if(inmask != 17921){ //pullup!
-		DEBUG1_PRINT(F("\nInmask: "));
+		DEBUG1_PRINT(F("Inmask: "));
 		DEBUG1_PRINTLN(inmask);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(inmask>>8), BYTE_TO_BINARY(inmask));
 		DEBUG1_PRINT(s);
