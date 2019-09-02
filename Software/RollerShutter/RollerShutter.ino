@@ -1164,7 +1164,7 @@ void publishStr2(String &str){
   {
 	  //str deve essere convertita in array char altrimenti la libreria introduce un carattere spurio all'inizio del messaggio
 	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str.c_str(), str.length());
-	  DEBUG1_PRINTLN(F("Published data: "));
+	  DEBUG1_PRINT(F("Published data: "));
 	  DEBUG1_PRINTLN(str);
   }
   //if(!webSocket){
@@ -2641,7 +2641,7 @@ void MQTTBTN_Evnt::doaction(bool save){
 	int n = i / TIMERDIM;
 	int sw = i % TIMERDIM;
 	
-	DEBUG1_PRINT("\npid: ");
+	DEBUG1_PRINT("pid: ");
 	DEBUG1_PRINT(i);
 	DEBUG1_PRINT(" val: ");
 	DEBUG1_PRINT(v);
