@@ -2286,42 +2286,35 @@ void BaseLog::destroy(){};
 BaseLog::~BaseLog(){DEBUG_PRINTLN("BaseLog destructor call");};
 
 void BaseLog::mqttSend(const char* msg, bool endl = false){
-	for(int i=0; msg[i] != '\0'; ++i) {//copy until the end
-		if(msg[i] == '\n' || pos == RSLTBUFLEN - 1){
-			result[pos] = '\0';
-			//DEBUG_PRINT("\nmqttSend: ");
-			//DEBUG_PRINTLN(result);
+	if(mqttc != NULL){
+		for(int i=0; msg[i] != '\0'; ++i) {//copy until the end
+			if(msg[i] == '\n' || pos == RSLTBUFLEN - 1){
+				result[pos] = '\0';
+				strcpy(result,printUNIXTimeMin(gbuf)); 	// copy string one into the result.
+				strcat(result,": "); 					// append string two to the result.
+				result[strlen(result)-1] = ' ';
+				//result[strlen(result)-2] = ' ';
+				result[strlen(result)] = ' ';
+				
+				mqttc->publish((const char *)static_cast<ParStr32*>(parsp[p(MQTTLOG)])->val, (const char *)result, strlen((const char*)result));
+				pos = DATEBUFLEN + 1;
+				memset(result, ' ', DATEBUFLEN);
+				//result[pos] = '\0';
+			}
+			result[pos++] = msg[i];
+		}
+		result[pos] = '\0';
+		if(endl){
 			strcpy(result,printUNIXTimeMin(gbuf)); 	// copy string one into the result.
 			strcat(result,": "); 					// append string two to the result.
 			result[strlen(result)-1] = ' ';
 			//result[strlen(result)-2] = ' ';
 			result[strlen(result)] = ' ';
-			//DEBUG_PRINT("\nmqttSend: ");
-			//DEBUG_PRINTLN(result);
-			if(mqttc != NULL)
-				mqttc->publish((const char *)static_cast<ParStr32*>(parsp[p(MQTTLOG)])->val, (const char *)result, strlen((const char*)result));
+			mqttc->publish((const char *)static_cast<ParStr32*>(parsp[p(MQTTLOG)])->val, (const char *)result, strlen((const char*)result));
 			pos = DATEBUFLEN + 1;
 			memset(result, ' ', DATEBUFLEN);
-			//result[pos] = '\0';
+			result[pos] = '\0';
 		}
-		result[pos++] = msg[i];
-	}
-	result[pos] = '\0';
-	if(endl){
-		//DEBUG_PRINT("\nmqttSend: ");
-		//DEBUG_PRINTLN(result);
-		strcpy(result,printUNIXTimeMin(gbuf)); 	// copy string one into the result.
-		strcat(result,": "); 					// append string two to the result.
-		result[strlen(result)-1] = ' ';
-		//result[strlen(result)-2] = ' ';
-		result[strlen(result)] = ' ';
-		//DEBUG_PRINT("\nmqttSend: ");
-		//DEBUG_PRINTLN(result);
-		if(mqttc != NULL)
-			mqttc->publish((const char *)static_cast<ParStr32*>(parsp[p(MQTTLOG)])->val, (const char *)result, strlen((const char*)result));
-		pos = DATEBUFLEN + 1;
-		memset(result, ' ', DATEBUFLEN);
-		result[pos] = '\0';
 	}
 }
 bool BaseLog::isTelnet(){
@@ -2408,10 +2401,10 @@ void MQTTLog::println(String msg){
 	mqttSend(msg.c_str(), true);
 };
 void MQTTLog::print(int msg){
-	mqttSend(String(msg, DEC).c_str());
+	mqttSend(String(msg).c_str());
 };
 void MQTTLog::println(int msg){
-	mqttSend(String(msg, DEC).c_str(), true);
+	mqttSend(String(msg).c_str(), true);
 };
 void MQTTLog::destroy(){
 	delete this;
@@ -2481,11 +2474,11 @@ void SerialMQTTLog::println(String msg){
 };
 void SerialMQTTLog::print(int msg){
 	Serial.print(msg);
-	mqttSend(String(msg, DEC).c_str());
+	mqttSend(String(msg).c_str());
 };
 void SerialMQTTLog::println(int msg){
 	Serial.println(msg);
-	mqttSend(String(msg, DEC).c_str(), true);
+	mqttSend(String(msg).c_str(), true);
 };
 void SerialMQTTLog::destroy(){
 	delete this;
@@ -2518,11 +2511,11 @@ void TelnetMQTTLog::println(String msg){
 };
 void TelnetMQTTLog::print(int msg){
 	tel->print(msg);
-	mqttSend(String(msg, DEC).c_str());
+	mqttSend(String(msg).c_str());
 };
 void TelnetMQTTLog::println(int msg){
 	tel->println(msg);
-	mqttSend(String(msg, DEC).c_str(), true);
+	mqttSend(String(msg).c_str(), true);
 };
 void TelnetMQTTLog::destroy(){
 	delete this;
@@ -2562,12 +2555,12 @@ void SerialTelnetMQTTLog::println(String msg){
 void SerialTelnetMQTTLog::print(int msg){
 	Serial.print(msg);
 	tel->print(msg);
-	mqttSend(String(msg, DEC).c_str());
+	mqttSend(String(msg).c_str());
 };
 void SerialTelnetMQTTLog::println(int msg){
 	Serial.println(msg);
 	tel->println(msg);
-	mqttSend(String(msg, DEC).c_str(), true);
+	mqttSend(String(msg).c_str(), true);
 };
 void SerialTelnetMQTTLog::destroy(){
 	delete this;
