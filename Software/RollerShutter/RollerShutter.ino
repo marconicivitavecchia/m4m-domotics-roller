@@ -694,13 +694,15 @@ void printMcpRealOut(){
 	//sprintf(s, "Lettura uscite MCP: - up1: %d, down1: %d, up2: %d, down2: %d\n", mcp.digitalRead(OUT1EU), mcp.digitalRead(OUT1DD), mcp.digitalRead(OUT2EU), mcp.digitalRead(OUT2DD));
 	//sprintf(s, "Lettura registri AB MCP: %d",);
 	//printf(s,"Leading text "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(uint8_t));
-	sprintf(s,"readGPIOAB: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
+	sprintf(s,"readGPIOAB: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN" ", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
 	DEBUG1_PRINT(s);
 #else
 	m = (uint16_t)GPI;
-	sprintf(s,"GPIO: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
+	sprintf(s,"GPIO: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN" ", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
 	DEBUG1_PRINT(s);
 #endif
+	sprintf(s,"%d%d%d%d\n", out[0], out[1], out[2], out[3]);
+	DEBUG1_PRINT(s);
 }
 
 void scriviOutDaStato(){
@@ -1499,7 +1501,7 @@ void leggiTastiLocali2(){
 	//if(inmask != 240){ //pullup!
 		DEBUG1_PRINT(F("Inmask: "));
 		DEBUG1_PRINTLN(inmask);
-		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(regA));
+		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(regA));
 		DEBUG1_PRINT(s);
 		static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)((regA >> BTN1U) & 0x1)?0:255); 
 		static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
@@ -2727,10 +2729,10 @@ void LOGSLCT_Evnt:: doaction(bool save){
 	DEBUG1_PRINTLN(mqtt);
 	
 	DEBUG1_PRINTLN("delete ");
-	if(dbg1 != NULL)
+	//if(dbg1 != NULL)
 		//dbg1->destroy();
 		delete dbg1;
-	if(dbg2 != NULL)
+	//if(dbg2 != NULL)
 		//dbg2->destroy();
 		delete dbg2;
 		

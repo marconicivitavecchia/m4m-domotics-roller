@@ -2283,7 +2283,7 @@ void BaseLog::println(String msg){};
 void BaseLog::print(int msg){};
 void BaseLog::println(int msg){};
 void BaseLog::destroy(){};
-BaseLog::~BaseLog(){DEBUG_PRINTLN("\nBaseLog destructor call");};
+BaseLog::~BaseLog(){DEBUG_PRINTLN("BaseLog destructor call");};
 
 void BaseLog::mqttSend(const char* msg, bool endl = false){
 	for(int i=0; msg[i] != '\0'; ++i) {//copy until the end
@@ -2357,7 +2357,7 @@ void SerialLog::destroy(){
 };
 SerialLog::~SerialLog(){
 	mqttc = NULL;
-	DEBUG_PRINTLN("\nSerialLog destructor call");
+	DEBUG_PRINTLN("SerialLog destructor call");
 };
 //TelnetLog
 void TelnetLog::print(const char* msg){

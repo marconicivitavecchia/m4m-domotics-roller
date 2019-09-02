@@ -55,7 +55,7 @@
 #define NTP2 			"0.it.pool.ntp.org"
 //END DEFAULTS
 //_DEBUG1 LEVELS---------------------
-#define _DEBUG1   		1		//ACTIVATE LOCAL AND REMOTE _DEBUG1 MODE
+#define _DEBUG   		1		//ACTIVATE LOCAL AND REMOTE _DEBUG1 MODE
 #define _DEBUGR   		0		//ACTIVATE ONLY REMOTE _DEBUG1 MODE
 //LARGE FW OTA UPLOAD---------------------
 #define LARGEFW 		1
@@ -424,7 +424,7 @@
 	void setup_mDNS();
 #else
 	#define _DEBUGR			0	
-	#define _DEBUG1   	    0		
+	#define _DEBUG   	    0		
 #endif
 
 #if (MCP2317) 
@@ -469,16 +469,16 @@
   (uint8_t & 0x02 ? '1' : '0'), \
   (uint8_t & 0x01 ? '1' : '0') 
 
-#if (_DEBUG1)
+#if (_DEBUG)
  #define DEBUG1_PRINT(x)	dbg1->print(x)
  #define DEBUG1_PRINTLN(x)	dbg1->println(x)
  #define DEBUG2_PRINT(x)	dbg2->print(x)
  #define DEBUG2_PRINTLN(x)	dbg2->println(x)
 
  //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
- #define DEBUG_PRINT(x)   Serial.print (x);telnet.print(x)	
+ #define DEBUG_PRINT(x)   Serial.print (x)
  //#define DEBUG_PRINTDEC(x)     Serial.print (x, DEC);  telnet.print(x)
- #define DEBUG_PRINTLN(x)   Serial.println (x);telnet.println(x)
+ #define DEBUG_PRINTLN(x)   Serial.println (x)
 #elif (_DEBUGR)
   #define DEBUG_PRINT(x)   telnet.print(x)
   #define DEBUG_PRINTLN(x) telnet.println(x)
