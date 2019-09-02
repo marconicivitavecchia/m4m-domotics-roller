@@ -2726,7 +2726,7 @@ void LOGSLCT_Evnt:: doaction(bool save){
 	DEBUG1_PRINT(", mqtt: ");
 	DEBUG1_PRINTLN(mqtt);
 	
-	DEBUG1_PRINT("\ndelete ");
+	DEBUG1_PRINTLN("delete ");
 	if(dbg1 != NULL)
 		//dbg1->destroy();
 		delete dbg1;
@@ -2734,73 +2734,73 @@ void LOGSLCT_Evnt:: doaction(bool save){
 		//dbg2->destroy();
 		delete dbg2;
 		
-	DEBUG_PRINT("\nOggetti log distrutti ");
+	DEBUG_PRINTLN(F("Oggetti log distrutti "));
 	
 	dbg1 = NULL;
 	dbg2 = NULL;
 	
-	DEBUG_PRINT("\nOggetti log NULL ");
+	DEBUG_PRINT(F("Oggetti log NULL "));
 	
 	if(ser > 0 && !tlnt & !mqtt){
-		DEBUG_PRINTLN("if(ser && !tlnt & !mqtt)");
+		DEBUG_PRINTLN(F("if(ser && !tlnt & !mqtt)"));
 		//00 00 01
 		//00 00 10
 		if(ser == 1){
-			DEBUG_PRINTLN("if(ser == 1) ");
+			DEBUG_PRINTLN(F("if(ser == 1) "));
 			dbg1 = new SerialLog(1);
 			dbg2 = new BaseLog(2);
 		}else if(ser == 2){
-			DEBUG_PRINTLN("if(ser == 2)");
+			DEBUG_PRINTLN(F("if(ser == 2)"));
 			dbg1 = new SerialLog(1);
 			dbg2 = new SerialLog(2);
 		}
 	}else if(!ser && tlnt > 0 & !mqtt){
-		DEBUG_PRINTLN("if(!ser && tlnt & !mqtt)");
+		DEBUG_PRINTLN(F("if(!ser && tlnt & !mqtt)"));
 		//00 01 00
 		//00 10 00
 		if(tlnt == 1){
-			DEBUG_PRINTLN("iif(tlnt == 1)");
+			DEBUG_PRINTLN(F("iif(tlnt == 1)");
 			dbg1 = new TelnetLog(1, &telnet);
 			dbg2 = new BaseLog(2);
 		}else if(tlnt == 2){
-			DEBUG_PRINTLN("if(tlnt == 2)");
+			DEBUG_PRINTLN(F("if(tlnt == 2)"));
 			dbg1 = new TelnetLog(1, &telnet);
 			dbg2 = new TelnetLog(2, &telnet);
 		}
 	}else if(!ser && !tlnt && mqtt > 0){
-		DEBUG_PRINTLN("if(!ser && !tlnt && mqtt)");
+		DEBUG_PRINTLN(F("if(!ser && !tlnt && mqtt)"));
 		//01 00 00
 		//10 00 00
 		if(mqtt == 1){
-			DEBUG_PRINTLN("if(mqtt == 1)");
+			DEBUG_PRINTLN(F("if(mqtt == 1)"));
 			dbg1 = new MQTTLog(1, mqttClient);
 			dbg2 = new BaseLog(2);
 		}else if(mqtt == 2){
-			DEBUG_PRINTLN("iif(mqtt == 2)");
+			DEBUG_PRINTLN(F("iif(mqtt == 2)"));
 			dbg1 = new MQTTLog(1, mqttClient);
 			dbg2 = new MQTTLog(2, mqttClient);
 		}
 	}else if(ser > 0 && tlnt > 0 & !mqtt){
-		DEBUG_PRINTLN("if(ser && tlnt & !mqtt)");
+		DEBUG_PRINTLN(F("if(ser && tlnt & !mqtt)"));
 		serialTelnet(ser, tlnt);
 	}else if(ser > 0 && mqtt > 0 & !tlnt){
-		DEBUG_PRINTLN("if(ser && mqtt & !tlnt)");
+		DEBUG_PRINTLN(F("if(ser && mqtt & !tlnt)"));
 		serialMQTT(ser, mqtt);
 	}else if(tlnt > 0 && mqtt > 0 & !ser){
-		DEBUG_PRINTLN("f(tlnt && mqtt & !ser)");
+		DEBUG_PRINTLN(F("f(tlnt && mqtt & !ser)"));
 		telnetMQTT(tlnt, mqtt);
 	}else if(tlnt == 2 && mqtt == 2 & ser == 2){
-		DEBUG_PRINTLN("if(tlnt == 2 && mqtt == 2 & ser == 2)");
+		DEBUG_PRINTLN(F("if(tlnt == 2 && mqtt == 2 & ser == 2)"));
 		dbg1 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
 		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
 	}else if(tlnt == 2 && mqtt > 0 & ser > 0){
-		DEBUG_PRINTLN("if(tlnt == 2 && mqtt & ser)");
+		DEBUG_PRINTLN(F("if(tlnt == 2 && mqtt & ser)"));
 		serialMQTT2(ser, mqtt);
 	}else if(ser == 2 && tlnt > 0 & mqtt > 0){
-		DEBUG_PRINTLN("if(ser == 2 && tlnt & mqtt)");
+		DEBUG_PRINTLN(F("if(ser == 2 && tlnt & mqtt)"));
 		telnetMQTT2(tlnt, mqtt);
 	}else if(mqtt == 2 && tlnt > 0 & ser > 0){
-		DEBUG_PRINTLN("if(mqtt == 2 && tlnt & ser)");
+		DEBUG_PRINTLN(F("if(mqtt == 2 && tlnt & ser)"));
 		serialTelnet2(ser, tlnt);
 	}else{
 		dbg1 = new BaseLog(1);
@@ -2810,19 +2810,19 @@ void LOGSLCT_Evnt:: doaction(bool save){
 
 void serialTelnet(uint8_t ser, uint8_t tlnt){
 	if(ser == 1 && tlnt == 1){
-		DEBUG_PRINTLN("\nif(ser == 1 && tlnt == 1)");
+		DEBUG_PRINTLN(F("if(ser == 1 && tlnt == 1)"));
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && tlnt == 2){
-		DEBUG_PRINTLN("\nif(ser == 2 && tlnt == 2)");
+		DEBUG_PRINTLN(F("if(ser == 2 && tlnt == 2)"));
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new SerialTelnetLog(2, &telnet);
 	}else if(ser == 2 && tlnt == 1){
-		DEBUG_PRINTLN("\niif(ser == 2 && tlnt == 1)");
+		DEBUG_PRINTLN(F("iif(ser == 2 && tlnt == 1)"));
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new SerialLog(2);
 	}else if(ser == 1 && tlnt == 2){
-		DEBUG_PRINTLN("\nif(ser == 1 && tlnt == 2)");
+		DEBUG_PRINTLN(F("if(ser == 1 && tlnt == 2)"));
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new TelnetLog(2, &telnet);
 	}
@@ -2830,19 +2830,19 @@ void serialTelnet(uint8_t ser, uint8_t tlnt){
 
 void telnetMQTT(uint8_t tlnt, uint8_t mqtt){
 	if(tlnt == 1 && mqtt == 1){
-		DEBUG_PRINTLN("\nif(tlnt == 1 && mqtt == 1)");
+		DEBUG_PRINTLN(F("if(tlnt == 1 && mqtt == 1)"));
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new BaseLog(2);
 	}else if(tlnt == 2 && mqtt == 2){
-		DEBUG_PRINTLN("\nif(tlnt == 2 && mqtt == 2)");
+		DEBUG_PRINTLN(F("if(tlnt == 2 && mqtt == 2)"));
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new TelnetMQTTLog(2, &telnet, mqttClient);
 	}else if(tlnt == 2 && mqtt == 1){
-		DEBUG_PRINTLN("\nif(tlnt == 2 && mqtt == 1)");
+		DEBUG_PRINTLN(F("if(tlnt == 2 && mqtt == 1)"));
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new TelnetLog(2, &telnet);
 	}else if(tlnt == 1 && mqtt == 2){
-		DEBUG_PRINTLN("\nif(tlnt == 1 && mqtt == 2)");
+		DEBUG_PRINTLN(F("if(tlnt == 1 && mqtt == 2)"));
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new MQTTLog(2, mqttClient);
 	}
@@ -2850,19 +2850,19 @@ void telnetMQTT(uint8_t tlnt, uint8_t mqtt){
 
 void serialMQTT(uint8_t ser, uint8_t mqtt){
 	if(ser == 1 && mqtt == 1){
-		DEBUG_PRINTLN("\nif(ser == 1 && mqtt == 1)");
+		DEBUG_PRINTLN(F("\nif(ser == 1 && mqtt == 1)"));
 		dbg1 = new SerialMQTTLog(1, mqttClient);
 		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && mqtt == 2){
-		DEBUG_PRINTLN("\nif(ser == 2 && mqtt == 2)");
+		DEBUG_PRINTLN(F("if(ser == 2 && mqtt == 2)"));
 		dbg1 = new SerialMQTTLog(1, mqttClient);
 		dbg2 = new SerialMQTTLog(2, mqttClient);
 	}else if(ser == 2 && mqtt == 1){
-		DEBUG_PRINTLN("\nif(ser == 2 && mqtt == 1)");
+		DEBUG_PRINTLN(F("if(ser == 2 && mqtt == 1)"));
 		dbg1 = new SerialMQTTLog(1, mqttClient);
 		dbg2 = new SerialLog(2);
 	}else if(ser == 1 && mqtt == 2){
-		DEBUG_PRINTLN("\nif(ser == 1 && mqtt == 2)");
+		DEBUG_PRINTLN(F("if(ser == 1 && mqtt == 2)"));
 		dbg1 = new SerialMQTTLog(1, mqttClient);
 		dbg2 = new MQTTLog(2, mqttClient);
 	}
@@ -2870,19 +2870,19 @@ void serialMQTT(uint8_t ser, uint8_t mqtt){
 
 void serialTelnet2(uint8_t ser, uint8_t tlnt){
 	if(ser == 1 && tlnt == 1){
-		DEBUG_PRINTLN("\nif(ser == 1 && tlnt == 1)");
+		DEBUG_PRINTLN(F("if(ser == 1 && tlnt == 1)"));
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && tlnt == 2){
-		DEBUG_PRINTLN("\nif(ser == 2 && tlnt == 2)");
+		DEBUG_PRINTLN(F("if(ser == 2 && tlnt == 2)"));
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new SerialTelnetLog(2, &telnet);
 	}else if(ser == 2 && tlnt == 1){
-		DEBUG_PRINTLN("\nif(ser == 2 && tlnt == 1)");
+		DEBUG_PRINTLN(F("if(ser == 2 && tlnt == 1)"));
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new SerialLog(2);
 	}else if(ser == 1 && tlnt == 2){
-		DEBUG_PRINTLN("\nif(ser == 1 && tlnt == 2)");
+		DEBUG_PRINTLN(F("if(ser == 1 && tlnt == 2)"));
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new TelnetLog(2, &telnet);
 	}
@@ -2890,19 +2890,19 @@ void serialTelnet2(uint8_t ser, uint8_t tlnt){
 
 void telnetMQTT2(uint8_t tlnt, uint8_t mqtt){
 	if(tlnt == 1 && mqtt == 1){
-		DEBUG_PRINT("\nif(tlnt == 1 && mqtt == 1)");
+		DEBUG_PRINT(F("if(tlnt == 1 && mqtt == 1)"));
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new BaseLog(2);
 	}else if(tlnt == 2 && mqtt == 2){
-		DEBUG_PRINT("\nif(tlnt == 2 && mqtt == 2)");
+		DEBUG_PRINT(F("if(tlnt == 2 && mqtt == 2)"));
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new TelnetMQTTLog(2, &telnet, mqttClient);
 	}else if(tlnt == 2 && mqtt == 1){
-		DEBUG_PRINT("\nif(tlnt == 2 && mqtt == 1)");
+		DEBUG_PRINT(F("if(tlnt == 2 && mqtt == 1)"));
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new TelnetLog(2, &telnet);
 	}else if(tlnt == 1 && mqtt == 2){
-		DEBUG_PRINT("\nif(tlnt == 1 && mqtt == 2)");
+		DEBUG_PRINT(F("if(tlnt == 1 && mqtt == 2)"));
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new MQTTLog(2, mqttClient);
 	}
@@ -2910,19 +2910,19 @@ void telnetMQTT2(uint8_t tlnt, uint8_t mqtt){
 
 void serialMQTT2(uint8_t ser, uint8_t mqtt){
 	if(ser == 1 && mqtt == 1){
-		DEBUG_PRINT("\nif(ser == 1 && mqtt == 1)");
+		DEBUG_PRINT(F("if(ser == 1 && mqtt == 1)"));
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && mqtt == 2){
-		DEBUG_PRINT("\nif(ser == 2 && mqtt == 2)");
+		DEBUG_PRINT(F("if(ser == 2 && mqtt == 2)"));
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
 	}else if(ser == 2 && mqtt == 1){
-		DEBUG_PRINT("\nif(ser == 2 && mqtt == 1)");
+		DEBUG_PRINT(F("if(ser == 2 && mqtt == 1)"));
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new SerialLog(2);
 	}else if(ser == 1 && mqtt == 2){
-		DEBUG_PRINT("\nif(ser == 1 && mqtt == 2)");
+		DEBUG_PRINT(F("if(ser == 1 && mqtt == 2)"));	
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new MQTTLog(2, mqttClient);
 	}
