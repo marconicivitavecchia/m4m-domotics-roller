@@ -2759,7 +2759,7 @@ void LOGSLCT_Evnt:: doaction(bool save){
 		//00 01 00
 		//00 10 00
 		if(tlnt == 1){
-			DEBUG_PRINTLN(F("iif(tlnt == 1)");
+			DEBUG_PRINTLN(F("iif(tlnt == 1)"));
 			dbg1 = new TelnetLog(1, &telnet);
 			dbg2 = new BaseLog(2);
 		}else if(tlnt == 2){
