@@ -17,9 +17,6 @@ String enda = "\",";
 String end = "\"";
 String endbrk = "}";
 
-BaseLog* dbg1 = NULL;
-BaseLog* dbg2 = NULL;
-
 char IP[] = "xxx.xxx.xxx.xxx";          // buffer
 //end global string
 //stats variables
@@ -92,7 +89,7 @@ DallasTemperature DS18B20(&oneWire);
 WiFiEventHandler stationConnectedHandler;
 WiFiEventHandler stationDisconnectedHandler;
 
-char gbuf[50];
+//char gbuf[50];
 //WiFiEventHandler gotIpEventHandler, disconnectedEventHandler, connectedEventHandler;
 
 //User config
@@ -145,7 +142,7 @@ uint8_t outLogic[NBTN*STATUSDIM];
 //WiFiClient espClient;
 //dichiara una variabile oggetto della classe PubSubClient (instanzia il client MQTT)
 // create MQTT
-MQTT *mqttClient=0;
+MQTT *mqttClient = NULL;
 bool configLoaded=true;
 bool mqttConnected=false;
 bool mqttAddrChanged=true;
@@ -199,9 +196,9 @@ void calibrate_pwr() {
 	pars[p(PWRMULT)]->load(hlw8012.getPowerMultiplier());
 	
 	// Show corrected factors
-	DEBUG_PRINT(F("[HLW] New current multiplier : ")); DEBUG_PRINTLN(hlw8012.getCurrentMultiplier());
-	DEBUG_PRINT(F("[HLW] New voltage multiplier : ")); DEBUG_PRINTLN(hlw8012.getVoltageMultiplier());
-	DEBUG_PRINT(F("[HLW] New power multiplier   : ")); DEBUG_PRINTLN(hlw8012.getPowerMultiplier());
+	DEBUG1_PRINT(F("[HLW] New current multiplier : ")); DEBUG1_PRINTLN(hlw8012.getCurrentMultiplier());
+	DEBUG1_PRINT(F("[HLW] New voltage multiplier : ")); DEBUG1_PRINTLN(hlw8012.getVoltageMultiplier());
+	DEBUG1_PRINT(F("[HLW] New power multiplier   : ")); DEBUG1_PRINTLN(hlw8012.getPowerMultiplier());
 }
 
 void HLW8012_init(){
@@ -221,9 +218,9 @@ void HLW8012_init(){
 		hlw8012.setResistors(CURRENT_RESISTOR, VOLTAGE_RESISTOR_UPSTREAM, VOLTAGE_RESISTOR_DOWNSTREAM);
 
 		// Show default (as per datasheet) multipliers
-		DEBUG_PRINT(F("[HLW] New current multiplier : ")); DEBUG_PRINTLN(hlw8012.getCurrentMultiplier());
-		DEBUG_PRINT(F("[HLW] New voltage multiplier : ")); DEBUG_PRINTLN(hlw8012.getVoltageMultiplier());
-		DEBUG_PRINT(F("[HLW] New power multiplier   : ")); DEBUG_PRINTLN(hlw8012.getPowerMultiplier());
+		DEBUG1_PRINT(F("[HLW] New current multiplier : ")); DEBUG1_PRINTLN(hlw8012.getCurrentMultiplier());
+		DEBUG1_PRINT(F("[HLW] New voltage multiplier : ")); DEBUG1_PRINTLN(hlw8012.getVoltageMultiplier());
+		DEBUG1_PRINT(F("[HLW] New power multiplier   : ")); DEBUG1_PRINTLN(hlw8012.getPowerMultiplier());
 
 		setInterrupts();
 }
@@ -380,8 +377,9 @@ inline void initOfst(){
 	/*19*/pars[p(UTCADJ)] = new ParInt(0, "utcadj", "utcadj", NTPADJUSTOFST, 'p','i', new UTCADJ_Evnt());
 	/*20*/pars[p(SLATSRATIO)] = new ParFloat(0.8, "slatsratio", "slatsratio", SLATSRATIOFST, 'p','i');
 	/*21*/pars[p(UTCSYNC)] = new ParInt(50, "utcsync", "utcsync", NTPSYNCINTOFST, 'p','i', new UTCSYNC_Evnt());
-	/*22*/pars[p(MQTTID)] = new ParStr32(MQTTCLIENTID, "mqttid", "mqttid", MQTTIDOFST, 'p','i', new UTCADJ_Evnt());
+	/*22*/pars[p(MQTTID)] = new ParStr32(MQTTCLIENTID, "mqttid", "mqttid", MQTTIDOFST, 'p','i');
 	/*23*/pars[p(MQTTOUTTOPIC)] = new ParStr32(OUTTOPIC, "mqttouttopic", "mqttouttopic", OUTTOPICOFST, 'p','i');
+	/*23*/pars[p(MQTTLOG)] = new ParStr32(LOGPATH, "mqttlog", "mqttlog", MQTTLOGOFST, 'p','i');
 	/*24*/pars[p(MQTTINTOPIC)] = new ParStr32(INTOPIC, "mqttintopic", "mqttintopic", INTOPICOFST, 'p','i');
 	/*25*/pars[p(CLNTSSID1)] = new ParStr32(SSID1, "clntssid1", "clntssid1", WIFICLIENTSSIDOFST1, 'p','i');
 	/*26*/pars[p(CLNTPSW1)] = new ParStr32(PSW1, "clntpsw1", "clntpsw1", WIFICLIENTPSWOFST1, 'p','i');
@@ -418,7 +416,7 @@ inline void initOfst(){
 	/*5*/pars[p(SWACTION3)] = new ParUint8(0, "SWACTION3","");
 	/*5*/pars[p(SWACTION4)] = new ParUint8(0, "SWACTION4","");
 	/*5*/pars[p(UTCVAL)] = new ParLong(0, "UTCVAL","utcval");
-	/*5*/pars[p(LOGSLCT)] = new ParUint8(42, "logslct","logslct", LOGSLCTOFST, 'n', 'n', new LOGSLCT_Evnt());
+	/*5*/pars[p(LOGSLCT)] = new ParUint8(33, "logslct","logslct", LOGSLCTOFST, 'n', 'n', new LOGSLCT_Evnt());
 
 	//printparams();
 }
@@ -428,16 +426,6 @@ inline bool gatedfn(float val, uint8_t n, float rnd){
 	bool changed = (val < asyncBuf[n] - rnd || val > asyncBuf[n] + rnd);
 	asyncBuf[n] = val;            // valore di val campionato al loop precedente 
 	return changed;
-}
-
-inline uint8_t cmdLogic(uint8_t n){
-	if(roll[n]){
-		//DEBUG_PRINTLN("\ncmdLogic: switchLogic");
-		return (switchLogic(0,n) + switchLogic(1,n));
-	}else{
-		//DEBUG_PRINTLN("\ncmdLogic: toggleLogic");
-		return (toggleLogic(0, n) + toggleLogic(1, n));
-	}
 }
 
 #if (AUTOCAL_ACS712) 	
@@ -455,10 +443,10 @@ float getAmpRMS(float ACSVolt){
 void setSWMode(uint8_t mode,uint8_t n){
 	roll[n] = mode;
 	isrun[n] = false;
-	DEBUG_PRINT("setSWMode");
-	DEBUG_PRINTLN(n);
-	DEBUG_PRINT(": ");
-	DEBUG_PRINTLN(mode);
+	DEBUG2_PRINT("setSWMode");
+	DEBUG2_PRINTLN(n);
+	DEBUG2_PRINT(": ");
+	DEBUG2_PRINTLN(mode);
 	
 	//readModeAndPub(n);
 }
@@ -474,8 +462,8 @@ float getTemperature(){
 	unsigned short cnt = 0;
 	do{
 		temp = DS18B20.getTempCByIndex(0);
-		//DEBUG_PRINT("Temperature: ");
-		//DEBUG_PRINTLN(temp);
+		//DEBUG2_PRINT("Temperature: ");
+		//DEBUG2_PRINTLN(temp);
 		cnt++;		
 	}while((temp == 85.0 || temp == (-127.0)) && cnt < 3);
 #endif
@@ -504,8 +492,8 @@ float actions(char *key, float val)
 		}
 		if(n>=0){
 			startCnt(0,(unsigned long)val,SMPLCNT1+n);
-			DEBUG_PRINT("\nstartCnt: ");
-			DEBUG_PRINTLN(val);
+			DEBUG2_PRINT("\nstartCnt: ");
+			DEBUG2_PRINTLN(val);
 		}
 		if(key[1]=='d'){
 			if(roll[0] == false){
@@ -707,11 +695,11 @@ void printMcpRealOut(){
 	//sprintf(s, "Lettura registri AB MCP: %d",);
 	//printf(s,"Leading text "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(uint8_t));
 	sprintf(s,"readGPIOAB: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
-	DEBUG_PRINT(s);
+	DEBUG1_PRINT(s);
 #else
 	m = (uint16_t)GPI;
 	sprintf(s,"GPIO: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
-	DEBUG_PRINT(s);
+	DEBUG1_PRINT(s);
 #endif
 }
 
@@ -748,7 +736,7 @@ void setup_AP(bool apmode) {
 	  //WiFi.softAP("cacca9");
 	  //interrupts();
 	  //DEBUG_PRINT(F("Setting soft-AP ... "));
-	  //DEBUG_PRINTLN(WiFi.softAP((confcmd[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
+	  //DEBUG2_PRINTLN(WiFi.softAP((confcmd[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
 	  //delay(500); // Without delay I've seen the IP address blank
 	  delay(1000);
 	  pars[p(LOCALIP)]->load((char*) (WiFi.softAPIP().toString()).c_str());
@@ -761,7 +749,7 @@ void setup_AP(bool apmode) {
 	  //WiFi.softAP(ssid, password);
 	  //interrupts();
 	  //DEBUG_PRINT(F("Setting soft-AP ... "));
-	  //DEBUG_PRINTLN(WiFi.softAP((confcmd[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
+	  //DEBUG2_PRINTLN(WiFi.softAP((confcmd[APPSSID]).c_str()) ? F("Ready") : F("Failed!"));
 	  delay(1000);
 	  pars[p(LOCALIP)]->load(WiFi.softAPIP().toString().c_str());
 	  Serial.print(F("Soft-AP IP address = "));
@@ -775,11 +763,11 @@ int numberOfNetworks = WiFi.scanNetworks();
  
   for(int i =0; i<numberOfNetworks; i++){
  
-     DEBUG_PRINT("\nNetwork name: ");
-     DEBUG_PRINT(WiFi.SSID(i));
-     DEBUG_PRINT("\nSignal strength: ");
-     DEBUG_PRINT(WiFi.RSSI(i));
-     DEBUG_PRINT("\n-----------------------");
+     DEBUG2_PRINT("\nNetwork name: ");
+     DEBUG2_PRINT(WiFi.SSID(i));
+     DEBUG2_PRINT("\nSignal strength: ");
+     DEBUG2_PRINT(WiFi.RSSI(i));
+     DEBUG2_PRINT("\n-----------------------");
  
   }
 }
@@ -789,12 +777,12 @@ void setup_wifi(int wifindx) {
 	//ESP.wdtFeed();
 	wifindx = wifindx*2;  //client1 e client2 hanno indici contigui nell'array confcmd
 	// We start by connecting to a WiFi network
-	Serial.println(F("Connecting to "));
-	Serial.println(pars[p(CLNTSSID1+wifindx)]->getStrVal());
-    Serial.println(F(" as wifi client..."));
+	//DEBUG2_PRINT(F("Connecting to "));
+	DEBUG1_PRINTLN(pars[p(CLNTSSID1+wifindx)]->getStrVal());
+    DEBUG1_PRINTLN(F(" as wifi client..."));
 	if (wifiConn) {
 		//importante! Altrimenti tentativi potrebbero collidere con una connessione appena instaurata
-		Serial.println(F("Already connected. Bailing out."));
+		DEBUG1_PRINTLN(F("Already connected. Bailing out."));
 	}else{
 		//WiFi.setAutoConnect(true);		//inibisce la connessione automatica al boot
 		//WiFi.setAutoReconnect(true);	//inibisce la riconnessione automatica dopo una disconnesione accidentale
@@ -806,31 +794,31 @@ void setup_wifi(int wifindx) {
 		//check if we have ssid and pass and force those, if not, try with last saved values
 		if (pars[p(CLNTSSID1+wifindx)]->getStrVal() != "") {
 			//noInterrupts();
-			Serial.print(F("Begin status: "));
-			Serial.println(WiFi.begin((const char*) static_cast<ParStr32*>(pars[p(CLNTSSID1+wifindx)])->val, (const char*) static_cast<ParStr32*>(pars[p(CLNTPSW1+wifindx)])->val));
+			DEBUG1_PRINT(F("Begin status: "));
+			DEBUG1_PRINTLN(WiFi.begin((const char*) static_cast<ParStr32*>(pars[p(CLNTSSID1+wifindx)])->val, (const char*) static_cast<ParStr32*>(pars[p(CLNTPSW1+wifindx)])->val));
 			//interrupts();
 		} else {
 			if (WiFi.SSID()) {
-				Serial.println(F("Using last saved values, should be faster"));
+				DEBUG1_PRINTLN(F("Using last saved values, should be faster"));
 				//trying to fix connection in progress hanging
 				ETS_UART_INTR_DISABLE();
 				wifi_station_disconnect();
 				ETS_UART_INTR_ENABLE();
 				WiFi.begin();
 			} else {
-				Serial.println(F("No saved credentials"));
+				DEBUG1_PRINTLN(F("No saved credentials"));
 			}
 		}
 		IPAddress ip = WiFi.localIP();
 		ip.toString().toCharArray(IP, 16);
 		pars[p(LOCALIP)]->load(IP);
-		Serial.print(F("AP client IP address = "));
-		Serial.println(((ParStr32*)pars[p(LOCALIP)])->val);
+		DEBUG1_PRINT(F("AP client IP address = "));
+		DEBUG1_PRINTLN(((ParStr32*)pars[p(LOCALIP)])->val);
 	}	
 
-	Serial.println (F("\n******************* begin ***********"));
+	DEBUG1_PRINTLN (F("\n******************* begin ***********"));
     WiFi.printDiag(Serial);
-	Serial.println (F("\n******************* end ***********"));
+	DEBUG1_PRINTLN (F("\n******************* end ***********"));
 
 	//WiFi.enableAP(true);
   //}
@@ -839,9 +827,9 @@ void setup_wifi(int wifindx) {
 #if (LARGEFW)
 void setup_mDNS() {
 	if (MDNS.begin((const char*) static_cast<ParStr32*>(pars[p(LOCALIP)])->val)) {              // Start the mDNS responder for esp8266.local
-		DEBUG_PRINTLN(F("mDNS responder started"));
+		DEBUG1_PRINTLN(F("mDNS responder started"));
 	} else {
-		DEBUG_PRINTLN(F("Error setting up MDNS responder!"));
+		DEBUG1_PRINTLN(F("Error setting up MDNS responder!"));
 	}
 }
 #endif
@@ -849,54 +837,55 @@ void setup_mDNS() {
 void startWebSocket() { // Start a WebSocket server
   webSocket.begin();                          // start the websocket server
   webSocket.onEvent(webSocketEvent);          // if there's an incomming websocket message, go to function 'webSocketEvent'
-  DEBUG_PRINTLN("WebSocket server started.");
+  DEBUG1_PRINTLN("WebSocket server started.");
 }
 
 void mqttReconnect() {
 	// Loop until we're mqttReconnecte
 	if(mqttClient!=NULL){
-		DEBUG_PRINTLN(F("Distruggo l'oggetto MQTT client."));
-		DEBUG_PRINTLN(F("Mi disconetto dal server MQTT"));
+		DEBUG1_PRINTLN(F("Distruggo l'oggetto MQTT client."));
+		DEBUG1_PRINTLN(F("Mi disconetto dal server MQTT"));
 		if(mqttClient->isConnected()){
 			noInterrupts ();
 			mqttClient->disconnect();
 			interrupts ();
 		}
 		delay(50);
-		DEBUG_PRINTLN(F("Chiamo il distruttore dell'oggetto MQTT"));
+		DEBUG2_PRINTLN(F("Chiamo il distruttore dell'oggetto MQTT"));
 		//noInterrupts ();
 		ESP.wdtFeed();
-		mqttClient->~MQTT();
+		//mqttClient->~MQTT();
+		delete mqttClient;
 		delay(100);
 		//free((mqttClient));
-		//DEBUG_PRINTLN(F("Cancello la vechia istanza dell'oggetto MQTT"));
-		//delete mqttClient;
-		DEBUG_PRINTLN(F("Annullo istanza dell'oggetto MQTT"));
+		//DEBUG2_PRINTLN(F("Cancello la vechia istanza dell'oggetto MQTT"));
+		DEBUG2_PRINTLN(F("Annullo istanza dell'oggetto MQTT"));
 		ESP.wdtFeed();
 		mqttClient = NULL;
 		//interrupts ();
 		delay(50);
 	}
-	DEBUG_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
+	DEBUG1_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
 	/////noInterrupts ();
 	mqttClient = new MQTT((const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, (const char *)(static_cast<ParStr64*>(pars[p(MQTTADDR)]))->val, (unsigned int) (static_cast<ParLong*>(pars[p(MQTTPORT)]))->val);
 	/////interrupts ();
-    DEBUG_PRINTLN(F("Registro i callback dell'MQTT."));
-	DEBUG_PRINT(F("Attempting MQTT connection to: "));
-	DEBUG_PRINT(pars[p(MQTTADDR)]->getStrVal());
-	DEBUG_PRINT(F(", with ClientID: "));
-	DEBUG_PRINT(pars[p(MQTTID)]->getStrVal());
-	DEBUG_PRINTLN(F(" ..."));
+    DEBUG2_PRINTLN(F("Registro i callback dell'MQTT."));
+	DEBUG2_PRINT(F("Attempting MQTT connection to: "));
+	DEBUG2_PRINT(pars[p(MQTTADDR)]->getStrVal());
+	DEBUG2_PRINT(F(", with ClientID: "));
+	DEBUG2_PRINT(pars[p(MQTTID)]->getStrVal());
+	DEBUG2_PRINTLN(F(" ..."));
 
 	delay(50);
 	if(mqttClient==NULL){
-		DEBUG_PRINTLN(F("ERROR on mqttReconnect! MQTT client is not allocated."));
+		DEBUG1_PRINTLN(F("ERROR on mqttReconnect! MQTT client is not allocated."));
 	}
 	else
 	{
+		pars[p(LOGSLCT)]->doaction(false);	
 		mqttClient->onData(mqttCallback);
 		mqttClient->onConnected([]() {
-		DEBUG_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
+		DEBUG2_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
 			mqttcnt = 0;
 			//Altrimenti dice che è connesso ma non comunica
 			mqttClient->subscribe(static_cast<ParStr32*>(pars[p(MQTTINTOPIC)])->val); 
@@ -904,11 +893,11 @@ void mqttReconnect() {
 			//mqttConnected=true;
 		});
 		mqttClient->onDisconnected([]() {
-			//DEBUG_PRINTLN("MQTT disconnected.");
-		DEBUG_PRINTLN(F("MQTT: onDisconnected([]() dice mi sono disconnesso."));
+			//DEBUG2_PRINTLN("MQTT disconnected.");
+		DEBUG2_PRINTLN(F("MQTT: onDisconnected([]() dice mi sono disconnesso."));
 			mqttConnected=false;
 		});
-		DEBUG_PRINTLN(F("MQTT: Eseguo la prima connect."));
+		DEBUG2_PRINTLN(F("MQTT: Eseguo la prima connect."));
 		mqttClient->setUserPwd((const char*)static_cast<ParStr32*>(pars[p(MQTTUSR)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTPSW)])->val);
 		//////noInterrupts ();
 		mqttClient->connect();
@@ -926,11 +915,11 @@ void mqttCallback(String &topic, String &response) {
 	//applica la logica ricevuta da remoto sulle uscite locali (led)
     
 	int v;
-#if defined (_DEBUG1) || defined (_DEBUGR)	
-	DEBUG_PRINT(F("Message arrived on topic: ["));
-	DEBUG_PRINT(topic);
-	DEBUG_PRINT(F("], "));
-	DEBUG_PRINTLN(response);
+#if defined (_DEBUG) || defined (_DEBUGR)	
+	DEBUG2_PRINT(F("Message arrived on topic: ["));
+	DEBUG2_PRINT(topic);
+	DEBUG2_PRINT(F("], "));
+	DEBUG2_PRINTLN(response);
 #endif	
 	//v = parseJsonFieldToInt(response, mqttJson[0], ncifre);
 	//digitalWrite(OUTSLED, v); 
@@ -940,29 +929,29 @@ void mqttCallback(String &topic, String &response) {
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
-  DEBUG_PRINT("webSocketEvent(");
-  DEBUG_PRINT(num);
-  DEBUG_PRINT(", ");
-  DEBUG_PRINT(type);
+  DEBUG2_PRINT("webSocketEvent(");
+  DEBUG2_PRINT(num);
+  DEBUG2_PRINT(", ");
+  DEBUG2_PRINT(type);
   char s[300];
   
   switch (type) {
     case WStype_DISCONNECTED:             // if the websocket is disconnected
 		sprintf(s,"\n[%u] Disconnected!", num);
-		DEBUG_PRINT(s);
+		DEBUG2_PRINT(s);
 		wsnconn--;
     break;
     case WStype_CONNECTED: {              // if a new websocket connection is established
 		wsnconn++;
         IPAddress wip = webSocket.remoteIP(num);
 		sprintf(s,"[%u] Connected from %d.%d.%d.%d url: %s\n", num, wip[0], wip[1], wip[2], wip[3], payload);
-		DEBUG_PRINT(s);
+		DEBUG2_PRINT(s);
 		readStatesAndPub(true);
 	}
     break;
     case WStype_TEXT:                     // if new text data is received 
 		sprintf(s,"[%u] get Text: %s\r\n", num, payload);
-		DEBUG_PRINT(s);
+		DEBUG2_PRINT(s);
 		String str = String((char *)payload);
 		String str2 = String("");
 		mqttCallback(str2, str);
@@ -973,7 +962,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 //legge il valore dello stato dei toggle e li pubblica sul broker come stringa JSON
 void readStatesAndPub(bool all){
 
-  //DEBUG_PRINTLN(F("\nreadStatesAndPub")); 
+  //DEBUG2_PRINTLN(F("\nreadStatesAndPub")); 
   
   //crea una stringa JSON con i valori  dello stato corrente dei pulsanti
 
@@ -1022,8 +1011,8 @@ void readStatesAndPub(bool all){
 }
 
 inline uint8_t percfdbck(uint8_t n){
-	//DEBUG_PRINT(F("Posdelta:"));
-	//DEBUG_PRINTLN(getPosdelta());
+	//DEBUG2_PRINT(F("Posdelta:"));
+	//DEBUG2_PRINTLN(getPosdelta());
 	if(getDelayedCmd(n) <= 100){
 		return round(calcLen(n) - getPosdelta());  
 	}else{
@@ -1032,7 +1021,7 @@ inline uint8_t percfdbck(uint8_t n){
 }
 
 void readActModeAndPub(uint8_t n){
-  //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
+  //DEBUG2_PRINTLN(F("\nreadTempAndPub")); 
   String s=openbrk;
   //char sd[300];
   s+="actmode"+String(n+1)+twodot+pars[p(SWACTION1+n)]->getStrVal()+enda; 
@@ -1042,7 +1031,7 @@ void readActModeAndPub(uint8_t n){
 }
 
 void readModeAndPub(uint8_t n){
-  //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
+  //DEBUG2_PRINTLN(F("\nreadTempAndPub")); 
   String s=openbrk;
   //char sd[300];
   s+="mode"+String(n+1)+twodot+pars[p(SWROLL1+n)]->getStrVal()+end;
@@ -1052,39 +1041,39 @@ void readModeAndPub(uint8_t n){
 }
 
 void readPwrCalAndPub(){
-  //DEBUG_PRINTLN(F("\nreadPwrCalAndPub")); 
+  //DEBUG2_PRINTLN(F("\nreadPwrCalAndPub")); 
   String s=openbrk;
   s+=pars[p(PWRMULT)]->getStrJsonName()+twodot+pars[p(PWRMULT)]->getStrVal()+end;
   publishStr(s);
 }
 
 void readAvgPowerAndPub(){
-  //DEBUG_PRINTLN(F("\nreadPowerAndPub")); 
+  //DEBUG2_PRINTLN(F("\nreadPowerAndPub")); 
   String s=openbrk;
   s+=pars[MQTTMEANPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTMEANPWR1])+comma+String(asyncBuf[GTMEANPWR2])+closesqr3;
   publishStr(s);
 }
 
 void readPeakPowerAndPub(){
-  //DEBUG_PRINTLN(F("\nreadPowerAndPub")); 
+  //DEBUG2_PRINTLN(F("\nreadPowerAndPub")); 
   String s=openbrk;
   s+=pars[MQTTPEAKPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTPEAKPWR1])+comma+String(asyncBuf[GTPEAKPWR2])+closesqr3;
   publishStr(s);
 }
 
 void readParamAndPub(uint8_t parid, char* str){
-  //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
+  //DEBUG2_PRINTLN(F("\nreadTempAndPub")); 
   String s=openbrk;
   //char sd[300];
   s+=pars[parid]->getStrJsonName()+twodot+String(str)+end;
 //sprintf(sd,"%s%s%s%f%s",openbrk,mqttJson[MQTTJSONTEMP].c_str(),twodot,asyncBuf[GTTEMP],closebrk);
   //s=String(sd);
-  //DEBUG_PRINTLN(s);
+  //DEBUG2_PRINTLN(s);
   publishStr(s);
 }
 
 void readTempAndPub(){
-  //DEBUG_PRINTLN(F("\nreadTempAndPub")); 
+  //DEBUG2_PRINTLN(F("\nreadTempAndPub")); 
   String s=openbrk;
   //char sd[300];
   s+=pars[MQTTTEMP]->getStrJsonName()+twodot+String(asyncBuf[GTTEMP])+end;
@@ -1125,7 +1114,7 @@ void readIacvoltAndPub(){
 
 void inline readActionConfAndSet(){
 	//imposta le configurazioni dinamiche in base ad eventi esterni
-	DEBUG_PRINTLN(F("readActionConfAndSet."));
+	DEBUG2_PRINTLN(F("readActionConfAndSet."));
 	eval(((String) pars[p(ACTIONEVAL)]->getStrVal()).c_str());
 }
 
@@ -1144,17 +1133,17 @@ void publishStr(String &str){
   str += pars[MQTTDATE]->getStrJsonName()+twodot+printUNIXTimeMin(gbuf)+closebrk;
   
   if(mqttClient==NULL){
-	  DEBUG_PRINTLN(F("ERROR on publishStr MQTT client is not allocated."));
+	  DEBUG1_PRINTLN(F("ERROR on publishStr MQTT client is not allocated."));
   }
   else
   {
 	  //str deve essere convertita in array char altrimenti la libreria introduce un carattere spurio all'inizio del messaggio
 	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str.c_str(), str.length());
-	  DEBUG_PRINTLN(F("Published data: "));
-	  DEBUG_PRINTLN(str);
+	  DEBUG1_PRINTLN(F("Published data: "));
+	  DEBUG1_PRINTLN(str);
   }
   //if(!webSocket){
-	  //DEBUG_PRINTLN(F("ERROR on readStatesAndPub webSocket server is not allocated."));
+	  //DEBUG2_PRINTLN(F("ERROR on readStatesAndPub webSocket server is not allocated."));
   //}
   //else
   //{
@@ -1169,17 +1158,17 @@ void publishStr2(String &str){
   str += endbrk;
   
   if(mqttClient==NULL){
-	  DEBUG_PRINTLN(F("ERROR on publishStr MQTT client is not allocated."));
+	  DEBUG2_PRINTLN(F("ERROR on publishStr MQTT client is not allocated."));
   }
   else
   {
 	  //str deve essere convertita in array char altrimenti la libreria introduce un carattere spurio all'inizio del messaggio
 	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str.c_str(), str.length());
-	  DEBUG_PRINTLN(F("Published data: "));
-	  DEBUG_PRINTLN(str);
+	  DEBUG1_PRINTLN(F("Published data: "));
+	  DEBUG1_PRINTLN(str);
   }
   //if(!webSocket){
-	  //DEBUG_PRINTLN(F("ERROR on readStatesAndPub webSocket server is not allocated."));
+	  //DEBUG2_PRINTLN(F("ERROR on readStatesAndPub webSocket server is not allocated."));
   //}
   //else
   //{
@@ -1192,10 +1181,10 @@ void initIiming(bool first){
   edelay[1] = static_cast<ParLong*>(pars[p(STDEL2)])->val;
   roll[0] = static_cast<ParUint8*>(pars[p(SWROLL1)])->val;
   roll[1] = static_cast<ParUint8*>(pars[p(SWROLL2)])->val;
-  DEBUG_PRINT(F("Roll1: "));
-  DEBUG_PRINTLN(roll[0]);
-  DEBUG_PRINT(F("Roll2: "));
-  DEBUG_PRINTLN(roll[1]);
+  DEBUG2_PRINT(F("Roll1: "));
+  DEBUG2_PRINTLN(roll[0]);
+  DEBUG2_PRINT(F("Roll2: "));
+  DEBUG2_PRINTLN(roll[1]);
   mov = false;
   initTapparellaLogic(in,out,outLogic,pars,first);
 #if (AUTOCAL)  
@@ -1215,8 +1204,12 @@ inline void setupNTP() {
 }
 
 void setup(){
+  //dbg1 = new SerialLog(1);
+  //dbg2 = new SerialLog(2);
+  dbg1 = new SerialLog(1);
+  dbg2 = new SerialLog(2);
   //delay(5000);
-  DEBUG_PRINTLN(F("Inizializzo i parametri."));
+  DEBUG2_PRINTLN(F("Inizializzo i parametri."));
   //initOfst();
   dosmpl = false;
   zeroCnt = 0;
@@ -1224,17 +1217,17 @@ void setup(){
   mqttofst = 2;
   //inizializza la seriale
   Serial.begin(115200);
-  //importante per il _DEBUG1 del WIFI!
+  //importante per il _DEBUG del WIFI!
   //Serial.setDebugOutput(true);
   //WiFi.printDiag(Serial);
   //carica la configurazione dalla EEPROM
-  //DEBUG_PRINTLN(F("Carico configurazione."));
+  //DEBUG2_PRINTLN(F("Carico configurazione."));
   //for(int i=0;i<CONFDIM;i++)
-  DEBUG_PRINTLN(F("initCommon."));
+  DEBUG2_PRINTLN(F("initCommon."));
   initCommon(&server,pars);
   delay(7000);
   initOfst();
-  DEBUG_PRINTLN(F("loadConfig."));
+  DEBUG2_PRINTLN(F("loadConfig."));
   loadConfig();
   delay(100);
   wifiConn = false;
@@ -1264,9 +1257,9 @@ void setup(){
   telnet.begin((const char *) static_cast<ParStr32*>(pars[p(LOCALIP)])->val); // Initiaze the telnet server
   telnet.setResetCmdEnabled(true); // Enable the reset command
   telnet.setCallBackProjectCmds(&processCmdRemoteDebug);
-  DEBUG_PRINTLN(F("Activated remote _DEBUG1"));
+  DEBUG2_PRINTLN(F("Activated remote _DEBUG"));
 #endif  
-  DEBUG_PRINTLN(F("Inizializzo i pulsanti."));
+  DEBUG2_PRINTLN(F("Inizializzo i pulsanti."));
   initdfn(LOW, 0);  //pull DOWN init (in realtà è un pull up, c'è un not in ogni ingresso sui pulsanti)
   initdfn(LOW, 1);
   initdfn(LOW, 2);
@@ -1390,7 +1383,7 @@ void setup(){
 */
   //initTapparellaLogic(in,inr,outLogic,(confcmd[THALT1]).toInt(),(confcmd[THALT2]).toInt(),(confcmd[STDEL1]).toInt(),(confcmd[STDEL2]).toInt());
   //esp_log_set_vprintf(_log_vprintf);
-#if defined (_DEBUG1) || defined (_DEBUGR)  
+#if defined (_DEBUG) || defined (_DEBUGR)  
   testFlash();
 #endif
 #if (AUTOCAL_ACS712)  
@@ -1413,16 +1406,16 @@ void setup(){
   }
   
   swcount = 0;
-  DEBUG_PRINTLN(F(" OK"));
-  DEBUG_PRINTLN(F("Last reset reason: "));
-  DEBUG_PRINTLN(ESP.getResetReason());
+  DEBUG1_PRINTLN(F(" OK"));
+  DEBUG1_PRINTLN(F("Last reset reason: "));
+  DEBUG1_PRINTLN(ESP.getResetReason());
   
   if(WiFi.status() == WL_CONNECTED){
 	  IPAddress ip = WiFi.localIP();
 	  ip.toString().toCharArray(IP, 16);
 	  pars[p(LOCALIP)]->load(IP);
-	  Serial.print(F("AP client IP address = "));
-	  Serial.println(((ParStr32*)pars[p(LOCALIP)])->val);
+	  DEBUG1_PRINTLN(F("AP client IP address = "));
+	  DEBUG1_PRINTLN(((ParStr32*)pars[p(LOCALIP)])->val);
 	  mqttReconnect();
 	  wifiConn = true;	
   }else{
@@ -1430,16 +1423,16 @@ void setup(){
   }
   boot = false;
   
-  DEBUG_PRINTLN(F("sampleCurrTime()"));
+  DEBUG2_PRINTLN(F("sampleCurrTime()"));
   sampleCurrTime();
 }
 
 void httpSetup(){
-  DEBUG_PRINTLN(F("Registro handleRootExt."));
+  DEBUG2_PRINTLN(F("Registro handleRootExt."));
   server.on("/", HTTP_GET, handleRoot);        // Call the 'handleRoot' function when a client requests URI "/"
-  DEBUG_PRINTLN(F("Registro handleLoginExt."));
+  DEBUG2_PRINTLN(F("Registro handleLoginExt."));
   server.on("/login", HTTP_POST, handleLogin); // Call the 'handleLogin' function when a POST request is made to URI "/login"
-  DEBUG_PRINTLN(F("Registro handleModifyExt."));
+  DEBUG2_PRINTLN(F("Registro handleModifyExt."));
   server.on("/modify", HTTP_POST, handleModify);
   server.on("/systconf", HTTP_POST, handleSystemConf);
   server.on("/wificonf", HTTP_POST, handleWifiConf);
@@ -1450,10 +1443,10 @@ void httpSetup(){
   server.on("/cmd", HTTP_GET, handleCmd);
   server.on("/mqttcmd", HTTP_GET, handleMqttCmd);
   //server.on("/cmdjson", handleCmdJsonExt);
-  //DEBUG_PRINTLN(F("Registro handleNotFoundExt."));
+  //DEBUG2_PRINTLN(F("Registro handleNotFoundExt."));
   server.onNotFound(handleNotFound);           // When a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
   //avvia il server HTTP*/
-  DEBUG_PRINTLN("Inizio avvio il server web.");
+  DEBUG2_PRINTLN("Inizio avvio il server web.");
   //here the list of headers to be recorded
   const char * headerkeys[] = {"User-Agent","Cookie"} ;
   size_t headerkeyssize = sizeof(headerkeys)/sizeof(char*);
@@ -1463,15 +1456,15 @@ void httpSetup(){
   httpUpdater.setup(&server);
   //start HTTP server
   server.begin();
-  DEBUG_PRINTLN("HTTP server started");
+  DEBUG2_PRINTLN("HTTP server started");
 #if(LARGEFW)
-  DEBUG_PRINTLN("Avvio il responder mDNS.");
+  DEBUG2_PRINTLN("Avvio il responder mDNS.");
   delay(100);
   //setup_mDNS();
   MDNS.addService(F("http"), F("tcp"), 80); 
-  DEBUG_PRINT("HTTPUpdateServer ready! Open http://");
-  DEBUG_PRINT(pars[p(MQTTID)]->getStrVal()); 
-  DEBUG_PRINTLN(".local/update in your browser");
+  DEBUG2_PRINT("HTTPUpdateServer ready! Open http://");
+  DEBUG2_PRINT(pars[p(MQTTID)]->getStrVal()); 
+  DEBUG2_PRINTLN(".local/update in your browser");
 #endif
 }
 
@@ -1504,10 +1497,10 @@ void leggiTastiLocali2(){
 	//uint8_t inmask = regA & 0xF;	//00001111 (15)
 	if(inmask != 15){ //pullup!
 	//if(inmask != 240){ //pullup!
-		DEBUG_PRINT(F("\nInmask: "));
-		DEBUG_PRINTLN(inmask);
+		DEBUG1_PRINT(F("\nInmask: "));
+		DEBUG1_PRINTLN(inmask);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(regA));
-		DEBUG_PRINT(s);
+		DEBUG1_PRINT(s);
 		static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)((regA >> BTN1U) & 0x1)?0:255); 
 		static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
 		static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t)((regA >> BTN1D) & 0x1)?0:255); 
@@ -1535,10 +1528,10 @@ void leggiTastiLocali2(){
 										 //10111001 1
 	char s[26];
 	if(inmask != 17921){ //pullup!
-		DEBUG_PRINT(F("\nInmask: "));
-		DEBUG_PRINTLN(inmask);
+		DEBUG1_PRINT(F("\nInmask: "));
+		DEBUG1_PRINTLN(inmask);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(inmask>>8), BYTE_TO_BINARY(inmask));
-		DEBUG_PRINT(s);
+		DEBUG1_PRINT(s);
 		static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)(GPIP(BTN1U))?0:255); 
 		static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
 		static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t)(GPIP(BTN1D))?0:255); 
@@ -1632,15 +1625,15 @@ inline void loop2() {
 			aggiornaTimer(RESETTIMER);
 			aggiornaTimer(APOFFTIMER);
 			pushCnt++;
-			//DEBUG_PRINT(F("\n------------------------------------------"));
-			//DEBUG_PRINT(F("\nMean sensor: "));
-			//DEBUG_PRINT(m);
-			//DEBUG_PRINT(F(" - Conn stat: "));
+			//DEBUG2_PRINT(F("\n------------------------------------------"));
+			//DEBUG2_PRINT(F("\nMean sensor: "));
+			//DEBUG2_PRINT(m);
+			//DEBUG2_PRINT(F(" - Conn stat: "));
 			stat = WiFi.status();
-			//DEBUG_PRINT(stat);
+			//DEBUG2_PRINT(stat);
 			wifiConn = (stat == WL_CONNECTED);	
-			//DEBUG_PRINT(F(" - Wifi mode: "));
-			//DEBUG_PRINTLN(WiFi.getMode());
+			//DEBUG2_PRINT(F(" - Wifi mode: "));
+			//DEBUG2_PRINTLN(WiFi.getMode());
 			
 			sensorStatePoll();
 			if(wificnt > WIFISTEP){
@@ -1665,15 +1658,6 @@ inline void loop2() {
 		//leggiTastiLocaliRemoto();
 		//se uno dei tasti delle tapparelle è stato premuto
 		//o se è arrivato un comando dalla mqttCallback
-		/*if(cmdLogic(TAP1) == 1 ||  cmdLogic(TAP2) == 1){ 
-			//once any button is pressed
-			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato();
-			//legge lo stato finale e lo pubblica su MQTT
-			readStatesAndPub();
-			//DEBUG_PRINTLN("Fine callback MQTT.");
-			blocked[0]=blocked[1]=false;
-		}*/
 		//provenienti dalla mqttCallback
 		//remote pressed button event
 		//leggiTastiRemoti();
@@ -1685,7 +1669,7 @@ inline void loop2() {
 //#if (AUTOCAL_ACS712) 
 			if(wificnt > WIFISTEP){
 				wificnt = 0;
-				DEBUG_PRINTLN(F("\nGiving time to ESP stack... "));
+				DEBUG1_PRINTLN(F("\nGiving time to ESP stack... "));
 				delay(30);//give 30ms to the ESP stack for wifi connect
 	//#endif  
 			}else{
@@ -1698,7 +1682,9 @@ inline void loop2() {
   }//END Time base (2-20 msec) main scheduler------------------------------------------------------------------------  
   //POST SCHEDULERS ACTIONS-----------------
 #if(LARGEFW)
-  telnet.handle();
+  if(dbg1->isTelnet() || dbg2->isTelnet()){
+	telnet.handle();
+  }
 #endif  
   yield();	// Give a time for ESP8266
 }//END loop
@@ -1751,7 +1737,7 @@ inline void leggiTastiLocaliDaExp(){
 			setActionLogic(eval(((String) pars[p(2)]->getStrVal()).c_str()),2);
 		if(testUpCntEvnt(1,true,SMPLCNT4)){
 			setActionLogic(eval(((String) pars[p(3)]->getStrVal()).c_str()),3);
-			DEBUG_PRINTLN(getCntValue(SMPLCNT4));
+			DEBUG2_PRINTLN(getCntValue(SMPLCNT4));
 		}
 		//legge lo stato finale e lo scrive sulle uscite
 		scriviOutDaStato();
@@ -1800,16 +1786,16 @@ inline void sensorStatePoll(){
 
 	if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
 		readTempAndPub();
-		DEBUG_PRINT(F("\nTemperatura cambiata"));
+		DEBUG2_PRINT(F("\nTemperatura cambiata"));
 	}
 #if (AUTOCAL_HLW8012) 	
 	if(gatedfn(hlw8012.getActivePower(),GTIPWR, IPWRRND)){
 		readIpAndPub();
-		DEBUG_PRINT(F("\nPotenza camiata"));
+		DEBUG2_PRINT(F("\nPotenza camiata"));
 	}
 	if(gatedfn(hlw8012.getVoltage(),GTIVAC, IVACRND)){
 		readIpAndPub();
-		DEBUG_PRINT(F("\nVolt cambiati"));
+		DEBUG2_PRINT(F("\nVolt cambiati"));
 	}
 #endif	
 /*
@@ -1858,46 +1844,46 @@ inline void automaticStopManager(){
 			//ACSVolt = (double) ex/2.0;
 			//peak = (double) ex/2.0;
 			//reset of peak sample value
-			DEBUG_PRINT(F("\n("));
-			DEBUG_PRINT(0);
-			DEBUG_PRINT(F(") sensor enable: "));
-			DEBUG_PRINT(dosmpl);
+			DEBUG2_PRINT(F("\n("));
+			DEBUG2_PRINT(0);
+			DEBUG2_PRINT(F(") sensor enable: "));
+			DEBUG2_PRINT(dosmpl);
 			
 			if(isrun[0] && dosmpl){
-				DEBUG_PRINT(0);
+				DEBUG2_PRINT(0);
 				if(isrundelay[0] == 0){
 					ex[0] = dd*EMA + (1.0 - EMA)*ex[0];
-					DEBUG_PRINT(F("\n("));
-					DEBUG_PRINT(0);
+					DEBUG2_PRINT(F("\n("));
+					DEBUG2_PRINT(0);
 #if (AUTOCAL_ACS712) 
-					DEBUG_PRINT(F(") minx sensor: "));
-					DEBUG_PRINT(minx);
-					DEBUG_PRINT(F(" - maxx sensor: "));
-					DEBUG_PRINT(maxx);
-					DEBUG_PRINT(F(" - Mean sensor: "));
-					DEBUG_PRINT(m);
+					DEBUG2_PRINT(F(") minx sensor: "));
+					DEBUG2_PRINT(minx);
+					DEBUG2_PRINT(F(" - maxx sensor: "));
+					DEBUG2_PRINT(maxx);
+					DEBUG2_PRINT(F(" - Mean sensor: "));
+					DEBUG2_PRINT(m);
 #endif
-					DEBUG_PRINT(F(" - Peak: "));
-					DEBUG_PRINT(ex[0]);
-					DEBUG_PRINT(F(" - diff: "));
-					DEBUG_PRINT(dd);
+					DEBUG2_PRINT(F(" - Peak: "));
+					DEBUG2_PRINT(ex[0]);
+					DEBUG2_PRINT(F(" - diff: "));
+					DEBUG2_PRINT(dd);
 					chk[0] = checkRange((double) ex[0]*(1 - weight[1]*isMoving(1)),0);
 					if(chk[0] != 0){
-						DEBUG_PRINT(F("\n("));
-						DEBUG_PRINT(0);
+						DEBUG2_PRINT(F("\n("));
+						DEBUG2_PRINT(0);
 						if(chk[0] == -1){
-							DEBUG_PRINTLN(F(") Stop: sottosoglia"));
+							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
 							blocked[0] = secondPress(0,40,true);
 							scriviOutDaStato();
 						}else if(chk[0] == 2){
-							DEBUG_PRINTLN(F(") Stop: soprasoglia"));
+							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
 							blocked[0] = secondPress(0,40);
 							scriviOutDaStato();
 							blocked[0] = 1;
 						}else if(chk[0] == 1){
 							ex[0] = getAVG(0);
-							DEBUG_PRINTLN(F(") Start: fronte di salita"));					
+							DEBUG2_PRINTLN(F(") Start: fronte di salita"));					
 							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(0);
 						}
@@ -1905,22 +1891,22 @@ inline void automaticStopManager(){
 						yield();
 					}
 				}else{
-					DEBUG_PRINT(F("\n("));
-					DEBUG_PRINT(0);
-					DEBUG_PRINT(F(") aspetto: "));
-					DEBUG_PRINT(isrundelay[0]);
+					DEBUG2_PRINT(F("\n("));
+					DEBUG2_PRINT(0);
+					DEBUG2_PRINT(F(") aspetto: "));
+					DEBUG2_PRINT(isrundelay[0]);
 #if (AUTOCAL_ACS712) 
-					DEBUG_PRINT(F(" - minx sensor: "));
-					DEBUG_PRINT(minx);
-					DEBUG_PRINT(F(" - maxx sensor: "));
-					DEBUG_PRINT(maxx);
+					DEBUG2_PRINT(F(" - minx sensor: "));
+					DEBUG2_PRINT(minx);
+					DEBUG2_PRINT(F(" - maxx sensor: "));
+					DEBUG2_PRINT(maxx);
 #endif
-					DEBUG_PRINT(F(" - Peak: "));
-					DEBUG_PRINT(ex[0]);
+					DEBUG2_PRINT(F(" - Peak: "));
+					DEBUG2_PRINT(ex[0]);
 					isrundelay[0]--;
 					ex[0] = dd;
-					DEBUG_PRINT(F(" - dd: "));
-					DEBUG_PRINT(dd);
+					DEBUG2_PRINT(F(" - dd: "));
+					DEBUG2_PRINT(dd);
 				}
 			}else{
 				isrundelay[0] = RUNDELAY;
@@ -1931,36 +1917,36 @@ inline void automaticStopManager(){
 			if(isrun[1] && dosmpl){
 				if(isrundelay[1] == 0){
 					ex[1] = dd*EMA + (1.0 - EMA)*ex[1];
-					DEBUG_PRINT(F("\n("));
-					DEBUG_PRINT(1);
+					DEBUG2_PRINT(F("\n("));
+					DEBUG2_PRINT(1);
 #if (AUTOCAL_ACS712) 
-					DEBUG_PRINT(F(") minx sensor: "));
-					DEBUG_PRINT(minx);
-					DEBUG_PRINT(F(" - maxx sensor: "));
-					DEBUG_PRINT(maxx);
-					DEBUG_PRINT(F(" - Mean sensor: "));
-					DEBUG_PRINT(m);
+					DEBUG2_PRINT(F(") minx sensor: "));
+					DEBUG2_PRINT(minx);
+					DEBUG2_PRINT(F(" - maxx sensor: "));
+					DEBUG2_PRINT(maxx);
+					DEBUG2_PRINT(F(" - Mean sensor: "));
+					DEBUG2_PRINT(m);
 #endif
-					DEBUG_PRINT(F(" - Peak: "));
-					DEBUG_PRINT(ex[1]);
-					DEBUG_PRINT(F(" - ADC enable: "));
-					DEBUG_PRINT(dosmpl);
+					DEBUG2_PRINT(F(" - Peak: "));
+					DEBUG2_PRINT(ex[1]);
+					DEBUG2_PRINT(F(" - ADC enable: "));
+					DEBUG2_PRINT(dosmpl);
 					chk[1] = checkRange((double) ex[1]*(1 - weight[0]*isMoving(0)),1);
 					if(chk[1] != 0){
-						DEBUG_PRINT(F("\n("));
-						DEBUG_PRINT(1);
+						DEBUG2_PRINT(F("\n("));
+						DEBUG2_PRINT(1);
 						if(chk[1] == -1){
-							DEBUG_PRINTLN(F(") Stop: sottosoglia"));
+							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
 							blocked[1] = secondPress(1,40,true);
 							scriviOutDaStato();
 						}else if(chk[1] == 2){
-							DEBUG_PRINTLN(F(") Stop: soprasoglia"));
+							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
 							blocked[1] = secondPress(1,40);
 							scriviOutDaStato();
 							blocked[1] = 1;
 						}else if(chk[1] == 1){
-							DEBUG_PRINTLN(F(") Start: fronte di salita"));	
+							DEBUG2_PRINTLN(F(") Start: fronte di salita"));	
 							ex[1] = getAVG(1);
 							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(1);
@@ -1984,7 +1970,7 @@ inline void automaticStopManager(){
 			maxx = 0;
 			dosmpl = true;
 #endif
-			//DEBUG_PRINT(F("\n------------------------------------------------------------------------------------------"));
+			//DEBUG2_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}
 #if (AUTOCAL_ACS712) 		
 		else{ //sempre vero se si è in modalità switch!	
@@ -2005,7 +1991,7 @@ inline void automaticStopManager(){
 				//running mean calculation
 				smplcnt++;
 				smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
-				DEBUG_PRINTLN(F("Zero detection manager"));	
+				DEBUG1_PRINTLN(F("Zero detection manager"));	
 			}
 		}
 #endif
@@ -2013,7 +1999,7 @@ inline void automaticStopManager(){
 
 inline void wifiFailoverManager(){
 	//wifi failover management
-	//DEBUG_PRINTLN(wl_status_to_string(wfs));
+	//DEBUG2_PRINTLN(wl_status_to_string(wfs));
 	if(WiFi.getMode() == WIFI_OFF || WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA){
 		if(!wifiConn){
 			//lampeggia led di connessione
@@ -2023,15 +2009,15 @@ inline void wifiFailoverManager(){
 				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
 			#endif
 			//yield();
-			DEBUG_PRINT(F("\nSwcount roll: "));
-			DEBUG_PRINTLN(swcount);
+			DEBUG2_PRINT(F("\nSwcount roll: "));
+			DEBUG1_PRINTLN(swcount);
 			
 			if((swcount == 0)){
-				DEBUG_PRINTLN(F("Connection timed out"));
+				DEBUG1_PRINTLN(F("Connection timed out"));
 				WiFi.persistent(false);
 				WiFi.disconnect(true);
 				WiFi.mode(WIFI_OFF);    
-				DEBUG_PRINTLN(F("Do new connection"));
+				DEBUG1_PRINTLN(F("Do new connection"));
 				WiFi.setAutoReconnect(true);	
 				WiFi.mode(WIFI_STA);
 				WiFi.setAutoReconnect(true);
@@ -2072,10 +2058,10 @@ inline void MQTTReconnectManager(){
 				//noInterrupts ();
 				//mqttStat = mqttClient->isConnected();
 				//interrupts ();
-				//DEBUG_PRINT(F("MQTT check : "));
-				//DEBUG_PRINT(mqttStat);
+				//DEBUG2_PRINT(F("MQTT check : "));
+				//DEBUG2_PRINT(mqttStat);
 				if(!mqttStat){
-					DEBUG_PRINT(F("\nMQTT dice non sono connesso."));
+					DEBUG1_PRINT(F("\nMQTT dice non sono connesso."));
 					mqttConnected=false;
 				}	
 				else{
@@ -2095,12 +2081,12 @@ inline void MQTTReconnectManager(){
 				mqttcnt++;
 				
 				if(mqttClient==NULL){
-					DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
+					DEBUG2_PRINTLN(F("ERROR! MQTT client is not allocated."));
 					mqttReconnect();
 					mqttcnt = 0;
 					mqttofst = 2;
 				}else if(mqttcnt == 20){
-					DEBUG_PRINTLN(F("ERROR! MQTT client is not allocated."));
+					DEBUG2_PRINTLN(F("ERROR! MQTT client is not allocated."));
 					mqttofst = 4;
 				}else if(mqttcnt == 40){
 					mqttofst = 8;
@@ -2111,7 +2097,7 @@ inline void MQTTReconnectManager(){
 						//non si può fare perchè dopo pochi loop crasha
 						if(dscnct){
 							dscnct=false;
-							DEBUG_PRINT(F("eseguo la MQTT connect()...Cnt: "));
+							DEBUG1_PRINT(F("eseguo la MQTT connect()...Cnt: "));
 							//noInterrupts ();
 							mqttClient->connect();
 							//interrupts ();
@@ -2120,15 +2106,15 @@ inline void MQTTReconnectManager(){
 						else
 						{
 							dscnct=true;
-							DEBUG_PRINT(F("eseguo la MQTT disconnect()...Cnt: "));
+							DEBUG1_PRINT(F("eseguo la MQTT disconnect()...Cnt: "));
 							//noInterrupts ();
 							mqttClient->disconnect();
 							//interrupts ();
 							delay(50);
 						}
-						DEBUG_PRINT(mqttcnt);
-						DEBUG_PRINT(F(" - Passo: "));
-						DEBUG_PRINTLN(mqttofst);
+						DEBUG2_PRINT(mqttcnt);
+						DEBUG2_PRINT(F(" - Passo: "));
+						DEBUG2_PRINTLN(mqttofst);
 					}
 					//non si può fare senza disconnect perchè dopo pochi loop crasha
 					//mqttClient->setUserPwd((confcmd[MQTTUSR]).c_str(), (confcmd[MQTTPSW]).c_str());
@@ -2152,61 +2138,61 @@ inline void paramsModificationPoll(){
 	
 		if((uint8_t) static_cast<ParUint8*>(pars[p(MQTTADDRMODFIED)])->val == 1){ 
 			pars[p(MQTTADDRMODFIED)]->load(0);
-			DEBUG_PRINTLN(F("confcmd[MQTTADDRMODFIED] eseguo la reconnect()"));
+			DEBUG2_PRINTLN(F("confcmd[MQTTADDRMODFIED] eseguo la reconnect()"));
 			mqttReconnect();
 		}else if((uint8_t) static_cast<ParUint8*>(pars[p(MQTTCONNCHANGED)])->val == 1){ 
 			pars[p(MQTTCONNCHANGED)]->load(0);
 			if(mqttClient==NULL){
-				DEBUG_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
+				DEBUG2_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
 				mqttReconnect();
 			}
 			else
 			{
-			#if defined (_DEBUG1) || defined (_DEBUGR)	
-				DEBUG_PRINTLN(F("MQTTCONNCHANGED! Eseguo la setUserPwd() con usr "));
-				DEBUG_PRINTLN(pars[p(MQTTUSR)]->getStrVal());
-				DEBUG_PRINTLN(F(" e psw "));
-				DEBUG_PRINTLN(pars[p(MQTTPSW)]->getStrVal());
+			#if defined (_DEBUG) || defined (_DEBUGR)	
+				DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la setUserPwd() con usr "));
+				DEBUG2_PRINTLN(pars[p(MQTTUSR)]->getStrVal());
+				DEBUG2_PRINTLN(F(" e psw "));
+				DEBUG2_PRINTLN(pars[p(MQTTPSW)]->getStrVal());
 			#endif		
 				mqttClient->setUserPwd((const char*) static_cast<ParStr32*>(pars[p(MQTTUSR)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTPSW)])->val);
-				DEBUG_PRINTLN(F("MQTTCONNCHANGED! Eseguo la connect() ..."));
+				DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la connect() ..."));
 				mqttClient->connect();
-			#if defined (_DEBUG1) || defined (_DEBUGR)	
-				DEBUG_PRINTLN(F("MQTTCONNCHANGED! Eseguo la subscribe() con "));
-				DEBUG_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
-				DEBUG_PRINTLN(F("..."));
+			#if defined (_DEBUG) || defined (_DEBUGR)	
+				DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la subscribe() con "));
+				DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
+				DEBUG2_PRINTLN(F("..."));
 			#endif	
 				mqttClient->subscribe(pars[p(MQTTINTOPIC)]->getStrVal());
-			#if defined (_DEBUG1) || defined (_DEBUGR)	
-				DEBUG_PRINTLN(F("MQTTCONNCHANGED! publish(): "));
-				DEBUG_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
-				DEBUG_PRINTLN(F(" Intopic: "));
-				DEBUG_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
+			#if defined (_DEBUG) || defined (_DEBUGR)	
+				DEBUG2_PRINTLN(F("MQTTCONNCHANGED! publish(): "));
+				DEBUG2_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
+				DEBUG2_PRINTLN(F(" Intopic: "));
+				DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
 			#endif		
 				mqttClient->publish((const char*) static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
 			}
 		}else if((uint8_t) static_cast<ParUint8*>(pars[p(TOPICCHANGED)])->val == 1){
 			pars[p(TOPICCHANGED)]->load(0);
 			if(mqttClient==NULL){
-				DEBUG_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
+				DEBUG2_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
 				mqttReconnect();
 			}
 			else
 			{
-			#if defined (_DEBUG1) || defined (_DEBUGR)	
-				DEBUG_PRINTLN(F("TOPICCHANGED! Outtopic: "));
-				DEBUG_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
-				DEBUG_PRINTLN(F(" Intopic: "));
-				DEBUG_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
-				DEBUG_PRINTLN(F("TOPICCHANGED! Eseguo la subscribe() con "));
-				DEBUG_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
-				DEBUG_PRINTLN(F("..."));
+			#if defined (_DEBUG) || defined (_DEBUGR)	
+				DEBUG2_PRINTLN(F("TOPICCHANGED! Outtopic: "));
+				DEBUG2_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
+				DEBUG2_PRINTLN(F(" Intopic: "));
+				DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
+				DEBUG2_PRINTLN(F("TOPICCHANGED! Eseguo la subscribe() con "));
+				DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
+				DEBUG2_PRINTLN(F("..."));
 			#endif		
 				mqttClient->subscribe(pars[p(MQTTINTOPIC)]->getStrVal());
-			#if defined (_DEBUG1) || defined (_DEBUGR)	
-				DEBUG_PRINTLN(F("TOPICCHANGED! Eseguo la publish() con "));
-				DEBUG_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
-				DEBUG_PRINTLN(F(" ..."));
+			#if defined (_DEBUG) || defined (_DEBUGR)	
+				DEBUG2_PRINTLN(F("TOPICCHANGED! Eseguo la publish() con "));
+				DEBUG2_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
+				DEBUG2_PRINTLN(F(" ..."));
 			#endif		
 				mqttClient->publish((const char*) static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val,(const char*) static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
 			}
@@ -2219,39 +2205,39 @@ void onElapse(uint8_t nn, unsigned long tm){
 	int n = nn / TIMERDIM;
 	int sw = nn % TIMERDIM;
 	
-	DEBUG_PRINT(F("\nElapse timer n: "));
-	DEBUG_PRINT(nn);
-	DEBUG_PRINT(F("  al tempo: "));
-	DEBUG_PRINT(tm);
-	DEBUG_PRINT(F("  con stato: "));
-	DEBUG_PRINTLN(getGroupState(nn));
-	DEBUG_PRINT(F("  con n: "));
-	DEBUG_PRINTLN(n);
-	DEBUG_PRINT(F("  con sw: "));
-	DEBUG_PRINTLN(sw);
+	DEBUG2_PRINT(F("\nElapse timer n: "));
+	DEBUG2_PRINT(nn);
+	DEBUG2_PRINT(F("  al tempo: "));
+	DEBUG2_PRINT(tm);
+	DEBUG2_PRINT(F("  con stato: "));
+	DEBUG2_PRINTLN(getGroupState(nn));
+	DEBUG2_PRINT(F("  con n: "));
+	DEBUG2_PRINTLN(n);
+	DEBUG2_PRINT(F("  con sw: "));
+	DEBUG2_PRINTLN(sw);
 	
 	if(nn != RESETTIMER || nn != APOFFTIMER) //se è scaduto il timer di attesa o di blocco  (0,1) --> state n
 	{   
-		DEBUG_PRINT(F("\nCount value: "));
-		DEBUG_PRINTLN(getCntValue(nn));
+		DEBUG2_PRINT(F("\nCount value: "));
+		DEBUG2_PRINTLN(getCntValue(nn));
 		if(getCntValue(nn) == 1){ 
 			if(roll[n]){//se è in modalità tapparella!
 				if(getGroupState(nn)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
-					DEBUG_PRINTLN(F("stato 0 roll mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
+					DEBUG2_PRINTLN(F("stato 0 roll mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 					secondPress(n);
 					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
 					scriviOutDaStato();
 					//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 					readStatesAndPub();
 				}else if(getGroupState(nn)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
-					DEBUG_PRINTLN(F("onElapse roll mode:  timer di attesa scaduto"));
+					DEBUG1_PRINTLN(F("onElapse roll mode:  timer di attesa scaduto"));
 					startEngineDelayTimer(n);
 					//adesso parte...
 					scriviOutDaStato();
 				}
 	#if (!AUTOCAL)	
 				else if(getGroupState(nn)==2){//se il motore è in moto a vuoto
-					DEBUG_PRINTLN(F("onElapse roll mode manual:  timer di corsa a vuoto scaduto"));
+					DEBUG1_PRINTLN(F("onElapse roll mode manual:  timer di corsa a vuoto scaduto"));
 					///setGroupState(3,n);	//il motore va in moto cronometrato
 					startEndOfRunTimer(n);
 					//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
@@ -2259,7 +2245,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 				}
 	#else
 				else if(getGroupState(nn)==2){//se il motore è in moto a vuoto
-					DEBUG_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
+					DEBUG1_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
 					secondPress(n,0,true);
 					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
 					scriviOutDaStato();//15/08/19
@@ -2269,11 +2255,11 @@ void onElapse(uint8_t nn, unsigned long tm){
 	#endif
 			}else{//se è in modalità switch
 				if(getGroupState(nn)==1){//se lo switch era inibito (timer di attesa scaduto)
-					DEBUG_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
+					DEBUG1_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
 					startSimpleSwitchDelayTimer(nn);
 					//adesso commuta...
 				}else if(getGroupState(nn)==2){ //se lo switch è monostabile (timer di eccitazione scaduto)
-					DEBUG_PRINTLN(F("stato 0 switch mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
+					DEBUG1_PRINTLN(F("stato 0 switch mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 					endPress(nn);
 				}
 				//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
@@ -2283,18 +2269,18 @@ void onElapse(uint8_t nn, unsigned long tm){
 			}
 		}else if(getCntValue(nn) > 1){ //in tutte le modalità
 			if(n == 0){
-				DEBUG_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
+				DEBUG1_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
 				if(getCntValue(nn)==3){
 					wifiState = WIFIAP;
 					//wifi_station_dhcpc_stop();
 					//WiFi.enableAP(true);
 					//wifi_softap_dhcps_start();
-					DEBUG_PRINTLN(F("-----------------------------"));
-					DEBUG_PRINTLN(F("Attivato AP mode"));
-					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG1_PRINTLN(F("-----------------------------"));
+					DEBUG1_PRINTLN(F("Attivato AP mode"));
+					DEBUG1_PRINTLN(F("-----------------------------"));
 					startTimer(APOFFTIMER);
 					//WiFi.enableSTA(false);
-					DEBUG_PRINTLN(F("AP mode on"));
+					DEBUG1_PRINTLN(F("AP mode on"));
 					//WiFi.setAutoConnect(false);
 					//WiFi.setAutoReconnect(false);	
 					//ETS_UART_INTR_DISABLE();
@@ -2304,11 +2290,11 @@ void onElapse(uint8_t nn, unsigned long tm){
 						WiFi.disconnect();  //cancella la connessione corrente memorizzata
 						WiFi.mode(WIFI_AP);
 						WiFi.persistent(true);
-						DEBUG_PRINTLN(F("SET AP"));
+						DEBUG1_PRINTLN(F("SET AP"));
 						wifiConn = false;
 					}else{
 						WiFi.mode(WIFI_AP_STA);
-						DEBUG_PRINTLN(F("SET AP STA"));
+						DEBUG1_PRINTLN(F("SET AP STA"));
 					}
 					setup_AP(true);
 					delay(500);
@@ -2328,27 +2314,27 @@ void onElapse(uint8_t nn, unsigned long tm){
 					//MDNS.update();
 					setGroupState(0,n%2);
 				}else if(getCntValue(nn)==7){
-					DEBUG_PRINTLN(F("-----------------------------"));
-					DEBUG_PRINTLN(F("Rebooting ESP without reset of configuration"));
-					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
+					DEBUG1_PRINTLN(F("Rebooting ESP without reset of configuration"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
 					ESP.eraseConfig(); //do the erasing of wifi credentials
 					ESP.restart();
 				}else if(getCntValue(nn)==5 && roll[n]){ //solo in modalità tapparella!
-					DEBUG_PRINTLN(F("-----------------------------"));
-					DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
-					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
+					DEBUG1_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
 					manualCalibration(0); //BTN1
 				}else if(getCntValue(nn)==9){
-					DEBUG_PRINTLN(F("-----------------------------"));
-					DEBUG_PRINTLN(F("Reboot ESP with reset of configuration"));
-					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
+					DEBUG1_PRINTLN(F("Reboot ESP with reset of configuration"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
 					rebootSystem();
 				}
 #if (AUTOCAL_HLW8012) 
 				else if(getCntValue(nn)==11){
-					DEBUG_PRINTLN(F("-----------------------------"));
-					DEBUG_PRINTLN(F("Do power calibration"));
-					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
+					DEBUG1_PRINTLN(F("Do power calibration"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
 					calibrate_pwr();
 					saveSingleConf(PWRMULT);
 				}
@@ -2356,19 +2342,19 @@ void onElapse(uint8_t nn, unsigned long tm){
 				else{
 					setGroupState(0,nn);
 				}
-				//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
+				//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
 				resetCnt(nn);
 			}else if(roll[n]){ //solo in modalità tapparella!
-				DEBUG_PRINTLN(F("onElapse:  timer 2 dei servizi a conteggio scaduto"));
+				DEBUG1_PRINTLN(F("onElapse:  timer 2 dei servizi a conteggio scaduto"));
 				if(getCntValue(CNTSERV3)==5){
-					DEBUG_PRINTLN(F("-----------------------------"));
-					DEBUG_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 2"));
-					DEBUG_PRINTLN(F("-----------------------------"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
+					DEBUG1_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 2"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
 					manualCalibration(1); //BTN2
 				}else{
 					setGroupState(0,nn);
 				}
-				//DEBUG_PRINT(F("Resettato contatore dei servizi: "));
+				//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
 				resetCnt(nn);
 			}
 		}
@@ -2377,7 +2363,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 			rebootSystem();
 	}else if(nn == APOFFTIMER){
 		if(WiFi.softAPgetStationNum() == 0){
-			DEBUG_PRINTLN(F("WIFI: reconnecting to AP"));
+			DEBUG1_PRINTLN(F("WIFI: reconnecting to AP"));
 			uint8_t stat = WiFi.status();
 			wifiConn = (stat == WL_CONNECTED);	
 			WiFi.mode(WIFI_STA);	
@@ -2385,15 +2371,15 @@ void onElapse(uint8_t nn, unsigned long tm){
 			setup_wifi(wifindx);
 			//mqttReconnect();
 			//wifi_station_dhcpc_start();
-			DEBUG_PRINTLN(F("-----------------------------"));
-			DEBUG_PRINTLN(F("Nussun client si è ancora connesso, disatttivato AP mode"));
-			DEBUG_PRINTLN(F("-----------------------------"));
+			DEBUG2_PRINTLN(F("-----------------------------"));
+			DEBUG1_PRINTLN(F("Nussun client si è ancora connesso, disatttivato AP mode"));
+			DEBUG2_PRINTLN(F("-----------------------------"));
 		}
 		//setGroupState(0,n%2);				 								//stato 0: il motore va in stato fermo
-		DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo da stato configurazione"));
+		DEBUG1_PRINTLN(F("stato 0: il motore va in stato fermo da stato configurazione"));
 	}
 	
-	//DEBUG_PRINTLN(F("Fine timer"));
+	//DEBUG2_PRINTLN(F("Fine timer"));
 }
 
 void onTapStop(uint8_t n){
@@ -2406,7 +2392,7 @@ void onCalibrEnd(unsigned long app, uint8_t n){
 	pars[p(THALT1 + n)]->load(app);
 	//initTapparellaLogic(in,inr,outLogic,(confcmd[THALT1]).toInt(),(confcmd[THALT2]).toInt(),(confcmd[STDEL1]).toInt(),(confcmd[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
 	setTapThalt(app, n);
-	DEBUG_PRINTLN(F("-----------------------------"));
+	DEBUG2_PRINTLN(F("-----------------------------"));
 #if (AUTOCAL)
 	calAvg[n] = getAVG(n);
 	weight[0] = (double) calAvg[0] / (calAvg[0] +  calAvg[1]);
@@ -2416,14 +2402,14 @@ void onCalibrEnd(unsigned long app, uint8_t n){
 	//confcmd[TRSHOLD1 + n] = String(getThresholdUp(n));
 	//setThresholdUp((confcmd[TRSHOLD1 + n]).toFloat(), n);
 	saveSingleConf(VALWEIGHT);
-	DEBUG_PRINT(F("Modified current weight "));
-	DEBUG_PRINTLN(pars[p(VALWEIGHT)]->getStrVal());
+	DEBUG2_PRINT(F("Modified current weight "));
+	DEBUG2_PRINTLN(pars[p(VALWEIGHT)]->getStrVal());
 #endif
 	saveSingleConf(THALT1 + n);
-	DEBUG_PRINT(F("Modified THALT "));
-	DEBUG_PRINTLN(THALT1 + n);
-	DEBUG_PRINT(F(": "));
-	DEBUG_PRINTLN(pars[p(THALT1 + n)]->getStrVal());
+	DEBUG2_PRINT(F("Modified THALT "));
+	DEBUG2_PRINTLN(THALT1 + n);
+	DEBUG2_PRINT(F(": "));
+	DEBUG2_PRINTLN(pars[p(THALT1 + n)]->getStrVal());
 }
 
 void manualCalibration(uint8_t btn){
@@ -2436,29 +2422,29 @@ void manualCalibration(uint8_t btn){
 #endif
 	pars[BTN2IN + btn*BTNDIM]->load(101);			//codice comando attiva calibrazione
 	
-	DEBUG_PRINTLN(F("-----------------------------"));
-	DEBUG_PRINT(F("FASE 1 CALIBRAZIONE MANUALE BTN "));
-	DEBUG_PRINTLN(btn+1);
-	DEBUG_PRINTLN(F("-----------------------------"));
+	DEBUG2_PRINTLN(F("-----------------------------"));
+	DEBUG1_PRINT(F("FASE 1 CALIBRAZIONE MANUALE BTN "));
+	DEBUG1_PRINTLN(btn+1);
+	DEBUG2_PRINTLN(F("-----------------------------"));
 	//-------------------------------------------------------------
-	DEBUG_PRINTLN(F("LA TAPPARELLA STA SCENDENDO......"));
-	DEBUG_PRINT(F("PREMERE UN PULSANTE QUALSIASI DEL GRUPPO "));
-	DEBUG_PRINTLN(btn+1);
-	DEBUG_PRINTLN(F("-----------------------------"));
+	DEBUG2_PRINTLN(F("LA TAPPARELLA STA SCENDENDO......"));
+	DEBUG1_PRINT(F("PREMERE UN PULSANTE QUALSIASI DEL GRUPPO "));
+	DEBUG1_PRINTLN(btn+1);
+	DEBUG2_PRINTLN(F("-----------------------------"));
 }
 
 void rebootSystem(){
 	EEPROM.begin(FIXEDPARAMSLEN);
 	alterEEPROM();
 	EEPROM.end();
-	DEBUG_PRINTLN(F("Resetting ESP"));
+	DEBUG1_PRINTLN(F("Resetting ESP"));
 	ESP.eraseConfig(); //do the erasing of wifi credentials
 	ESP.restart();
 }
 //----------------------------------------------------FINE TIMER----------------------------------------------------------------------
 void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
-	DEBUG_PRINT(F("\nAP mode: Station connected: "));
-	DEBUG_PRINTLN(macToString(evt.mac));
+	DEBUG1_PRINT(F("\nAP mode: Station connected: "));
+	DEBUG1_PRINTLN(macToString(evt.mac));
 	if(WiFi.softAPgetStationNum() == 1){
 		boot = true;
 		wifiState = WIFIAP;
@@ -2466,11 +2452,11 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 }
 
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
-	DEBUG_PRINTLN(F("\nStation disconnected: "));
-	DEBUG_PRINTLN(macToString(evt.mac));
+	DEBUG1_PRINTLN(F("\nStation disconnected: "));
+	DEBUG1_PRINTLN(macToString(evt.mac));
 	if(WiFi.softAPgetStationNum() == 0){
 		resetTimer(APOFFTIMER);
-		DEBUG_PRINTLN(F("WIFI: reconnecting to AP"));
+		DEBUG1_PRINTLN(F("WIFI: reconnecting to AP"));
 		uint8_t stat = WiFi.status();
 		wifiConn = (stat == WL_CONNECTED);	
 		WiFi.mode(WIFI_STA);	
@@ -2496,11 +2482,11 @@ void processCmdRemoteDebug() {
 		printConfig();
 	}else if(lastCmd == "reboot"){
 		// Rebooting ESP without reset of configuration
-		DEBUG_PRINT(F("\nRebooting ESP without reset of configuration"));
+		DEBUG1_PRINT(F("\nRebooting ESP without reset of configuration"));
 		ESP.restart();
 	}else if(lastCmd == "reset"){
 		//Reboot ESP with reset of configuration
-		DEBUG_PRINT(F("\nReboot ESP with reset of configuration"));
+		DEBUG1_PRINT(F("\nReboot ESP with reset of configuration"));
 		rebootSystem();
 	}else if(lastCmd == "calibrate1"){
 		//ATTIVATA CALIBRAZIONE MANUALE BTN 1
@@ -2509,60 +2495,60 @@ void processCmdRemoteDebug() {
 		//ATTIVATA CALIBRAZIONE MANUALE BTN 1
 		manualCalibration(1);
 	}else if(lastCmd == "apmodeon"){
-		DEBUG_PRINT(F("\nAtttivato AP mode"));
+		DEBUG1_PRINT(F("\nAtttivato AP mode"));
 		startTimer(APOFFTIMER);
 	}else if(lastCmd == "scanwifi"){
 		//scansione reti wifi disponibili
 		scan_wifi();
 	}else if(lastCmd == "getip"){
-		DEBUG_PRINT("\nLocal IP: ");
-		DEBUG_PRINTLN(WiFi.localIP());
+		DEBUG1_PRINT("\nLocal IP: ");
+		DEBUG1_PRINTLN(WiFi.localIP());
 	}else if(lastCmd == "getmqttstat"){
 		if(!(mqttClient->isConnected())){
-			DEBUG_PRINTLN(F("\nMQTT non connesso."));
+			DEBUG1_PRINTLN(F("\nMQTT non connesso."));
 		}
 		else
 		{
-			DEBUG_PRINTLN(F("\nMQTT connesso"));
+			DEBUG1_PRINTLN(F("\nMQTT connesso"));
 		}
 	}else if(lastCmd == "gettemp"){
-		DEBUG_PRINT(F("\nTemperature: "));
-		DEBUG_PRINT(asyncBuf[GTTEMP]);
+		DEBUG1_PRINT(F("\nTemperature: "));
+		DEBUG1_PRINT(asyncBuf[GTTEMP]);
 	}else if(lastCmd == "getadczero"){
-		DEBUG_PRINT(F("\nMean sensor: "));
-		DEBUG_PRINTLN(m);
+		DEBUG1_PRINT(F("\nMean sensor: "));
+		DEBUG1_PRINTLN(m);
 	}else if(lastCmd == "getpower"){
-		DEBUG_PRINT(F("\nAvg power: ["));
-		DEBUG_PRINT(asyncBuf[GTMEANPWR1]);
-		DEBUG_PRINT(F(","));
-		DEBUG_PRINT(asyncBuf[GTMEANPWR2]);
-		DEBUG_PRINTLN(F("]"));
-		DEBUG_PRINT(F("\nPeak power: ["));
-		DEBUG_PRINT(asyncBuf[GTPEAKPWR1]);
-		DEBUG_PRINT(F(","));
-		DEBUG_PRINT(asyncBuf[GTPEAKPWR2]);
-		DEBUG_PRINTLN(F("]")); 
+		DEBUG1_PRINT(F("\nAvg power: ["));
+		DEBUG1_PRINT(asyncBuf[GTMEANPWR1]);
+		DEBUG1_PRINT(F(","));
+		DEBUG1_PRINT(asyncBuf[GTMEANPWR2]);
+		DEBUG1_PRINTLN(F("]"));
+		DEBUG1_PRINT(F("\nPeak power: ["));
+		DEBUG1_PRINT(asyncBuf[GTPEAKPWR1]);
+		DEBUG1_PRINT(F(","));
+		DEBUG1_PRINT(asyncBuf[GTPEAKPWR2]);
+		DEBUG1_PRINTLN(F("]")); 
 	}else if(lastCmd == "getmac"){
-		DEBUG_PRINT(F("\nMAC: "));
-		DEBUG_PRINTLN(WiFi.macAddress());
+		DEBUG1_PRINT(F("\nMAC: "));
+		DEBUG2_PRINTLN(WiFi.macAddress());
 	}else if(lastCmd == "gettime"){
-		DEBUG_PRINT(F("\nTime (ms): "));
-		DEBUG_PRINTLN(millis());
+		DEBUG1_PRINT(F("\nTime (ms): "));
+		DEBUG2_PRINTLN(millis());
 	}else if(lastCmd == "getmqttid"){
-		DEBUG_PRINT(F("\nMQTT ID: "));
-		DEBUG_PRINTLN(pars[p(MQTTID)]->getStrVal());
+		DEBUG1_PRINT(F("\nMQTT ID: "));
+		DEBUG1_PRINTLN(pars[p(MQTTID)]->getStrVal());
 	}else if(lastCmd == "testflash"){
 		testFlash();
 	}else{
-		DEBUG_PRINT(F("\nComandi disponibili: "));
-		DEBUG_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, getadczero, gettemp, getpower, getmac, gettime, getmqttid, testflash\n"));
+		DEBUG1_PRINT(F("\nComandi disponibili: "));
+		DEBUG1_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, getadczero, gettemp, getpower, getmac, gettime, getmqttid, testflash\n"));
 	}
 	//telnet.flush();
 }
 #endif
 
 
-#if defined (_DEBUG1) || defined (_DEBUGR)	
+#if defined (_DEBUG) || defined (_DEBUGR)	
 const char* wl_status_to_string(wl_status_t status) {
   switch (status) {
     case WL_NO_SHIELD: return "WL_NO_SHIELD";
@@ -2577,7 +2563,7 @@ const char* wl_status_to_string(wl_status_t status) {
 }
 #endif
 
-#if defined (_DEBUG1) || defined (_DEBUGR)	
+#if defined (_DEBUG) || defined (_DEBUGR)	
 void testFlash(){
   uint32_t realSize = ESP.getFlashChipRealSize();
   uint32_t ideSize = ESP.getFlashChipSize();
@@ -2585,20 +2571,20 @@ void testFlash(){
   char s[100];
   
   sprintf(s,"\nFlash real id:   %08X\n", ESP.getFlashChipId());
-  DEBUG_PRINT(s);
+  DEBUG1_PRINT(s);
   sprintf(s,"Flash real size: %u uint8_ts\n", realSize);
-  DEBUG_PRINT(s);
+  DEBUG1_PRINT(s);
   sprintf(s,"Flash ide  size: %u uint8_ts\n", ideSize);
-  DEBUG_PRINT(s);
+  DEBUG1_PRINT(s);
   sprintf(s,"Flash ide speed: %u Hz\n", ESP.getFlashChipSpeed());
-  DEBUG_PRINT(s);
+  DEBUG1_PRINT(s);
   sprintf(s,"Flash ide mode:  %s\n", (ideMode == FM_QIO ? "QIO" : ideMode == FM_QOUT ? "QOUT" : ideMode == FM_DIO ? "DIO" : ideMode == FM_DOUT ? "DOUT" : "UNKNOWN"));
-  DEBUG_PRINT(s);
+  DEBUG1_PRINT(s);
 
   if (ideSize != realSize) {
-    DEBUG_PRINT("\nFlash Chip configuration wrong!\n");
+    DEBUG1_PRINT("\nFlash Chip configuration wrong!\n");
   } else {
-    DEBUG_PRINT("\nFlash Chip configuration ok.\n");
+    DEBUG1_PRINT("\nFlash Chip configuration ok.\n");
   }
 }
 #endif
@@ -2609,37 +2595,37 @@ void testFlash(){
 //--------------------------------------------------------------------------------------------------
 //configurazioni provenienti da remoto
 //---------------------------------------------------------------
-void MQTTMAC_Evnt::doaction(){
+void MQTTMAC_Evnt::doaction(bool save){
 	readMacAndPub();
 }
-void MQTTIP_Evnt::doaction(){
+void MQTTIP_Evnt::doaction(bool save){
 	readIpAndPub();
 }
-void MQTTMQTTID_Evnt::doaction(){
+void MQTTMQTTID_Evnt::doaction(bool save){
 	readMQTTIdAndPub();
 }
-void MQTTTIME_Evnt::doaction(){
+void MQTTTIME_Evnt::doaction(bool save){
 	readTimeAndPub();
 }
-void MQTTTEMP_Evnt::doaction(){
+void MQTTTEMP_Evnt::doaction(bool save){
 	readTempAndPub();
 }
-void MQTTMEANPWR_Evnt::doaction(){
+void MQTTMEANPWR_Evnt::doaction(bool save){
 	readAvgPowerAndPub();
 }
-void MQTTPEAKPWR_Evnt::doaction(){
+void MQTTPEAKPWR_Evnt::doaction(bool save){
 	readPeakPowerAndPub();
 }
 #if (AUTOCAL_HLW8012) 
-void DOPWRCAL_Evnt::doaction(){
+void DOPWRCAL_Evnt::doaction(bool save){
 	calibrate_pwr();
 	saveSingleConf(PWRMULT);
 	readPwrCalAndPub();
 }
-void INSTPWR_Evnt::doaction(){
+void INSTPWR_Evnt::doaction(bool save){
 	void readIpwrAndPub();
 }
-void INSTACV_Evnt::doaction(){
+void INSTACV_Evnt::doaction(bool save){
 	void readIacvoltAndPub();
 }
 #endif
@@ -2649,136 +2635,194 @@ void INSTACV_Evnt::doaction(){
 //void BaseEvnt::loadPid(uint8_t id){
 //	this->pid = id;
 //}
-void MQTTBTN_Evnt::doaction(){
+void MQTTBTN_Evnt::doaction(bool save){
 	unsigned i = this->pid;
 	uint8_t v = static_cast<ParUint8*>(pars[i])->val;
 	int n = i / TIMERDIM;
 	int sw = i % TIMERDIM;
 	
-	DEBUG_PRINT("\npid: ");
-	DEBUG_PRINT(i);
-	DEBUG_PRINT(" val: ");
-	DEBUG_PRINTLN(v);
+	DEBUG1_PRINT("\npid: ");
+	DEBUG1_PRINT(i);
+	DEBUG1_PRINT(" val: ");
+	DEBUG1_PRINT(v);
 	in[i] = v;
 	static_cast<ParUint8*>(pars[i])->load((uint8_t) 0); //flag reset
-	DEBUG_PRINT(" inval: ");
-	DEBUG_PRINTLN(in[i]);
+	DEBUG1_PRINT(" inval: ");
+	DEBUG1_PRINTLN(in[i]);
 	
 	if(roll[n]){
-		//DEBUG_PRINTLN("\ncmdLogic: switchLogic");
 		switchLogic(sw, n);
 	}else{
-		//DEBUG_PRINTLN("\ncmdLogic: toggleLogic");
 		toggleLogic(sw, n);
 	}
 }
-void UTCVAL_Evnt::doaction(){
+
+void UTCVAL_Evnt:: doaction(bool){
 	updateNTP(static_cast<ParLong*>(pars[p(UTCVAL)])->val);
 }
-void UTCSYNC_Evnt::doaction(){
-	setSyncInterval(saveLongConf(UTCSYNC));
+void UTCSYNC_Evnt:: doaction(bool save){
+	if(save) 
+		setSyncInterval(saveLongConf(UTCSYNC));
+	else
+		setSyncInterval(static_cast<ParLong*>(pars[p(UTCSYNC)])->val);
 }
-void UTCADJ_Evnt::doaction(){
-	adjustTime(saveIntConf(UTCADJ));
+void UTCADJ_Evnt:: doaction(bool save){
+	if(save) adjustTime(saveIntConf(UTCADJ));
 }
-void UTCSDT_Evnt::doaction(){
-	setSDT(saveByteConf(UTCSDT));
+void UTCSDT_Evnt:: doaction(bool save){
+	if(save) 
+		setSDT(saveByteConf(UTCSDT));
+	else
+		setSDT(static_cast<ParUint8*>(pars[p(UTCSDT)])->val);
 }
-void UTCZONE_Evnt::doaction(){
-	setTimeZone(saveByteConf(UTCZONE));
+void UTCZONE_Evnt:: doaction(bool save){
+	if(save) 
+		setTimeZone(saveByteConf(UTCZONE));
+	else
+		setTimeZone(static_cast<ParUint8*>(pars[p(UTCZONE)])->val);
 }
-void ACTIONEVAL_Evnt::doaction(){
+void ACTIONEVAL_Evnt:: doaction(bool save){
 	//save confs and actions on new action received event
-	writeOnOffConditions();
+	if(save) writeOnOffConditions();
 	//run actions one time on new action received event
 	readActionConfAndSet();
 }
-void ONCOND1_Evnt::doaction(){
+void ONCOND1_Evnt:: doaction(bool save){
 	//save confs and actions on new action received event
-	writeOnOffConditions();
+	if(save) writeOnOffConditions();
 }
-void ONCOND2_Evnt::doaction(){
+void ONCOND2_Evnt:: doaction(bool save){
 	//save confs and actions on new config received event
-	writeOnOffConditions();
+	if(save) writeOnOffConditions();
 }
-void ONCOND3_Evnt::doaction(){
+void ONCOND3_Evnt:: doaction(bool save){
 	//save confs and actions on new config received event
-	writeOnOffConditions();
+	if(save) writeOnOffConditions();
 }
-void ONCOND4_Evnt::doaction(){
+void ONCOND4_Evnt:: doaction(bool save){
 	//save confs and actions on new config received event
-	writeOnOffConditions();
+	if(save) writeOnOffConditions();
 }
-void ONCOND5_Evnt::doaction(){
+void ONCOND5_Evnt:: doaction(bool save){
 	//save confs and actions on new config received event
-	writeOnOffConditions();
+	if(save) writeOnOffConditions();
 }
-void LOGSLCT_Evnt::doaction(){
+void LOGSLCT_Evnt:: doaction(bool save){
 	uint8_t ser, tlnt, mqtt, num;
+	
+	num = static_cast<ParUint8*>(pars[p(LOGSLCT)])->val;
+	
+	if(save) saveByteConf(LOGSLCT);		////
 	
 	ser = (num >> 0) & 0x3;
 	tlnt = (num >> 2) & 0x3;
 	mqtt = (num >> 4) & 0x3;
 	
-	if(ser && !tlnt & !mqtt){
+	DEBUG1_PRINT("LOGSLCT_Evnt ");
+	DEBUG1_PRINT("ser: ");
+	DEBUG1_PRINT(ser);
+	DEBUG1_PRINT(", tlnt: ");
+	DEBUG1_PRINT(tlnt);
+	DEBUG1_PRINT(", mqtt: ");
+	DEBUG1_PRINTLN(mqtt);
+	
+	DEBUG1_PRINT("\ndelete ");
+	if(dbg1 != NULL)
+		//dbg1->destroy();
+		delete dbg1;
+	if(dbg2 != NULL)
+		//dbg2->destroy();
+		delete dbg2;
+		
+	DEBUG_PRINT("\nOggetti log distrutti ");
+	
+	dbg1 = NULL;
+	dbg2 = NULL;
+	
+	DEBUG_PRINT("\nOggetti log NULL ");
+	
+	if(ser > 0 && !tlnt & !mqtt){
+		DEBUG_PRINTLN("\nif(ser && !tlnt & !mqtt)");
 		//00 00 01
 		//00 00 10
 		if(ser == 1){
+			DEBUG_PRINTLN("\nif(ser == 1) ");
 			dbg1 = new SerialLog(1);
 			dbg2 = new BaseLog(2);
 		}else if(ser == 2){
+			DEBUG_PRINTLN("\nif(ser == 2)");
 			dbg1 = new SerialLog(1);
 			dbg2 = new SerialLog(2);
 		}
-	}else if(!ser && tlnt & !mqtt){
+	}else if(!ser && tlnt > 0 & !mqtt){
+		DEBUG_PRINTLN("\nif(!ser && tlnt & !mqtt)");
 		//00 01 00
 		//00 10 00
 		if(tlnt == 1){
+			DEBUG_PRINTLN("\niif(tlnt == 1)");
 			dbg1 = new TelnetLog(1, &telnet);
 			dbg2 = new BaseLog(2);
 		}else if(tlnt == 2){
+			DEBUG_PRINTLN("\niif(tlnt == 2)");
 			dbg1 = new TelnetLog(1, &telnet);
 			dbg2 = new TelnetLog(2, &telnet);
 		}
-	}else if(!ser && !tlnt && mqtt){
+	}else if(!ser && !tlnt && mqtt > 0){
+		DEBUG_PRINTLN("\nif(!ser && !tlnt && mqtt)");
 		//01 00 00
 		//10 00 00
 		if(mqtt == 1){
+			DEBUG_PRINTLN("\nif(mqtt == 1)");
 			dbg1 = new MQTTLog(1, mqttClient);
 			dbg2 = new BaseLog(2);
 		}else if(mqtt == 2){
+			DEBUG_PRINTLN("\niif(mqtt == 2)");
 			dbg1 = new MQTTLog(1, mqttClient);
 			dbg2 = new MQTTLog(2, mqttClient);
 		}
-	}else if(ser && tlnt & !mqtt){
+	}else if(ser > 0 && tlnt > 0 & !mqtt){
+		DEBUG_PRINTLN("\nif(ser && tlnt & !mqtt)");
 		serialTelnet(ser, tlnt);
-	}else if(ser && mqtt & !tlnt){
+	}else if(ser > 0 && mqtt > 0 & !tlnt){
+		DEBUG_PRINTLN("\nif(ser && mqtt & !tlnt)");
 		serialMQTT(ser, mqtt);
-	}else if(tlnt && mqtt & !ser){
+	}else if(tlnt > 0 && mqtt > 0 & !ser){
+		DEBUG_PRINTLN("\if(tlnt && mqtt & !ser)");
 		telnetMQTT(tlnt, mqtt);
 	}else if(tlnt == 2 && mqtt == 2 & ser == 2){
+		DEBUG_PRINTLN("\nif(tlnt == 2 && mqtt == 2 & ser == 2)");
 		dbg1 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
 		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
-	}else if(tlnt == 2 && mqtt & ser){
+	}else if(tlnt == 2 && mqtt > 0 & ser > 0){
+		DEBUG_PRINTLN("\nif(tlnt == 2 && mqtt & ser)");
 		serialMQTT2(ser, mqtt);
-	}else if(ser == 2 && tlnt & mqtt){
+	}else if(ser == 2 && tlnt > 0 & mqtt > 0){
+		DEBUG_PRINTLN("\nif(ser == 2 && tlnt & mqtt)");
 		telnetMQTT2(tlnt, mqtt);
-	}else if(mqtt == 2 && tlnt & ser){
+	}else if(mqtt == 2 && tlnt > 0 & ser > 0){
+		DEBUG_PRINTLN("\nif(mqtt == 2 && tlnt & ser)");
 		serialTelnet2(ser, tlnt);
+	}else{
+		dbg1 = new BaseLog(1);
+		dbg2 = new BaseLog(2);
 	}
 }
 
 void serialTelnet(uint8_t ser, uint8_t tlnt){
 	if(ser == 1 && tlnt == 1){
+		DEBUG_PRINTLN("\nif(ser == 1 && tlnt == 1)");
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && tlnt == 2){
+		DEBUG_PRINTLN("\nif(ser == 2 && tlnt == 2)");
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new SerialTelnetLog(2, &telnet);
 	}else if(ser == 2 && tlnt == 1){
+		DEBUG_PRINTLN("\niif(ser == 2 && tlnt == 1)");
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new SerialLog(2);
 	}else if(ser == 1 && tlnt == 2){
+		DEBUG_PRINTLN("\nif(ser == 1 && tlnt == 2)");
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new TelnetLog(2, &telnet);
 	}
@@ -2786,15 +2830,19 @@ void serialTelnet(uint8_t ser, uint8_t tlnt){
 
 void telnetMQTT(uint8_t tlnt, uint8_t mqtt){
 	if(tlnt == 1 && mqtt == 1){
+		DEBUG_PRINTLN("\nif(tlnt == 1 && mqtt == 1)");
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new BaseLog(2);
 	}else if(tlnt == 2 && mqtt == 2){
+		DEBUG_PRINTLN("\nif(tlnt == 2 && mqtt == 2)");
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new TelnetMQTTLog(2, &telnet, mqttClient);
 	}else if(tlnt == 2 && mqtt == 1){
+		DEBUG_PRINTLN("\nif(tlnt == 2 && mqtt == 1)");
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new TelnetLog(2, &telnet);
 	}else if(tlnt == 1 && mqtt == 2){
+		DEBUG_PRINTLN("\nif(tlnt == 1 && mqtt == 2)");
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new MQTTLog(2, mqttClient);
 	}
@@ -2802,15 +2850,19 @@ void telnetMQTT(uint8_t tlnt, uint8_t mqtt){
 
 void serialMQTT(uint8_t ser, uint8_t mqtt){
 	if(ser == 1 && mqtt == 1){
+		DEBUG_PRINTLN("\nif(ser == 1 && mqtt == 1)");
 		dbg1 = new SerialMQTTLog(1, mqttClient);
-		dbg2 = new BaseLog(ser);
+		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && mqtt == 2){
+		DEBUG_PRINTLN("\nif(ser == 2 && mqtt == 2)");
 		dbg1 = new SerialMQTTLog(1, mqttClient);
 		dbg2 = new SerialMQTTLog(2, mqttClient);
 	}else if(ser == 2 && mqtt == 1){
+		DEBUG_PRINTLN("\nif(ser == 2 && mqtt == 1)");
 		dbg1 = new SerialMQTTLog(1, mqttClient);
 		dbg2 = new SerialLog(2);
 	}else if(ser == 1 && mqtt == 2){
+		DEBUG_PRINTLN("\nif(ser == 1 && mqtt == 2)");
 		dbg1 = new SerialMQTTLog(1, mqttClient);
 		dbg2 = new MQTTLog(2, mqttClient);
 	}
@@ -2818,15 +2870,19 @@ void serialMQTT(uint8_t ser, uint8_t mqtt){
 
 void serialTelnet2(uint8_t ser, uint8_t tlnt){
 	if(ser == 1 && tlnt == 1){
+		DEBUG_PRINTLN("\nif(ser == 1 && tlnt == 1)");
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && tlnt == 2){
+		DEBUG_PRINTLN("\nif(ser == 2 && tlnt == 2)");
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new SerialTelnetLog(2, &telnet);
 	}else if(ser == 2 && tlnt == 1){
+		DEBUG_PRINTLN("\nif(ser == 2 && tlnt == 1)");
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new SerialLog(2);
 	}else if(ser == 1 && tlnt == 2){
+		DEBUG_PRINTLN("\nif(ser == 1 && tlnt == 2)");
 		dbg1 = new SerialTelnetLog(1, &telnet);
 		dbg2 = new TelnetLog(2, &telnet);
 	}
@@ -2834,15 +2890,19 @@ void serialTelnet2(uint8_t ser, uint8_t tlnt){
 
 void telnetMQTT2(uint8_t tlnt, uint8_t mqtt){
 	if(tlnt == 1 && mqtt == 1){
+		DEBUG_PRINT("\nif(tlnt == 1 && mqtt == 1)");
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new BaseLog(2);
 	}else if(tlnt == 2 && mqtt == 2){
+		DEBUG_PRINT("\nif(tlnt == 2 && mqtt == 2)");
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new TelnetMQTTLog(2, &telnet, mqttClient);
 	}else if(tlnt == 2 && mqtt == 1){
+		DEBUG_PRINT("\nif(tlnt == 2 && mqtt == 1)");
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new TelnetLog(2, &telnet);
 	}else if(tlnt == 1 && mqtt == 2){
+		DEBUG_PRINT("\nif(tlnt == 1 && mqtt == 2)");
 		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new MQTTLog(2, mqttClient);
 	}
@@ -2850,31 +2910,35 @@ void telnetMQTT2(uint8_t tlnt, uint8_t mqtt){
 
 void serialMQTT2(uint8_t ser, uint8_t mqtt){
 	if(ser == 1 && mqtt == 1){
+		DEBUG_PRINT("\nif(ser == 1 && mqtt == 1)");
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && mqtt == 2){
+		DEBUG_PRINT("\nif(ser == 2 && mqtt == 2)");
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
 	}else if(ser == 2 && mqtt == 1){
+		DEBUG_PRINT("\nif(ser == 2 && mqtt == 1)");
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new SerialLog(2);
 	}else if(ser == 1 && mqtt == 2){
+		DEBUG_PRINT("\nif(ser == 1 && mqtt == 2)");
 		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
 		dbg2 = new MQTTLog(2, mqttClient);
 	}
 }
 /*
-void WEBUSR_Evnt::doaction(){
+void WEBUSR_Evnt:: doaction(bool save){
 	//save confs and actions on new config received event
 	saveSingleConf(WEBUSR);
 }
-void WEBPSW_Evnt::doaction(){
+void WEBPSW_Evnt:: doaction(bool save){
 	//save confs and actions on new config received event
 	saveSingleConf(WEBPSW);
 }
 */
 #if (AUTOCAL_HLW8012) 
-void CALPWR_Evnt::doaction(){
+void CALPWR_Evnt:: doaction(bool save){
 	//save confs and actions on new config received event
 	saveSingleConf(CALPWR);
 }

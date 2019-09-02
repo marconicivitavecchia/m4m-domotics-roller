@@ -10,8 +10,8 @@ void parseJsonFieldArrayToStr(String srcJSONStr, Par*p[], int valueLen, int arrL
 		first=0;
 	String app, app1;
 	
-	DEBUG_PRINT(F("\nParser configurazioni, MSG: "));
-	DEBUG_PRINTLN(srcJSONStr);
+	DEBUG2_PRINT(F("\nParser configurazioni, MSG: "));
+	DEBUG2_PRINTLN(srcJSONStr);
 	
 	//field counter
 	for(ends = 0; ends < srcJSONStr.length(); ends++)
@@ -23,25 +23,25 @@ void parseJsonFieldArrayToStr(String srcJSONStr, Par*p[], int valueLen, int arrL
 		start = srcJSONStr.indexOf("\""+ p[i]->getStrJsonName() + "\":\"");
 		if(start > 0){
 			count--;
-			DEBUG_PRINT(F("- campo: "));
-			DEBUG_PRINT("\""+p[i]->getStrJsonName() + "\":\"");
-			DEBUG_PRINT(F("TROVATO"));
+			DEBUG2_PRINT(F("- campo: "));
+			DEBUG2_PRINT("\""+p[i]->getStrJsonName() + "\":\"");
+			DEBUG2_PRINT(F("TROVATO"));
 					
 			start += (p[i]->getStrJsonName()).length() + 4;
 			for(ends=start+1; ends < start + valueLen && srcJSONStr.charAt(ends)!='"' && ends < srcJSONStr.length(); ends++);
 			app = srcJSONStr.substring(start, ends);
 			
-			DEBUG_PRINT(app);
-			DEBUG_PRINT(F(" - start: "));
-			DEBUG_PRINT(start);
-			DEBUG_PRINT(F(" - end: "));
-			DEBUG_PRINT(ends);
-			DEBUG_PRINT(F(" - "));
+			DEBUG2_PRINT(app);
+			DEBUG2_PRINT(F(" - start: "));
+			DEBUG2_PRINT(start);
+			DEBUG2_PRINT(F(" - end: "));
+			DEBUG2_PRINT(ends);
+			DEBUG2_PRINT(F(" - "));
 			
 			if(p[i-first]->getType() == 'j'){
 				static_cast<ParUint8*>(p[i-first])->loadFromStr(srcJSONStr.substring(start, ends)); 
-				DEBUG_PRINT(F("val: "));
-				DEBUG_PRINTLN(((ParUint8*)p[i-first])->val);
+				DEBUG2_PRINT(F("val: "));
+				DEBUG2_PRINTLN(((ParUint8*)p[i-first])->val);
 			}else if(p[i-first]->getType() == 'p'){
 				if(app[1] != delim){//default append
 					p[i-first]->loadFromStr(app);
@@ -56,27 +56,27 @@ void parseJsonFieldArrayToStr(String srcJSONStr, Par*p[], int valueLen, int arrL
 						app1 = p[i-first]->getStrVal();
 						app1 += " " + op + " "+ app.substring(2);
 						p[i-first]->loadFromStr(app1);
-						DEBUG_PRINT(F("\val: "));
-						DEBUG_PRINTLN(((ParUint8*)p[i])->val);
+						DEBUG2_PRINT(F("\val: "));
+						DEBUG2_PRINTLN(((ParUint8*)p[i])->val);
 					}
 				}
 			}
-			DEBUG_PRINT(F("- flagname: "));
-			DEBUG_PRINT(p[i]->formname);	
-			DEBUG_PRINT(F("- val received: "));
-			DEBUG_PRINT(srcJSONStr.substring(start, ends));
-			DEBUG_PRINT(F(" - start: "));
-			DEBUG_PRINT(start);
-			DEBUG_PRINT(F(" - end: "));
-			DEBUG_PRINT(ends);
-			DEBUG_PRINT(F(" - "));
+			DEBUG2_PRINT(F("- flagname: "));
+			DEBUG2_PRINT(p[i]->formname);	
+			DEBUG2_PRINT(F("- val received: "));
+			DEBUG2_PRINT(srcJSONStr.substring(start, ends));
+			DEBUG2_PRINT(F(" - start: "));
+			DEBUG2_PRINT(start);
+			DEBUG2_PRINT(F(" - end: "));
+			DEBUG2_PRINT(ends);
+			DEBUG2_PRINT(F(" - "));
 
-			p[i-first]->doaction();
+			p[i-first]->doaction(true);
 			
 		}else{
-			DEBUG_PRINT(F("- campo: "));
-			DEBUG_PRINT("\""+p[i-first]->getStrJsonName() + "\":\"");
-			DEBUG_PRINTLN(F(" non trovato o non necessario"));
+			DEBUG2_PRINT(F("- campo: "));
+			DEBUG2_PRINT("\""+p[i-first]->getStrJsonName() + "\":\"");
+			DEBUG2_PRINTLN(F(" non trovato o non necessario"));
 		}
 	}
 }
@@ -89,8 +89,8 @@ bool parseJsonFieldArrayToInt(String srcJSONStr, Par*p[], int valueLen, int arrL
 	if(first < 0 || first > arrLen)
 		first=0;
 
-	DEBUG_PRINT(F("\nParser comandi:, MSG: "));
-	DEBUG_PRINTLN(srcJSONStr);
+	DEBUG2_PRINT(F("\nParser comandi:, MSG: "));
+	DEBUG2_PRINTLN(srcJSONStr);
 	
 	//field counter
 	for(ends = 0; ends < srcJSONStr.length(); ends++)
@@ -101,9 +101,9 @@ bool parseJsonFieldArrayToInt(String srcJSONStr, Par*p[], int valueLen, int arrL
 		start = srcJSONStr.indexOf("\""+ p[i]->getStrJsonName() + "\":\"");
 		if(start > 0){
 			count--;
-			DEBUG_PRINT(F("- campo: "));
-			DEBUG_PRINT("\"" + p[i]->getStrJsonName() + "\":\"");
-			DEBUG_PRINTLN(F("TROVATO"));
+			DEBUG2_PRINT(F("- campo: "));
+			DEBUG2_PRINT("\"" + p[i]->getStrJsonName() + "\":\"");
+			DEBUG2_PRINTLN(F("TROVATO"));
 			
 			start += (p[i]->getStrJsonName()).length() + 4;
 			for(ends=start+1; ends < start + valueLen && srcJSONStr.charAt(ends)!='"' && ends < srcJSONStr.length(); ends++);
@@ -111,29 +111,29 @@ bool parseJsonFieldArrayToInt(String srcJSONStr, Par*p[], int valueLen, int arrL
 			//estrae il campo e lo converte in intero e aggiorna gli ingressi dello switchf X
 			//p[i-first]->loadFromStr(srcJSONStr.substring(start, ends)); 
 			static_cast<ParUint8*>(p[i-first])->loadFromStr(srcJSONStr.substring(start, ends)); 
-			DEBUG_PRINT(F("val: "));
-			DEBUG_PRINTLN(((ParUint8*)p[i-first])->val);
+			DEBUG2_PRINT(F("val: "));
+			DEBUG2_PRINTLN(((ParUint8*)p[i-first])->val);
 			/*if(destIntArr[i-first] == 0){ //se è 1 è sicuramente un num, ma se è 0 è un num o stringa?
-				DEBUG_PRINT(F("\n:Stringa to num "));
-				DEBUG_PRINTLN(srcJSONStr.charAt(start));
+				DEBUG2_PRINT(F("\n:Stringa to num "));
+				DEBUG2_PRINTLN(srcJSONStr.charAt(start));
 				if(srcJSONStr.charAt(start) != '0'){ // allora è una stringa
 					destIntArr[i-first] = 1; //allora è un messaggio di configurazione, flag ON
 				}
 			}*/		
-/*			DEBUG_PRINT(F("- flagname: "));
-			DEBUG_PRINT(p[i]->formname);	
+/*			DEBUG2_PRINT(F("- flagname: "));
+			DEBUG2_PRINT(p[i]->formname);	
 			p[i-first]->doaction();
-			DEBUG_PRINT(F("- val received: "));
-			DEBUG_PRINT(srcJSONStr.substring(start, ends));
-			DEBUG_PRINT(F(" - start: "));
-			DEBUG_PRINT(start);
-			DEBUG_PRINT(F(" - end: "));
-			DEBUG_PRINT(ends);
-			DEBUG_PRINT(F(" - "));
+			DEBUG2_PRINT(F("- val received: "));
+			DEBUG2_PRINT(srcJSONStr.substring(start, ends));
+			DEBUG2_PRINT(F(" - start: "));
+			DEBUG2_PRINT(start);
+			DEBUG2_PRINT(F(" - end: "));
+			DEBUG2_PRINT(ends);
+			DEBUG2_PRINT(F(" - "));
 		}else{
-			DEBUG_PRINT(F("- campo: "));
-			DEBUG_PRINT("\"" + p[i]->getStrJsonName() + "\":\"");
-			DEBUG_PRINTLN(F(" non trovato o non necessario"));
+			DEBUG2_PRINT(F("- campo: "));
+			DEBUG2_PRINT("\"" + p[i]->getStrJsonName() + "\":\"");
+			DEBUG2_PRINTLN(F(" non trovato o non necessario"));
 		}
 	}  
 	return (count > 0);

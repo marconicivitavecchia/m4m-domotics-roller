@@ -1,6 +1,11 @@
 #include "common.h"
 #define serverp (*serveru)
 
+char gbuf[DATEBUFLEN];
+
+BaseLog* dbg1 = NULL;
+BaseLog* dbg2 = NULL;
+
 ESP8266WebServer *serveru; 
 Par **parsp;
 
@@ -531,14 +536,9 @@ const char HTTP_FORM_MQTT[] PROGMEM =
 				"<div class='col-6 col-s-12'><label for='mqttproto'>MQTT path:</label>"
 					 "<input type='text' name='mqttproto' value='{PP}'>"
 				"</div>"
-				"<div class='col-6 col-s-12'>"
+				"<div class='col-6 col-s-12'><label for='mqttlog'>MQTT log topic:</label>"
+					 "<input type='text' name='mqttlog' value='{LT}'>"
 				"</div>"
-				/*"<div class='col-6 col-s-12'><label for='mqttproto'>MQTT protocol:</label>"
-					 "<select id='mqttproto' name='mqttproto'>"
-						  "<option value='ws' {P1}>ws</option>"
-						  "<option value='tcp' {P2}>tcp</option>"
-					 "</select>"
-				"</div>"*/
 				"<div class='col-6 col-s-12'><label for='mqttusr'>MQTT user name:</label>"
 					 "<input type='text' name='mqttusr' value='{MU}'>"
 				"</div>"
@@ -562,17 +562,7 @@ const char HTTP_FORM_MQTT[] PROGMEM =
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='btndown2'>MQTT message button 2 DOWN:</label>"
 					 "<input type='text' name='btndown2' value='{J4}'>"
-				"</div>"
-				/*
-				"<div class='col-6 col-s-12'><label for='btnmeanpwr'>Mean power request button:</label>"
-					 "<input type='text' name='btnmeanpwr' value='{J6}'>"
-				"</div>"
-				"<div class='col-6 col-s-12'><label for='btnpeakpwr'>Peak power request button:</label>"
-					 "<input type='text' name='btnpeakpwr' value='{J7}'>"
-				"</div>"
-				"<div class='col-6 col-s-12'><label for='btnall'>All states request button:</label>"
-					 "<input type='text' name='btnall' value='{J8}'>"
-				"</div>"*/				
+				"</div>"			
 				"<div class='col-2'></div>"
 				"<div class='col-2 col-s-12'>"
 					"<input type='submit' name='svmqtt' value='Save' formaction='/modify' formmethod='post'>"
@@ -1144,7 +1134,7 @@ const char HTTP_FORM_CMD[] PROGMEM =
 
 void handleNotFound(){
 	startPageLoad();
-	DEBUG_PRINTLN(F("Enter handleNotFound"));
+	DEBUG2_PRINTLN(F("Enter handleNotFound"));
 	is_authentified(serverp);
 }
 	
@@ -1154,7 +1144,7 @@ void handleRoot() {   // When URI / is requested, send a web page with a button 
 	String page = FPSTR(HTTP_FORM_ROOT);
 	page.replace(F("{HD}"),  FPSTR(HTTP_FORM_HEAD));
 	page.replace(F("{WU}"),  parsp[p(WEBUSR)]->getStrVal()); 
-	DEBUG_PRINTLN(F("Enter handleRoot"));
+	DEBUG2_PRINTLN(F("Enter handleRoot"));
 	//String header;
 	if (!is_authentified(serverp)) {
 	serverp.send(200, "text/html", page);
@@ -1171,12 +1161,12 @@ void handleRoot() {   // When URI / is requested, send a web page with a button 
 
 void handleLogin() {  // If a POST request is made to URI /login
   startPageLoad();
-  DEBUG_PRINTLN(F("Enter handleLogin"));
+  DEBUG2_PRINTLN(F("Enter handleLogin"));
   //I parametri NON devono essere modificati
   bool ok=false;
 
   if(serverp.hasArg("disconnect")) {
-	DEBUG_PRINTLN(F("Disconnection"));
+	DEBUG2_PRINTLN(F("Disconnection"));
 	//like head command of PHP
     serverp.sendHeader("Location", "/");
     serverp.sendHeader("Cache-Control", "no-cache");
@@ -1187,33 +1177,33 @@ void handleLogin() {  // If a POST request is made to URI /login
   else if(is_authentified(serverp)) 
   {
 #if (DEBUG)	
-	DEBUG_PRINT(F("handleLogin: found cookie: "));
+	DEBUG2_PRINT(F("handleLogin: found cookie: "));
     String cookie = serverp.header("Cookie");
-    DEBUG_PRINTLN(cookie);
+    DEBUG2_PRINTLN(cookie);
 #endif
 	ok=true;
   }
   else if(!serverp.hasArg("webusr")||!serverp.hasArg("webpsw")||serverp.arg("webusr")==NULL||serverp.arg("webpsw")==NULL)
   { // If the POST request doesn't have webusr and webpsw data
-     DEBUG_PRINTLN(F("Userneme "));
-	 DEBUG_PRINTLN(serverp.arg("webusr"));
-	 DEBUG_PRINTLN(F(" o webpsw "));
-	 DEBUG_PRINTLN(serverp.arg("webpsw"));
-	 DEBUG_PRINTLN(F(" assenti "));
+     DEBUG2_PRINTLN(F("Userneme "));
+	 DEBUG2_PRINTLN(serverp.arg("webusr"));
+	 DEBUG2_PRINTLN(F(" o webpsw "));
+	 DEBUG2_PRINTLN(serverp.arg("webpsw"));
+	 DEBUG2_PRINTLN(F(" assenti "));
 	 ok=false;
   }
   else if(serverp.arg("webusr") == static_cast<ParStr32*>(parsp[p(WEBUSR)])->getStrVal() && static_cast<ParStr32*>(parsp[p(WEBPSW)])->getStrVal())  
   {
-	DEBUG_PRINTLN(F("Login di "));
-	DEBUG_PRINTLN(serverp.arg("webusr"));
-	DEBUG_PRINTLN(F(" effettuato con successo "));
+	DEBUG2_PRINTLN(F("Login di "));
+	DEBUG2_PRINTLN(serverp.arg("webusr"));
+	DEBUG2_PRINTLN(F(" effettuato con successo "));
 	ok=true;
   }else{
-	DEBUG_PRINTLN(F("Userneme "));
-	DEBUG_PRINTLN(serverp.arg("webusr"));
-	DEBUG_PRINTLN(F(" o webpsw "));
-	DEBUG_PRINTLN(serverp.arg("webusr"));
-	DEBUG_PRINTLN(F(" scorretti"));
+	DEBUG2_PRINTLN(F("Userneme "));
+	DEBUG2_PRINTLN(serverp.arg("webusr"));
+	DEBUG2_PRINTLN(F(" o webpsw "));
+	DEBUG2_PRINTLN(serverp.arg("webusr"));
+	DEBUG2_PRINTLN(F(" scorretti"));
 	ok=false;  
   }
   
@@ -1224,13 +1214,13 @@ void handleLogin() {  // If a POST request is made to URI /login
 		//Head placeholders
 		page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
 		//set cookies OK
-		//DEBUG_PRINTLN(F("Scrittura cookie login "));
-		//DEBUG_PRINTLN(page);
+		//DEBUG2_PRINTLN(F("Scrittura cookie login "));
+		//DEBUG2_PRINTLN(page);
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
 		serverp.send(200, "text/html", page);
   } else {   
-		DEBUG_PRINTLN(F("Login non consentito "));
+		DEBUG2_PRINTLN(F("Login non consentito "));
 		serverp.sendHeader("Location", "/");
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
@@ -1243,13 +1233,13 @@ void handleWifiConf() {  // If a POST request is made to URI /login
   //I parametri NON devono essere modificati
   bool ok=false;
 
-  DEBUG_PRINTLN(F("Enter handleWifiConf"));
+  DEBUG2_PRINTLN(F("Enter handleWifiConf"));
   if(is_authentified(serverp)) 
   {
 #if (DEBUG)	
-	DEBUG_PRINT(F("handleWifiConf: found cookie: "));
+	DEBUG2_PRINT(F("handleWifiConf: found cookie: "));
     String cookie = serverp.header("Cookie");
-    DEBUG_PRINTLN(cookie);
+    DEBUG2_PRINTLN(cookie);
 #endif
 	ok=true;
   }
@@ -1267,13 +1257,13 @@ void handleWifiConf() {  // If a POST request is made to URI /login
 		page.replace(F("{AS}"), parsp[p(APPSSID)]->getStrVal());
 		page.replace(F("{AP}"), parsp[p(APPPSW)]->getStrVal());
 		//set cookies OK
-		//DEBUG_PRINTLN(page);
-		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
+		//DEBUG2_PRINTLN(page);
+		//DEBUG2_PRINTLN(F("Scrittura cookie handleMQTTConf "));
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
 		serverp.send(200, "text/html", page);
   } else {   
-		DEBUG_PRINTLN(F("Login non consentito "));
+		DEBUG2_PRINTLN(F("Login non consentito "));
 		serverp.sendHeader("Location", "/");
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
@@ -1286,13 +1276,13 @@ void handleSystemConf() {  // If a POST request is made to URI /login
   //I parametri NON devono essere modificati
   bool ok=false;
 
-  DEBUG_PRINTLN(F("Enter handleSystem"));
+  DEBUG2_PRINTLN(F("Enter handleSystem"));
   if(is_authentified(serverp)) 
   {
 #if (DEBUG)	
-	DEBUG_PRINT(F("handleSystem: found cookie: "));
+	DEBUG2_PRINT(F("handleSystem: found cookie: "));
     String cookie = serverp.header("Cookie");
-    DEBUG_PRINTLN(cookie);
+    DEBUG2_PRINTLN(cookie);
 #endif
 	ok=true;
   }
@@ -1324,13 +1314,13 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		page.replace(F("{S2}"), parsp[p(STDEL2)]->getStrVal());
 #endif
 		//set cookies OK
-		//DEBUG_PRINTLN(page);
-		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
+		//DEBUG2_PRINTLN(page);
+		//DEBUG2_PRINTLN(F("Scrittura cookie handleMQTTConf "));
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
 		serverp.send(200, "text/html", page);
   } else {   
-		DEBUG_PRINTLN(F("Login non consentito "));
+		DEBUG2_PRINTLN(F("Login non consentito "));
 		serverp.sendHeader("Location", "/");
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
@@ -1343,13 +1333,13 @@ void handleMQTTConf() {  // If a POST request is made to URI /login
   //I parametri NON devono essere modificati
   bool ok=false;
 
-  DEBUG_PRINTLN(F("Enter handleMQTTConf"));
+  DEBUG2_PRINTLN(F("Enter handleMQTTConf"));
   if(is_authentified(serverp)) 
   {
 #if (DEBUG)	
-	DEBUG_PRINT(F("handleMQTTConf: found cookie: "));
+	DEBUG2_PRINT(F("handleMQTTConf: found cookie: "));
     String cookie = serverp.header("Cookie");
-    DEBUG_PRINTLN(cookie);
+    DEBUG2_PRINTLN(cookie);
 #endif
 	ok=true;
   }
@@ -1373,12 +1363,13 @@ void handleMQTTConf() {  // If a POST request is made to URI /login
 		page.replace(F("{J3}"), parsp[MQTTUP2]->getStrJsonName());
 		page.replace(F("{J4}"), parsp[MQTTDOWN2]->getStrJsonName());
 		page.replace(F("{PP}"), parsp[p(MQTTPROTO)]->getStrVal());
+		page.replace(F("{LT}"), parsp[p(MQTTLOG)]->getStrVal());
 
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
 		serverp.send(200, "text/html", page);
   } else {   
-		DEBUG_PRINTLN(F("Login non consentito "));
+		DEBUG2_PRINTLN(F("Login non consentito "));
 		serverp.sendHeader("Location", "/");
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
@@ -1391,13 +1382,13 @@ void handleLogicConf() {  // If a POST request is made to URI /login
   //I parametri NON devono essere modificati
   bool ok=false;
 
-  DEBUG_PRINTLN(F("Enter handleLogicConf"));
+  DEBUG2_PRINTLN(F("Enter handleLogicConf"));
   if(is_authentified(serverp)) 
   {
 #if (DEBUG)	
-	DEBUG_PRINT(F("handleLogicConf: found cookie: "));
+	DEBUG2_PRINT(F("handleLogicConf: found cookie: "));
     String cookie = serverp.header("Cookie");
-    DEBUG_PRINTLN(cookie);
+    DEBUG2_PRINTLN(cookie);
 #endif
 	ok=true;
   }
@@ -1433,7 +1424,7 @@ void handleLogicConf() {  // If a POST request is made to URI /login
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
 		serverp.send(200, "text/html", page);
   } else {   
-		DEBUG_PRINTLN(F("Login non consentito "));
+		DEBUG2_PRINTLN(F("Login non consentito "));
 		serverp.sendHeader("Location", "/");
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
@@ -1446,13 +1437,13 @@ void handleLogConf() {  // If a POST request is made to URI /login
   //I parametri NON devono essere modificati
   bool ok=false;
 
-  DEBUG_PRINTLN(F("Enter handleMQTTConf"));
+  DEBUG2_PRINTLN(F("Enter handleMQTTConf"));
   if(is_authentified(serverp)) 
   {
 #if (DEBUG)	
-	DEBUG_PRINT(F("handleMQTTConf: found cookie: "));
+	DEBUG2_PRINT(F("handleMQTTConf: found cookie: "));
     String cookie = serverp.header("Cookie");
-    DEBUG_PRINTLN(cookie);
+    DEBUG2_PRINTLN(cookie);
 #endif
 	ok=true;
   }
@@ -1467,20 +1458,20 @@ void handleLogConf() {  // If a POST request is made to URI /login
 		page.replace(F("{L2}"), String((num >> 2) & 0x3));
 		page.replace(F("{L3}"), String((num >> 4) & 0x3));
 		
-		DEBUG_PRINT(F("{L1]: "));
-		DEBUG_PRINTLN(String((num >> 0) & 0x3));
+		DEBUG2_PRINT(F("{L1]: "));
+		DEBUG2_PRINTLN(String((num >> 0) & 0x3));
 		
-		DEBUG_PRINT(F("{L2]: "));
-		DEBUG_PRINTLN(String((num >> 2) & 0x3));
+		DEBUG2_PRINT(F("{L2]: "));
+		DEBUG2_PRINTLN(String((num >> 2) & 0x3));
 		
-		DEBUG_PRINT(F("{L3]: "));
-		DEBUG_PRINTLN(String((num >> 4) & 0x3));
+		DEBUG2_PRINT(F("{L3]: "));
+		DEBUG2_PRINTLN(String((num >> 4) & 0x3));
 
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
 		serverp.send(200, "text/html", page);
   } else {   
-		DEBUG_PRINTLN(F("Login non consentito "));
+		DEBUG2_PRINTLN(F("Login non consentito "));
 		serverp.sendHeader("Location", "/");
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
@@ -1495,13 +1486,13 @@ void handleEventConf() {  // If a POST request is made to URI /login
   //I parametri NON devono essere modificati
   bool ok=false;
 
-  DEBUG_PRINTLN(F("Enter handleEventConf"));
+  DEBUG2_PRINTLN(F("Enter handleEventConf"));
   if(is_authentified(serverp)) 
   {
 #if (DEBUG)	
-	DEBUG_PRINT(F("handleLogicConf: found cookie: "));
+	DEBUG2_PRINT(F("handleLogicConf: found cookie: "));
     String cookie = serverp.header("Cookie");
-    DEBUG_PRINTLN(cookie);
+    DEBUG2_PRINTLN(cookie);
 #endif
 	ok=true;
   }
@@ -1550,13 +1541,13 @@ void handleEventConf() {  // If a POST request is made to URI /login
 			page.replace(F("{H4}"), "");
 		}*/
 		//set cookies OK
-		//DEBUG_PRINTLN(page);
-		//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
+		//DEBUG2_PRINTLN(page);
+		//DEBUG2_PRINTLN(F("Scrittura cookie handleMQTTConf "));
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
 		serverp.send(200, "text/html", page);
   } else {   
-		DEBUG_PRINTLN(F("Login non consentito "));
+		DEBUG2_PRINTLN(F("Login non consentito "));
 		serverp.sendHeader("Location", "/");
 		serverp.sendHeader("Cache-Control", "no-cache");
 		serverp.send(301);
@@ -1587,8 +1578,8 @@ void handleCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{AC}"), parsp[INSTACV]->getStrJsonName());
 #endif
 	//Body placeholders
-	//DEBUG_PRINTLN(page);
-	//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
+	//DEBUG2_PRINTLN(page);
+	//DEBUG2_PRINTLN(F("Scrittura cookie handleMQTTConf "));
 	serverp.sendHeader("Cache-Control", "no-cache");
 	serverp.sendHeader("Set-Cookie", "ESPSESSIONID=0");
 	serverp.send(200, "text/html", page);
@@ -1628,8 +1619,8 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 #endif
 
 	//Body placeholders
-	//DEBUG_PRINTLN(page);
-	//DEBUG_PRINTLN(F("Scrittura cookie handleMQTTConf "));
+	//DEBUG2_PRINTLN(page);
+	//DEBUG2_PRINTLN(F("Scrittura cookie handleMQTTConf "));
 	serverp.sendHeader("Cache-Control", "no-cache");
 	serverp.sendHeader("Set-Cookie", "ESPSESSIONID=0");
 	serverp.sendHeader("Connection", "close");
@@ -1639,7 +1630,7 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 inline void savegroup(uint8_t fields[], uint8_t len){
 	for(int i=0; i<len; i++){
 		saveParamFromForm(fields[i]);		//save param on eeprom
-		parsp[fields[i]]->doaction();		//execute onreceive param event manager
+		parsp[fields[i]]->doaction(true);		//execute onreceive param event manager
 	}
 }
 
@@ -1655,15 +1646,15 @@ void handleModify(){
   
   eepromBegin();
   if(serverp.hasArg("svwifi")){
-	  DEBUG_PRINTLN(F("savegroup svwifi"));
+	  DEBUG2_PRINTLN(F("savegroup svwifi"));
 	  uint8_t fields[6] ={p(APPSSID), p(APPPSW), p(CLNTSSID1), p(CLNTPSW1), p(CLNTSSID2), p(CLNTPSW2)};
 	  savegroup(fields, 6);
   }else if(serverp.hasArg("svmqtt")){
-	  DEBUG_PRINTLN(F("savegroup svmqtt"));
-	  uint8_t fields[9] ={p(MQTTADDR), p(MQTTID), p(MQTTOUTTOPIC), p(MQTTINTOPIC), p(MQTTUSR), p(MQTTPSW), p(MQTTPORT), p(WSPORT), p(MQTTPROTO)};
-	  savegroup(fields, 9);
+	  DEBUG2_PRINTLN(F("savegroup svmqtt"));
+	  uint8_t fields[10] ={p(MQTTADDR), p(MQTTID), p(MQTTOUTTOPIC), p(MQTTINTOPIC), p(MQTTUSR), p(MQTTPSW), p(MQTTPORT), p(WSPORT), p(MQTTPROTO), p(MQTTLOG)};
+	  savegroup(fields, 10);
   }else if(serverp.hasArg("svsystem")){
-	  DEBUG_PRINTLN(F("savegroup svsystem"));
+	  DEBUG2_PRINTLN(F("savegroup svsystem"));
 #if (AUTOCAL_HLW8012) 
 	  uint8_t fields[11] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE), p(ACVOLT), p(CALPWR)};
 	  savegroup(fields, 11);
@@ -1675,7 +1666,7 @@ void handleModify(){
 		rebootSystem();
 	  }
 	  if( serverp.hasArg("reboot") && String("y") == serverp.arg("reboot") ){
-		DEBUG_PRINTLN(F("Rebooting ESP"));
+		DEBUG2_PRINTLN(F("Rebooting ESP"));
 		ESP.restart();
 	  }  
 	  if( serverp.hasArg("utcsdt") && String("y") == serverp.arg("utcsdt") ){
@@ -1686,7 +1677,7 @@ void handleModify(){
 		updtConf(p(UTCSDT), String(0));
 	  }
   }else if(serverp.hasArg("svlogic")){
-	  DEBUG_PRINTLN(F("savegroup svlogic"));
+	  DEBUG2_PRINTLN(F("savegroup svlogic"));
 	  uint8_t fields[11] ={p(THALT1), p(THALT2), p(THALT3), p(THALT4), p(STDEL1), p(STDEL2), p(VALWEIGHT), p(TLENGTH), p(BARRELRAD), p(THICKNESS), p(SLATSRATIO)};
 	  savegroup(fields, 11);
 	  
@@ -1709,14 +1700,14 @@ void handleModify(){
   }else if(serverp.hasArg("svlog")){
 	  uint8_t num = static_cast<ParUint8*>(parsp[p(LOGSLCT)])->val;
 	  uint8_t oldNum = num;
-		DEBUG_PRINT(F("{L1]: "));
-		DEBUG_PRINTLN(String((num >> 0) & 0x3));
+		DEBUG2_PRINT(F("{L1]: "));
+		DEBUG2_PRINTLN(String((num >> 0) & 0x3));
 		
-		DEBUG_PRINT(F("{L2]: "));
-		DEBUG_PRINTLN(String((num >> 2) & 0x3));
+		DEBUG2_PRINT(F("{L2]: "));
+		DEBUG2_PRINTLN(String((num >> 2) & 0x3));
 		
-		DEBUG_PRINT(F("{L3]: "));
-		DEBUG_PRINTLN(String((num >> 4) & 0x3));
+		DEBUG2_PRINT(F("{L3]: "));
+		DEBUG2_PRINTLN(String((num >> 4) & 0x3));
 	  if( serverp.hasArg("serlog") && String((num >> 0) & 0x3) != serverp.arg("serlog") ){
 		num -= (num >>0) & 0x3;
 		num += serverp.arg("serlog").toInt();
@@ -1730,16 +1721,16 @@ void handleModify(){
 		num += serverp.arg("mqttlog").toInt()*16;
 	  }
 	  if(oldNum != num){
-		  DEBUG_PRINT(F("num: "));
-		  DEBUG_PRINTLN(String(num));
+		  DEBUG2_PRINT(F("num: "));
+		  DEBUG2_PRINTLN(String(num));
 		  static_cast<ParUint8*>(parsp[p(LOGSLCT)])->load(num);
 		  saveSingleConf(LOGSLCT);
-		  static_cast<ParUint8*>(parsp[p(LOGSLCT)])->doaction();
+		  static_cast<ParUint8*>(parsp[p(LOGSLCT)])->doaction(false);
 	  }
   }
   EEPROM.end();
   
-  DEBUG_PRINTLN(F("Disconnection"));
+  DEBUG2_PRINTLN(F("Disconnection"));
   
   serverp.sendHeader("Cache-Control", "no-cache");
   serverp.sendHeader("Set-Cookie", "ESPSESSIONID=1");
@@ -1759,26 +1750,26 @@ void loadConfig() {
 	int i;
     EEPROM.begin(THALT1OFST);
 	delay(10);
-	//DEBUG_PRINTln();
-	DEBUG_PRINTLN();
-	DEBUG_PRINT(F("Startup string: "));
+	//DEBUG1_PRINTln();
+	DEBUG1_PRINTLN("");
+	DEBUG1_PRINT(F("Startup string: "));
 	bool cfg = validateEEPROM();
 	EEPROMReadStr(0,buf,2);
 	varStrOfst[0] = FIXEDPARAMSLEN;  		 		//l'offset del primo variabile parte dalla fine dell'ultimo fisso
 	varStrOfst[5] = EEPROMReadInt(EEPROMLENOFST);//la fine dell'ultimo variabile (offset+lunghezza campo) è conservato nella posizione EEPROMLENOFST 
 	EEPROM.end();
-	DEBUG_PRINTLN(buf);
+	DEBUG1_PRINTLN(buf);
 	delay(1000);
 
 	if(!cfg) {
-		DEBUG_PRINTLN(F("EEPROM read error! EEPROM will be initialized, you must load a new valid system configuration."));
+		DEBUG1_PRINTLN(F("EEPROM read error! EEPROM will be initialized, you must load a new valid system configuration."));
 		EEPROM.begin(FIXEDPARAMSLEN);
 		initEEPROM(FIXEDPARAMSLEN); 
 		
 		EEPROM.end();
 		varStrOfst[0] = varStrOfst[1] = varStrOfst[2] = varStrOfst[3] = varStrOfst[4] = varStrOfst[5] = FIXEDPARAMSLEN;
-		DEBUG_PRINT(F("FIXEDPARAMSLEN "));
-		DEBUG_PRINTLN(FIXEDPARAMSLEN);
+		DEBUG1_PRINT(F("FIXEDPARAMSLEN "));
+		DEBUG1_PRINTLN(FIXEDPARAMSLEN);
 		
 		saveOnEEPROM(FIXEDPARAMSLEN);
 		
@@ -1789,35 +1780,36 @@ void loadConfig() {
 		int eepromlen = EEPROMReadInt(EEPROMLENOFST);
 		EEPROM.end();
 		EEPROM.begin(eepromlen+1);
-		DEBUG_PRINT(F("eepromlen "));
-		DEBUG_PRINTLN(eepromlen);
+		DEBUG1_PRINT(F("eepromlen "));
+		DEBUG1_PRINTLN(eepromlen);
 		
-		DEBUG_PRINTLN(F("Reading all fixed params... "));
+		DEBUG1_PRINTLN(F("Reading all fixed params... "));
 		for(int i=VARCONFDIM + USRMODIFICABLEFLAGS ; i<PARAMSDIM; i++){
 			loadConf(i);
+			parsp[i]->doaction(false);	////Do only setting!!!
 		}
 		
-		DEBUG_PRINT(F("Reading all variables params... "));
+		DEBUG1_PRINT(F("Reading all variables params... "));
 		varStrOfst[0] = FIXEDPARAMSLEN;
 		for(i=0; i<VARCONFDIM; ++i){
 				varStrOfst[i+1] = EEPROMReadStr(varStrOfst[i], buf) + varStrOfst[i];
 				parsp[p(i)]->load(String(buf));
-				DEBUG_PRINT(F("sensors CONFEXPR "));
-				DEBUG_PRINT(i);
-				DEBUG_PRINT(F(": "));
-				DEBUG_PRINTLN(parsp[p(i)]->getStrVal());
+				DEBUG1_PRINT(F("sensors CONFEXPR "));
+				DEBUG1_PRINT(i);
+				DEBUG1_PRINT(F(": "));
+				DEBUG1_PRINTLN(parsp[p(i)]->getStrVal());
 		}
 		
 		parsp[p(CONFLOADED)]->load(1);
 		EEPROM.end();
-		DEBUG_PRINTLN(F("EEPROM configuration readed"));
+		DEBUG1_PRINTLN(F("EEPROM configuration readed"));
 	}
 }		
 		
 //Check if header is present and correct
 bool is_authentified(ESP8266WebServer &server){
 #if (DEBUG)	 
-  DEBUG_PRINTLN(F("Enter is_authentified"));  
+  DEBUG2_PRINTLN(F("Enter is_authentified"));  
   String message = "URI: ";
   message += server.uri();
   message += "\nMethod: ";
@@ -1828,7 +1820,7 @@ bool is_authentified(ESP8266WebServer &server){
   for (uint8_t i = 0; i < server.args(); i++) {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
-  DEBUG_PRINTLN(message);
+  DEBUG2_PRINTLN(message);
   
   message = "HEADERS: ";
   message += server.headers();
@@ -1836,18 +1828,18 @@ bool is_authentified(ESP8266WebServer &server){
   for (uint8_t i = 0; i < server.headers(); i++) {
     message += " " + server.headerName(i) + ": " + server.header(i) + "\n";
   }
-  DEBUG_PRINTLN(message); 
+  DEBUG2_PRINTLN(message); 
 #endif
   
   if (server.hasHeader("Cookie")) {
-    DEBUG_PRINTLN(F("Found cookie: "));
-    DEBUG_PRINTLN(server.header("Cookie"));
+    DEBUG2_PRINTLN(F("Found cookie: "));
+    DEBUG2_PRINTLN(server.header("Cookie"));
     if ((server.header("Cookie")).indexOf("ESPSESSIONID=1") != -1) {
-      DEBUG_PRINTLN(F("Authentification Successful"));
+      DEBUG2_PRINTLN(F("Authentification Successful"));
       return true;
     }
   }
-  DEBUG_PRINTLN(F("Authentification Failed"));
+  DEBUG2_PRINTLN(F("Authentification Failed"));
   return false;
 }
 
@@ -1856,61 +1848,62 @@ void saveOnEEPROM(int len){
 	char eprom, form;
 	
 	//I parametri devono poter essere modificati
-	DEBUG_PRINTLN(F("Saving configuration...."));
+	DEBUG1_PRINTLN(F("Saving configuration...."));
   
 	EEPROM.begin(len);	
 	for(int i=VARCONFDIM + USRMODIFICABLEFLAGS; i<PARAMSDIM; i++){
 		saveConf(i);
+		parsp[i]->doaction(false);	////only setting!!!
 	}
 	EEPROM.end();
 	
-	DEBUG_PRINTLN(F("Fixed length params saved...."));
+	DEBUG1_PRINTLN(F("Fixed length params saved...."));
 	writeOnOffConditions();
 	
-	DEBUG_PRINTLN(F("Variable length params saved...."));
+	DEBUG1_PRINTLN(F("Variable length params saved...."));
 }
 
 void writeOnOffConditions(){
 	int i;
 	
-	DEBUG_PRINTLN(F("writeOnOffConditions"));
+	DEBUG1_PRINTLN(F("writeOnOffConditions"));
 	eepromBegin();
 	varStrOfst[0] = FIXEDPARAMSLEN;  
 	for(i=0; i<VARCONFDIM; ++i){								
 		varStrOfst[i+1] = EEPROMWriteStr(varStrOfst[i],	(parsp[p(i)]->getStrVal()).c_str() ) + varStrOfst[i];
-		DEBUG_PRINT(F("Modified sensors CONFEXPR "));
-		DEBUG_PRINT(i);
-		DEBUG_PRINT(F(": "));
-		DEBUG_PRINTLN(parsp[p(i)]->getStrVal());
+		DEBUG1_PRINT(F("Modified sensors CONFEXPR "));
+		DEBUG1_PRINT(i);
+		DEBUG1_PRINT(F(": "));
+		DEBUG1_PRINTLN(parsp[p(i)]->getStrVal());
 	}
 	EEPROMWriteInt(EEPROMLENOFST,varStrOfst[VARCONFDIM]);
-	DEBUG_PRINT(F("Modified sensors EEPROMLENOFST: "));
-	DEBUG_PRINTLN(varStrOfst[i]);
+	DEBUG1_PRINT(F("Modified sensors EEPROMLENOFST: "));
+	DEBUG1_PRINTLN(varStrOfst[i]);
 	EEPROM.end();
 }
 	
 void printConfig(){
 		int i;
 		
-		DEBUG_PRINT(F("\nPrinting EEPROM configuration...."));
+		DEBUG1_PRINT(F("\nPrinting EEPROM configuration...."));
 		
 		for(i=0; i<VARCONFDIM; ++i){
-			DEBUG_PRINT(F("\nsensors CONFEXPR "));
-			DEBUG_PRINT(i);
-			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(parsp[p(i)]->getStrVal());
-			DEBUG_PRINT(F("- len "));
-			DEBUG_PRINT(i);
-			DEBUG_PRINT(F(": "));
-			DEBUG_PRINT(varStrOfst[i]);
+			DEBUG1_PRINT(F("\nsensors CONFEXPR "));
+			DEBUG1_PRINT(i);
+			DEBUG1_PRINT(F(": "));
+			DEBUG1_PRINTLN(parsp[p(i)]->getStrVal());
+			DEBUG1_PRINT(F("- len "));
+			DEBUG1_PRINT(i);
+			DEBUG1_PRINT(F(": "));
+			DEBUG1_PRINT(varStrOfst[i]);
 		}
 		
 		for(int i=0; i<PARAMSDIM; i++){
 			printFixedParam(i);
 		}
 
-		DEBUG_PRINT(F("\neeprom EEPROMLENOFST: "));
-		DEBUG_PRINT(varStrOfst[VARCONFDIM]);
+		DEBUG1_PRINT(F("\neeprom EEPROMLENOFST: "));
+		DEBUG1_PRINT(varStrOfst[VARCONFDIM]);
 }		
 
 void saveSingleConf(unsigned confofst){
@@ -1928,136 +1921,136 @@ void saveSingleJson(unsigned jsnofst){
 void updtConf(unsigned paramofst, String v){
 	char intype = parsp[paramofst]->partype;
 	
-	DEBUG_PRINT(F("paramofst: "));
-	DEBUG_PRINTLN(paramofst);
+	DEBUG1_PRINT(F("paramofst: "));
+	DEBUG1_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
-		DEBUG_PRINT(F("param: "));
-		DEBUG_PRINTLN(parsp[paramofst]->formname);
-		DEBUG_PRINT(F("jsoname: "));
-		DEBUG_PRINTLN( parsp[paramofst]->jsoname);
-		DEBUG_PRINT(F("eepromofst: "));
-		DEBUG_PRINTLN(parsp[paramofst]->eprom);
-		DEBUG_PRINT(F("partype: "));
-		DEBUG_PRINTLN(intype);
-		DEBUG_PRINT(F("confofst: "));
-		DEBUG_PRINTLN(getConfofstFromParamofst(paramofst));
-		DEBUG_PRINT(F("formfield: "));
-		DEBUG_PRINTLN(parsp[paramofst]->formfield);
+		DEBUG1_PRINT(F("param: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->formname);
+		DEBUG1_PRINT(F("jsoname: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->jsoname);
+		DEBUG1_PRINT(F("eepromofst: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->eprom);
+		DEBUG1_PRINT(F("partype: "));
+		DEBUG1_PRINTLN(intype);
+		DEBUG1_PRINT(F("confofst: "));
+		DEBUG1_PRINTLN(getConfofstFromParamofst(paramofst));
+		DEBUG1_PRINT(F("formfield: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->formfield);
 		
 		if(intype == 'p' || intype == 'j'){
 			parsp[paramofst]->loadFromStr(v);
 			parsp[paramofst]->saveOnEprom();
-			DEBUG_PRINT(F("Updated param: "));
-			DEBUG_PRINT(parsp[paramofst]->formname);
-			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(parsp[paramofst]->getStrVal());	
+			DEBUG1_PRINT(F("Updated param: "));
+			DEBUG1_PRINT(parsp[paramofst]->formname);
+			DEBUG1_PRINT(F(": "));
+			DEBUG1_PRINTLN(parsp[paramofst]->getStrVal());	
 		}
-		DEBUG_PRINTLN(F("---------------------------------"));
+		DEBUG1_PRINTLN(F("---------------------------------"));
 	}
 }
 
 void saveConf(unsigned paramofst){
 	char intype = parsp[paramofst]->partype;
 	
-	DEBUG_PRINT(F("paramofst: "));
-	DEBUG_PRINTLN(paramofst);
+	DEBUG1_PRINT(F("paramofst: "));
+	DEBUG1_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
-		DEBUG_PRINT(F("param: "));
-		DEBUG_PRINTLN( parsp[paramofst]->formname);
-		DEBUG_PRINT(F("jsoname: "));
-		DEBUG_PRINTLN( parsp[paramofst]->jsoname);
-		DEBUG_PRINT(F("eepromofst: "));
-		DEBUG_PRINTLN(parsp[paramofst]->eprom);
-		DEBUG_PRINT(F("partype: "));
-		DEBUG_PRINTLN(intype);
-		DEBUG_PRINT(F("confofst: "));
-		DEBUG_PRINTLN(getConfofstFromParamofst(paramofst));
-		DEBUG_PRINT(F("formfield: "));
-		DEBUG_PRINTLN( parsp[paramofst]->formfield);
+		DEBUG1_PRINT(F("param: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->formname);
+		DEBUG1_PRINT(F("jsoname: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->jsoname);
+		DEBUG1_PRINT(F("eepromofst: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->eprom);
+		DEBUG1_PRINT(F("partype: "));
+		DEBUG1_PRINTLN(intype);
+		DEBUG1_PRINT(F("confofst: "));
+		DEBUG1_PRINTLN(getConfofstFromParamofst(paramofst));
+		DEBUG1_PRINT(F("formfield: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->formfield);
 		
 		
 		if(intype == 'p' || intype == 'j'){
 			parsp[paramofst]->saveOnEprom();
-			DEBUG_PRINT(F("Modified param: "));
-			DEBUG_PRINT(parsp[paramofst]->formname);
-			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(parsp[paramofst]->getStrVal());			
+			DEBUG1_PRINT(F("Modified param: "));
+			DEBUG1_PRINT(parsp[paramofst]->formname);
+			DEBUG1_PRINT(F(": "));
+			DEBUG1_PRINTLN(parsp[paramofst]->getStrVal());			
 		}
 			
-		DEBUG_PRINTLN(F("---------------------------------"));
+		DEBUG1_PRINTLN(F("---------------------------------"));
 	}
 }
 
 void loadConf(unsigned paramofst){
 	char intype = parsp[paramofst]->partype;
 	
-	DEBUG_PRINT(F("paramofst: "));
-	DEBUG_PRINTLN(paramofst);
+	DEBUG1_PRINT(F("paramofst: "));
+	DEBUG1_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
-		DEBUG_PRINT(F("param: "));
-		DEBUG_PRINTLN(parsp[paramofst]->formname);
-		DEBUG_PRINT(F("jsoname: "));
-		DEBUG_PRINTLN( parsp[paramofst]->jsoname);
-		DEBUG_PRINT(F("eepromofst: "));
-		DEBUG_PRINTLN(parsp[paramofst]->eprom);
-		DEBUG_PRINT(F("partype: "));
-		DEBUG_PRINTLN(intype);
-		DEBUG_PRINT(F("confofst: "));
-		DEBUG_PRINTLN(getConfofstFromParamofst(paramofst));
-		DEBUG_PRINT(F("formfield: "));
-		DEBUG_PRINTLN( parsp[paramofst]->formfield);
+		DEBUG1_PRINT(F("param: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->formname);
+		DEBUG1_PRINT(F("jsoname: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->jsoname);
+		DEBUG1_PRINT(F("eepromofst: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->eprom);
+		DEBUG1_PRINT(F("partype: "));
+		DEBUG1_PRINTLN(intype);
+		DEBUG1_PRINT(F("confofst: "));
+		DEBUG1_PRINTLN(getConfofstFromParamofst(paramofst));
+		DEBUG1_PRINT(F("formfield: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->formfield);
 		
 		if(intype == 'p' || intype == 'j'){
-			DEBUG_PRINT(F("Load param: "));
+			DEBUG1_PRINT(F("Load param: "));
 			parsp[paramofst]->loadFromEprom();
-			DEBUG_PRINT(parsp[paramofst]->formname);
-			DEBUG_PRINT(F(": "));
-			DEBUG_PRINTLN(parsp[paramofst]->getStrVal());
+			DEBUG1_PRINT(parsp[paramofst]->formname);
+			DEBUG1_PRINT(F(": "));
+			DEBUG1_PRINTLN(parsp[paramofst]->getStrVal());
 		}
-		DEBUG_PRINTLN(F("---------------------------------"));
+		DEBUG1_PRINTLN(F("---------------------------------"));
 	}
 }
 
 void printFixedParam(unsigned paramofst){
-	DEBUG_PRINT(F("paramofst: "));
-	DEBUG_PRINTLN(paramofst);
+	DEBUG1_PRINT(F("paramofst: "));
+	DEBUG1_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
-		DEBUG_PRINT(F("formname: "));
-		DEBUG_PRINTLN( parsp[paramofst]->formname);
-		DEBUG_PRINT(F("jsonname: "));
-		DEBUG_PRINTLN( parsp[paramofst]->jsoname);
-		DEBUG_PRINT(F("eepromofst: "));
-		DEBUG_PRINTLN(parsp[paramofst]->eprom);
-		DEBUG_PRINT(F("partype: "));
-		DEBUG_PRINTLN(parsp[paramofst]->partype);
-		DEBUG_PRINT(F("confofst: "));
-		DEBUG_PRINTLN(getConfofstFromParamofst(paramofst));
-		DEBUG_PRINT(F("formfield: "));
-		DEBUG_PRINTLN(parsp[paramofst]->formfield);
-		DEBUG_PRINT(F("parval: "));
-		DEBUG_PRINTLN(parsp[paramofst]->getStrVal());
-		DEBUG_PRINTLN(F("---------------------------------"));
+		DEBUG1_PRINT(F("formname: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->formname);
+		DEBUG1_PRINT(F("jsonname: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->jsoname);
+		DEBUG1_PRINT(F("eepromofst: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->eprom);
+		DEBUG1_PRINT(F("partype: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->partype);
+		DEBUG1_PRINT(F("confofst: "));
+		DEBUG1_PRINTLN(getConfofstFromParamofst(paramofst));
+		DEBUG1_PRINT(F("formfield: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->formfield);
+		DEBUG1_PRINT(F("parval: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->getStrVal());
+		DEBUG1_PRINTLN(F("---------------------------------"));
 	}
 }
 
 void saveParamFromForm(unsigned paramofst){
 	char intype = parsp[paramofst]->partype;
 	
-	DEBUG_PRINT(F("paramofst: "));
-	DEBUG_PRINTLN(paramofst);
+	DEBUG1_PRINT(F("paramofst: "));
+	DEBUG1_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
-		DEBUG_PRINT(F("param: "));
-		DEBUG_PRINTLN( parsp[paramofst]->formname);
-		DEBUG_PRINT(F("jsoname: "));
-		DEBUG_PRINTLN( parsp[paramofst]->jsoname);
-		DEBUG_PRINT(F("eepromofst: "));
-		DEBUG_PRINTLN(parsp[paramofst]->eprom);
-		DEBUG_PRINT(F("partype: "));
-		DEBUG_PRINTLN(intype);
-		DEBUG_PRINT(F("confofst: "));
-		DEBUG_PRINTLN(getConfofstFromParamofst(paramofst));
-		DEBUG_PRINT(F("formfield: "));
-		DEBUG_PRINTLN( parsp[paramofst]->formfield);
+		DEBUG1_PRINT(F("param: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->formname);
+		DEBUG1_PRINT(F("jsoname: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->jsoname);
+		DEBUG1_PRINT(F("eepromofst: "));
+		DEBUG1_PRINTLN(parsp[paramofst]->eprom);
+		DEBUG1_PRINT(F("partype: "));
+		DEBUG1_PRINTLN(intype);
+		DEBUG1_PRINT(F("confofst: "));
+		DEBUG1_PRINTLN(getConfofstFromParamofst(paramofst));
+		DEBUG1_PRINT(F("formfield: "));
+		DEBUG1_PRINTLN( parsp[paramofst]->formfield);
 		
 		if(intype == 'i'){//form element input or text area
 			String param = String(parsp[paramofst]->formname);
@@ -2065,21 +2058,21 @@ void saveParamFromForm(unsigned paramofst){
 				if(serverp.hasArg(param) && (parsp[paramofst]->getStrVal() != serverp.arg(param)) ){
 					parsp[paramofst]->loadFromStr(serverp.arg(param));
 					parsp[paramofst]->saveOnEprom();
-					DEBUG_PRINT(F("Updated param: "));
-					DEBUG_PRINT(param);
-					DEBUG_PRINT(F(": "));
-					DEBUG_PRINTLN(parsp[paramofst]->getStrVal());
+					DEBUG1_PRINT(F("Updated param: "));
+					DEBUG1_PRINT(param);
+					DEBUG1_PRINT(F(": "));
+					DEBUG1_PRINTLN(parsp[paramofst]->getStrVal());
 				}
 			}else if(intype == 'j'){
 				if(serverp.hasArg(param) && (parsp[paramofst]->getStrVal() != serverp.arg(param)) ){
 					parsp[paramofst]->jsoname = (char *) (serverp.arg(param)).c_str();
-					DEBUG_PRINT(F("Updated json name: "));
-					DEBUG_PRINT(parsp[paramofst]->jsoname);
+					DEBUG1_PRINT(F("Updated json name: "));
+					DEBUG1_PRINT(parsp[paramofst]->jsoname);
 				}
 			}	
 		}
 	}
-	DEBUG_PRINTLN(F("---------------------------------"));
+	DEBUG1_PRINTLN(F("---------------------------------"));
 }
 
 //conservata in eeprom, acqu,isita in form, sia nome che valore campo MQTT
@@ -2092,9 +2085,9 @@ Par::Par(const char* pname, const char* mjson, unsigned epromofst, char ptype, c
 	jsoname = (char *) mjson;
 }
 
-void Par::doaction(){
+void Par::doaction(bool save){
 	if(e!=NULL)
-		e->doaction();
+		e->doaction(save);
 }
 
 void Par::load(uint8_t f){};
@@ -2281,104 +2274,302 @@ float saveFloatConf(unsigned confofst){
 	return  static_cast<ParFloat*>(parsp[p(confofst)])->val;
 }
 
-void BaseLog::print(char* topic,  char* msg){};
-void BaseLog::println(char* topic,  char* msg){};
+void BaseLog::print(const char* msg){};
+void BaseLog::println(const char* msg){};
+void BaseLog::print(const __FlashStringHelper * msg){};
+void BaseLog::println(const __FlashStringHelper * msg){};
+void BaseLog::print(String msg){};
+void BaseLog::println(String msg){};
+void BaseLog::print(int msg){};
+void BaseLog::println(int msg){};
+void BaseLog::destroy(){};
+BaseLog::~BaseLog(){DEBUG_PRINTLN("\nBaseLog destructor call");};
 
-void BaseLog::append(char*result, char* topic, char* msg){
-	strcpy(result,topic); // copy string one into the result.
-	strcat(result,"]: "); // append string two to the result.
-	strcat(result,msg); // append string two to the result.
+void BaseLog::mqttSend(const char* msg, bool endl = false){
+	for(int i=0; msg[i] != '\0'; ++i) {//copy until the end
+		if(msg[i] == '\n' || pos == RSLTBUFLEN - 1){
+			result[pos] = '\0';
+			//DEBUG_PRINT("\nmqttSend: ");
+			//DEBUG_PRINTLN(result);
+			strcpy(result,printUNIXTimeMin(gbuf)); 	// copy string one into the result.
+			strcat(result,": "); 					// append string two to the result.
+			result[strlen(result)-1] = ' ';
+			//result[strlen(result)-2] = ' ';
+			result[strlen(result)] = ' ';
+			//DEBUG_PRINT("\nmqttSend: ");
+			//DEBUG_PRINTLN(result);
+			if(mqttc != NULL)
+				mqttc->publish((const char *)static_cast<ParStr32*>(parsp[p(MQTTLOG)])->val, (const char *)result, strlen((const char*)result));
+			pos = DATEBUFLEN + 1;
+			memset(result, ' ', DATEBUFLEN);
+			//result[pos] = '\0';
+		}
+		result[pos++] = msg[i];
+	}
+	result[pos] = '\0';
+	if(endl){
+		//DEBUG_PRINT("\nmqttSend: ");
+		//DEBUG_PRINTLN(result);
+		strcpy(result,printUNIXTimeMin(gbuf)); 	// copy string one into the result.
+		strcat(result,": "); 					// append string two to the result.
+		result[strlen(result)-1] = ' ';
+		//result[strlen(result)-2] = ' ';
+		result[strlen(result)] = ' ';
+		//DEBUG_PRINT("\nmqttSend: ");
+		//DEBUG_PRINTLN(result);
+		if(mqttc != NULL)
+			mqttc->publish((const char *)static_cast<ParStr32*>(parsp[p(MQTTLOG)])->val, (const char *)result, strlen((const char*)result));
+		pos = DATEBUFLEN + 1;
+		memset(result, ' ', DATEBUFLEN);
+		result[pos] = '\0';
+	}
+}
+bool BaseLog::isTelnet(){
+	return ontlnt;
 }
 //SerialLog
-void SerialLog::print(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	Serial.print(result);
+void SerialLog::print(const char* msg){
+	Serial.print(msg);
 };
-void SerialLog::println(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	Serial.println(result);
+void SerialLog::println(const char* msg){
+	Serial.println(msg);
+};
+void SerialLog::print(const __FlashStringHelper * msg){
+	Serial.print(msg);
+};
+void SerialLog::println(const __FlashStringHelper * msg){
+	Serial.println(msg);
+};
+void SerialLog::print(String msg){
+	Serial.print(msg);
+};
+void SerialLog::println(String msg){
+	Serial.println(msg);
+};
+void SerialLog::print(int msg){
+	Serial.print(msg);
+};
+void SerialLog::println(int msg){
+	Serial.println(msg);
+};
+void SerialLog::destroy(){
+	delete this;
+};
+SerialLog::~SerialLog(){
+	mqttc = NULL;
+	DEBUG_PRINTLN("\nSerialLog destructor call");
 };
 //TelnetLog
-void TelnetLog::print(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	tel->println(result);
+void TelnetLog::print(const char* msg){
+	tel->print(msg);
 };
-void TelnetLog::println(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	tel->print(result);
+void TelnetLog::println(const char* msg){
+	tel->println(msg);
+};
+void TelnetLog::print(const __FlashStringHelper * msg){
+	tel->print(msg);
+};
+void TelnetLog::println(const __FlashStringHelper * msg){
+	tel->println(msg);
+};
+void TelnetLog::print(String msg){
+	tel->print(msg);
+};
+void TelnetLog::println(String msg){
+	tel->println(msg);
+};
+void TelnetLog::print(int msg){
+	tel->print(msg);
+};
+void TelnetLog::println(int msg){
+	tel->println(msg);
+};
+TelnetLog::~TelnetLog(){mqttc = NULL;};
+void TelnetLog::destroy(){
+	delete this;
 };
 //MQTTLog
-void MQTTLog::print(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	mqttc->publish((const char *) "log", (const char *) msg, strlen(msg));
+void MQTTLog::print(const char* msg){
+	mqttSend(msg);
 };
-void MQTTLog::println(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	strcat(result,"\n");
-	mqttc->publish((const char *) "log", (const char *) msg, strlen(msg));
+void MQTTLog::println(const char* msg){
+	mqttSend(msg, true);
 };
+void MQTTLog::print(const __FlashStringHelper * msg){
+	mqttSend((const char *)msg);
+};
+void MQTTLog::println(const __FlashStringHelper * msg){
+	mqttSend((const char *)msg, true);
+};
+void MQTTLog::print(String msg){
+	mqttSend(msg.c_str());
+};
+void MQTTLog::println(String msg){
+	mqttSend(msg.c_str(), true);
+};
+void MQTTLog::print(int msg){
+	mqttSend(String(msg, DEC).c_str());
+};
+void MQTTLog::println(int msg){
+	mqttSend(String(msg, DEC).c_str(), true);
+};
+void MQTTLog::destroy(){
+	delete this;
+};
+MQTTLog::~MQTTLog(){mqttc = NULL;};
 //SerialTelnetLog
-void SerialTelnetLog::print(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	Serial.print(result);
-	tel->print(result);
+void SerialTelnetLog::print(const char* msg){
+	Serial.print(msg);
+	tel->print(msg);
 };
-void SerialTelnetLog::println(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	Serial.println(result);
-	tel->println(result);
+void SerialTelnetLog::println(const char* msg){
+	Serial.println(msg);
+	tel->println(msg);
 };
+void SerialTelnetLog::print(const __FlashStringHelper * msg){
+	Serial.print(msg);
+	tel->print(msg);
+};
+void SerialTelnetLog::println(const __FlashStringHelper * msg){
+	Serial.println(msg);
+	tel->println(msg);
+};
+void SerialTelnetLog::print(String msg){
+	Serial.print(msg);
+	tel->print(msg);
+};
+void SerialTelnetLog::println(String msg){
+	Serial.println(msg);
+	tel->println(msg);
+};
+void SerialTelnetLog::print(int msg){
+	Serial.print(msg);
+	tel->print(msg);
+};
+void SerialTelnetLog::println(int msg){
+	Serial.println(msg);
+	tel->println(msg);
+};
+void SerialTelnetLog::destroy(){
+	delete this;
+};
+SerialTelnetLog::~SerialTelnetLog(){mqttc = NULL;};
 //SerialMqttLog
-void SerialMQTTLog::print(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	Serial.print(result);
-	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+void SerialMQTTLog::print(const char* msg){
+	Serial.print(msg);
+	mqttSend(msg);
 };
-void SerialMQTTLog::println(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	Serial.println(result);
-	strcat(result,"\n");
-	Serial.print(result);
-	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+void SerialMQTTLog::println(const char* msg){
+	Serial.println(msg);
+	mqttSend(msg, true);
 };
+void SerialMQTTLog::print(const __FlashStringHelper * msg){
+	Serial.print(msg);
+	mqttSend((const char *)msg);
+};
+void SerialMQTTLog::println(const __FlashStringHelper * msg){
+	Serial.println(msg);
+	mqttSend((const char *)msg, true);
+};
+void SerialMQTTLog::print(String msg){
+	Serial.print(msg);
+	mqttSend(msg.c_str());
+};
+void SerialMQTTLog::println(String msg){
+	Serial.println(msg);
+	mqttSend(msg.c_str(), true);
+};
+void SerialMQTTLog::print(int msg){
+	Serial.print(msg);
+	mqttSend(String(msg, DEC).c_str());
+};
+void SerialMQTTLog::println(int msg){
+	Serial.println(msg);
+	mqttSend(String(msg, DEC).c_str(), true);
+};
+void SerialMQTTLog::destroy(){
+	delete this;
+};
+SerialMQTTLog::~SerialMQTTLog(){mqttc = NULL;};
 //TelnetMQTTLog
-void TelnetMQTTLog::print(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	tel->print(result);
-	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+void TelnetMQTTLog::print(const char* msg){
+	tel->print(msg);
+	mqttSend(msg);
 };
-void TelnetMQTTLog::println(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	strcat(result,"\n");
-	tel->print(result);
-	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+void TelnetMQTTLog::println(const char* msg){
+	tel->println(msg);
+	mqttSend(msg, true);
 };
+void TelnetMQTTLog::print(const __FlashStringHelper * msg){
+	tel->print(msg);
+	mqttSend((const char *)msg);
+};
+void TelnetMQTTLog::println(const __FlashStringHelper * msg){
+	tel->println(msg);
+	mqttSend((const char *)msg, true);
+};
+void TelnetMQTTLog::print(String msg){
+	tel->print(msg);
+	mqttSend(msg.c_str());
+};
+void TelnetMQTTLog::println(String msg){
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void TelnetMQTTLog::print(int msg){
+	tel->print(msg);
+	mqttSend(String(msg, DEC).c_str());
+};
+void TelnetMQTTLog::println(int msg){
+	tel->println(msg);
+	mqttSend(String(msg, DEC).c_str(), true);
+};
+void TelnetMQTTLog::destroy(){
+	delete this;
+};
+TelnetMQTTLog::~TelnetMQTTLog(){mqttc = NULL;};
 //SerialTelnetMQTTLog
-void SerialTelnetMQTTLog::print(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	Serial.print(result);
-	tel->print(result);
-	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+void SerialTelnetMQTTLog::print(const char* msg){
+	Serial.print(msg);
+	tel->print(msg);
+	mqttSend(msg);
 };
-void SerialTelnetMQTTLog::println(char* topic,  char* msg){
-	char result[100] = "[";
-	append(result, topic, msg);
-	strcat(result,"\n");
-	Serial.print(result);
-	tel->print(result);
-	mqttc->publish((const char *) "log", (const char *) msg, strlen(result));
+void SerialTelnetMQTTLog::println(const char* msg){
+	Serial.println(msg);
+	tel->println(msg);
+	mqttSend(msg, true);
 };
-
+void SerialTelnetMQTTLog::print(const __FlashStringHelper * msg){
+	Serial.print(msg);
+	tel->print(msg);
+	mqttSend((const char *)msg);
+};
+void SerialTelnetMQTTLog::println(const __FlashStringHelper * msg){
+	Serial.println(msg);
+	tel->println(msg);
+	mqttSend((const char *)msg, true);
+};
+void SerialTelnetMQTTLog::print(String msg){
+	Serial.print(msg);
+	tel->print(msg);
+	mqttSend(msg.c_str());
+};
+void SerialTelnetMQTTLog::println(String msg){
+	Serial.println(msg);
+	tel->println(msg);
+	mqttSend(msg.c_str(), true);
+};
+void SerialTelnetMQTTLog::print(int msg){
+	Serial.print(msg);
+	tel->print(msg);
+	mqttSend(String(msg, DEC).c_str());
+};
+void SerialTelnetMQTTLog::println(int msg){
+	Serial.println(msg);
+	tel->println(msg);
+	mqttSend(String(msg, DEC).c_str(), true);
+};
+void SerialTelnetMQTTLog::destroy(){
+	delete this;
+};
+SerialTelnetMQTTLog::~SerialTelnetMQTTLog(){mqttc = NULL;};

@@ -140,8 +140,8 @@ void ICACHE_FLASH_ATTR	user_check_sntp_stamp(void *arg){
 
 unsigned long updateNTP(unsigned long ntpTime) {
     if(ntpTime != 0) {
-      Serial.print(F("Time updated, clock skew: "));
-      Serial.println(getUNIXTime() - ntpTime);
+      DEBUG1_PRINT(F("Time updated, clock skew: "));
+      DEBUG1_PRINTLN(getUNIXTime() - ntpTime);
       lastNTPTime = ntpTime;
       //lastNTPMillis = millis();
     }
@@ -235,9 +235,9 @@ bool sampleCurrTime(void){
 	updateNTP();
 	//sample the actual time, break it in is components and cache them in a structure
 	sampleCurrTime(getUNIXTime());
-	DEBUG_PRINT(F("Local time is "));
+	DEBUG2_PRINT(F("Local time is "));
 	char buf[50];
-	DEBUG_PRINTLN(printUNIXTime(buf));
+	DEBUG2_PRINTLN(printUNIXTime(buf));
 	bool hit = (lastSec > tm.Second);
 	lastSec = tm.Second;
 	return hit;
@@ -317,16 +317,16 @@ void setNtpServer(byte id, const char* serv){// set the number of seconds betwee
 } 
 
 char *printUNIXTime(char *buf){
-  memset(buf, 0, 50);
+  memset(buf, 0, DATEBUFLEN);
   //snprintf(buf, 50, "%04i-%02i-%02i %02i:%02i:%02i UTC", tm.Year+1970, tm.Month, tm.Day, tm.Hour, tm.Minute, tm.Second);
-  snprintf(buf, 50, "%02i/%02i/%04i %02i:%02i:%02i", tm.Day, tm.Month, tm.Year+1970, tm.Hour, tm.Minute, tm.Second);
+  snprintf(buf, DATEBUFLEN, "%02i/%02i/%04i %02i:%02i:%02i", tm.Day, tm.Month, tm.Year+1970, tm.Hour, tm.Minute, tm.Second);
   return buf;
 }
 
 char *printUNIXTimeMin(char *buf){
-  memset(buf, 0, 50);
+  memset(buf, 0, DATEBUFLEN);
   //snprintf(buf, 50, "%04i-%02i-%02i %02i:%02i:%02i UTC", tm.Year+1970, tm.Month, tm.Day, tm.Hour, tm.Minute, tm.Second);
-  snprintf(buf, 50, "%02i/%02i/%04i-%02i:%02i", tm.Day, tm.Month, tm.Year+1970, tm.Hour, tm.Minute);
+  snprintf(buf, DATEBUFLEN, "%02i/%02i/%04i-%02i:%02i", tm.Day, tm.Month, tm.Year+1970, tm.Hour, tm.Minute);
   return buf;
 }
 	

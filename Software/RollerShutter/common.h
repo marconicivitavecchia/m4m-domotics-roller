@@ -33,6 +33,7 @@
 //wifi config----------------------------------------------
 #define OUTTOPIC		"sonoff17/out"
 #define INTOPIC			"sonoff17/in"
+#define	LOGPATH			"sonoff17/log"
 #define SSID1			"WebPocket-E280"
 #define PSW1			"dorabino.7468!"
 #define SSID2			"AndroidAP1"
@@ -198,6 +199,8 @@
 #define PEAKPWR2RND		1
 #define IPWRRND			2  //W
 #define IVACRND			1  //V
+#define DATEBUFLEN		18
+#define RSLTBUFLEN		218
 //--------------------------EEPROM offsets-------------------------------------------
 //First two uint8_t reserved for EEPROM check
 //1 uint8_t offets (char)
@@ -250,13 +253,14 @@
 #define	WEBPSWOFST				642
 #define	MQTTUSROFST				674
 #define	MQTTPSWOFST				706
+#define	MQTTLOGOFST				738
 //64 uint8_t offsets (fixed long String)
-#define MQTTADDROFST			738
-#define NTP1ADDROFST			802
-#define NTP2ADDROFST			866
-#define NTP3ADDROFST			930
+#define MQTTADDROFST			770
+#define NTP1ADDROFST			834
+#define NTP2ADDROFST			898
+#define NTP3ADDROFST			962
 //end fixed lenght params
-#define FIXEDPARAMSLEN			994
+#define FIXEDPARAMSLEN			1022
 //x uint8_t offsets (variable String)
 //--------------------------Fine EEPROM offsets-------------------------------------------
 
@@ -349,21 +353,22 @@
 #define PWRMULT				45  
 #define ACVOLT				46
 #define	LOGSLCT				47
+#define MQTTLOG				48
 //parametri di stato (da non esporre)
-#define WIFICHANGED			48
-#define CONFLOADED			49
-#define MQTTADDRMODFIED		50
-#define TOPICCHANGED		51
-#define MQTTCONNCHANGED		52
-#define	TIMINGCHANGED		53
-#define SWACTION1			54
-#define SWACTION2			55
-#define SWACTION3			56
-#define SWACTION4			57
-#define CONFDIM				58
+#define WIFICHANGED			49
+#define CONFLOADED			50
+#define MQTTADDRMODFIED		51
+#define TOPICCHANGED		52
+#define MQTTCONNCHANGED		53
+#define	TIMINGCHANGED		54
+#define SWACTION1			55
+#define SWACTION2			56
+#define SWACTION3			57
+#define SWACTION4			58
+#define CONFDIM				59
 #define VARCONFDIM			6
 #define EXTCONFDIM			14 + 16
-#define TOSAVEPARAMS		48
+#define TOSAVEPARAMS		49
 //#define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
 #define PARAMSDIM 			CONFDIM + USRMODIFICABLEFLAGS
 //--------------------------Fine array indexes-----------------------------------
@@ -429,8 +434,8 @@
 
 //#define NELEMS(x)  (sizeof(x) / sizeof((x)[0]))
 //-----------------------_DEBUG1 MACRO------------------------------------------------------------
-//#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
-//#define PGMT( pgm_ptr ) ( reinterpret_cast< const __FlashStringHelper * >( pgm_ptr ) )
+//#define F(string_literal) (reinterpret_cast<const const __FlashStringHelper *>(PSTR(string_literal)))
+//#define PGMT( pgm_ptr ) ( reinterpret_cast< const const __FlashStringHelper * >( pgm_ptr ) )
 
 //legge gli ingressi dei tasti già puliti dai rimbalzi
 
@@ -465,6 +470,11 @@
   (uint8_t & 0x01 ? '1' : '0') 
 
 #if (_DEBUG1)
+ #define DEBUG1_PRINT(x)	dbg1->print(x)
+ #define DEBUG1_PRINTLN(x)	dbg1->println(x)
+ #define DEBUG2_PRINT(x)	dbg2->print(x)
+ #define DEBUG2_PRINTLN(x)	dbg2->println(x)
+
  //#define telnet_print(x) 	if (telnet.isActive(telnet.ANY)) 	telnet.print(x)
  #define DEBUG_PRINT(x)   Serial.print (x);telnet.print(x)	
  //#define DEBUG_PRINTDEC(x)     Serial.print (x, DEC);  telnet.print(x)
@@ -478,127 +488,129 @@
  #define DEBUG_PRINTLN(x) 
 #endif	
 
+extern char gbuf[DATEBUFLEN];
+
 //Event classes---------------------------------------------------------------------------------------------
 class BaseEvnt{
 	public:
 		unsigned long pid;
 		BaseEvnt(){};
 		BaseEvnt(unsigned id){pid = id;};
-		virtual void doaction() = 0;
+		virtual void doaction(bool) = 0;
 };
 
 class MQTTBTN_Evnt: public BaseEvnt{
 	public:
 		MQTTBTN_Evnt(unsigned x = 0):BaseEvnt(x){};
-		void doaction();
+		void doaction(bool);
 		//void loadPid(uint8_t);
 };
 
 class MQTTMAC_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class MQTTIP_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class MQTTMQTTID_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class MQTTTIME_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class MQTTTEMP_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class MQTTMEANPWR_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class MQTTPEAKPWR_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 #if (AUTOCAL_HLW8012) 
 class DOPWRCAL_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class INSTPWR_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class INSTACV_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 #endif
 //-----------------------------------------------------------------------
 class UTCVAL_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class UTCSYNC_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class UTCADJ_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class UTCSDT_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class UTCZONE_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class ACTIONEVAL_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class ONCOND1_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class ONCOND2_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class ONCOND3_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class ONCOND4_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class ONCOND5_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class LOGSLCT_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 /*
 class WEBUSR_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 class WEBPSW_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };
 */
 #if (AUTOCAL_HLW8012)
 class CALPWR_Evnt: public BaseEvnt{
 	public:
-		void doaction();
+		void doaction(bool);
 };	
 #endif
 
@@ -618,13 +630,13 @@ class Par{
 		String getStrFormName();				//base class version
 		String getStrJsonName();				//base class version
 		uint8_t getType();
-		void doaction();						//base class version
+		void doaction(bool = false);			//base class version
 		virtual void writeParam(String) = 0;	//late binding abstract
 		virtual void loadFromStr(String) = 0;	//late binding abstract
 		virtual void saveOnEprom() = 0;			//late binding abstract
 		virtual String getStrVal() = 0;			//late binding abstract
 		virtual void loadFromEprom() = 0;		//late binding abstract
-		virtual void load(uint8_t); 				//late binding
+		virtual void load(uint8_t); 			//late binding
 		virtual void load(int);					//late binding
 		virtual void load(unsigned long);		//late binding
 		virtual void load(float);				//late binding
@@ -729,69 +741,143 @@ class ParVarStr : public Par{
 //End of event classes------------------------------------------------------------------------------------------------------------
 class BaseLog{
 	protected:
-		void append(char*, char*, char*);
+		bool ontlnt = false;
+		void mqttSend(const char*, bool);
+		char result[RSLTBUFLEN];
+		byte pos = DATEBUFLEN + 1;
+		MQTT *mqttc = NULL;
 	public:
+		bool isTelnet();
+		byte getLevel(){return level;};
 		uint8_t level;
-		BaseLog(uint8_t lev){level = lev;};
-		virtual void print(char *, char*);
-		virtual void println(char *, char*);
+		BaseLog(uint8_t lev){level = lev; memset(result, ' ', DATEBUFLEN); result[0] = '\0';};
+		virtual void print(const char*);
+		virtual void print(const __FlashStringHelper *);
+		virtual void println(const char*);
+		virtual void println(const __FlashStringHelper *);
+		virtual void print(String msg);
+		virtual void println(String msg);
+		virtual void print(int msg);
+		virtual void println(int msg);
+		virtual ~BaseLog();
+		virtual void destroy();
+		/*virtual ~SerialLog();
+		virtual ~TelnetLog();
+		virtual ~MQTTLog();
+		virtual ~SerialTelnetLog();
+		virtual ~SerialMQTTLog();
+		virtual ~TelnetMQTTLog();
+		virtual ~SerialTelnetMQTTLog();*/
 };
+
+extern BaseLog* dbg1;
+extern BaseLog* dbg2;
 
 class SerialLog: public BaseLog{
 	public:
-		SerialLog(uint8_t x):BaseLog(x){};
-		void print(char *, char*);
-		void println(char *, char*);
+		SerialLog(uint8_t x):BaseLog(x){ontlnt = false;};
+		void print(const char*);
+		void println(const char*);
+		void print(const __FlashStringHelper *);
+		void println(const __FlashStringHelper *);
+		void print(String msg);
+		void println(String msg);
+		void print(int msg);
+		void println(int msg);
+		void destroy();
+		~SerialLog();
 };
 class TelnetLog: public BaseLog{
 	private:
 		RemoteDebug *tel;
 	public:
-		TelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y;};
-		void print(char *, char*);
-		void println(char *, char*);
+		TelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y; ontlnt = true;};
+		void print(const char*);
+		void println(const char*);
+		void print(const __FlashStringHelper *);
+		void println(const __FlashStringHelper *);
+		void print(String msg);
+		void println(String msg);
+		void print(int msg);
+		void println(int msg);
+		void destroy();
+		~TelnetLog();
 };
 class MQTTLog: public BaseLog{
-	private:
-		MQTT *mqttc;
 	public:
-		MQTTLog(uint8_t x, MQTT *y):BaseLog(x){mqttc = y;};
-		void print(char *, char*);
-		void println(char *, char*);
+		MQTTLog(uint8_t x, MQTT *y):BaseLog(x){mqttc = y; ontlnt = false;};
+		void print(const char*);
+		void println(const char*);
+		void print(const __FlashStringHelper *);
+		void println(const __FlashStringHelper *);
+		void print(String msg);
+		void println(String msg);
+		void print(int msg);
+		void println(int msg);
+		void destroy();
+		~MQTTLog();
 };
 class SerialTelnetLog: public BaseLog{
 	private:
 		RemoteDebug *tel;
 	public:
-		SerialTelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y;};
-		void print(char *, char*);
-		void println(char *, char*);
+		SerialTelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y; ontlnt = true;};
+		void print(const char*);
+		void println(const char*);
+		void print(const __FlashStringHelper *);
+		void println(const __FlashStringHelper *);
+		void print(String msg);
+		void println(String msg);
+		void print(int msg);
+		void println(int msg);
+		void destroy();
+		~SerialTelnetLog();
 };
 class SerialMQTTLog: public BaseLog{
-	private:
-		MQTT *mqttc;
 	public:
-		SerialMQTTLog(uint8_t x, MQTT *y):BaseLog(x){mqttc = y;};
-		void print(char *, char*);
-		void println(char *, char*);
+		SerialMQTTLog(uint8_t x, MQTT *y):BaseLog(x){mqttc = y; ontlnt = false;};
+		void print(const char*);
+		void println(const char*);
+		void print(const __FlashStringHelper *);
+		void println(const __FlashStringHelper *);
+		void print(String msg);
+		void println(String msg);
+		void print(int msg);
+		void println(int msg);
+		void destroy();
+		~SerialMQTTLog();
 };
 class TelnetMQTTLog: public BaseLog{
 	private:
 		RemoteDebug *tel;
-		MQTT *mqttc;
 	public:
-		TelnetMQTTLog(uint8_t x, RemoteDebug* y, MQTT *z):BaseLog(x){tel = y; mqttc = z;};
-		void print(char *, char*);
-		void println(char *, char*);
+		TelnetMQTTLog(uint8_t x, RemoteDebug* y, MQTT *z):BaseLog(x){tel = y; mqttc = z; ontlnt = true;};
+		void print(const char*);
+		void println(const char*);
+		void print(const __FlashStringHelper *);
+		void println(const __FlashStringHelper *);
+		void print(String msg);
+		void println(String msg);
+		void print(int msg);
+		void println(int msg);
+		void destroy();
+		~TelnetMQTTLog();
 };
 class SerialTelnetMQTTLog: public BaseLog{
 	private:
 		RemoteDebug *tel;
-		MQTT *mqttc;
 	public:
-		SerialTelnetMQTTLog(uint8_t x, RemoteDebug* y, MQTT *z):BaseLog(x){tel = y; mqttc = z;};
-		void print(char*, char*);
-		void println(char*, char*);
+		SerialTelnetMQTTLog(uint8_t x, RemoteDebug* y, MQTT *z):BaseLog(x){tel = y; mqttc = z; ontlnt = true;};
+		void print(const char*);
+		void println(const char*);
+		void print(const __FlashStringHelper *);
+		void println(const __FlashStringHelper *);
+		void print(String msg);
+		void println(String msg);
+		void print(int msg);
+		void println(int msg);
+		void destroy();
+		~SerialTelnetMQTTLog();
 };
 
 //PRIMA DEFINISCO LE COSTANTI, POI INCLUDO I FILES HEADERS (.h) CHE LE USANO

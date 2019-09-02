@@ -64,10 +64,10 @@ byte switchLogic(byte sw, byte n){
 	//pulsante UP o DOWN (sw: 0 o 1)
 	if(switchdfn(inp[BTN1IN+poffset+sw],BTN1IN+poffset+sw))
 	{
-		DEBUG_PRINT(F("fronte di SW: "));
-		DEBUG_PRINTLN(BTN1IN+poffset+sw+1);
-		DEBUG_PRINT(F("stato switch:  "));
-		DEBUG_PRINTLN(getGroupState(toffset));
+		DEBUG2_PRINT(F("fronte di SW: "));
+		DEBUG2_PRINTLN(BTN1IN+poffset+sw+1);
+		DEBUG2_PRINT(F("stato switch:  "));
+		DEBUG2_PRINTLN(getGroupState(toffset));
 		
 		byte s = getGroupState(toffset);
 		//siamo su uno dei fronti del pulsante 
@@ -78,7 +78,7 @@ byte switchLogic(byte sw, byte n){
 			startTimer(RESETTIMER);
 			outlogicp[SW1ONS+offset+sw]=true;
 			if(!outlogicp[SW1ONS+offset+!sw]){  //evita attivazioni con pressione contemporanea di due tasti (interblocco)
-				DEBUG_PRINTLN(F("dopo interblocco "));
+				DEBUG2_PRINTLN(F("dopo interblocco "));
 				//modalità tapparella
 				//effettuata prima pressione
 				if(s==0)
@@ -86,16 +86,16 @@ byte switchLogic(byte sw, byte n){
 					//se il motore è fermo
 					setCronoDir(upmap[sw],n);  //in base a questo viene decisa la direzione della partenza differita
 					lastCmd[BTN1IN + poffset+sw] = inp[BTN1IN+poffset+sw];
-					DEBUG_PRINTLN(F("tapparellaLogic: stato 1: il motore va in attesa da stato 0 (fermo)"));
+					DEBUG2_PRINTLN(F("tapparellaLogic: stato 1: il motore va in attesa da stato 0 (fermo)"));
 					//stato 1: il motore va in attesa del moto a vuoto
 					startTimer(btndelay[n],TMRHALT+toffset);	
 					setGroupState(1,toffset);	
 					incCnt(toffset);
 					changed = 0;
-					DEBUG_PRINT(F("incCnt0("));
-					DEBUG_PRINT(toffset);
-					DEBUG_PRINT(F("): "));
-					DEBUG_PRINTLN(getCntValue(toffset));
+					DEBUG2_PRINT(F("incCnt0("));
+					DEBUG2_PRINT(toffset);
+					DEBUG2_PRINT(F("): "));
+					DEBUG2_PRINTLN(getCntValue(toffset));
 				}else if(s==1)
 				{//se il motore è in attesa
 					//sono pressioni di configurazione
@@ -104,21 +104,21 @@ byte switchLogic(byte sw, byte n){
 					startTimer(btndelay[n],TMRHALT+toffset);	
 					incCnt(toffset);
 					changed = 0;
-					DEBUG_PRINT(F("\nincCnt1("));
-					DEBUG_PRINT(toffset);
-					DEBUG_PRINT(F("): "));
-					DEBUG_PRINTLN(getCntValue(toffset));
+					DEBUG2_PRINT(F("\nincCnt1("));
+					DEBUG2_PRINT(toffset);
+					DEBUG2_PRINT(F("): "));
+					DEBUG2_PRINTLN(getCntValue(toffset));
 				}else  if(s==2 || s==3)//se il motore è in moto a vuoto o in moto cronometrato
 				{
 					secondPress(n);
 					changed = 1; //solo adesso il loop deve intervenire!
-					DEBUG_PRINTLN(F("stato 0: il motore va in stato fermo "));
+					DEBUG2_PRINTLN(F("stato 0: il motore va in stato fermo "));
 				}
 			}
 		}
 		else
 		{
-			DEBUG_PRINTLN(F("fronte di discesa "));
+			DEBUG2_PRINTLN(F("fronte di discesa "));
 			//fronte di discesa
 			//rilascio interblocco
 			outlogicp[SW1ONS+offset+sw]=false;
@@ -126,11 +126,11 @@ byte switchLogic(byte sw, byte n){
 			//ferma il timer di reset
 			//Tasto rilasciato: blocca il timer di reset
 			resetTimer(RESETTIMER);
-			//DEBUG_PRINTLN(F("Bloccato il timer di reset"));
+			//DEBUG2_PRINTLN(F("Bloccato il timer di reset"));
 		}
 	}
-	//DEBUG_PRINT(F("Changed: "));
-	//DEBUG_PRINTLN(changed);
+	//DEBUG2_PRINT(F("Changed: "));
+	//DEBUG2_PRINTLN(changed);
 	return changed;
 }
 
@@ -147,8 +147,8 @@ void setBtnDelay(byte dly, byte i){
 }
 
 void setHaltDelay(unsigned int dly, byte n){
-	DEBUG_PRINT(F("setHaltDelay: "));
-	DEBUG_PRINTLN(dly);
+	DEBUG2_PRINT(F("setHaltDelay: "));
+	DEBUG2_PRINTLN(dly);
 	haltdelay[n]=dly;
 }
 /*
@@ -245,12 +245,12 @@ void startEndOfRunTimer(byte n){
 	//comincia a cronometrare la corsa
 	startCrono(n); 
 	setGroupState(3,toffset);	//														stato 3: il motore va in moto cronometrato
-	DEBUG_PRINT(F("stato 3: il motore " ));
-	DEBUG_PRINT(n);
-	DEBUG_PRINT(F(" al tempo  " ));
-	DEBUG_PRINT(getCronoCount(n));
-	DEBUG_PRINT(F(" è cronometrato verso "));
-	DEBUG_PRINTLN(target[toffset]);	
+	DEBUG2_PRINT(F("stato 3: il motore " ));
+	DEBUG2_PRINT(n);
+	DEBUG2_PRINT(F(" al tempo  " ));
+	DEBUG2_PRINT(getCronoCount(n));
+	DEBUG2_PRINT(F(" è cronometrato verso "));
+	DEBUG2_PRINTLN(target[toffset]);	
 }
 
 bool startEngineDelayTimer(byte n){
@@ -259,16 +259,16 @@ bool startEngineDelayTimer(byte n){
 		moving[n]=false;	
 		setGroupState(2,n);												//stato 2: il motore va in moto a vuoto (o libero)
 		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index
-		//DEBUG_PRINTLN(F("startEngineDelayTimer: getGroupState(n), btn, inp[btn]"));
-		//DEBUG_PRINTLN(getGroupState(n));
-		//DEBUG_PRINTLN(btn);
-		//DEBUG_PRINTLN(inp[btn]);
+		//DEBUG2_PRINTLN(F("startEngineDelayTimer: getGroupState(n), btn, inp[btn]"));
+		//DEBUG2_PRINTLN(getGroupState(n));
+		//DEBUG2_PRINTLN(btn);
+		//DEBUG2_PRINTLN(inp[btn]);
 		inp[btn] = lastCmd[btn];
 		firstPress((getCronoDir(n)==DOWN), n);
 		//parte il timer di attesa del moto cronometrato
 		startTimer(engdelay[toffset],TMRHALT+toffset);
 		
-		DEBUG_PRINTLN(F("stato 2: il motore va in moto a vuoto"));
+		DEBUG2_PRINTLN(F("stato 2: il motore va in moto a vuoto"));
 		return true;
 		//}else{
 		//	return false;
@@ -306,8 +306,8 @@ short secondPress(byte n, int delay, bool end){
 					//setCronoCount(thaltp[n], n);
 					//stima base escursione da parte del sensore H (alto)
 					base[n] = (long) getCronoCount(n)-thaltp[n];
-					DEBUG_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per apertura totale. Correzione posizione necessaria: "));
-					DEBUG_PRINTLN(base[n]);
+					DEBUG2_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per apertura totale. Correzione posizione necessaria: "));
+					DEBUG2_PRINTLN(base[n]);
 					//elastico parte alta (correzione ampiezza escursione)
 					//thaltp[n] = getCronoCount(n);	//elastico parte alta (correzione escursione)
 					rslt = 0;
@@ -315,18 +315,18 @@ short secondPress(byte n, int delay, bool end){
 					//correzione posizione tetto escursione (necessaria all'avvio!)
 					setCronoCount(thaltp[n], n);
 					rslt = 2;
-					DEBUG_PRINTLN(F("Correzione posizione tetto escursione. Prima escursione o forzatura...può essere necessaria ricalibrazione"));
+					DEBUG2_PRINTLN(F("Correzione posizione tetto escursione. Prima escursione o forzatura...può essere necessaria ricalibrazione"));
 				}
 			}else{
 				if(getCronoCount(n) < (long) thaltp[n]*fact && getCronoCount(n) > (long) -thaltp[n]*fact){
 					//resetCronoCount(n);
 					rslt = 0;
-					DEBUG_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per chiusura totale. Correzione posizione necassaria: "));
+					DEBUG2_PRINT(F("tapparella impiega un tempo leggermente diverso dalla stima per chiusura totale. Correzione posizione necassaria: "));
 					//stima base escursione da parte del sensore L (basso)
 					long app = (long) getCronoCount(n);
 					//calcolo media delle due stime sulla base escursione
 					app = (app + base[n])/2;
-					DEBUG_PRINTLN(app);
+					DEBUG2_PRINTLN(app);
 					//elastico parte bassa (correzione ampiezza escursione)
 					//app = thaltp[n] + getCronoCount(n);  
 					//thaltp[n] = app;
@@ -337,7 +337,7 @@ short secondPress(byte n, int delay, bool end){
 					//correzione posizione base escursione (necessaria all'avvio!)
 					resetCronoCount(n);
 					rslt = 3;
-					DEBUG_PRINTLN(F("Grande correzione della posizione della base escursione, può essere necessaria ricalibrazione"));
+					DEBUG2_PRINTLN(F("Grande correzione della posizione della base escursione, può essere necessaria ricalibrazione"));
 				}
 			}
 		}else if(getGroupState(n) == 2 && end){
@@ -345,12 +345,12 @@ short secondPress(byte n, int delay, bool end){
 					//correzione posizione tetto escursione (necessaria all'avvio!)
 					setCronoCount(thaltp[n], n);
 					rslt = 2;
-					DEBUG_PRINTLN(F("Correzione posizione tetto escursione. Prima escursione o forzatura...può essere necessaria ricalibrazione"));
+					DEBUG2_PRINTLN(F("Correzione posizione tetto escursione. Prima escursione o forzatura...può essere necessaria ricalibrazione"));
 			}else{
 					//correzione posizione base escursione (necessaria all'avvio!)
 					resetCronoCount(n);
 					rslt = 3;
-					DEBUG_PRINTLN(F("Grande correzione della posizione della base escursione, può essere necessaria ricalibrazione"));
+					DEBUG2_PRINTLN(F("Grande correzione della posizione della base escursione, può essere necessaria ricalibrazione"));
 			}
 		}
 #else		
@@ -358,18 +358,18 @@ short secondPress(byte n, int delay, bool end){
 			if(getCronoCount(n) >= (long) thaltp[n]){
 				first[n] = false;
 				setCronoCount(thaltp[n], n);
-				DEBUG_PRINT(F("max rilevato: "));
-				DEBUG_PRINTLN(first[n]);
+				DEBUG2_PRINT(F("max rilevato: "));
+				DEBUG2_PRINTLN(first[n]);
 			}else if(getCronoCount(n) <= (long) -thaltp[n]){
 				first[n] = false;
 				setCronoCount(0, n);
-				DEBUG_PRINT(F("min rilevato: "));
-				DEBUG_PRINTLN(first[n]);
+				DEBUG2_PRINT(F("min rilevato: "));
+				DEBUG2_PRINTLN(first[n]);
 			}
 		}
 #endif
-		DEBUG_PRINT(F("\nSecond press: motore fermo al tempo "));
-		DEBUG_PRINTLN(app);
+		DEBUG2_PRINT(F("\nSecond press: motore fermo al tempo "));
+		DEBUG2_PRINTLN(app);
 		setGroupState(0,n);
 	}else if(calibr == 1){
 		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
@@ -377,7 +377,7 @@ short secondPress(byte n, int delay, bool end){
 		outlogicp[ENABLES+offset]=LOW;
 		nrun--;
 		outlogicp[DIRS+offset]=LOW;
-		DEBUG_PRINTLN(F("2)reset del cronometro immediatamente prima della salita"));
+		DEBUG2_PRINTLN(F("2)reset del cronometro immediatamente prima della salita"));
 		//Tapparella completamente abbassata: imposto a zero il contatore di stato
 		resetCronoCount(n);
 		incCnt(toffset);
@@ -392,15 +392,15 @@ short secondPress(byte n, int delay, bool end){
 		startTimer(500,TMRHALT+toffset);
 #endif	
 		calibr = 2;
-		DEBUG_PRINTLN(btn);
-		DEBUG_PRINTLN(lastCmd[btn]);
-		DEBUG_PRINT(F("stato 2: il motore va in moto a vuoto per calibrazione verso "));
-		DEBUG_PRINTLN(getCronoDir(n));
-		DEBUG_PRINT(F("FASE 2 CALIBRAZIONE MANUALE"));
-		DEBUG_PRINTLN(F("-----------------------------"));
-		DEBUG_PRINTLN(F("LA TAPPARELLA STA salendo"));
-		DEBUG_PRINT(F("PREMERE UN PULSANTE QUALSIASI DEL GRUPPO ATTIVO"));
-		DEBUG_PRINTLN(F("-----------------------------"));
+		DEBUG2_PRINTLN(btn);
+		DEBUG2_PRINTLN(lastCmd[btn]);
+		DEBUG2_PRINT(F("stato 2: il motore va in moto a vuoto per calibrazione verso "));
+		DEBUG2_PRINTLN(getCronoDir(n));
+		DEBUG2_PRINT(F("FASE 2 CALIBRAZIONE MANUALE"));
+		DEBUG2_PRINTLN(F("-----------------------------"));
+		DEBUG2_PRINTLN(F("LA TAPPARELLA STA salendo"));
+		DEBUG2_PRINT(F("PREMERE UN PULSANTE QUALSIASI DEL GRUPPO ATTIVO"));
+		DEBUG2_PRINTLN(F("-----------------------------"));
 		//resetStatDelayCounter(n);
 	}else if(calibr == 2){
 		calibr = 0;
@@ -422,15 +422,15 @@ short secondPress(byte n, int delay, bool end){
 			app = CNTIME*1000;
 		//setCronoLimits(0,app,n);
 		thaltp[n] = app;
-		DEBUG_PRINT(F("getCronoValue(n): "));
-		DEBUG_PRINTLN(getCronoValue(n));
-		DEBUG_PRINT(F("getCronoCount(n): "));
-		DEBUG_PRINTLN(getCronoCount(n));
-		DEBUG_PRINTLN(F("-----------------------------"));
-		DEBUG_PRINT(F("FASE 3 CALIBRAZIONE MANUALE BTN "));
-		DEBUG_PRINTLN(n+1);
-		DEBUG_PRINT(F("SALVATAGGIO TEMPO DI SEC "));
-		DEBUG_PRINTLN(app);
+		DEBUG2_PRINT(F("getCronoValue(n): "));
+		DEBUG2_PRINTLN(getCronoValue(n));
+		DEBUG2_PRINT(F("getCronoCount(n): "));
+		DEBUG2_PRINTLN(getCronoCount(n));
+		DEBUG2_PRINTLN(F("-----------------------------"));
+		DEBUG2_PRINT(F("FASE 3 CALIBRAZIONE MANUALE BTN "));
+		DEBUG2_PRINTLN(n+1);
+		DEBUG2_PRINT(F("SALVATAGGIO TEMPO DI SEC "));
+		DEBUG2_PRINTLN(app);
 		onCalibrEnd(app,n);
 	}else{
 		calibr = 0;
@@ -447,15 +447,15 @@ void firstPress(byte sw, byte n){
 	int poffset=n*BTNDIM;
 	
 	//da effettuare solo se il motore è fermo
-	//DEBUG_PRINT(F("\nPrima pressione UP: motore "));
-	//DEBUG_PRINT(n+1);
-	//DEBUG_PRINT(F("\ninp[BTN1IN+poffset] "));
-	//DEBUG_PRINTLN(inp[BTN1IN+poffset]);
+	//DEBUG2_PRINT(F("\nPrima pressione UP: motore "));
+	//DEBUG2_PRINT(n+1);
+	//DEBUG2_PRINT(F("\ninp[BTN1IN+poffset] "));
+	//DEBUG2_PRINTLN(inp[BTN1IN+poffset]);
 		
 	//resetTimer(TMRHALT+toffset);			
 	if(inp[BTN1IN+poffset+sw] == 255){
-		//DEBUG_PRINT(F(" in moto verso "));
-		//DEBUG_PRINTLN(sw);
+		//DEBUG2_PRINT(F(" in moto verso "));
+		//DEBUG2_PRINTLN(sw);
 		//LIST OF UP ACTIONSalt 
 		//imposta la DIRSezione
 		outlogicp[DIRS+offset]=sw;	
@@ -475,14 +475,14 @@ void firstPress(byte sw, byte n){
 #endif			
 		target[toffset] = (long) (target[toffset]-getCronoCount(n))*getCronoDir(n);
 		
-		//DEBUG_PRINT(F("first: "));
-		//DEBUG_PRINTLN(first[n]);
-		//DEBUG_PRINT(F("Target: in moto verso "));
-		//DEBUG_PRINTLN(target[n]);
+		//DEBUG2_PRINT(F("first: "));
+		//DEBUG2_PRINTLN(first[n]);
+		//DEBUG2_PRINT(F("Target: in moto verso "));
+		//DEBUG2_PRINTLN(target[n]);
 
 	}else if(inp[BTN1IN+poffset+sw] == 101){
-		DEBUG_PRINT(F("Calibrazione: in moto verso "));
-		DEBUG_PRINTLN(sw);
+		DEBUG2_PRINT(F("Calibrazione: in moto verso "));
+		DEBUG2_PRINTLN(sw);
 		//imposta la DIRSezione
 		outlogicp[DIRS+offset]=sw;	
 		setCronoDir(upmap[sw],n);
@@ -497,7 +497,7 @@ void firstPress(byte sw, byte n){
 	}else{
 		//aperture percentuali
 		unsigned short p = 0;
-		//DEBUG_PRINTLN(F(" in moto verso l'alto perc"));
+		//DEBUG2_PRINTLN(F(" in moto verso l'alto perc"));
 
 		if(inp[BTN1IN+poffset+sw] <= 100){
 			p = inp[BTN1IN+poffset+sw] + posdelta;
@@ -571,10 +571,10 @@ byte toggleLogic(byte sw, byte nn){
 	{
 		byte s = getGroupState(n);
 		
-		DEBUG_PRINT(F("\nSwitchLogic: fronte di SWOnOff tasto "));
-		DEBUG_PRINT(n+1);
-		DEBUG_PRINT(F(" stato "));
-		DEBUG_PRINT(s);
+		DEBUG2_PRINT(F("\nSwitchLogic: fronte di SWOnOff tasto "));
+		DEBUG2_PRINT(n+1);
+		DEBUG2_PRINT(F(" stato "));
+		DEBUG2_PRINT(s);
 		
 		//siamo su uno dei fronti del pulsante 
 		if(inp[n]>0)  
@@ -585,9 +585,9 @@ byte toggleLogic(byte sw, byte nn){
 			if(s==0)
 				{ 	
 					//se il pulsante è aperto
-					DEBUG_PRINTLN(F("\nSwitchLogic: stato 0: lo switch è inibito e va in attesa da stato 0 (inibito)"));
-					DEBUG_PRINT(F("n: "));
-					DEBUG_PRINTLN(n);
+					DEBUG2_PRINTLN(F("\nSwitchLogic: stato 0: lo switch è inibito e va in attesa da stato 0 (inibito)"));
+					DEBUG2_PRINT(F("n: "));
+					DEBUG2_PRINTLN(n);
 					//stato 0: lo switch va in stato inibito
 					//cambio lo stato dell'uscita (TOGGLE)
 					lastCmd[n] = !outp[n];
@@ -597,9 +597,9 @@ byte toggleLogic(byte sw, byte nn){
 					changed = 0;
 				}else if(s==1)
 				{	
-					DEBUG_PRINTLN(F("\nSwitchLogic: stato 1: lo switch è inibito e va in attesa da stato 1 (inibito)"));
-					DEBUG_PRINT(F("n: "));
-					DEBUG_PRINTLN(n);
+					DEBUG2_PRINTLN(F("\nSwitchLogic: stato 1: lo switch è inibito e va in attesa da stato 1 (inibito)"));
+					DEBUG2_PRINT(F("n: "));
+					DEBUG2_PRINTLN(n);
 					//se lo switch è inibito
 					//sono pressioni di configurazione
 					//faccio ripartire il timer di attesa di abilitazione
@@ -609,7 +609,7 @@ byte toggleLogic(byte sw, byte nn){
 					changed = 0;
 				}
 		}else{
-			DEBUG_PRINTLN(F("\nSwitchLogic: fronte di discesa onOff"));
+			DEBUG2_PRINTLN(F("\nSwitchLogic: fronte di discesa onOff"));
 			//fronte di discesa
 			changed=255;
 			//ferma il timer di reset
@@ -622,18 +622,18 @@ byte toggleLogic(byte sw, byte nn){
 
 void setLogic(byte in, byte n){
 	outp[n] = in;
-	DEBUG_PRINT(F("outp: "));
-	DEBUG_PRINT(n);
-	DEBUG_PRINT(F(" val: "));
-	DEBUG_PRINTLN(outp[n]);
+	DEBUG2_PRINT(F("outp: "));
+	DEBUG2_PRINT(n);
+	DEBUG2_PRINT(F(" val: "));
+	DEBUG2_PRINTLN(outp[n]);
 }
 
 void setOE(bool in, byte n){
 	oe[n] = in;
-	DEBUG_PRINT(F("OE: "));
-	DEBUG_PRINT(n);
-	DEBUG_PRINT(F(" val: "));
-	DEBUG_PRINTLN(oe[n]);
+	DEBUG2_PRINT(F("OE: "));
+	DEBUG2_PRINT(n);
+	DEBUG2_PRINT(F(" val: "));
+	DEBUG2_PRINTLN(oe[n]);
 }
 
 void setActionLogic(int in, byte n){
@@ -642,16 +642,16 @@ void setActionLogic(int in, byte n){
 	//2: normalmente aperto, chiuso per un haltdelay alla pressione
 	//3: normalmente chiuso, aperto per un haltdelay alla pressione
 	if(act[n]==0){
-		DEBUG_PRINT(F("setActionLogic setReset: "));
-		DEBUG_PRINTLN(in);
+		DEBUG2_PRINT(F("setActionLogic setReset: "));
+		DEBUG2_PRINTLN(in);
 		if(in>=LOW && oe[n])
 			setLogic(in,n);
 	}else if(act[n]==1){
-		DEBUG_PRINT(F("setActionLogic doNothing: "));
-		DEBUG_PRINTLN(in);	
+		DEBUG2_PRINT(F("setActionLogic doNothing: "));
+		DEBUG2_PRINTLN(in);	
 	}else if(act[n]==2){
-		DEBUG_PRINT(F("setActionLogic monoNormalAperto: "));
-		DEBUG_PRINTLN(in);
+		DEBUG2_PRINT(F("setActionLogic monoNormalAperto: "));
+		DEBUG2_PRINTLN(in);
 		lastCmd[n] = HIGH;
 		if(in>=LOW && oe[n])
 			if(in==HIGH)
@@ -659,8 +659,8 @@ void setActionLogic(int in, byte n){
 			else
 				setLogic(LOW,n);
 	}else if(act[n]==3){
-		DEBUG_PRINT(F("setActionLogic monoNormalChiuso: "));
-		DEBUG_PRINTLN(in);
+		DEBUG2_PRINT(F("setActionLogic monoNormalChiuso: "));
+		DEBUG2_PRINTLN(in);
 		lastCmd[n] = LOW; 
 		if(in>=LOW && oe[n])
 			if(in==HIGH)
@@ -677,29 +677,29 @@ void setSWAction(byte in, byte n){
 	//2: normalmente aperto, chiuso per un haltdelay alla pressione
 	//3: normalmente chiuso, aperto per un haltdelay alla pressione
 	if(in==0){
-		DEBUG_PRINT(F("setSWAction toggleLogic: "));
-		DEBUG_PRINTLN(in);
+		DEBUG2_PRINT(F("setSWAction toggleLogic: "));
+		DEBUG2_PRINTLN(in);
 		oe[n]=true;
 		haltdelay[n] = 0;
 	}else if(in==1){
-		DEBUG_PRINT(F("setSWAction output disabled: "));
-		DEBUG_PRINTLN(in);
+		DEBUG2_PRINT(F("setSWAction output disabled: "));
+		DEBUG2_PRINTLN(in);
 		haltdelay[n] = 0;
-		DEBUG_PRINT(F("act==1: "));
+		DEBUG2_PRINT(F("act==1: "));
 	}else if(in==2){
-		DEBUG_PRINT(F("setSWAction normalmente aperto: "));
-		DEBUG_PRINTLN(in);
+		DEBUG2_PRINT(F("setSWAction normalmente aperto: "));
+		DEBUG2_PRINTLN(in);
 		oe[n]=true;
 		haltdelay[n] = static_cast<ParLong*>(parsl[p(THALT1+n)])->val;
 		setLogic(LOW,n);
-		DEBUG_PRINT(F("act==2: "));
+		DEBUG2_PRINT(F("act==2: "));
 	}else if(in==3){
-		DEBUG_PRINT(F("setSWAction normalmente chiuso: "));
-		DEBUG_PRINTLN(in);
+		DEBUG2_PRINT(F("setSWAction normalmente chiuso: "));
+		DEBUG2_PRINTLN(in);
 		oe[n]=true;
 		haltdelay[n] = static_cast<ParLong*>(parsl[p(THALT1+n)])->val;
 		setLogic(HIGH,n);
-		DEBUG_PRINT(F("act==3: "));
+		DEBUG2_PRINT(F("act==3: "));
 	}
 }
 	
@@ -707,11 +707,11 @@ bool startSimpleSwitchDelayTimer(byte n){
 	//moving[n]=false;
 	//stato 5: switch in contatto chiuso		
 	setGroupState(0,n);	
-	DEBUG_PRINTLN(F("startSimpleSwitchDelayTimer: getGroupState(n), n, lastCmd[n], act[n]"));
-	DEBUG_PRINTLN(getGroupState(n));
-	DEBUG_PRINTLN(n);
-	DEBUG_PRINTLN(lastCmd[n]);
-	DEBUG_PRINTLN(act[n]);
+	DEBUG2_PRINTLN(F("startSimpleSwitchDelayTimer: getGroupState(n), n, lastCmd[n], act[n]"));
+	DEBUG2_PRINTLN(getGroupState(n));
+	DEBUG2_PRINTLN(n);
+	DEBUG2_PRINTLN(lastCmd[n]);
+	DEBUG2_PRINTLN(act[n]);
 	setLogic(lastCmd[n],n);
 	//il timer di inversione contatto parte solo se il tempo è > 0
 	if((act[n]==2 || act[n]==3) && haltdelay[n]>0){
@@ -721,7 +721,7 @@ bool startSimpleSwitchDelayTimer(byte n){
 	}else{
 		resetCnt(n);
 	}
-	DEBUG_PRINTLN(F("\nstartSimpleSwitchDelayTimer switch mode: il contatto va in stato modifica abilitata"));
+	DEBUG2_PRINTLN(F("\nstartSimpleSwitchDelayTimer switch mode: il contatto va in stato modifica abilitata"));
 	return true;
 }
 
@@ -730,21 +730,21 @@ void startPress(byte state,byte n){
 	lastCmd[n]=state;
 	startTimer(haltdelay[n],n);	
 	setGroupState(1,n);	
-	DEBUG_PRINTLN(F("startPress: getGroupState(n), n, lastCmd[n]"));
-	DEBUG_PRINTLN(getGroupState(n));
-	DEBUG_PRINTLN(n);
-	DEBUG_PRINTLN(lastCmd[n]);
+	DEBUG2_PRINTLN(F("startPress: getGroupState(n), n, lastCmd[n]"));
+	DEBUG2_PRINTLN(getGroupState(n));
+	DEBUG2_PRINTLN(n);
+	DEBUG2_PRINTLN(lastCmd[n]);
 }
 
 void endPress(byte n){
 	setLogic(!lastCmd[n],n);
 	setGroupState(0,n);	
 	resetCnt(n);
-	DEBUG_PRINTLN(F("endPress: getGroupState(n), n, lastCmd[n]"));
-	DEBUG_PRINTLN(getGroupState(n));
-	DEBUG_PRINTLN(n);
-	DEBUG_PRINTLN(!lastCmd[n]);
-	DEBUG_PRINTLN(haltdelay[n]);
+	DEBUG2_PRINTLN(F("endPress: getGroupState(n), n, lastCmd[n]"));
+	DEBUG2_PRINTLN(getGroupState(n));
+	DEBUG2_PRINTLN(n);
+	DEBUG2_PRINTLN(!lastCmd[n]);
+	DEBUG2_PRINTLN(haltdelay[n]);
 }
 /*
 *******************************************************************
