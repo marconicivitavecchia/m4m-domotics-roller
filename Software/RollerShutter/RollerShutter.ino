@@ -1139,7 +1139,7 @@ void publishStr(String &str){
   {
 	  //str deve essere convertita in array char altrimenti la libreria introduce un carattere spurio all'inizio del messaggio
 	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str.c_str(), str.length());
-	  DEBUG1_PRINTLN(F("Published data: "));
+	  DEBUG1_PRINT(F("Published data: "));
 	  DEBUG1_PRINTLN(str);
   }
   //if(!webSocket){
@@ -2210,9 +2210,9 @@ void onElapse(uint8_t nn, unsigned long tm){
 	DEBUG2_PRINT(F("  al tempo: "));
 	DEBUG2_PRINT(tm);
 	DEBUG2_PRINT(F("  con stato: "));
-	DEBUG2_PRINTLN(getGroupState(nn));
+	DEBUG2_PRINT(getGroupState(nn));
 	DEBUG2_PRINT(F("  con n: "));
-	DEBUG2_PRINTLN(n);
+	DEBUG2_PRINT(n);
 	DEBUG2_PRINT(F("  con sw: "));
 	DEBUG2_PRINTLN(sw);
 	

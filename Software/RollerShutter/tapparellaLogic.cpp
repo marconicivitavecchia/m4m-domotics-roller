@@ -721,7 +721,7 @@ bool startSimpleSwitchDelayTimer(byte n){
 	}else{
 		resetCnt(n);
 	}
-	DEBUG2_PRINTLN(F("\nstartSimpleSwitchDelayTimer switch mode: il contatto va in stato modifica abilitata"));
+	DEBUG2_PRINTLN(F("startSimpleSwitchDelayTimer switch mode: il contatto va in stato modifica abilitata"));
 	return true;
 }
 
@@ -730,9 +730,11 @@ void startPress(byte state,byte n){
 	lastCmd[n]=state;
 	startTimer(haltdelay[n],n);	
 	setGroupState(1,n);	
-	DEBUG2_PRINTLN(F("startPress: getGroupState(n), n, lastCmd[n]"));
-	DEBUG2_PRINTLN(getGroupState(n));
-	DEBUG2_PRINTLN(n);
+	DEBUG2_PRINT(F("startPress: getGroupState(n): "));
+	DEBUG2_PRINT(getGroupState(n));
+	DEBUG2_PRINT(F(", n: "));
+	DEBUG2_PRINT(n);
+	DEBUG2_PRINT(F(", lastCmd[n]: "));
 	DEBUG2_PRINTLN(lastCmd[n]);
 }
 
