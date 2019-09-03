@@ -61,8 +61,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				0
-#define ROLLERSHUTTER 			1
+#define SONOFF_4CH				1
+#define ROLLERSHUTTER 			0
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------NON MODIFICARE LA PARTE SOTTOSTATNTE------------------------------------------------------------------------------------------------
 //#define AUTOCAL_HLW8012			0
@@ -639,6 +639,7 @@ class Par{
 		virtual void load(uint8_t); 			//late binding
 		virtual void load(int);					//late binding
 		virtual void load(unsigned long);		//late binding
+		virtual void load(unsigned);		//late binding
 		virtual void load(float);				//late binding
 		virtual void load(double);				//late binding
 		virtual void load(char*);				//late binding
@@ -683,6 +684,7 @@ class ParLong : public Par{
 		void loadFromEprom();
 		void saveOnEprom();
 		void load(unsigned long);
+		void load(unsigned int);
 };
 
 class ParFloat : public Par{
@@ -752,13 +754,25 @@ class BaseLog{
 		uint8_t level;
 		BaseLog(uint8_t lev){level = lev; memset(result, ' ', DATEBUFLEN); result[0] = '\0';};
 		virtual void print(const char*);
-		virtual void print(const __FlashStringHelper *);
 		virtual void println(const char*);
+		virtual void print(const __FlashStringHelper *);
 		virtual void println(const __FlashStringHelper *);
 		virtual void print(String msg);
 		virtual void println(String msg);
 		virtual void print(int msg);
 		virtual void println(int msg);
+		virtual void print(long msg);
+		virtual void println(long msg);
+		virtual void print(unsigned int msg);
+		virtual void println(unsigned int msg);
+		virtual void print(unsigned long msg);
+		virtual void println(unsigned long msg);
+		virtual void print(float msg);
+		virtual void println(float msg);
+		virtual void print(double msg);
+		virtual void println(double msg);
+		//virtual void print(double msg);
+		//virtual void println(double msg);
 		virtual ~BaseLog();
 		virtual void destroy();
 		/*virtual ~SerialLog();
@@ -775,7 +789,7 @@ extern BaseLog* dbg2;
 
 class SerialLog: public BaseLog{
 	public:
-		SerialLog(uint8_t x):BaseLog(x){ontlnt = false;};
+		SerialLog(uint8_t x):BaseLog(x){ontlnt = false; mqttc = NULL;};
 		void print(const char*);
 		void println(const char*);
 		void print(const __FlashStringHelper *);
@@ -784,6 +798,16 @@ class SerialLog: public BaseLog{
 		void println(String msg);
 		void print(int msg);
 		void println(int msg);
+		void print(long msg);
+		void println(long msg);
+		void print(unsigned long msg);
+		void println(unsigned long msg);
+		void print(unsigned int msg);
+		void println(unsigned int msg);
+		void print(float msg);
+		void println(float msg);
+		void print(double msg);
+		void println(double msg);
 		void destroy();
 		~SerialLog();
 };
@@ -791,7 +815,7 @@ class TelnetLog: public BaseLog{
 	private:
 		RemoteDebug *tel;
 	public:
-		TelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y; ontlnt = true;};
+		TelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y; ontlnt = true; mqttc = NULL;};
 		void print(const char*);
 		void println(const char*);
 		void print(const __FlashStringHelper *);
@@ -800,6 +824,16 @@ class TelnetLog: public BaseLog{
 		void println(String msg);
 		void print(int msg);
 		void println(int msg);
+		void print(long msg);
+		void println(long msg);
+		void print(unsigned long msg);
+		void println(unsigned long msg);
+		void print(float msg);
+		void println(float msg);
+		void print(unsigned int msg);
+		void println(unsigned int msg);
+		void print(double msg);
+		void println(double msg);
 		void destroy();
 		~TelnetLog();
 };
@@ -814,6 +848,16 @@ class MQTTLog: public BaseLog{
 		void println(String msg);
 		void print(int msg);
 		void println(int msg);
+		void print(long msg);
+		void println(long msg);
+		void print(unsigned long msg);
+		void println(unsigned long msg);
+		void print(float msg);
+		void println(float msg);
+		void print(unsigned int msg);
+		void println(unsigned int msg);
+		void print(double msg);
+		void println(double msg);
 		void destroy();
 		~MQTTLog();
 };
@@ -821,7 +865,7 @@ class SerialTelnetLog: public BaseLog{
 	private:
 		RemoteDebug *tel;
 	public:
-		SerialTelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y; ontlnt = true;};
+		SerialTelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y; ontlnt = true; mqttc = NULL;};
 		void print(const char*);
 		void println(const char*);
 		void print(const __FlashStringHelper *);
@@ -830,6 +874,16 @@ class SerialTelnetLog: public BaseLog{
 		void println(String msg);
 		void print(int msg);
 		void println(int msg);
+		void print(long msg);
+		void println(long msg);
+		void print(unsigned long msg);
+		void println(unsigned long msg);
+		void print(float msg);
+		void println(float msg);
+		void print(unsigned int msg);
+		void println(unsigned int msg);
+		void print(double msg);
+		void println(double msg);
 		void destroy();
 		~SerialTelnetLog();
 };
@@ -844,6 +898,16 @@ class SerialMQTTLog: public BaseLog{
 		void println(String msg);
 		void print(int msg);
 		void println(int msg);
+		void print(long msg);
+		void println(long msg);
+		void print(unsigned long msg);
+		void println(unsigned long msg);
+		void print(float msg);
+		void println(float msg);
+		void print(unsigned int msg);
+		void println(unsigned int msg);
+		void print(double msg);
+		void println(double msg);
 		void destroy();
 		~SerialMQTTLog();
 };
@@ -860,6 +924,16 @@ class TelnetMQTTLog: public BaseLog{
 		void println(String msg);
 		void print(int msg);
 		void println(int msg);
+		void print(long msg);
+		void println(long msg);
+		void print(unsigned long msg);
+		void println(unsigned long msg);
+		void print(float msg);
+		void println(float msg);
+		void print(unsigned int msg);
+		void println(unsigned int msg);
+		void print(double msg);
+		void println(double msg);
 		void destroy();
 		~TelnetMQTTLog();
 };
@@ -876,6 +950,16 @@ class SerialTelnetMQTTLog: public BaseLog{
 		void println(String msg);
 		void print(int msg);
 		void println(int msg);
+		void print(long msg);
+		void println(long msg);
+		void print(unsigned long msg);
+		void println(unsigned long msg);
+		void print(float msg);
+		void println(float msg);
+		void print(unsigned int msg);
+		void println(unsigned int msg);
+		void print(double msg);
+		void println(double msg);
 		void destroy();
 		~SerialTelnetMQTTLog();
 };
@@ -929,7 +1013,6 @@ void saveSingleConf(unsigned);
 void saveSingleJson(unsigned);
 void printFixedParam(unsigned);
 void saveParamFromForm(unsigned);
-void setParProps(unsigned, unsigned, char, char, char);
 float writeFloatConf(unsigned, float);
 float saveFloatConf(unsigned);
 long saveLongConf(unsigned);

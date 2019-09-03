@@ -2092,6 +2092,7 @@ void Par::doaction(bool save){
 
 void Par::load(uint8_t f){};
 void Par::load(int f){};
+void Par::load(unsigned int f){};
 void Par::load(unsigned long f){};
 void Par::load(float f){};
 void Par::load(double f){};
@@ -2150,7 +2151,7 @@ void ParInt::saveOnEprom(){
 	
 
 String ParLong::getStrVal(){
-	return String(this->val);
+	return String((long) this->val);
 }
 void ParLong::writeParam(String str){
 	EEPROMWriteLong(eprom,strtoul(str.c_str(), NULL, 10));
@@ -2159,6 +2160,9 @@ void ParLong::loadFromStr(String str){
 	this->val = strtoul(str.c_str(), NULL, 10);
 }
 void ParLong::load(unsigned long l){
+	this->val = l;
+}
+void ParLong::load(unsigned int l){
 	this->val = l;
 }
 void ParLong::loadFromEprom(){
@@ -2264,7 +2268,7 @@ int saveIntConf(unsigned confofst){
 	return  static_cast<ParInt*>(parsp[p(confofst)])->val;
 }
 
-long saveLongConf( unsigned confofst){
+long saveLongConf(unsigned confofst){
 	saveConf(p(confofst));
 	return  static_cast<ParLong*>(parsp[p(confofst)])->val;
 }
@@ -2281,7 +2285,17 @@ void BaseLog::println(const __FlashStringHelper * msg){};
 void BaseLog::print(String msg){};
 void BaseLog::println(String msg){};
 void BaseLog::print(int msg){};
+void BaseLog::println(long msg){};
+void BaseLog::print(long msg){};
 void BaseLog::println(int msg){};
+void BaseLog::print(unsigned long msg){};
+void BaseLog::println(unsigned long msg){};
+void BaseLog::print(float msg){};
+void BaseLog::println(float msg){};
+void BaseLog::print(double msg){};
+void BaseLog::println(double msg){};
+void BaseLog::print(unsigned int msg){};
+void BaseLog::println(unsigned int msg){};
 void BaseLog::destroy(){};
 BaseLog::~BaseLog(){DEBUG_PRINTLN("BaseLog destructor call");};
 
@@ -2345,8 +2359,38 @@ void SerialLog::print(int msg){
 void SerialLog::println(int msg){
 	Serial.println(msg);
 };
+void SerialLog::print(long msg){
+	Serial.print(msg);
+};
+void SerialLog::println(long msg){
+	Serial.println(msg);
+};
+void SerialLog::print(unsigned long msg){
+	Serial.print(msg);
+};
+void SerialLog::println(unsigned long msg){
+	Serial.println(msg);
+};
+void SerialLog::print(float msg){
+	Serial.print(msg);
+};
+void SerialLog::println(float msg){
+	Serial.println(msg);
+};
+void SerialLog::print(unsigned int msg){
+	Serial.print(msg);
+};
+void SerialLog::println(unsigned int msg){
+	Serial.println(msg);
+};
 void SerialLog::destroy(){
 	delete this;
+};
+void SerialLog::print(double msg){
+	Serial.print(msg);
+};
+void SerialLog::println(double msg){
+	Serial.println(msg);
 };
 SerialLog::~SerialLog(){
 	mqttc = NULL;
@@ -2377,6 +2421,36 @@ void TelnetLog::print(int msg){
 void TelnetLog::println(int msg){
 	tel->println(msg);
 };
+void TelnetLog::print(long msg){
+	tel->print(msg);
+};
+void TelnetLog::println(long msg){
+	tel->println(msg);
+};
+void TelnetLog::print(unsigned long msg){
+	tel->print(msg);
+};
+void TelnetLog::println(unsigned long msg){
+	tel->println(msg);
+};
+void TelnetLog::print(float msg){
+	tel->print(msg);
+};
+void TelnetLog::println(float msg){
+	tel->println(msg);
+};
+void TelnetLog::print(unsigned int msg){
+	tel->print(msg);
+};
+void TelnetLog::println(unsigned int msg){
+	tel->println(msg);
+};
+void TelnetLog::print(double msg){
+	tel->print(msg);
+};
+void TelnetLog::println(double msg){
+	tel->println(msg);
+};
 TelnetLog::~TelnetLog(){mqttc = NULL;};
 void TelnetLog::destroy(){
 	delete this;
@@ -2404,6 +2478,36 @@ void MQTTLog::print(int msg){
 	mqttSend(String(msg).c_str());
 };
 void MQTTLog::println(int msg){
+	mqttSend(String(msg).c_str(), true);
+};
+void MQTTLog::print(long msg){
+	mqttSend(String(msg).c_str());
+};
+void MQTTLog::println(long msg){
+	mqttSend(String(msg).c_str(), true);
+};
+void MQTTLog::print(unsigned long msg){
+	mqttSend(String(msg).c_str());
+};
+void MQTTLog::println(unsigned long msg){
+	mqttSend(String(msg).c_str(), true);
+};
+void MQTTLog::print(float msg){
+	mqttSend(String(msg).c_str());
+};
+void MQTTLog::println(float msg){
+	mqttSend(String(msg).c_str(), true);
+};
+void MQTTLog::print(double msg){
+	mqttSend(String(msg).c_str());
+};
+void MQTTLog::println(double msg){
+	mqttSend(String(msg).c_str(), true);
+};
+void MQTTLog::print(unsigned int msg){
+	mqttSend(String(msg).c_str());
+};
+void MQTTLog::println(unsigned int msg){
 	mqttSend(String(msg).c_str(), true);
 };
 void MQTTLog::destroy(){
@@ -2440,6 +2544,46 @@ void SerialTelnetLog::print(int msg){
 	tel->print(msg);
 };
 void SerialTelnetLog::println(int msg){
+	Serial.println(msg);
+	tel->println(msg);
+};
+void SerialTelnetLog::print(long msg){
+	Serial.print(msg);
+	tel->print(msg);
+};
+void SerialTelnetLog::println(long msg){
+	Serial.println(msg);
+	tel->println(msg);
+};
+void SerialTelnetLog::print(unsigned long msg){
+	Serial.print(msg);
+	tel->print(msg);
+};
+void SerialTelnetLog::println(unsigned long msg){
+	Serial.println(msg);
+	tel->println(msg);
+};
+void SerialTelnetLog::print(float msg){
+	Serial.print(msg);
+	tel->print(msg);
+};
+void SerialTelnetLog::println(float msg){
+	Serial.println(msg);
+	tel->println(msg);
+};
+void SerialTelnetLog::print(double msg){
+	Serial.print(msg);
+	tel->print(msg);
+};
+void SerialTelnetLog::println(double msg){
+	Serial.println(msg);
+	tel->println(msg);
+};
+void SerialTelnetLog::print(unsigned int msg){
+	Serial.print(msg);
+	tel->print(msg);
+};
+void SerialTelnetLog::println(unsigned int msg){
 	Serial.println(msg);
 	tel->println(msg);
 };
@@ -2480,6 +2624,46 @@ void SerialMQTTLog::println(int msg){
 	Serial.println(msg);
 	mqttSend(String(msg).c_str(), true);
 };
+void SerialMQTTLog::print(long msg){
+	Serial.print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialMQTTLog::println(long msg){
+	Serial.println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void SerialMQTTLog::print(unsigned long msg){
+	Serial.print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialMQTTLog::println(unsigned long msg){
+	Serial.println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void SerialMQTTLog::print(float msg){
+	Serial.print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialMQTTLog::println(float msg){
+	Serial.println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void SerialMQTTLog::print(double msg){
+	Serial.print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialMQTTLog::println(double msg){
+	Serial.println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void SerialMQTTLog::print(unsigned int msg){
+	Serial.print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialMQTTLog::println(unsigned int msg){
+	Serial.println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
 void SerialMQTTLog::destroy(){
 	delete this;
 };
@@ -2514,6 +2698,46 @@ void TelnetMQTTLog::print(int msg){
 	mqttSend(String(msg).c_str());
 };
 void TelnetMQTTLog::println(int msg){
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void TelnetMQTTLog::print(long msg){
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void TelnetMQTTLog::println(long msg){
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void TelnetMQTTLog::print(unsigned long msg){
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void TelnetMQTTLog::println(unsigned long msg){
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void TelnetMQTTLog::print(float msg){
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void TelnetMQTTLog::println(float msg){
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void TelnetMQTTLog::print(double msg){
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void TelnetMQTTLog::println(double msg){
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void TelnetMQTTLog::print(unsigned int msg){
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void TelnetMQTTLog::println(unsigned int msg){
 	tel->println(msg);
 	mqttSend(String(msg).c_str(), true);
 };
@@ -2558,6 +2782,56 @@ void SerialTelnetMQTTLog::print(int msg){
 	mqttSend(String(msg).c_str());
 };
 void SerialTelnetMQTTLog::println(int msg){
+	Serial.println(msg);
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void SerialTelnetMQTTLog::print(long msg){
+	Serial.print(msg);
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialTelnetMQTTLog::println(long msg){
+	Serial.println(msg);
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void SerialTelnetMQTTLog::print(unsigned long msg){
+	Serial.print(msg);
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialTelnetMQTTLog::println(unsigned long msg){
+	Serial.println(msg);
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void SerialTelnetMQTTLog::print(float msg){
+	Serial.print(msg);
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialTelnetMQTTLog::println(float msg){
+	Serial.println(msg);
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void SerialTelnetMQTTLog::print(double msg){
+	Serial.print(msg);
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialTelnetMQTTLog::println(double msg){
+	Serial.println(msg);
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void SerialTelnetMQTTLog::print(unsigned int msg){
+	Serial.print(msg);
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialTelnetMQTTLog::println(unsigned int msg){
 	Serial.println(msg);
 	tel->println(msg);
 	mqttSend(String(msg).c_str(), true);

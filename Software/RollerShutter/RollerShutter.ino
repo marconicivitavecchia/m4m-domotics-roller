@@ -1206,10 +1206,11 @@ inline void setupNTP() {
 }
 
 void setup(){
-  //dbg1 = new SerialLog(1);
-  //dbg2 = new SerialLog(2);
   dbg1 = new SerialLog(1);
   dbg2 = new SerialLog(2);
+  mqttClient = NULL;
+  //dbg1 = new SerialLog(1);
+  //dbg2 = new SerialLog(2);
   //delay(5000);
   DEBUG2_PRINTLN(F("Inizializzo i parametri."));
   //initOfst();
