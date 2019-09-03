@@ -1399,13 +1399,13 @@ void setup(){
      Serial.print(".");
   }
 
-  Serial.print(":");
-  Serial.print(500*cont);
+  DEBUG1_PRINT(":");
+  DEBUG1_PRINT(500*cont);
   if(cont==30000/500){
-	Serial.print("\nStation not connected!");  
+	DEBUG1_PRINT("\nStation not connected!");  
   }else{
-	Serial.print("\nStation connected, IP: ");
-	Serial.println(WiFi.localIP());
+	DEBUG1_PRINT("\nStation connected, IP: ");
+	DEBUG1_PRINTLN(String(WiFi.localIP()));
   }
   
   swcount = 0;
@@ -2514,7 +2514,7 @@ void processCmdRemoteDebug() {
 		scan_wifi();
 	}else if(lastCmd == "getip"){
 		DEBUG1_PRINT("\nLocal IP: ");
-		DEBUG1_PRINTLN(WiFi.localIP());
+		DEBUG1_PRINTLN(String(WiFi.localIP()));
 	}else if(lastCmd == "getmqttstat"){
 		if(!(mqttClient->isConnected())){
 			DEBUG1_PRINTLN(F("\nMQTT non connesso."));

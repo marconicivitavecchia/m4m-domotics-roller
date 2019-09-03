@@ -2151,7 +2151,7 @@ void ParInt::saveOnEprom(){
 	
 
 String ParLong::getStrVal(){
-	return String((long) this->val);
+	return String(this->val);
 }
 void ParLong::writeParam(String str){
 	EEPROMWriteLong(eprom,strtoul(str.c_str(), NULL, 10));
