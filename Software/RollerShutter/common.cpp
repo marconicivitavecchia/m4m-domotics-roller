@@ -488,7 +488,7 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 			"document.getElementById('report').value=document.getElementById('utczone').value;"
 		"}"
 		"function showLoaded(){"
-			"document.getElementById('report').value={N5};"
+			"document.getElementById('report').value='{N5}';"
 		"}"
 #if (AUTOCAL_HLW8012) 
 		"var cb=document.getElementById('calbtn');"
@@ -2194,7 +2194,6 @@ void ParFloat::loadFromEprom(){
 void ParFloat::saveOnEprom(){
 	EEPROMWriteFloat(eprom,this->val);
 }
-
 
 String ParStr32::getStrVal(){
 	return String(this->val);
