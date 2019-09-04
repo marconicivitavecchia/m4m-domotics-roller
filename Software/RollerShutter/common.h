@@ -629,7 +629,8 @@ class Par{
 		
 		String getStrFormName();				//base class version
 		String getStrJsonName();				//base class version
-		uint8_t getType();
+		char getFormField();
+		char getType();
 		void doaction(bool = false);			//base class version
 		virtual void writeParam(String) = 0;	//late binding abstract
 		virtual void loadFromStr(String) = 0;	//late binding abstract
@@ -759,6 +760,8 @@ class BaseLog{
 		virtual void println(const __FlashStringHelper *);
 		virtual void print(String msg);
 		virtual void println(String msg);
+		virtual void print(char msg);
+		virtual void println(char msg);
 		virtual void print(int msg);
 		virtual void println(int msg);
 		virtual void print(long msg);
@@ -796,6 +799,8 @@ class SerialLog: public BaseLog{
 		void println(const __FlashStringHelper *);
 		void print(String msg);
 		void println(String msg);
+		void print(char);
+		void println(char);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -822,6 +827,8 @@ class TelnetLog: public BaseLog{
 		void println(const __FlashStringHelper *);
 		void print(String msg);
 		void println(String msg);
+		void print(char);
+		void println(char);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -846,6 +853,8 @@ class MQTTLog: public BaseLog{
 		void println(const __FlashStringHelper *);
 		void print(String msg);
 		void println(String msg);
+		void print(char);
+		void println(char);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -872,6 +881,8 @@ class SerialTelnetLog: public BaseLog{
 		void println(const __FlashStringHelper *);
 		void print(String msg);
 		void println(String msg);
+		void print(char);
+		void println(char);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -896,6 +907,8 @@ class SerialMQTTLog: public BaseLog{
 		void println(const __FlashStringHelper *);
 		void print(String msg);
 		void println(String msg);
+		void print(char);
+		void println(char);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -922,6 +935,8 @@ class TelnetMQTTLog: public BaseLog{
 		void println(const __FlashStringHelper *);
 		void print(String msg);
 		void println(String msg);
+		void print(char);
+		void println(char);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -948,6 +963,8 @@ class SerialTelnetMQTTLog: public BaseLog{
 		void println(const __FlashStringHelper *);
 		void print(String msg);
 		void println(String msg);
+		void print(char);
+		void println(char);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);

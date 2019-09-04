@@ -416,11 +416,11 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 				"<div class='col-6 col-s-12'><label for='utcadj'>NTP error adjust (msec):</label>"
 					 "<input type='text' name='utcadj' value='{N4}'>"
 				"</div>"	
-				"<div class='col-6 col-s-12'><label for='utczone'>NTP SDT time zones (hour):</label>"
-					 "<select id='utczone' name='utczone'  onchange='showSelected()'></select><br>"
+				"<div class='col-6 col-s-12'><label for='utczoneslct'>NTP SDT time zones (hour):</label>"
+					 "<select id='utczoneslct' name='utczoneslct'  onchange='showSelected()'></select><br>"
 				"</div>"	
-				"<div class='col-6 col-s-12'><label for='report'>Selected time zone</label>"
-					"<input type='text' id='report' name='report' disabled='disabled' />"
+				"<div class='col-6 col-s-12'><label for='utczone'>Selected time zone</label>"
+					"<input type='text' id='utczone' name='utczone' />"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='utcsdt'>Set daylight save (legal time)</label>"
 					 "<input type='checkbox' name='utcsdt' value='y' {N6}>"
@@ -471,7 +471,7 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 		"function loadTimeZoneList(){" 
 			"var d = new Date();"
 			"var n = -d.getTimezoneOffset()/60;"
-			"var select = document.getElementById('utczone');"
+			"var select = document.getElementById('utczoneslct');"
 			"select.innerHTML = '';" 
 			"for(i=-11; i<13; i++){"
 				"option = document.createElement('option');"      
@@ -485,10 +485,10 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 			"showSelected();"
 		"};"
 		"function showSelected(){"
-			"document.getElementById('report').value=document.getElementById('utczone').value;"
+			"document.getElementById('utczone').value=document.getElementById('utczoneslct').value;"
 		"}"
 		"function showLoaded(){"
-			"document.getElementById('report').value='{N5}';"
+			"document.getElementById('utczone').value='{N5}';"
 		"}"
 #if (AUTOCAL_HLW8012) 
 		"var cb=document.getElementById('calbtn');"
@@ -1630,7 +1630,7 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 inline void savegroup(uint8_t fields[], uint8_t len){
 	for(int i=0; i<len; i++){
 		saveParamFromForm(fields[i]);		//save param on eeprom
-		parsp[fields[i]]->doaction(true);		//execute onreceive param event manager
+		parsp[fields[i]]->doaction(false);		//execute onreceive param event manager
 	}
 }
 
@@ -1919,7 +1919,7 @@ void saveSingleJson(unsigned jsnofst){
 }
 
 void updtConf(unsigned paramofst, String v){
-	char intype = parsp[paramofst]->partype;
+	char intype = parsp[paramofst]->getType();
 	
 	DEBUG1_PRINT(F("paramofst: "));
 	DEBUG1_PRINTLN(paramofst);
@@ -1935,7 +1935,7 @@ void updtConf(unsigned paramofst, String v){
 		DEBUG1_PRINT(F("confofst: "));
 		DEBUG1_PRINTLN(getConfofstFromParamofst(paramofst));
 		DEBUG1_PRINT(F("formfield: "));
-		DEBUG1_PRINTLN(parsp[paramofst]->formfield);
+		DEBUG1_PRINTLN((char)parsp[paramofst]->getFormField());
 		
 		if(intype == 'p' || intype == 'j'){
 			parsp[paramofst]->loadFromStr(v);
@@ -1950,7 +1950,7 @@ void updtConf(unsigned paramofst, String v){
 }
 
 void saveConf(unsigned paramofst){
-	char intype = parsp[paramofst]->partype;
+	char intype = parsp[paramofst]->getType();
 	
 	DEBUG1_PRINT(F("paramofst: "));
 	DEBUG1_PRINTLN(paramofst);
@@ -1966,7 +1966,7 @@ void saveConf(unsigned paramofst){
 		DEBUG1_PRINT(F("confofst: "));
 		DEBUG1_PRINTLN(getConfofstFromParamofst(paramofst));
 		DEBUG1_PRINT(F("formfield: "));
-		DEBUG1_PRINTLN( parsp[paramofst]->formfield);
+		DEBUG1_PRINTLN((char)parsp[paramofst]->getFormField());
 		
 		
 		if(intype == 'p' || intype == 'j'){
@@ -1982,7 +1982,7 @@ void saveConf(unsigned paramofst){
 }
 
 void loadConf(unsigned paramofst){
-	char intype = parsp[paramofst]->partype;
+	char intype = parsp[paramofst]->getType();
 	
 	DEBUG1_PRINT(F("paramofst: "));
 	DEBUG1_PRINTLN(paramofst);
@@ -1998,7 +1998,7 @@ void loadConf(unsigned paramofst){
 		DEBUG1_PRINT(F("confofst: "));
 		DEBUG1_PRINTLN(getConfofstFromParamofst(paramofst));
 		DEBUG1_PRINT(F("formfield: "));
-		DEBUG1_PRINTLN( parsp[paramofst]->formfield);
+		DEBUG1_PRINTLN((char)parsp[paramofst]->getFormField());
 		
 		if(intype == 'p' || intype == 'j'){
 			DEBUG1_PRINT(F("Load param: "));
@@ -2022,11 +2022,11 @@ void printFixedParam(unsigned paramofst){
 		DEBUG1_PRINT(F("eepromofst: "));
 		DEBUG1_PRINTLN(parsp[paramofst]->eprom);
 		DEBUG1_PRINT(F("partype: "));
-		DEBUG1_PRINTLN(parsp[paramofst]->partype);
+		DEBUG1_PRINTLN(parsp[paramofst]->getType());
 		DEBUG1_PRINT(F("confofst: "));
 		DEBUG1_PRINTLN(getConfofstFromParamofst(paramofst));
 		DEBUG1_PRINT(F("formfield: "));
-		DEBUG1_PRINTLN(parsp[paramofst]->formfield);
+		DEBUG1_PRINTLN((char)parsp[paramofst]->getFormField());
 		DEBUG1_PRINT(F("parval: "));
 		DEBUG1_PRINTLN(parsp[paramofst]->getStrVal());
 		DEBUG1_PRINTLN(F("---------------------------------"));
@@ -2034,13 +2034,14 @@ void printFixedParam(unsigned paramofst){
 }
 
 void saveParamFromForm(unsigned paramofst){
-	char intype = parsp[paramofst]->partype;
+	char intype = parsp[paramofst]->getType();
+	char frmtype = parsp[paramofst]->getFormField();
 	
 	DEBUG1_PRINT(F("paramofst: "));
 	DEBUG1_PRINTLN(paramofst);
 	if(parsp[paramofst] != NULL){
 		DEBUG1_PRINT(F("param: "));
-		DEBUG1_PRINTLN( parsp[paramofst]->formname);
+		DEBUG1_PRINTLN( parsp[paramofst]->getStrFormName());
 		DEBUG1_PRINT(F("jsoname: "));
 		DEBUG1_PRINTLN( parsp[paramofst]->jsoname);
 		DEBUG1_PRINT(F("eepromofst: "));
@@ -2050,11 +2051,14 @@ void saveParamFromForm(unsigned paramofst){
 		DEBUG1_PRINT(F("confofst: "));
 		DEBUG1_PRINTLN(getConfofstFromParamofst(paramofst));
 		DEBUG1_PRINT(F("formfield: "));
-		DEBUG1_PRINTLN( parsp[paramofst]->formfield);
+		DEBUG1_PRINTLN(frmtype);
+		DEBUG1_PRINT(F("arg: "));
+		String param = parsp[paramofst]->getStrFormName();
+		DEBUG1_PRINTLN(serverp.arg(param));
 		
-		if(intype == 'i'){//form element input or text area
-			String param = String(parsp[paramofst]->formname);
-			if(intype == 'P'){
+		if(frmtype == 'i'){//form element input or text area
+			String param = parsp[paramofst]->getStrFormName();
+			if(intype == 'p'){
 				if(serverp.hasArg(param) && (parsp[paramofst]->getStrVal() != serverp.arg(param)) ){
 					parsp[paramofst]->loadFromStr(serverp.arg(param));
 					parsp[paramofst]->saveOnEprom();
@@ -2105,8 +2109,11 @@ String Par::getStrJsonName(){
 String Par::getStrFormName(){
 	return String(formname);
 }
-uint8_t Par::getType(){
+char Par::getType(){
 	return partype;
+}
+char Par::getFormField(){
+	return formfield;
 }
 
 String ParUint8::getStrVal(){
@@ -2283,6 +2290,8 @@ void BaseLog::print(const __FlashStringHelper * msg){};
 void BaseLog::println(const __FlashStringHelper * msg){};
 void BaseLog::print(String msg){};
 void BaseLog::println(String msg){};
+void BaseLog::print(char msg){};
+void BaseLog::println(char msg){};
 void BaseLog::print(int msg){};
 void BaseLog::println(long msg){};
 void BaseLog::print(long msg){};
@@ -2352,6 +2361,12 @@ void SerialLog::print(String msg){
 void SerialLog::println(String msg){
 	Serial.println(msg);
 };
+void SerialLog::print(char msg){
+	Serial.print(msg);
+};
+void SerialLog::println(char msg){
+	Serial.println(msg);
+};
 void SerialLog::print(int msg){
 	Serial.print(msg);
 };
@@ -2414,6 +2429,12 @@ void TelnetLog::print(String msg){
 void TelnetLog::println(String msg){
 	tel->println(msg);
 };
+void TelnetLog::print(char msg){
+	tel->print(msg);
+};
+void TelnetLog::println(char msg){
+	tel->println(msg);
+};
 void TelnetLog::print(int msg){
 	tel->print(msg);
 };
@@ -2472,6 +2493,12 @@ void MQTTLog::print(String msg){
 };
 void MQTTLog::println(String msg){
 	mqttSend(msg.c_str(), true);
+};
+void MQTTLog::print(char msg){
+	mqttSend(String(msg).c_str());
+};
+void MQTTLog::println(char msg){
+	mqttSend(String(msg).c_str(), true);
 };
 void MQTTLog::print(int msg){
 	mqttSend(String(msg).c_str());
@@ -2535,6 +2562,14 @@ void SerialTelnetLog::print(String msg){
 	tel->print(msg);
 };
 void SerialTelnetLog::println(String msg){
+	Serial.println(msg);
+	tel->println(msg);
+};
+void SerialTelnetLog::print(char msg){
+	Serial.print(msg);
+	tel->print(msg);
+};
+void SerialTelnetLog::println(char msg){
 	Serial.println(msg);
 	tel->println(msg);
 };
@@ -2615,6 +2650,14 @@ void SerialMQTTLog::println(String msg){
 	Serial.println(msg);
 	mqttSend(msg.c_str(), true);
 };
+void SerialMQTTLog::print(char msg){
+	Serial.print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialMQTTLog::println(char msg){
+	Serial.println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
 void SerialMQTTLog::print(int msg){
 	Serial.print(msg);
 	mqttSend(String(msg).c_str());
@@ -2689,6 +2732,14 @@ void TelnetMQTTLog::print(String msg){
 	mqttSend(msg.c_str());
 };
 void TelnetMQTTLog::println(String msg){
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
+};
+void TelnetMQTTLog::print(char msg){
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void TelnetMQTTLog::println(char msg){
 	tel->println(msg);
 	mqttSend(String(msg).c_str(), true);
 };
@@ -2774,6 +2825,16 @@ void SerialTelnetMQTTLog::println(String msg){
 	Serial.println(msg);
 	tel->println(msg);
 	mqttSend(msg.c_str(), true);
+};
+void SerialTelnetMQTTLog::print(char msg){
+	Serial.print(msg);
+	tel->print(msg);
+	mqttSend(String(msg).c_str());
+};
+void SerialTelnetMQTTLog::println(char msg){
+	Serial.println(msg);
+	tel->println(msg);
+	mqttSend(String(msg).c_str(), true);
 };
 void SerialTelnetMQTTLog::print(int msg){
 	Serial.print(msg);
