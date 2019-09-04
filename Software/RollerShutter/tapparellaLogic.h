@@ -45,6 +45,7 @@ void setLogic(byte, byte);
 void setSWAction(byte in, byte nn);
 void setActionLogic(int, byte);
 void setOE(bool, byte);
+void resetOutlogic(byte);
 //bool inline initdfn(byte,  byte);
 //extern void onBtnPress(n)
 //extern void onDownPressed(byte);

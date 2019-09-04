@@ -1405,7 +1405,7 @@ void setup(){
 	DEBUG1_PRINT("\nStation not connected!");  
   }else{
 	DEBUG1_PRINT("\nStation connected, IP: ");
-	DEBUG1_PRINTLN(String(WiFi.localIP()));
+	DEBUG1_PRINTLN((WiFi.localIP()).toString());
   }
   
   swcount = 0;
@@ -1518,17 +1518,17 @@ void leggiTastiLocali2(){
 		static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)((regA >> BTN2D) & 0x1)?0:255);
 		static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
 	}else if(inl[0] != 0){
-		//in[BTN1IN] = LOW;
-		//in[BTN2IN] = LOW;
-		//in[BTN1IN+BTNDIM] = LOW;
-		//in[BTN2IN+BTNDIM] = LOW;
 		*inl = (unsigned long) 0UL;
 		initdfnUL(0UL,0);
 		resetTimer(RESETTIMER);
-		//switchLogic(0,0);
-		//switchLogic(0,1);
-		//switchLogic(1,0);
-		//switchLogic(1,1);
+		//rilascio interblocco gruppo 1
+		if(roll[0] == true){
+			resetOutlogic(0);
+		}
+		//rilascio interblocco gruppo 2
+		if(roll[1] == true){
+			resetOutlogic(1);
+		}
 	}
 #else	
 	uint16_t gpioread = (uint16_t)GPI;
@@ -1556,6 +1556,14 @@ void leggiTastiLocali2(){
 		*inl = (unsigned long) 0UL;
 		initdfnUL(0UL,0);
 		resetTimer(RESETTIMER);
+		//rilascio interblocco gruppo 1
+		if(roll[0] == true){
+			resetOutlogic(0);
+		}
+		//rilascio interblocco gruppo 2
+		if(roll[1] == true){
+			resetOutlogic(1);
+		}
 	}
 #endif	
 }
@@ -2217,16 +2225,16 @@ void onElapse(uint8_t nn, unsigned long tm){
 	int n = nn / TIMERDIM;
 	int sw = nn % TIMERDIM;
 	
-	DEBUG2_PRINT(F("\nElapse timer n: "));
-	DEBUG2_PRINT(nn);
-	DEBUG2_PRINT(F("  al tempo: "));
-	DEBUG2_PRINT(tm);
-	DEBUG2_PRINT(F("  con stato: "));
-	DEBUG2_PRINT(getGroupState(nn));
-	DEBUG2_PRINT(F("  con n: "));
-	DEBUG2_PRINT(n);
-	DEBUG2_PRINT(F("  con sw: "));
-	DEBUG2_PRINTLN(sw);
+	DEBUG1_PRINT(F("\nElapse timer n: "));
+	DEBUG1_PRINT(nn);
+	DEBUG1_PRINT(F("  al tempo: "));
+	DEBUG1_PRINT(tm);
+	DEBUG1_PRINT(F("  con stato: "));
+	DEBUG1_PRINT(getGroupState(nn));
+	DEBUG1_PRINT(F("  con n: "));
+	DEBUG1_PRINT(n);
+	DEBUG1_PRINT(F("  con sw: "));
+	DEBUG1_PRINTLN(sw);
 	
 	if(nn != RESETTIMER || nn != APOFFTIMER) //se è scaduto il timer di attesa o di blocco  (0,1) --> state n
 	{   
@@ -2514,7 +2522,7 @@ void processCmdRemoteDebug() {
 		scan_wifi();
 	}else if(lastCmd == "getip"){
 		DEBUG1_PRINT("\nLocal IP: ");
-		DEBUG1_PRINTLN(String(WiFi.localIP()));
+		DEBUG1_PRINTLN((WiFi.localIP()).toString());
 	}else if(lastCmd == "getmqttstat"){
 		if(!(mqttClient->isConnected())){
 			DEBUG1_PRINTLN(F("\nMQTT non connesso."));

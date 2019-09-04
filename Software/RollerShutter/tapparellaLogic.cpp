@@ -134,6 +134,11 @@ byte switchLogic(byte sw, byte n){
 	return changed;
 }
 
+void resetOutlogic(byte n){
+	outlogicp[SW1ONS+n*STATUSDIM+0]=false;
+	outlogicp[SW1ONS+n*STATUSDIM+1]=false;
+}
+
 byte getDelayedCmd(byte i){
 	return lastCmd[i];
 }
