@@ -884,14 +884,14 @@ void mqttReconnect() {
 	}
 	else
 	{
-		pars[p(LOGSLCT)]->doaction(false);	
 		mqttClient->onData(mqttCallback);
 		mqttClient->onConnected([]() {
-		DEBUG2_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
+		DEBUG1_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
 			mqttcnt = 0;
 			//Altrimenti dice che è connesso ma non comunica
 			mqttClient->subscribe(static_cast<ParStr32*>(pars[p(MQTTINTOPIC)])->val); 
 			mqttClient->publish((const char *)(static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)]))->val, (const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, 32);
+			pars[p(LOGSLCT)]->doaction(false);	
 			//mqttConnected=true;
 		});
 		mqttClient->onDisconnected([]() {
