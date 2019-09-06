@@ -1338,10 +1338,10 @@ void setup(){
 	mcp.pinMode(OUT1DD,OUTPUT);
 	mcp.pinMode(OUT2EU,OUTPUT);
 	mcp.pinMode(OUT2DD,OUTPUT);
-	mcp.digitalWrite(OUT1EU, LOW);
-	mcp.digitalWrite(OUT1DD, LOW);
-	mcp.digitalWrite(OUT2EU, LOW);
-	mcp.digitalWrite(OUT2DD, LOW);
+	mcp.digitalWrite(OUT1EU, HIGH);
+	mcp.digitalWrite(OUT1DD, HIGH);
+	mcp.digitalWrite(OUT2EU, HIGH);
+	mcp.digitalWrite(OUT2DD, HIGH);
 	
 	//pinMode(OUTSLED,OUTPUT);
 	//digitalWrite(OUTSLED, LOW);
