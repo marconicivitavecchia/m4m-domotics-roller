@@ -1316,7 +1316,7 @@ void setup(){
   //startCnt(0,60,TIMECNT);
   //read and set dynamic configurations
   readActionConfAndSet(); 
-  
+ /* 
 #if (MCP2317) 
 	MCP2317_init();
 	mcp.pinMode(BTN1U, INPUT);
@@ -1374,7 +1374,36 @@ void setup(){
 	digitalWrite(OUT2EU, LOW);
 	digitalWrite(OUT2DD, LOW);
 #endif
+*/	
+
+	MCP2317_init();
+	mcp.pinMode(BTN1U, INPUT);
+	mcp.pinMode(BTN1D, INPUT);
+	mcp.pinMode(BTN2U, INPUT);
+	mcp.pinMode(BTN2D, INPUT);
 	
+	mcp.pullUp(BTN1U, LOW);
+	mcp.pullUp(BTN1D, LOW);
+	mcp.pullUp(BTN2U, LOW);
+	mcp.pullUp(BTN2D, LOW);
+	
+	mcp.pinMode(OUT1EU,OUTPUT);
+	mcp.pinMode(OUT1DD,OUTPUT);
+	mcp.pinMode(OUT2EU,OUTPUT);
+	mcp.pinMode(OUT2DD,OUTPUT);
+	mcp.digitalWrite(OUT1EU, LOW);
+	mcp.digitalWrite(OUT1DD, LOW);
+	mcp.digitalWrite(OUT2EU, LOW);
+	mcp.digitalWrite(OUT2DD, LOW);
+	
+	//pinMode(OUTSLED,OUTPUT);
+	//digitalWrite(OUTSLED, LOW);
+	mcp.pinMode(GREEN,OUTPUT);
+	mcp.pinMode(RED,OUTPUT);
+	mcp.pinMode(BLUE,OUTPUT);
+	mcp.digitalWrite(GREEN, LOW);
+	mcp.digitalWrite(RED, LOW);
+	mcp.digitalWrite(GREEN, LOW);
   //imposta la DIRSezione delle porte dei led, imposta inizialmente i led come spento  
   
   //------------------------------------------OTA SETUP---------------------------------------------------------------------------------------
