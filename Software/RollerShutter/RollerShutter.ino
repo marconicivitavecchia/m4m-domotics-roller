@@ -1576,7 +1576,7 @@ void leggiTastiLocali2(){
 		static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)((regA >> BTN2D) & 0x1)?0:255);
 		static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
 	}else if(inl[0] != 0){
-		DEBUG1_PRINTLN(F("fronte di discesa "));
+		DEBUG1_PRINTLN(F("Fronte di discesa "));
 		*inl = (unsigned long) 0UL;
 		initdfnUL(0UL,0);
 		resetTimer(RESETTIMER);
@@ -1612,7 +1612,7 @@ void leggiTastiLocali2(){
 		static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)(GPIP(BTN2D))?0:255);  
 		static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
 	}else if(inl[0] != 0){
-		DEBUG1_PRINTLN(F("fronte di discesa "));
+		DEBUG1_PRINTLN(F("Fronte di discesa "));
 		*inl = (unsigned long) 0UL;
 		initdfnUL(0UL,0);
 		resetTimer(RESETTIMER);
