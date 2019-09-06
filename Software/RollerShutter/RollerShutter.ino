@@ -723,11 +723,15 @@ void printMcpRealOut(){
 
 void scriviOutDaStato(){
 #if (MCP2317) 
+	out[0] = HIGH;
+	out[1] = HIGH;
+	out[2] = HIGH;
+	out[3] = HIGH;
 	mcp.digitalWrite(OUT1EU,out[0]);	
 	mcp.digitalWrite(OUT1DD,out[1]);		
 	mcp.digitalWrite(OUT2EU,out[2]);	
 	mcp.digitalWrite(OUT2DD,out[3]);
-	rstldcnt(0);
+	//rstldcnt(0);
 #else										
 	digitalWrite(OUT1EU,out[0]);	
 	digitalWrite(OUT1DD,out[1]);		
@@ -1338,7 +1342,7 @@ void setup(){
 	digitalWrite(OUTSLED, LOW);
 	for(int i=0;i<NBTN*BTNDIM;i++){
 		mcp.pinMode(outPorts[i],OUTPUT);
-		//mcp.digitalWrite(outPorts[i], LOW);
+		mcp.digitalWrite(outPorts[i], HIGH);
 	}
 	mcp.pinMode(GREEN,OUTPUT);
 	mcp.pinMode(RED,OUTPUT);
