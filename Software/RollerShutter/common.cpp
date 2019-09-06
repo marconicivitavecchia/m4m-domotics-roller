@@ -2292,10 +2292,12 @@ void BaseLog::print(String msg){};
 void BaseLog::println(String msg){};
 void BaseLog::print(char msg){};
 void BaseLog::println(char msg){};
+void BaseLog::print(uint8_t msg){};
+void BaseLog::println(uint8_t msg){};
 void BaseLog::print(int msg){};
+void BaseLog::println(int msg){};
 void BaseLog::println(long msg){};
 void BaseLog::print(long msg){};
-void BaseLog::println(int msg){};
 void BaseLog::print(unsigned long msg){};
 void BaseLog::println(unsigned long msg){};
 void BaseLog::print(float msg){};
@@ -2307,38 +2309,6 @@ void BaseLog::println(unsigned int msg){};
 void BaseLog::destroy(){};
 BaseLog::~BaseLog(){DEBUG_PRINTLN("BaseLog destructor call");};
 
-void BaseLog::mqttSend(const char* msg, bool endl = false){
-	if(mqttc != NULL){
-		for(int i=0; msg[i] != '\0'; ++i) {//copy until the end
-			if(msg[i] == '\n' || pos == RSLTBUFLEN - 1){
-				result[pos] = '\0';
-				strcpy(result,printUNIXTimeMin(gbuf)); 	// copy string one into the result.
-				strcat(result,": "); 					// append string two to the result.
-				result[strlen(result)-1] = ' ';
-				//result[strlen(result)-2] = ' ';
-				result[strlen(result)] = ' ';
-				
-				mqttc->publish((const char *)static_cast<ParStr32*>(parsp[p(MQTTLOG)])->val, (const char *)result, strlen((const char*)result));
-				pos = DATEBUFLEN + 1;
-				memset(result, ' ', DATEBUFLEN);
-				//result[pos] = '\0';
-			}
-			result[pos++] = msg[i];
-		}
-		result[pos] = '\0';
-		if(endl){
-			strcpy(result,printUNIXTimeMin(gbuf)); 	// copy string one into the result.
-			strcat(result,": "); 					// append string two to the result.
-			result[strlen(result)-1] = ' ';
-			//result[strlen(result)-2] = ' ';
-			result[strlen(result)] = ' ';
-			mqttc->publish((const char *)static_cast<ParStr32*>(parsp[p(MQTTLOG)])->val, (const char *)result, strlen((const char*)result));
-			pos = DATEBUFLEN + 1;
-			memset(result, ' ', DATEBUFLEN);
-			result[pos] = '\0';
-		}
-	}
-}
 bool BaseLog::isTelnet(){
 	return ontlnt;
 }
@@ -2365,6 +2335,12 @@ void SerialLog::print(char msg){
 	Serial.print(msg);
 };
 void SerialLog::println(char msg){
+	Serial.println(msg);
+};
+void SerialLog::print(uint8_t msg){
+	Serial.print(msg);
+};
+void SerialLog::println(uint8_t msg){
 	Serial.println(msg);
 };
 void SerialLog::print(int msg){
@@ -2407,7 +2383,7 @@ void SerialLog::println(double msg){
 	Serial.println(msg);
 };
 SerialLog::~SerialLog(){
-	mqttc = NULL;
+	
 	DEBUG_PRINTLN("SerialLog destructor call");
 };
 //TelnetLog
@@ -2433,6 +2409,12 @@ void TelnetLog::print(char msg){
 	tel->print(msg);
 };
 void TelnetLog::println(char msg){
+	tel->println(msg);
+};
+void TelnetLog::print(uint8_t msg){
+	tel->print(msg);
+};
+void TelnetLog::println(uint8_t msg){
 	tel->println(msg);
 };
 void TelnetLog::print(int msg){
@@ -2471,75 +2453,116 @@ void TelnetLog::print(double msg){
 void TelnetLog::println(double msg){
 	tel->println(msg);
 };
-TelnetLog::~TelnetLog(){mqttc = NULL;};
+TelnetLog::~TelnetLog(){ };
 void TelnetLog::destroy(){
 	delete this;
 };
 //MQTTLog
-void MQTTLog::print(const char* msg){
-	mqttSend(msg);
-};
-void MQTTLog::println(const char* msg){
-	mqttSend(msg, true);
-};
-void MQTTLog::print(const __FlashStringHelper * msg){
-	mqttSend((const char *)msg);
-};
-void MQTTLog::println(const __FlashStringHelper * msg){
-	mqttSend((const char *)msg, true);
-};
 void MQTTLog::print(String msg){
-	mqttSend(msg.c_str());
+	mqtc->mqttSend(msg.c_str());
 };
 void MQTTLog::println(String msg){
-	mqttSend(msg.c_str(), true);
+	mqtc->mqttSend(msg.c_str(), true);
+};
+void MQTTLog::print(const char* msg){
+	mqtc->mqttSend(msg);
+};
+void MQTTLog::println(const char* msg){
+	mqtc->mqttSend(msg, true);
+};
+void MQTTLog::print(const __FlashStringHelper * msg){
+	mqtc->mqttSend(String(msg).c_str());
+};
+void MQTTLog::println(const __FlashStringHelper * msg){
+	mqtc->mqttSend(String(msg).c_str(),true);
 };
 void MQTTLog::print(char msg){
-	mqttSend(String(msg).c_str());
+	char buf[2];
+	buf[0] = msg;
+	buf[1] = '\0';
+	mqtc->mqttSend(buf);
 };
 void MQTTLog::println(char msg){
-	mqttSend(String(msg).c_str(), true);
+	char buf[2];
+	buf[0] = msg;
+	buf[1] = '\0';
+	mqtc->mqttSend(buf);
+};
+void MQTTLog::print(uint8_t msg){
+	char buf[20];
+	itoa(msg,buf,10);
+	sprintf(buf,"%u",msg);
+	mqtc->mqttSend(buf);
+};
+void MQTTLog::println(uint8_t msg){
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	mqtc->mqttSend(buf, true);
 };
 void MQTTLog::print(int msg){
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%d",msg);
+	mqtc->mqttSend(buf);
 };
 void MQTTLog::println(int msg){
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%d",msg);
+	mqtc->mqttSend(buf, true);
 };
 void MQTTLog::print(long msg){
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%Ld",msg);
+	mqtc->mqttSend(buf);
 };
 void MQTTLog::println(long msg){
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%Ld",msg);
+	mqtc->mqttSend(buf, true);
 };
 void MQTTLog::print(unsigned long msg){
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	mqtc->mqttSend(buf);
 };
 void MQTTLog::println(unsigned long msg){
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	mqtc->mqttSend(buf, true);
 };
 void MQTTLog::print(float msg){
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	mqtc->mqttSend(buf);
 };
 void MQTTLog::println(float msg){
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	mqtc->mqttSend(buf, true);
 };
 void MQTTLog::print(double msg){
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	mqtc->mqttSend(buf);
 };
 void MQTTLog::println(double msg){
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	mqtc->mqttSend(buf, true);
 };
 void MQTTLog::print(unsigned int msg){
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	mqtc->mqttSend(buf);
 };
 void MQTTLog::println(unsigned int msg){
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	mqtc->mqttSend(buf, true);
 };
 void MQTTLog::destroy(){
 	delete this;
 };
-MQTTLog::~MQTTLog(){mqttc = NULL;};
+MQTTLog::~MQTTLog(){ };
 //SerialTelnetLog
 void SerialTelnetLog::print(const char* msg){
 	Serial.print(msg);
@@ -2570,6 +2593,14 @@ void SerialTelnetLog::print(char msg){
 	tel->print(msg);
 };
 void SerialTelnetLog::println(char msg){
+	Serial.println(msg);
+	tel->println(msg);
+};
+void SerialTelnetLog::print(uint8_t msg){
+	Serial.print(msg);
+	tel->print(msg);
+};
+void SerialTelnetLog::println(uint8_t msg){
 	Serial.println(msg);
 	tel->println(msg);
 };
@@ -2624,279 +2655,454 @@ void SerialTelnetLog::println(unsigned int msg){
 void SerialTelnetLog::destroy(){
 	delete this;
 };
-SerialTelnetLog::~SerialTelnetLog(){mqttc = NULL;};
+SerialTelnetLog::~SerialTelnetLog(){ };
 //SerialMqttLog
 void SerialMQTTLog::print(const char* msg){
 	Serial.print(msg);
-	mqttSend(msg);
+	mqtc->mqttSend(msg);
 };
 void SerialMQTTLog::println(const char* msg){
 	Serial.println(msg);
-	mqttSend(msg, true);
+	mqtc->mqttSend(msg, true);
 };
 void SerialMQTTLog::print(const __FlashStringHelper * msg){
 	Serial.print(msg);
-	mqttSend((const char *)msg);
+	mqtc->mqttSend(String(msg).c_str());
 };
 void SerialMQTTLog::println(const __FlashStringHelper * msg){
 	Serial.println(msg);
-	mqttSend((const char *)msg, true);
+	mqtc->mqttSend(String(msg).c_str(),true);
 };
 void SerialMQTTLog::print(String msg){
 	Serial.print(msg);
-	mqttSend(msg.c_str());
+	mqtc->mqttSend(msg.c_str());
 };
 void SerialMQTTLog::println(String msg){
 	Serial.println(msg);
-	mqttSend(msg.c_str(), true);
+	mqtc->mqttSend(msg.c_str(), true);
 };
 void SerialMQTTLog::print(char msg){
-	Serial.print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[2];
+	buf[0] = msg;
+	buf[1] = '\0';
+	Serial.print(buf);
+	mqtc->mqttSend(buf);
 };
 void SerialMQTTLog::println(char msg){
-	Serial.println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[2];
+	buf[0] = msg;
+	buf[1] = '\0';
+	Serial.println(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialMQTTLog::print(uint8_t msg){
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	Serial.print(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialMQTTLog::println(uint8_t msg){
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	Serial.println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void SerialMQTTLog::print(int msg){
-	Serial.print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%d",msg);
+	Serial.print(buf);
+	mqtc->mqttSend(buf);
 };
 void SerialMQTTLog::println(int msg){
-	Serial.println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%d",msg);
+	Serial.println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void SerialMQTTLog::print(long msg){
-	Serial.print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	ltoa(msg,buf,10);
+	Serial.print(buf);
+	mqtc->mqttSend(buf);
 };
 void SerialMQTTLog::println(long msg){
-	Serial.println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	ltoa(msg,buf,10);
+	Serial.println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void SerialMQTTLog::print(unsigned long msg){
-	Serial.print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	Serial.print(buf);
+	mqtc->mqttSend(buf);
 };
 void SerialMQTTLog::println(unsigned long msg){
-	Serial.println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	Serial.println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void SerialMQTTLog::print(float msg){
-	Serial.print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	Serial.print(buf);
+	mqtc->mqttSend(buf);
 };
 void SerialMQTTLog::println(float msg){
-	Serial.println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	Serial.println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void SerialMQTTLog::print(double msg){
-	Serial.print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	Serial.print(buf);
+	mqtc->mqttSend(buf);
 };
 void SerialMQTTLog::println(double msg){
-	Serial.println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	Serial.println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void SerialMQTTLog::print(unsigned int msg){
-	Serial.print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	Serial.print(buf);
+	mqtc->mqttSend(buf);
 };
 void SerialMQTTLog::println(unsigned int msg){
-	Serial.println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	Serial.println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void SerialMQTTLog::destroy(){
 	delete this;
 };
-SerialMQTTLog::~SerialMQTTLog(){mqttc = NULL;};
+SerialMQTTLog::~SerialMQTTLog(){ };
 //TelnetMQTTLog
 void TelnetMQTTLog::print(const char* msg){
 	tel->print(msg);
-	mqttSend(msg);
+	mqtc->mqttSend(msg);
 };
 void TelnetMQTTLog::println(const char* msg){
 	tel->println(msg);
-	mqttSend(msg, true);
+	mqtc->mqttSend(msg, true);
 };
 void TelnetMQTTLog::print(const __FlashStringHelper * msg){
 	tel->print(msg);
-	mqttSend((const char *)msg);
+	mqtc->mqttSend(String(msg).c_str());
 };
 void TelnetMQTTLog::println(const __FlashStringHelper * msg){
 	tel->println(msg);
-	mqttSend((const char *)msg, true);
+	mqtc->mqttSend(String(msg).c_str(),true);
 };
 void TelnetMQTTLog::print(String msg){
 	tel->print(msg);
-	mqttSend(msg.c_str());
+	mqtc->mqttSend(msg.c_str());
 };
 void TelnetMQTTLog::println(String msg){
 	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
+	mqtc->mqttSend(String(msg).c_str(), true);
 };
 void TelnetMQTTLog::print(char msg){
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[2];
+	buf[0] = msg;
+	buf[1] = '\0';
+	tel->print(buf);
+	mqtc->mqttSend(buf);
 };
 void TelnetMQTTLog::println(char msg){
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[2];
+	buf[0] = msg;
+	buf[1] = '\0';
+	tel->println(buf);
+	mqtc->mqttSend(buf);
+};
+void TelnetMQTTLog::print(uint8_t msg){
+	char buf[20];
+	sprintf(buf,"%d",msg);
+	tel->print(msg);
+	mqtc->mqttSend(buf);
+};
+void TelnetMQTTLog::println(uint8_t msg){
+	char buf[20];
+	sprintf(buf,"%d",msg);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void TelnetMQTTLog::print(int msg){
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%d",msg);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
 };
 void TelnetMQTTLog::println(int msg){
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%Ld",msg);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void TelnetMQTTLog::print(long msg){
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%Ld",msg);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
 };
 void TelnetMQTTLog::println(long msg){
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%Ld",msg);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void TelnetMQTTLog::print(unsigned long msg){
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%Lu",msg);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
 };
 void TelnetMQTTLog::println(unsigned long msg){
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%Lu",msg);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void TelnetMQTTLog::print(float msg){
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
 };
 void TelnetMQTTLog::println(float msg){
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void TelnetMQTTLog::print(double msg){
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
 };
 void TelnetMQTTLog::println(double msg){
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void TelnetMQTTLog::print(unsigned int msg){
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
 };
 void TelnetMQTTLog::println(unsigned int msg){
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
 };
 void TelnetMQTTLog::destroy(){
 	delete this;
 };
-TelnetMQTTLog::~TelnetMQTTLog(){mqttc = NULL;};
+TelnetMQTTLog::~TelnetMQTTLog(){ };
 //SerialTelnetMQTTLog
+void SerialTelnetMQTTLog::print(char msg){
+	char buf[2];
+	buf[0] = msg;
+	buf[1] = '\0';
+	Serial.print(buf);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialTelnetMQTTLog::println(char msg){
+	char buf[2];
+	buf[0] = msg;
+	buf[1] = '\0';
+	Serial.println(msg);
+	tel->println(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialTelnetMQTTLog::print(uint8_t msg){
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	Serial.print(buf);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialTelnetMQTTLog::println(uint8_t msg){
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	Serial.println(buf);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
+};
+void SerialTelnetMQTTLog::print(int msg){
+	char buf[20];
+	sprintf(buf,"%d",msg);
+	Serial.print(buf);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialTelnetMQTTLog::println(int msg){
+	char buf[20];
+	sprintf(buf,"%d",msg);
+	Serial.println(buf);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
+};
+void SerialTelnetMQTTLog::print(long msg){
+	char buf[20];
+	sprintf(buf,"%Ld",msg);
+	Serial.print(buf);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialTelnetMQTTLog::println(long msg){
+	char buf[20];
+	sprintf(buf,"%Ld",msg);
+	Serial.println(buf);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
+};
+void SerialTelnetMQTTLog::print(unsigned long msg){
+	char buf[20];
+	sprintf(buf,"%Lu",msg);
+	Serial.print(buf);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialTelnetMQTTLog::println(unsigned long msg){
+	char buf[20];
+	sprintf(buf,"%Lu",msg);
+	Serial.println(buf);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
+};
+void SerialTelnetMQTTLog::print(float msg){
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	Serial.print(buf);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialTelnetMQTTLog::println(float msg){
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	Serial.println(buf);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
+};
+void SerialTelnetMQTTLog::print(double msg){
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	Serial.print(buf);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialTelnetMQTTLog::println(double msg){
+	char buf[20];
+	sprintf(buf,"%f",msg);
+	Serial.println(buf);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
+};
+void SerialTelnetMQTTLog::print(unsigned int msg){
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	Serial.print(buf);
+	tel->print(buf);
+	mqtc->mqttSend(buf);
+};
+void SerialTelnetMQTTLog::println(unsigned int msg){
+	char buf[20];
+	sprintf(buf,"%u",msg);
+	Serial.println(buf);
+	tel->println(buf);
+	mqtc->mqttSend(buf, true);
+};
 void SerialTelnetMQTTLog::print(const char* msg){
 	Serial.print(msg);
 	tel->print(msg);
-	mqttSend(msg);
+	mqtc->mqttSend(msg);
 };
 void SerialTelnetMQTTLog::println(const char* msg){
 	Serial.println(msg);
 	tel->println(msg);
-	mqttSend(msg, true);
+	mqtc->mqttSend(msg, true);
 };
 void SerialTelnetMQTTLog::print(const __FlashStringHelper * msg){
 	Serial.print(msg);
 	tel->print(msg);
-	mqttSend((const char *)msg);
+	mqtc->mqttSend(String(msg).c_str());
 };
 void SerialTelnetMQTTLog::println(const __FlashStringHelper * msg){
 	Serial.println(msg);
 	tel->println(msg);
-	mqttSend((const char *)msg, true);
+	mqtc->mqttSend(String(msg).c_str(),true);
 };
 void SerialTelnetMQTTLog::print(String msg){
 	Serial.print(msg);
 	tel->print(msg);
-	mqttSend(msg.c_str());
+	mqtc->mqttSend(msg.c_str());
 };
 void SerialTelnetMQTTLog::println(String msg){
 	Serial.println(msg);
 	tel->println(msg);
-	mqttSend(msg.c_str(), true);
-};
-void SerialTelnetMQTTLog::print(char msg){
-	Serial.print(msg);
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
-};
-void SerialTelnetMQTTLog::println(char msg){
-	Serial.println(msg);
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
-};
-void SerialTelnetMQTTLog::print(int msg){
-	Serial.print(msg);
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
-};
-void SerialTelnetMQTTLog::println(int msg){
-	Serial.println(msg);
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
-};
-void SerialTelnetMQTTLog::print(long msg){
-	Serial.print(msg);
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
-};
-void SerialTelnetMQTTLog::println(long msg){
-	Serial.println(msg);
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
-};
-void SerialTelnetMQTTLog::print(unsigned long msg){
-	Serial.print(msg);
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
-};
-void SerialTelnetMQTTLog::println(unsigned long msg){
-	Serial.println(msg);
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
-};
-void SerialTelnetMQTTLog::print(float msg){
-	Serial.print(msg);
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
-};
-void SerialTelnetMQTTLog::println(float msg){
-	Serial.println(msg);
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
-};
-void SerialTelnetMQTTLog::print(double msg){
-	Serial.print(msg);
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
-};
-void SerialTelnetMQTTLog::println(double msg){
-	Serial.println(msg);
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
-};
-void SerialTelnetMQTTLog::print(unsigned int msg){
-	Serial.print(msg);
-	tel->print(msg);
-	mqttSend(String(msg).c_str());
-};
-void SerialTelnetMQTTLog::println(unsigned int msg){
-	Serial.println(msg);
-	tel->println(msg);
-	mqttSend(String(msg).c_str(), true);
+	mqtc->mqttSend(msg.c_str(), true);
 };
 void SerialTelnetMQTTLog::destroy(){
 	delete this;
 };
-SerialTelnetMQTTLog::~SerialTelnetMQTTLog(){mqttc = NULL;};
+SerialTelnetMQTTLog::~SerialTelnetMQTTLog(){ };
+
+//MQTTC classdefinition
+void MQTTC::mqttSend(const char* msg, bool endl){
+	int i;
+	
+	if(mqt != NULL){
+		for(i=0; msg[i] != '\0'; i++) {//copy until the end
+			//DEBUG_PRINT(" pos: ");
+			//DEBUG_PRINT(pos);
+			//DEBUG_PRINT(", i: ");
+			//DEBUG_PRINT(i);
+			//DEBUG_PRINT(", msg[i]: ");
+			//DEBUG_PRINTLN(*(msg + i));
+			if(msg[i] == '\n' || pos == RSLTBUFLEN - 1){
+				result[pos] = '\0';
+				
+				strcpy(result,printUNIXTimeMin(gbuf)); 	// copy string one into the result.
+				strcat(result,": "); 					// append string two to the result.
+				result[strlen(result)-1] = ' ';
+				//result[strlen(result)-2] = ' ';
+				result[strlen(result)] = ' ';
+				
+				//DEBUG_PRINT("Result: ");
+				//DEBUG_PRINTLN(result);
+				mqt->publish((const char *)static_cast<ParStr32*>(parsp[p(MQTTLOG)])->val, (const char *)result, strlen((const char*)result));
+				pos = DATEBUFLEN + 1;
+				memset(result, ' ', DATEBUFLEN);
+				//result[pos] = '\0';
+			}else{
+				result[pos++] = msg[i];
+			}
+		}
+		result[pos] = '\0';
+		if(endl){
+			strcpy(result,printUNIXTimeMin(gbuf)); 	// copy string one into the result.
+			strcat(result,": "); 					// append string two to the result.
+			result[strlen(result)-1] = ' ';
+			//result[strlen(result)-2] = ' ';
+			result[strlen(result)] = ' ';
+			
+			mqt->publish((const char *)static_cast<ParStr32*>(parsp[p(MQTTLOG)])->val, (const char *)result, strlen((const char*)result));
+			pos = DATEBUFLEN + 1;
+			memset(result, ' ', DATEBUFLEN);
+			result[pos] = '\0';
+		}
+	}
+}

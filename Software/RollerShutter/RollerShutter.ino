@@ -141,8 +141,11 @@ uint8_t outLogic[NBTN*STATUSDIM];
 //dichiara una variabile oggetto della classe WiFiClient (instanzia il client WiFi)
 //WiFiClient espClient;
 //dichiara una variabile oggetto della classe PubSubClient (instanzia il client MQTT)
+
 // create MQTT
 MQTT *mqttClient = NULL;
+MQTTC *mqttc = new MQTTC(mqttClient);
+
 bool configLoaded=true;
 bool mqttConnected=false;
 bool mqttAddrChanged=true;
@@ -718,8 +721,8 @@ void scriviOutDaStato(){
 	digitalWrite(OUT2EU,out[2]);	
 	digitalWrite(OUT2DD,out[3]);		
 #endif
-	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0] > 0;				//sempre falso se si è in modalità switch!			
-	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1] > 0;		//sempre falso se si è in modalità switch!
+	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0] > 0;				//sempre falso se si ï¿½ in modalitï¿½ switch!			
+	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1] > 0;		//sempre falso se si ï¿½ in modalitï¿½ switch!
 	mov = isrun[0] || isrun[1];
 }
 
@@ -845,15 +848,15 @@ void startWebSocket() { // Start a WebSocket server
 void mqttReconnect() {
 	// Loop until we're mqttReconnecte
 	if(mqttClient!=NULL){
-		DEBUG1_PRINTLN(F("Distruggo l'oggetto MQTT client."));
-		DEBUG1_PRINTLN(F("Mi disconetto dal server MQTT"));
+		DEBUG_PRINTLN(F("Distruggo l'oggetto MQTT client."));
+		DEBUG_PRINTLN(F("Mi disconetto dal server MQTT"));
 		if(mqttClient->isConnected()){
 			noInterrupts ();
 			mqttClient->disconnect();
 			interrupts ();
 		}
 		delay(50);
-		DEBUG2_PRINTLN(F("Chiamo il distruttore dell'oggetto MQTT"));
+		DEBUG_PRINTLN(F("Chiamo il distruttore dell'oggetto MQTT"));
 		//noInterrupts ();
 		ESP.wdtFeed();
 		//mqttClient->~MQTT();
@@ -861,22 +864,23 @@ void mqttReconnect() {
 		delay(100);
 		//free((mqttClient));
 		//DEBUG2_PRINTLN(F("Cancello la vechia istanza dell'oggetto MQTT"));
-		DEBUG2_PRINTLN(F("Annullo istanza dell'oggetto MQTT"));
+		DEBUG_PRINTLN(F("Annullo istanza dell'oggetto MQTT"));
 		ESP.wdtFeed();
 		mqttClient = NULL;
 		//interrupts ();
 		delay(50);
 	}
-	DEBUG1_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
+	DEBUG_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
 	/////noInterrupts ();
 	mqttClient = new MQTT((const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, (const char *)(static_cast<ParStr64*>(pars[p(MQTTADDR)]))->val, (unsigned int) (static_cast<ParLong*>(pars[p(MQTTPORT)]))->val);
+	mqttc->setMQTTClient(mqttClient);
 	/////interrupts ();
-    DEBUG2_PRINTLN(F("Registro i callback dell'MQTT."));
-	DEBUG2_PRINT(F("Attempting MQTT connection to: "));
-	DEBUG2_PRINT(pars[p(MQTTADDR)]->getStrVal());
-	DEBUG2_PRINT(F(", with ClientID: "));
-	DEBUG2_PRINT(pars[p(MQTTID)]->getStrVal());
-	DEBUG2_PRINTLN(F(" ..."));
+    DEBUG_PRINTLN(F("Registro i callback dell'MQTT."));
+	DEBUG_PRINT(F("Attempting MQTT connection to: "));
+	DEBUG_PRINT(pars[p(MQTTADDR)]->getStrVal());
+	DEBUG_PRINT(F(", with ClientID: "));
+	DEBUG_PRINT(pars[p(MQTTID)]->getStrVal());
+	DEBUG_PRINTLN(F(" ..."));
 
 	delay(50);
 	if(mqttClient==NULL){
@@ -886,9 +890,10 @@ void mqttReconnect() {
 	{
 		mqttClient->onData(mqttCallback);
 		mqttClient->onConnected([]() {
-		DEBUG1_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
+		DEBUG_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
 			mqttcnt = 0;
-			//Altrimenti dice che è connesso ma non comunica
+			//Altrimenti dice che ï¿½ connesso ma non comunica
+			delay(50);
 			mqttClient->subscribe(static_cast<ParStr32*>(pars[p(MQTTINTOPIC)])->val); 
 			mqttClient->publish((const char *)(static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)]))->val, (const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, 32);
 			pars[p(LOGSLCT)]->doaction(false);	
@@ -896,32 +901,33 @@ void mqttReconnect() {
 		});
 		mqttClient->onDisconnected([]() {
 			//DEBUG2_PRINTLN("MQTT disconnected.");
-		DEBUG2_PRINTLN(F("MQTT: onDisconnected([]() dice mi sono disconnesso."));
+		DEBUG_PRINTLN(F("MQTT: onDisconnected([]() dice mi sono disconnesso."));
 			mqttConnected=false;
 		});
-		DEBUG2_PRINTLN(F("MQTT: Eseguo la prima connect."));
+		DEBUG_PRINTLN(F("MQTT: Eseguo la prima connect."));
 		mqttClient->setUserPwd((const char*)static_cast<ParStr32*>(pars[p(MQTTUSR)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTPSW)])->val);
 		//////noInterrupts ();
 		mqttClient->connect();
+		
 		//////interrupts ();
-		delay(50);
-		mqttClient->subscribe(static_cast<ParStr32*>(pars[p(MQTTINTOPIC)])->val);
-		mqttClient->publish((const char *)(static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)]))->val, (const char *)static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
+		//delay(50);
+		//mqttClient->subscribe(static_cast<ParStr32*>(pars[p(MQTTINTOPIC)])->val);
+		//mqttClient->publish((const char *)(static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)]))->val, (const char *)static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
 	}
 }
 
 void mqttCallback(String &topic, String &response) {
 	//funzione eseguita dal subscriber all'arrivo di una notifica
 	//decodifica la stringa JSON e la trasforma nel nuovo vettore degli stati
-	//il vettore corrente degli stati verrà sovrascritto
+	//il vettore corrente degli stati verrï¿½ sovrascritto
 	//applica la logica ricevuta da remoto sulle uscite locali (led)
     
 	int v;
 #if defined (_DEBUG) || defined (_DEBUGR)	
-	DEBUG2_PRINT(F("Message arrived on topic: ["));
-	DEBUG2_PRINT(topic);
-	DEBUG2_PRINT(F("], "));
-	DEBUG2_PRINTLN(response);
+	DEBUG_PRINT(F("Message arrived on topic: ["));
+	DEBUG_PRINT(topic);
+	DEBUG_PRINT(F("], "));
+	DEBUG_PRINTLN(response);
 #endif	
 	//v = parseJsonFieldToInt(response, mqttJson[0], ncifre);
 	//digitalWrite(OUTSLED, v); 
@@ -973,7 +979,7 @@ void readStatesAndPub(bool all){
   String s=openbrk;	
   
   if(roll[0] == true){
-	  s + pars[MQTTUP1]->getStrJsonName()+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+comma; 	//up1 DIRS=HIGH
+	  s += pars[MQTTUP1]->getStrJsonName()+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN1]->getStrJsonName()+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+comma;    //down1  DIRS=LOW
 	  if(blocked[0]>0){
 		  s+= (String) "blk1"+twodot+blocked[0]+comma;		//blk1
@@ -1263,7 +1269,7 @@ void setup(){
   DEBUG2_PRINTLN(F("Activated remote _DEBUG"));
 #endif  
   DEBUG2_PRINTLN(F("Inizializzo i pulsanti."));
-  initdfn(LOW, 0);  //pull DOWN init (in realtà è un pull up, c'è un not in ogni ingresso sui pulsanti)
+  initdfn(LOW, 0);  //pull DOWN init (in realtï¿½ ï¿½ un pull up, c'ï¿½ un not in ogni ingresso sui pulsanti)
   initdfn(LOW, 1);
   initdfn(LOW, 2);
   initdfn(LOW, 3);
@@ -1518,6 +1524,7 @@ void leggiTastiLocali2(){
 		static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)((regA >> BTN2D) & 0x1)?0:255);
 		static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
 	}else if(inl[0] != 0){
+		DEBUG1_PRINTLN(F("fronte di discesa "));
 		*inl = (unsigned long) 0UL;
 		initdfnUL(0UL,0);
 		resetTimer(RESETTIMER);
@@ -1553,6 +1560,7 @@ void leggiTastiLocali2(){
 		static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)(GPIP(BTN2D))?0:255);  
 		static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
 	}else if(inl[0] != 0){
+		DEBUG1_PRINTLN(F("fronte di discesa "));
 		*inl = (unsigned long) 0UL;
 		initdfnUL(0UL,0);
 		resetTimer(RESETTIMER);
@@ -1601,8 +1609,8 @@ inline void loop2() {
   //Linee guida:
   //- azioni pesanti si dovrebbero eseguire molto raramente (o per pochi loop)
   //- azioni leggere possono essere eseguite molto frequentemente (o per molti loop)
-  //- vie di mezzo di complessità da eseguire con tempi intermedi
-  //- evitare il più possibile la contemporaneità di azioni pesanti 
+  //- vie di mezzo di complessitï¿½ da eseguire con tempi intermedi
+  //- evitare il piï¿½ possibile la contemporaneitï¿½ di azioni pesanti 
   //-----------------------------------------------------------------------------------------------
   
   //---------------------------------------------------------------------
@@ -1640,8 +1648,8 @@ inline void loop2() {
 	if(!(step % ONESEC_STEP)){
 		updateCounters();
 		
-		//sempre vero se si è in modalità switch!	
-		if(!mov){//solo a motore fermo! Per evitare contemporaneità col currentPeakDetector
+		//sempre vero se si ï¿½ in modalitï¿½ switch!	
+		if(!mov){//solo a motore fermo! Per evitare contemporaneitï¿½ col currentPeakDetector
 			aggiornaTimer(RESETTIMER);
 			aggiornaTimer(APOFFTIMER);
 			pushCnt++;
@@ -1676,16 +1684,16 @@ inline void loop2() {
 		//leggi ingressi locali e mette il loro valore sull'array val[]
 		leggiTastiLocali2();
 		//leggiTastiLocaliRemoto();
-		//se uno dei tasti delle tapparelle è stato premuto
-		//o se è arrivato un comando dalla mqttCallback
+		//se uno dei tasti delle tapparelle ï¿½ stato premuto
+		//o se ï¿½ arrivato un comando dalla mqttCallback
 		//provenienti dalla mqttCallback
 		//remote pressed button event
 		//leggiTastiRemoti();
 		//------------------------------------------------------------------------------------------------------------
-		//Finestra idle di riconnessione (necessaria se il loop è molto denso di eventi e il wifi non si aggancia!!!)
+		//Finestra idle di riconnessione (necessaria se il loop ï¿½ molto denso di eventi e il wifi non si aggancia!!!)
 		//------------------------------------------------------------------------------------------------------------
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
-		if(wifiConn == false && !mov && pageLoad == false){ //sempre vero se si è in modalità switch!	
+		if(wifiConn == false && !mov && pageLoad == false){ //sempre vero se si ï¿½ in modalitï¿½ switch!	
 //#if (AUTOCAL_ACS712) 
 			if(wificnt > WIFISTEP){
 				wificnt = 0;
@@ -1725,7 +1733,7 @@ inline void updateCounters(){
 //inr: memoria tampone per l'evento asincrono scrittura da remoto
 //si deve mischiare con la lettura locale DOPO che questa viene scritta
 //al giro di loop() successivo in[] locale riporta a livello basso l'eccitazione remota
-//legge gli ingressi dei tasti già puliti dai rimbalzi	
+//legge gli ingressi dei tasti giï¿½ puliti dai rimbalzi	
 /*inline void leggiTastiLocaliRemoto(){
 	for(int i=0;i<4;i++){
 		(in[i]) && (in[i] = 255);
@@ -1736,7 +1744,7 @@ inline void updateCounters(){
 //legge PERIODICAMENTE il parser delle condizioni sui sensori
 inline void leggiTastiLocaliDaExp(){
 	if(roll[0] == false){
-		//modalità switch generico
+		//modalitï¿½ switch generico
 		if(testUpCntEvnt(0,true,SMPLCNT1))
 			setActionLogic(eval(((String) pars[p(0)]->getStrVal()).c_str()),0);
 		if(testUpCntEvnt(0,true,SMPLCNT2))
@@ -1746,13 +1754,13 @@ inline void leggiTastiLocaliDaExp(){
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
 	}else{
-		//modalità tapparella
+		//modalitï¿½ tapparella
 		//simula pressione di un tasto locale
-		in[0] = eval(((String) pars[p(0)]->getStrVal()).c_str());
-		in[1] = eval(((String) pars[p(1)]->getStrVal()).c_str());
+		//in[0] = eval(((String) pars[p(0)]->getStrVal()).c_str());
+		//in[1] = eval(((String) pars[p(1)]->getStrVal()).c_str());
 	}
 	if(roll[1] == false){
-		//modalità switch generico
+		//modalitï¿½ switch generico
 		if(testUpCntEvnt(0,true,SMPLCNT3))
 			setActionLogic(eval(((String) pars[p(2)]->getStrVal()).c_str()),2);
 		if(testUpCntEvnt(1,true,SMPLCNT4)){
@@ -1764,10 +1772,10 @@ inline void leggiTastiLocaliDaExp(){
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
 	}else{
-		//modalità tapparella
+		//modalitï¿½ tapparella
 		//simula pressione di un tasto locale
-		in[2] = eval(((String) pars[p(2)]->getStrVal()).c_str());
-		in[3] = eval(((String) pars[p(3)]->getStrVal()).c_str());
+		//in[2] = eval(((String) pars[p(2)]->getStrVal()).c_str());
+		//in[3] = eval(((String) pars[p(3)]->getStrVal()).c_str());
 	}
 	//imposta le configurazioni dinamiche in base ad eventi locali valutati periodicamente
 	//eval((confcmd[JSONONCOND5]).c_str());
@@ -1850,7 +1858,7 @@ inline void sensorStatePoll(){
 
 
 inline void automaticStopManager(){
-	if(mov){ //sempre falso se si è in modalità switch!	
+	if(mov){ //sempre falso se si ï¿½ in modalitï¿½ switch!	
 			//automatic stop manager
 #if (AUTOCAL_ACS712) 
 			dd = maxx - minx;
@@ -1993,7 +2001,7 @@ inline void automaticStopManager(){
 			//DEBUG2_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}
 #if (AUTOCAL_ACS712) 		
-		else{ //sempre vero se si è in modalità switch!	
+		else{ //sempre vero se si ï¿½ in modalitï¿½ switch!	
 			//zero detection manager
 			//zero detection scheduler
 			zeroCnt = (zeroCnt + 1) % ZEROSMPL;
@@ -2114,7 +2122,7 @@ inline void MQTTReconnectManager(){
 					mqttofst = 10;
 				}else{
 					if(!(mqttcnt % mqttofst)){
-						//non si può fare perchè dopo pochi loop crasha
+						//non si puï¿½ fare perchï¿½ dopo pochi loop crasha
 						if(dscnct){
 							dscnct=false;
 							DEBUG1_PRINT(F("eseguo la MQTT connect()...Cnt: "));
@@ -2136,7 +2144,7 @@ inline void MQTTReconnectManager(){
 						DEBUG2_PRINT(F(" - Passo: "));
 						DEBUG2_PRINTLN(mqttofst);
 					}
-					//non si può fare senza disconnect perchè dopo pochi loop crasha
+					//non si puï¿½ fare senza disconnect perchï¿½ dopo pochi loop crasha
 					//mqttClient->setUserPwd((confcmd[MQTTUSR]).c_str(), (confcmd[MQTTPSW]).c_str());
 				}
 			}
@@ -2144,7 +2152,7 @@ inline void MQTTReconnectManager(){
 
 inline void paramsModificationPoll(){
 	//actions on parametrs saving
-		//is else if per gestione priorità, l'ordine è importante! vanno fatti in momenti successivi
+		//is else if per gestione prioritï¿½, l'ordine ï¿½ importante! vanno fatti in momenti successivi
 		if((uint8_t) static_cast<ParUint8*>(pars[p(WIFICHANGED)])->val == 1){
 			pars[p(WIFICHANGED)]->load(0);
 			wifindx=0;
@@ -2236,12 +2244,12 @@ void onElapse(uint8_t nn, unsigned long tm){
 	DEBUG1_PRINT(F("  con sw: "));
 	DEBUG1_PRINTLN(sw);
 	
-	if(nn != RESETTIMER || nn != APOFFTIMER) //se è scaduto il timer di attesa o di blocco  (0,1) --> state n
+	if(nn != RESETTIMER || nn != APOFFTIMER) //se ï¿½ scaduto il timer di attesa o di blocco  (0,1) --> state n
 	{   
 		DEBUG2_PRINT(F("\nCount value: "));
 		DEBUG2_PRINTLN(getCntValue(nn));
 		if(getCntValue(nn) == 1){ 
-			if(roll[n]){//se è in modalità tapparella!
+			if(roll[n]){//se ï¿½ in modalitï¿½ tapparella!
 				if(getGroupState(nn)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
 					DEBUG2_PRINTLN(F("stato 0 roll mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 					secondPress(n);
@@ -2254,9 +2262,11 @@ void onElapse(uint8_t nn, unsigned long tm){
 					startEngineDelayTimer(n);
 					//adesso parte...
 					scriviOutDaStato();
+					//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
+					readStatesAndPub();
 				}
 	#if (!AUTOCAL)	
-				else if(getGroupState(nn)==2){//se il motore è in moto a vuoto
+				else if(getGroupState(nn)==2){//se il motore ï¿½ in moto a vuoto
 					DEBUG1_PRINTLN(F("onElapse roll mode manual:  timer di corsa a vuoto scaduto"));
 					///setGroupState(3,n);	//il motore va in moto cronometrato
 					startEndOfRunTimer(n);
@@ -2264,7 +2274,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 					readStatesAndPub();
 				}
 	#else
-				else if(getGroupState(nn)==2){//se il motore è in moto a vuoto
+				else if(getGroupState(nn)==2){//se il motore ï¿½ in moto a vuoto
 					DEBUG1_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
 					secondPress(n,0,true);
 					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
@@ -2273,12 +2283,12 @@ void onElapse(uint8_t nn, unsigned long tm){
 					readStatesAndPub();
 				}
 	#endif
-			}else{//se è in modalità switch
+			}else{//se ï¿½ in modalitï¿½ switch
 				if(getGroupState(nn)==1){//se lo switch era inibito (timer di attesa scaduto)
 					DEBUG1_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
 					startSimpleSwitchDelayTimer(nn);
 					//adesso commuta...
-				}else if(getGroupState(nn)==2){ //se lo switch è monostabile (timer di eccitazione scaduto)
+				}else if(getGroupState(nn)==2){ //se lo switch ï¿½ monostabile (timer di eccitazione scaduto)
 					DEBUG1_PRINTLN(F("stato 0 switch mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 					endPress(nn);
 				}
@@ -2287,7 +2297,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 				//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 				readStatesAndPub();
 			}
-		}else if(getCntValue(nn) > 1){ //in tutte le modalità
+		}else if(getCntValue(nn) > 1){ //in tutte le modalitï¿½
 			if(n == 0){
 				DEBUG1_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
 				if(getCntValue(nn)==3){
@@ -2339,7 +2349,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 					DEBUG2_PRINTLN(F("-----------------------------"));
 					ESP.eraseConfig(); //do the erasing of wifi credentials
 					ESP.restart();
-				}else if(getCntValue(nn)==5 && roll[n]){ //solo in modalità tapparella!
+				}else if(getCntValue(nn)==5 && roll[n]){ //solo in modalitï¿½ tapparella!
 					DEBUG2_PRINTLN(F("-----------------------------"));
 					DEBUG1_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
 					DEBUG2_PRINTLN(F("-----------------------------"));
@@ -2364,7 +2374,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 				}
 				//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
 				resetCnt(nn);
-			}else if(roll[n]){ //solo in modalità tapparella!
+			}else if(roll[n]){ //solo in modalitï¿½ tapparella!
 				DEBUG1_PRINTLN(F("onElapse:  timer 2 dei servizi a conteggio scaduto"));
 				if(getCntValue(CNTSERV3)==5){
 					DEBUG2_PRINTLN(F("-----------------------------"));
@@ -2392,7 +2402,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 			//mqttReconnect();
 			//wifi_station_dhcpc_start();
 			DEBUG2_PRINTLN(F("-----------------------------"));
-			DEBUG1_PRINTLN(F("Nussun client si è ancora connesso, disatttivato AP mode"));
+			DEBUG1_PRINTLN(F("Nussun client si ï¿½ ancora connesso, disatttivato AP mode"));
 			DEBUG2_PRINTLN(F("-----------------------------"));
 		}
 		//setGroupState(0,n%2);				 								//stato 0: il motore va in stato fermo
@@ -2406,6 +2416,10 @@ void onTapStop(uint8_t n){
 #if (AUTOCAL)
 	resetStatDelayCounter(n);
 #endif
+	//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
+	scriviOutDaStato();//15/08/19
+	//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
+	readStatesAndPub();
 }
 		
 void onCalibrEnd(unsigned long app, uint8_t n){
@@ -2440,8 +2454,9 @@ void manualCalibration(uint8_t btn){
 	//resetStatDelayCounter(btn);
 	disableUpThreshold(btn);
 #endif
-	pars[BTN2IN + btn*BTNDIM]->load(101);			//codice comando attiva calibrazione
-	
+	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->load((uint8_t) 101);			//codice comando attiva calibrazione
+	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->doaction(false);
+		
 	DEBUG2_PRINTLN(F("-----------------------------"));
 	DEBUG1_PRINT(F("FASE 1 CALIBRAZIONE MANUALE BTN "));
 	DEBUG1_PRINTLN(btn+1);
@@ -2731,23 +2746,26 @@ void ONCOND5_Evnt:: doaction(bool save){
 void LOGSLCT_Evnt:: doaction(bool save){
 	uint8_t ser, tlnt, mqtt, num;
 	
+	DEBUG_PRINT("LOGSLCT_Evnt ");
+	
 	num = static_cast<ParUint8*>(pars[p(LOGSLCT)])->val;
 	
+	DEBUG_PRINT("saveByteConf ");
 	if(save) saveByteConf(LOGSLCT);		////
 	
 	ser = (num >> 0) & 0x3;
 	tlnt = (num >> 2) & 0x3;
 	mqtt = (num >> 4) & 0x3;
 	
-	DEBUG1_PRINT("LOGSLCT_Evnt ");
-	DEBUG1_PRINT("ser: ");
-	DEBUG1_PRINT(ser);
-	DEBUG1_PRINT(", tlnt: ");
-	DEBUG1_PRINT(tlnt);
-	DEBUG1_PRINT(", mqtt: ");
-	DEBUG1_PRINTLN(mqtt);
 	
-	DEBUG1_PRINTLN("delete ");
+	DEBUG_PRINT("ser: ");
+	DEBUG_PRINT(ser);
+	DEBUG_PRINT(", tlnt: ");
+	DEBUG_PRINT(tlnt);
+	DEBUG_PRINT(", mqtt: ");
+	DEBUG_PRINTLN(mqtt);
+	
+	DEBUG_PRINTLN("delete ");
 	//if(dbg1 != NULL)
 		//dbg1->destroy();
 		delete dbg1;
@@ -2760,7 +2778,7 @@ void LOGSLCT_Evnt:: doaction(bool save){
 	dbg1 = NULL;
 	dbg2 = NULL;
 	
-	DEBUG_PRINTLN(F("Oggetti log NULL "));
+	DEBUG_PRINTLN(F("Oggetti log resi NULL "));
 	
 	if(ser > 0 && !tlnt & !mqtt){
 		DEBUG_PRINTLN(F("if(ser && !tlnt & !mqtt)"));
@@ -2794,12 +2812,12 @@ void LOGSLCT_Evnt:: doaction(bool save){
 		//10 00 00
 		if(mqtt == 1){
 			DEBUG_PRINTLN(F("if(mqtt == 1)"));
-			dbg1 = new MQTTLog(1, mqttClient);
+			dbg1 = new MQTTLog(1, mqttc);
 			dbg2 = new BaseLog(2);
 		}else if(mqtt == 2){
 			DEBUG_PRINTLN(F("iif(mqtt == 2)"));
-			dbg1 = new MQTTLog(1, mqttClient);
-			dbg2 = new MQTTLog(2, mqttClient);
+			dbg1 = new MQTTLog(1, mqttc);
+			dbg2 = new MQTTLog(2, mqttc);
 		}
 	}else if(ser > 0 && tlnt > 0 & !mqtt){
 		DEBUG_PRINTLN(F("if(ser && tlnt & !mqtt)"));
@@ -2812,8 +2830,8 @@ void LOGSLCT_Evnt:: doaction(bool save){
 		telnetMQTT(tlnt, mqtt);
 	}else if(tlnt == 2 && mqtt == 2 & ser == 2){
 		DEBUG_PRINTLN(F("if(tlnt == 2 && mqtt == 2 & ser == 2)"));
-		dbg1 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
-		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
+		dbg1 = new SerialTelnetMQTTLog(2, &telnet, mqttc);
+		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttc);
 	}else if(tlnt == 2 && mqtt > 0 & ser > 0){
 		DEBUG_PRINTLN(F("if(tlnt == 2 && mqtt & ser)"));
 		serialMQTT2(ser, mqtt);
@@ -2852,47 +2870,47 @@ void serialTelnet(uint8_t ser, uint8_t tlnt){
 void telnetMQTT(uint8_t tlnt, uint8_t mqtt){
 	if(tlnt == 1 && mqtt == 1){
 		DEBUG_PRINTLN(F("if(tlnt == 1 && mqtt == 1)"));
-		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttc);
 		dbg2 = new BaseLog(2);
 	}else if(tlnt == 2 && mqtt == 2){
 		DEBUG_PRINTLN(F("if(tlnt == 2 && mqtt == 2)"));
-		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
-		dbg2 = new TelnetMQTTLog(2, &telnet, mqttClient);
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttc);
+		dbg2 = new TelnetMQTTLog(2, &telnet, mqttc);
 	}else if(tlnt == 2 && mqtt == 1){
 		DEBUG_PRINTLN(F("if(tlnt == 2 && mqtt == 1)"));
-		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttc);
 		dbg2 = new TelnetLog(2, &telnet);
 	}else if(tlnt == 1 && mqtt == 2){
 		DEBUG_PRINTLN(F("if(tlnt == 1 && mqtt == 2)"));
-		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
-		dbg2 = new MQTTLog(2, mqttClient);
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttc);
+		dbg2 = new MQTTLog(2, mqttc);
 	}
 }
 
 void serialMQTT(uint8_t ser, uint8_t mqtt){
 	if(ser == 1 && mqtt == 1){
 		DEBUG_PRINTLN(F("\nif(ser == 1 && mqtt == 1)"));
-		dbg1 = new SerialMQTTLog(1, mqttClient);
+		dbg1 = new SerialMQTTLog(1, mqttc);
 		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && mqtt == 2){
 		DEBUG_PRINTLN(F("if(ser == 2 && mqtt == 2)"));
-		dbg1 = new SerialMQTTLog(1, mqttClient);
-		dbg2 = new SerialMQTTLog(2, mqttClient);
+		dbg1 = new SerialMQTTLog(1, mqttc);
+		dbg2 = new SerialMQTTLog(2, mqttc);
 	}else if(ser == 2 && mqtt == 1){
 		DEBUG_PRINTLN(F("if(ser == 2 && mqtt == 1)"));
-		dbg1 = new SerialMQTTLog(1, mqttClient);
+		dbg1 = new SerialMQTTLog(1, mqttc);
 		dbg2 = new SerialLog(2);
 	}else if(ser == 1 && mqtt == 2){
 		DEBUG_PRINTLN(F("if(ser == 1 && mqtt == 2)"));
-		dbg1 = new SerialMQTTLog(1, mqttClient);
-		dbg2 = new MQTTLog(2, mqttClient);
+		dbg1 = new SerialMQTTLog(1, mqttc);
+		dbg2 = new MQTTLog(2, mqttc);
 	}
 }
 
 void serialTelnet2(uint8_t ser, uint8_t tlnt){
 	if(ser == 1 && tlnt == 1){
 		DEBUG_PRINTLN(F("if(ser == 1 && tlnt == 1)"));
-		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttc);
 		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && tlnt == 2){
 		DEBUG_PRINTLN(F("if(ser == 2 && tlnt == 2)"));
@@ -2912,40 +2930,40 @@ void serialTelnet2(uint8_t ser, uint8_t tlnt){
 void telnetMQTT2(uint8_t tlnt, uint8_t mqtt){
 	if(tlnt == 1 && mqtt == 1){
 		DEBUG_PRINT(F("if(tlnt == 1 && mqtt == 1)"));
-		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttc);
 		dbg2 = new BaseLog(2);
 	}else if(tlnt == 2 && mqtt == 2){
 		DEBUG_PRINT(F("if(tlnt == 2 && mqtt == 2)"));
-		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
-		dbg2 = new TelnetMQTTLog(2, &telnet, mqttClient);
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttc);
+		dbg2 = new TelnetMQTTLog(2, &telnet, mqttc);
 	}else if(tlnt == 2 && mqtt == 1){
 		DEBUG_PRINT(F("if(tlnt == 2 && mqtt == 1)"));
-		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttc);
 		dbg2 = new TelnetLog(2, &telnet);
 	}else if(tlnt == 1 && mqtt == 2){
 		DEBUG_PRINT(F("if(tlnt == 1 && mqtt == 2)"));
-		dbg1 = new TelnetMQTTLog(1, &telnet, mqttClient);
-		dbg2 = new MQTTLog(2, mqttClient);
+		dbg1 = new TelnetMQTTLog(1, &telnet, mqttc);
+		dbg2 = new MQTTLog(2, mqttc);
 	}
 }
 
 void serialMQTT2(uint8_t ser, uint8_t mqtt){
 	if(ser == 1 && mqtt == 1){
 		DEBUG_PRINT(F("if(ser == 1 && mqtt == 1)"));
-		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttc);
 		dbg2 = new BaseLog(2);
 	}else if(ser == 2 && mqtt == 2){
 		DEBUG_PRINT(F("if(ser == 2 && mqtt == 2)"));
-		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
-		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttClient);
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttc);
+		dbg2 = new SerialTelnetMQTTLog(2, &telnet, mqttc);
 	}else if(ser == 2 && mqtt == 1){
 		DEBUG_PRINT(F("if(ser == 2 && mqtt == 1)"));
-		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttc);
 		dbg2 = new SerialLog(2);
 	}else if(ser == 1 && mqtt == 2){
 		DEBUG_PRINT(F("if(ser == 1 && mqtt == 2)"));	
-		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttClient);
-		dbg2 = new MQTTLog(2, mqttClient);
+		dbg1 = new SerialTelnetMQTTLog(1, &telnet, mqttc);
+		dbg2 = new MQTTLog(2, mqttc);
 	}
 }
 /*

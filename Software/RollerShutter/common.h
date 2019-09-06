@@ -741,19 +741,27 @@ class ParVarStr : public Par{
 		void loadFromEprom();
 		void load(String);
 };
+
+class MQTTC{
+	private:
+		MQTT *mqt = NULL;
+		char result[RSLTBUFLEN];
+		byte pos = DATEBUFLEN + 1;	
+	public:
+		MQTTC(MQTT *x){mqt = x; memset(result, ' ', DATEBUFLEN); result[0] = '\0';};
+		void mqttSend(const char *c, bool b = false);
+		void setMQTTClient(MQTT *x){mqt = x;};
+};
 //End of event classes------------------------------------------------------------------------------------------------------------
 class BaseLog{
 	protected:
 		bool ontlnt = false;
-		void mqttSend(const char*, bool);
-		char result[RSLTBUFLEN];
-		byte pos = DATEBUFLEN + 1;
-		MQTT *mqttc = NULL;
+		MQTTC *mqtc = NULL;
 	public:
 		bool isTelnet();
 		byte getLevel(){return level;};
 		uint8_t level;
-		BaseLog(uint8_t lev){level = lev; memset(result, ' ', DATEBUFLEN); result[0] = '\0';};
+		BaseLog(uint8_t lev){level = lev;};
 		virtual void print(const char*);
 		virtual void println(const char*);
 		virtual void print(const __FlashStringHelper *);
@@ -762,6 +770,8 @@ class BaseLog{
 		virtual void println(String msg);
 		virtual void print(char msg);
 		virtual void println(char msg);
+		virtual void print(uint8_t msg);
+		virtual void println(uint8_t msg);
 		virtual void print(int msg);
 		virtual void println(int msg);
 		virtual void print(long msg);
@@ -792,7 +802,7 @@ extern BaseLog* dbg2;
 
 class SerialLog: public BaseLog{
 	public:
-		SerialLog(uint8_t x):BaseLog(x){ontlnt = false; mqttc = NULL;};
+		SerialLog(uint8_t x):BaseLog(x){ontlnt = false; mqtc = NULL;};
 		void print(const char*);
 		void println(const char*);
 		void print(const __FlashStringHelper *);
@@ -801,6 +811,8 @@ class SerialLog: public BaseLog{
 		void println(String msg);
 		void print(char);
 		void println(char);
+		void print(uint8_t msg);
+		void println(uint8_t msg);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -817,10 +829,10 @@ class SerialLog: public BaseLog{
 		~SerialLog();
 };
 class TelnetLog: public BaseLog{
-	private:
+	protected:
 		RemoteDebug *tel;
 	public:
-		TelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y; ontlnt = true; mqttc = NULL;};
+		TelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y; ontlnt = true; mqtc = NULL;};
 		void print(const char*);
 		void println(const char*);
 		void print(const __FlashStringHelper *);
@@ -829,6 +841,8 @@ class TelnetLog: public BaseLog{
 		void println(String msg);
 		void print(char);
 		void println(char);
+		void print(uint8_t msg);
+		void println(uint8_t msg);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -846,7 +860,7 @@ class TelnetLog: public BaseLog{
 };
 class MQTTLog: public BaseLog{
 	public:
-		MQTTLog(uint8_t x, MQTT *y):BaseLog(x){mqttc = y; ontlnt = false;};
+		MQTTLog(uint8_t x, MQTTC *y):BaseLog(x){mqtc = y; ontlnt = false;};
 		void print(const char*);
 		void println(const char*);
 		void print(const __FlashStringHelper *);
@@ -855,6 +869,8 @@ class MQTTLog: public BaseLog{
 		void println(String msg);
 		void print(char);
 		void println(char);
+		void print(uint8_t msg);
+		void println(uint8_t msg);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -871,10 +887,10 @@ class MQTTLog: public BaseLog{
 		~MQTTLog();
 };
 class SerialTelnetLog: public BaseLog{
-	private:
+	protected:
 		RemoteDebug *tel;
 	public:
-		SerialTelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y; ontlnt = true; mqttc = NULL;};
+		SerialTelnetLog(uint8_t x, RemoteDebug* y):BaseLog(x){tel = y; ontlnt = true; mqtc = NULL;};
 		void print(const char*);
 		void println(const char*);
 		void print(const __FlashStringHelper *);
@@ -883,6 +899,8 @@ class SerialTelnetLog: public BaseLog{
 		void println(String msg);
 		void print(char);
 		void println(char);
+		void print(uint8_t msg);
+		void println(uint8_t msg);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -900,7 +918,7 @@ class SerialTelnetLog: public BaseLog{
 };
 class SerialMQTTLog: public BaseLog{
 	public:
-		SerialMQTTLog(uint8_t x, MQTT *y):BaseLog(x){mqttc = y; ontlnt = false;};
+		SerialMQTTLog(uint8_t x, MQTTC *y):BaseLog(x){mqtc = y; ontlnt = false;};
 		void print(const char*);
 		void println(const char*);
 		void print(const __FlashStringHelper *);
@@ -909,6 +927,8 @@ class SerialMQTTLog: public BaseLog{
 		void println(String msg);
 		void print(char);
 		void println(char);
+		void print(uint8_t msg);
+		void println(uint8_t msg);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -925,10 +945,10 @@ class SerialMQTTLog: public BaseLog{
 		~SerialMQTTLog();
 };
 class TelnetMQTTLog: public BaseLog{
-	private:
+	protected:
 		RemoteDebug *tel;
 	public:
-		TelnetMQTTLog(uint8_t x, RemoteDebug* y, MQTT *z):BaseLog(x){tel = y; mqttc = z; ontlnt = true;};
+		TelnetMQTTLog(uint8_t x, RemoteDebug* y, MQTTC *z):BaseLog(x){tel = y; mqtc = z; ontlnt = true;};
 		void print(const char*);
 		void println(const char*);
 		void print(const __FlashStringHelper *);
@@ -937,6 +957,8 @@ class TelnetMQTTLog: public BaseLog{
 		void println(String msg);
 		void print(char);
 		void println(char);
+		void print(uint8_t msg);
+		void println(uint8_t msg);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);
@@ -953,10 +975,10 @@ class TelnetMQTTLog: public BaseLog{
 		~TelnetMQTTLog();
 };
 class SerialTelnetMQTTLog: public BaseLog{
-	private:
+	protected:
 		RemoteDebug *tel;
 	public:
-		SerialTelnetMQTTLog(uint8_t x, RemoteDebug* y, MQTT *z):BaseLog(x){tel = y; mqttc = z; ontlnt = true;};
+		SerialTelnetMQTTLog(uint8_t x, RemoteDebug* y, MQTTC *z):BaseLog(x){tel = y; mqtc = z; ontlnt = true;};
 		void print(const char*);
 		void println(const char*);
 		void print(const __FlashStringHelper *);
@@ -965,6 +987,8 @@ class SerialTelnetMQTTLog: public BaseLog{
 		void println(String msg);
 		void print(char);
 		void println(char);
+		void print(uint8_t msg);
+		void println(uint8_t msg);
 		void print(int msg);
 		void println(int msg);
 		void print(long msg);

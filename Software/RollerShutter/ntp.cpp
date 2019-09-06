@@ -140,8 +140,8 @@ void ICACHE_FLASH_ATTR	user_check_sntp_stamp(void *arg){
 
 unsigned long updateNTP(unsigned long ntpTime) {
     if(ntpTime != 0) {
-      DEBUG1_PRINT(F("Time updated, clock skew: "));
-      DEBUG1_PRINTLN(getUNIXTime() - ntpTime);
+      DEBUG_PRINT(F("Time updated, clock skew: "));
+      DEBUG_PRINTLN(getUNIXTime() - ntpTime);
       lastNTPTime = ntpTime;
       //lastNTPMillis = millis();
     }

@@ -440,9 +440,8 @@ short secondPress(byte n, int delay, bool end){
 	}else{
 		calibr = 0;
 	}
-	onTapStop(n);
-	
 	copytout();
+	onTapStop(n);
 	return rslt;
 }
 
