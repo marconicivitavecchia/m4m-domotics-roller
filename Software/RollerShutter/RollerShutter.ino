@@ -151,6 +151,19 @@ bool mqttConnected=false;
 bool mqttAddrChanged=true;
 bool dscnct=false;
 String pr[3] = {"{\"pr1\":\"", "{\"pr2\":\"", "\"}"};
+
+void printIn(){
+	DEBUG1_PRINT(F("in array: "));
+	DEBUG1_PRINT(in[0]);
+	DEBUG1_PRINT(F(", "));
+	DEBUG1_PRINT(in[1]);
+	DEBUG1_PRINT(F(", "));
+	DEBUG1_PRINT(in[2]);
+	DEBUG1_PRINT(F(", "));
+	DEBUG1_PRINTLN(in[3]);
+}
+
+
 #if (MCP2317) 
 	Adafruit_MCP23017 mcp;
     void MCP2317_init(){
@@ -924,10 +937,10 @@ void mqttCallback(String &topic, String &response) {
     
 	int v;
 #if defined (_DEBUG) || defined (_DEBUGR)	
-	DEBUG_PRINT(F("Message arrived on topic: ["));
-	DEBUG_PRINT(topic);
-	DEBUG_PRINT(F("], "));
-	DEBUG_PRINTLN(response);
+	DEBUG1_PRINT(F("Message arrived on topic: ["));
+	DEBUG1_PRINT(topic);
+	DEBUG1_PRINT(F("], "));
+	DEBUG1_PRINTLN(response);
 #endif	
 	//v = parseJsonFieldToInt(response, mqttJson[0], ncifre);
 	//digitalWrite(OUTSLED, v); 
@@ -1902,11 +1915,11 @@ inline void automaticStopManager(){
 						if(chk[0] == -1){
 							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
-							blocked[0] = secondPress(0,40,true);
+							blocked[0] = secondPress(0,50,true);
 							scriviOutDaStato();
 						}else if(chk[0] == 2){
 							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
-							blocked[0] = secondPress(0,40);
+							blocked[0] = secondPress(0,50);
 							scriviOutDaStato();
 							blocked[0] = 1;
 						}else if(chk[0] == 1){
@@ -1966,11 +1979,11 @@ inline void automaticStopManager(){
 						if(chk[1] == -1){
 							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
-							blocked[1] = secondPress(1,40,true);
+							blocked[1] = secondPress(1,50,true);
 							scriviOutDaStato();
 						}else if(chk[1] == 2){
 							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
-							blocked[1] = secondPress(1,40);
+							blocked[1] = secondPress(1,50);
 							scriviOutDaStato();
 							blocked[1] = 1;
 						}else if(chk[1] == 1){
@@ -2242,14 +2255,22 @@ void onElapse(uint8_t nn, unsigned long tm){
 	DEBUG1_PRINT(F("  con n: "));
 	DEBUG1_PRINT(n);
 	DEBUG1_PRINT(F("  con sw: "));
-	DEBUG1_PRINTLN(sw);
+	DEBUG1_PRINT(sw);
+	DEBUG1_PRINT(F("  con count value: "));
+	DEBUG1_PRINTLN(getCntValue(nn));
+	DEBUG1_PRINTLN(F("-----------------"));
+	DEBUG1_PRINTLN(getCntValue(0));
+	DEBUG1_PRINTLN(getCntValue(1));
+	DEBUG1_PRINTLN(getCntValue(2));
+	DEBUG1_PRINTLN(getCntValue(3));
+	DEBUG1_PRINTLN(F("-----------------"));
 	
 	if(nn != RESETTIMER || nn != APOFFTIMER) //se � scaduto il timer di attesa o di blocco  (0,1) --> state n
 	{   
 		DEBUG2_PRINT(F("\nCount value: "));
 		DEBUG2_PRINTLN(getCntValue(nn));
 		if(getCntValue(nn) == 1){ 
-			if(roll[n]){//se � in modalit� tapparella!
+			if(roll[n]){//se è in modalit� tapparella!
 				if(getGroupState(nn)==3){ //il motore e in moto cronometrato scaduto (timer di blocco scaduto)
 					DEBUG2_PRINTLN(F("stato 0 roll mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 					secondPress(n);
@@ -2283,7 +2304,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 					readStatesAndPub();
 				}
 	#endif
-			}else{//se � in modalit� switch
+			}else{//se è in modalit� switch
 				if(getGroupState(nn)==1){//se lo switch era inibito (timer di attesa scaduto)
 					DEBUG1_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
 					startSimpleSwitchDelayTimer(nn);
@@ -2301,6 +2322,8 @@ void onElapse(uint8_t nn, unsigned long tm){
 			if(n == 0){
 				DEBUG1_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
 				if(getCntValue(nn)==3){
+					//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
+					resetCnt(nn);
 					wifiState = WIFIAP;
 					//wifi_station_dhcpc_stop();
 					//WiFi.enableAP(true);
@@ -2344,17 +2367,23 @@ void onElapse(uint8_t nn, unsigned long tm){
 					//MDNS.update();
 					setGroupState(0,n%2);
 				}else if(getCntValue(nn)==7){
+					//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
+					resetCnt(nn);
 					DEBUG2_PRINTLN(F("-----------------------------"));
 					DEBUG1_PRINTLN(F("Rebooting ESP without reset of configuration"));
 					DEBUG2_PRINTLN(F("-----------------------------"));
 					ESP.eraseConfig(); //do the erasing of wifi credentials
 					ESP.restart();
 				}else if(getCntValue(nn)==5 && roll[n]){ //solo in modalit� tapparella!
+					//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
+					resetCnt(nn);
 					DEBUG2_PRINTLN(F("-----------------------------"));
 					DEBUG1_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 1"));
 					DEBUG2_PRINTLN(F("-----------------------------"));
 					manualCalibration(0); //BTN1
 				}else if(getCntValue(nn)==9){
+					//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
+					resetCnt(nn);
 					DEBUG2_PRINTLN(F("-----------------------------"));
 					DEBUG1_PRINTLN(F("Reboot ESP with reset of configuration"));
 					DEBUG2_PRINTLN(F("-----------------------------"));
@@ -2362,6 +2391,8 @@ void onElapse(uint8_t nn, unsigned long tm){
 				}
 #if (AUTOCAL_HLW8012) 
 				else if(getCntValue(nn)==11){
+					//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
+					resetCnt(nn);
 					DEBUG2_PRINTLN(F("-----------------------------"));
 					DEBUG1_PRINTLN(F("Do power calibration"));
 					DEBUG2_PRINTLN(F("-----------------------------"));
@@ -2370,13 +2401,15 @@ void onElapse(uint8_t nn, unsigned long tm){
 				}
 #endif				
 				else{
+					//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
+					resetCnt(nn);
 					setGroupState(0,nn);
 				}
-				//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
-				resetCnt(nn);
 			}else if(roll[n]){ //solo in modalit� tapparella!
 				DEBUG1_PRINTLN(F("onElapse:  timer 2 dei servizi a conteggio scaduto"));
 				if(getCntValue(CNTSERV3)==5){
+					//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
+					resetCnt(nn);
 					DEBUG2_PRINTLN(F("-----------------------------"));
 					DEBUG1_PRINTLN(F("ATTIVATA CALIBRAZIONE MANUALE BTN 2"));
 					DEBUG2_PRINTLN(F("-----------------------------"));
@@ -2384,8 +2417,6 @@ void onElapse(uint8_t nn, unsigned long tm){
 				}else{
 					setGroupState(0,nn);
 				}
-				//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
-				resetCnt(nn);
 			}
 		}
 	}else if(nn == RESETTIMER)
@@ -2423,7 +2454,7 @@ void onTapStop(uint8_t n){
 }
 		
 void onCalibrEnd(unsigned long app, uint8_t n){
-	pars[p(THALT1 + n)]->load(app);
+	static_cast<ParInt*>(pars[p(THALT1 + n)])->load(app);
 	//initTapparellaLogic(in,inr,outLogic,(confcmd[THALT1]).toInt(),(confcmd[THALT2]).toInt(),(confcmd[STDEL1]).toInt(),(confcmd[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
 	setTapThalt(app, n);
 	DEBUG2_PRINTLN(F("-----------------------------"));
@@ -2431,19 +2462,19 @@ void onCalibrEnd(unsigned long app, uint8_t n){
 	calAvg[n] = getAVG(n);
 	weight[0] = (double) calAvg[0] / (calAvg[0] +  calAvg[1]);
 	weight[1] = (double) calAvg[1] / (calAvg[0] +  calAvg[1]);
-	pars[p(VALWEIGHT)]->load(weight[0]);
+	static_cast<ParFloat*>(pars[p(VALWEIGHT)])->load(weight[0]);
 	updateUpThreshold(n);
 	//confcmd[TRSHOLD1 + n] = String(getThresholdUp(n));
 	//setThresholdUp((confcmd[TRSHOLD1 + n]).toFloat(), n);
 	saveSingleConf(VALWEIGHT);
 	DEBUG2_PRINT(F("Modified current weight "));
-	DEBUG2_PRINTLN(pars[p(VALWEIGHT)]->getStrVal());
+	DEBUG2_PRINTLN(static_cast<ParFloat*>(pars[p(VALWEIGHT)])->getStrVal());
 #endif
 	saveSingleConf(THALT1 + n);
 	DEBUG2_PRINT(F("Modified THALT "));
 	DEBUG2_PRINTLN(THALT1 + n);
 	DEBUG2_PRINT(F(": "));
-	DEBUG2_PRINTLN(pars[p(THALT1 + n)]->getStrVal());
+	DEBUG2_PRINTLN(static_cast<ParInt*>(pars[p(THALT1 + n)])->getStrVal());
 }
 
 void manualCalibration(uint8_t btn){
@@ -2454,8 +2485,15 @@ void manualCalibration(uint8_t btn){
 	//resetStatDelayCounter(btn);
 	disableUpThreshold(btn);
 #endif
-	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->load((uint8_t) 101);			//codice comando attiva calibrazione
-	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->doaction(false);
+	
+    //printIn();
+	//printDfn();
+	//printOutlogic();
+	
+	//DEBUG1_PRINTLN(getCntValue(0));
+	//DEBUG1_PRINTLN(getCntValue(1));
+	//DEBUG1_PRINTLN(getCntValue(2));
+	//DEBUG1_PRINTLN(getCntValue(3));
 		
 	DEBUG2_PRINTLN(F("-----------------------------"));
 	DEBUG1_PRINT(F("FASE 1 CALIBRAZIONE MANUALE BTN "));
@@ -2466,6 +2504,9 @@ void manualCalibration(uint8_t btn){
 	DEBUG1_PRINT(F("PREMERE UN PULSANTE QUALSIASI DEL GRUPPO "));
 	DEBUG1_PRINTLN(btn+1);
 	DEBUG2_PRINTLN(F("-----------------------------"));
+	
+	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->load((uint8_t) 101);			//codice comando attiva calibrazione
+	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->doaction(false);
 }
 
 void rebootSystem(){

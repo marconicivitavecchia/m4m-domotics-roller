@@ -37,6 +37,17 @@ void initfn(byte val,  byte n){
 		precval2[n]=val;
 }
 */
+void printDfn(){
+	DEBUG1_PRINT(F("dprecval2: "));
+	DEBUG1_PRINT(dprecval2[0]);
+	DEBUG1_PRINT(F(", "));
+	DEBUG1_PRINT(dprecval2[1]);
+	DEBUG1_PRINT(F(", "));
+	DEBUG1_PRINT(dprecval2[2]);
+	DEBUG1_PRINT(F(", "));
+	DEBUG1_PRINTLN(dprecval2[3]);
+}
+
 void initdfn(byte val, byte n){
 	dprecval2[n]=val;
 }

@@ -1014,6 +1014,7 @@ class SerialTelnetMQTTLog: public BaseLog{
 #include "statistics.h"
 #endif
 
+void printIn();
 void setup_AP(bool);
 void setup_wifi();
 void mqttReconnect();

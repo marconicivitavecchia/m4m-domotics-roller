@@ -66,7 +66,9 @@ byte switchLogic(byte sw, byte n){
 	{
 		DEBUG2_PRINT(F("fronte di SW: "));
 		DEBUG2_PRINTLN(BTN1IN+poffset+sw+1);
-		DEBUG2_PRINT(F("stato switch:  "));
+		DEBUG2_PRINT(F("stato switch "));
+		DEBUG2_PRINTLN(toffset);
+		DEBUG2_PRINT(F(": "));
 		DEBUG2_PRINTLN(getGroupState(toffset));
 		
 		byte s = getGroupState(toffset);
@@ -138,6 +140,18 @@ void resetOutlogic(byte n){
 	outlogicp[SW1ONS+n*STATUSDIM+0]=false;
 	outlogicp[SW1ONS+n*STATUSDIM+1]=false;
 }
+
+void printOutlogic(){
+	DEBUG1_PRINT(F("Outlogic: "));
+	DEBUG1_PRINT(outlogicp[SW1ONS+0*STATUSDIM+0]);
+	DEBUG1_PRINT(F(", "));
+	DEBUG1_PRINT(outlogicp[SW1ONS+0*STATUSDIM+1]);
+	DEBUG1_PRINT(F(", "));
+	DEBUG1_PRINT(outlogicp[SW1ONS+1*STATUSDIM+0]);
+	DEBUG1_PRINT(F(", "));
+	DEBUG1_PRINTLN(outlogicp[SW1ONS+1*STATUSDIM+1]);
+}
+
 
 byte getDelayedCmd(byte i){
 	return lastCmd[i];
@@ -421,7 +435,7 @@ short secondPress(byte n, int delay, bool end){
 		addCronoCount((long)stopCrono(n)-delay, (short) getCronoDir(n),n);
 		long app = (long) getCronoValue(n) - delay;
 		//unsigned int app = getCronoCount(n);
-		setCronoCount( app*(getCronoDir(n)==UP),n);
+		setCronoCount(app*(getCronoDir(n)==UP),n);
 		
 		if(app < CNTIME*1000)
 			app = CNTIME*1000;
@@ -451,15 +465,15 @@ void firstPress(byte sw, byte n){
 	int poffset=n*BTNDIM;
 	
 	//da effettuare solo se il motore è fermo
-	//DEBUG2_PRINT(F("\nPrima pressione UP: motore "));
-	//DEBUG2_PRINT(n+1);
-	//DEBUG2_PRINT(F("\ninp[BTN1IN+poffset] "));
-	//DEBUG2_PRINTLN(inp[BTN1IN+poffset]);
+	DEBUG2_PRINT(F("\nPrima pressione UP: motore "));
+	DEBUG2_PRINT(n+1);
+	DEBUG2_PRINT(F("\ninp[BTN1IN+poffset] "));
+	DEBUG2_PRINTLN(inp[BTN1IN+poffset]);
 		
 	//resetTimer(TMRHALT+toffset);			
 	if(inp[BTN1IN+poffset+sw] == 255){
-		//DEBUG2_PRINT(F(" in moto verso "));
-		//DEBUG2_PRINTLN(sw);
+		DEBUG2_PRINT(F(" in moto verso "));
+		DEBUG2_PRINTLN(sw);
 		//LIST OF UP ACTIONSalt 
 		//imposta la DIRSezione
 		outlogicp[DIRS+offset]=sw;	
@@ -479,10 +493,10 @@ void firstPress(byte sw, byte n){
 #endif			
 		target[toffset] = (long) (target[toffset]-getCronoCount(n))*getCronoDir(n);
 		
-		//DEBUG2_PRINT(F("first: "));
-		//DEBUG2_PRINTLN(first[n]);
-		//DEBUG2_PRINT(F("Target: in moto verso "));
-		//DEBUG2_PRINTLN(target[n]);
+		DEBUG2_PRINT(F("first: "));
+		DEBUG2_PRINTLN(first[n]);
+		DEBUG2_PRINT(F("Target: in moto verso "));
+		DEBUG2_PRINTLN(target[n]);
 
 	}else if(inp[BTN1IN+poffset+sw] == 101){
 		DEBUG2_PRINT(F("Calibrazione: in moto verso "));

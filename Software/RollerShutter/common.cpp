@@ -2490,7 +2490,6 @@ void MQTTLog::println(char msg){
 };
 void MQTTLog::print(uint8_t msg){
 	char buf[20];
-	itoa(msg,buf,10);
 	sprintf(buf,"%u",msg);
 	mqtc->mqttSend(buf);
 };
