@@ -1515,10 +1515,10 @@ void leggiTastiLocali2(){
 #if (MCP2317) 
 	char s[18];
 	uint8_t regA = mcp.readGPIO(0);
-	uint8_t inmask = regA & 0xF0;	//00001111 (15)
+	uint8_t inmask = regA & 0xF;	//00001111 (15)
 	uint8_t inmask2;
 	
-	//uint8_t inmask = regA & 0xF;	//00001111 (15)
+	//uint8_t inmask = regA & 0xF0;	//00001111 (15)
 	if(inmask != 15){ //pullup!
 	//if(inmask != 240){ //pullup!
 		inmask2 = 15;
