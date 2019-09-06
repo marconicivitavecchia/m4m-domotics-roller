@@ -254,10 +254,10 @@ inline void setColor(uint8_t num)
 {   
 	uint8_t r,g,b;
 
-    getbits(num, r, g, b);
-	mcp.digitalWrite(GREEN,g);	
-	mcp.digitalWrite(RED,r);		
-	mcp.digitalWrite(BLUE,b);
+    //getbits(num, r, g, b);
+	//mcp.digitalWrite(GREEN,g);	
+	//mcp.digitalWrite(RED,r);		
+	//mcp.digitalWrite(BLUE,b);
 } 
 
 void printOut(){ 
@@ -1316,7 +1316,7 @@ void setup(){
   //startCnt(0,60,TIMECNT);
   //read and set dynamic configurations
   readActionConfAndSet(); 
- /* 
+
 #if (MCP2317) 
 	MCP2317_init();
 	mcp.pinMode(BTN1U, INPUT);
@@ -1374,8 +1374,8 @@ void setup(){
 	digitalWrite(OUT2EU, LOW);
 	digitalWrite(OUT2DD, LOW);
 #endif
-*/	
 
+ /* 
 	MCP2317_init();
 	mcp.pinMode(BTN1U, INPUT);
 	mcp.pinMode(BTN1D, INPUT);
@@ -1404,6 +1404,7 @@ void setup(){
 	mcp.digitalWrite(GREEN, LOW);
 	mcp.digitalWrite(RED, LOW);
 	mcp.digitalWrite(GREEN, LOW);
+	*/	
   //imposta la DIRSezione delle porte dei led, imposta inizialmente i led come spento  
   
   //------------------------------------------OTA SETUP---------------------------------------------------------------------------------------
@@ -1689,7 +1690,7 @@ inline void loop2() {
 
 #if (MCP2317) 
 	if(!(step % LED_STEP)){		
-		 printOut();
+		 //printOut();
 	}//END LED_STEP scheduler--------------------------------------------------
 #endif
 
@@ -2083,7 +2084,7 @@ inline void wifiFailoverManager(){
 		if(!wifiConn){
 			//lampeggia led di connessione
 			#if (MCP2317) 
-				mcp.digitalWrite(BLUE, !mcp.digitalRead(BLUE));
+				//mcp.digitalWrite(BLUE, !mcp.digitalRead(BLUE));
 			#else
 				digitalWrite(OUTSLED, !digitalRead(OUTSLED));
 			#endif
@@ -2113,7 +2114,7 @@ inline void wifiFailoverManager(){
 			swcount = (swcount + 1) % TCOUNT;
 		}else{
 			#if (MCP2317) 
-				mcp.digitalWrite(BLUE, LOW);
+				//mcp.digitalWrite(BLUE, LOW);
 			#else
 				digitalWrite(OUTSLED, LOW);
 			#endif
