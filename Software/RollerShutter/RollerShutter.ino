@@ -104,7 +104,7 @@ unsigned int thalt4=5000;
 //{"OUTSLED":"0","up1":"1","down1":"0","up2":"50","down2":"0", pr1:"12", pr2:"76"}
 int ncifre=4;
 //vettori di ingresso, uscite e stato
-uint8_t in[NBTN*BTNDIM], outPorts[NBTN*BTNDIM], out[NBTN*BTNDIM];
+uint8_t in[NBTN*BTNDIM], out[NBTN*BTNDIM];
 Par *pars[PARAMSDIM];
 unsigned long *inl = (unsigned long *)in;
 
@@ -1317,10 +1317,6 @@ void setup(){
   //read and set dynamic configurations
   readActionConfAndSet(); 
   
-  outPorts[0]=OUT1EU;
-  outPorts[1]=OUT1DD;
-  outPorts[2]=OUT2EU;
-  outPorts[3]=OUT2DD;
 #if (MCP2317) 
 	MCP2317_init();
 	mcp.pinMode(BTN1U, INPUT);
@@ -1332,18 +1328,23 @@ void setup(){
 	mcp.pullUp(BTN1D, HIGH);
 	mcp.pullUp(BTN2U, HIGH);
 	mcp.pullUp(BTN2D, HIGH);
-#else
+ #else
 	mcp.pullUp(BTN1U, LOW);
 	mcp.pullUp(BTN1D, LOW);
 	mcp.pullUp(BTN2U, LOW);
 	mcp.pullUp(BTN2D, LOW);
- #endif
-	pinMode(OUTSLED,OUTPUT);
-	digitalWrite(OUTSLED, LOW);
-	for(int i=0;i<NBTN*BTNDIM;i++){
-		mcp.pinMode(outPorts[i],OUTPUT);
-		mcp.digitalWrite(outPorts[i], HIGH);
-	}
+ #endif	
+	mcp.pinMode(OUT1EU,OUTPUT);
+	mcp.pinMode(OUT1DD,OUTPUT);
+	mcp.pinMode(OUT2EU,OUTPUT);
+	mcp.pinMode(OUT2DD,OUTPUT);
+	mcp.digitalWrite(OUT1EU, LOW);
+	mcp.digitalWrite(OUT1DD, LOW);
+	mcp.digitalWrite(OUT2EU, LOW);
+	mcp.digitalWrite(OUT2DD, LOW);
+	
+	//pinMode(OUTSLED,OUTPUT);
+	//digitalWrite(OUTSLED, LOW);
 	mcp.pinMode(GREEN,OUTPUT);
 	mcp.pinMode(RED,OUTPUT);
 	mcp.pinMode(BLUE,OUTPUT);
@@ -1364,10 +1365,14 @@ void setup(){
  #endif
 	pinMode(OUTSLED,OUTPUT);
 	digitalWrite(OUTSLED, LOW);
-	for(int i=0;i<NBTN*BTNDIM;i++){
-		pinMode(outPorts[i],OUTPUT);
-		digitalWrite(outPorts[i], LOW);
-	}
+	pinMode(OUT1EU,OUTPUT);
+	pinMode(OUT1DD,OUTPUT);
+	pinMode(OUT2EU,OUTPUT);
+	pinMode(OUT2DD,OUTPUT);
+	digitalWrite(OUT1EU, LOW);
+	digitalWrite(OUT1DD, LOW);
+	digitalWrite(OUT2EU, LOW);
+	digitalWrite(OUT2DD, LOW);
 #endif
 	
   //imposta la DIRSezione delle porte dei led, imposta inizialmente i led come spento  
