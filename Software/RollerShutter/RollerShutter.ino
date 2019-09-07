@@ -381,10 +381,10 @@ inline void initOfst(){
 	/*6*/pars[p(SWROLL2)] = new ParUint8(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i');
 	/*7*/pars[p(UTCSDT)] = new ParUint8(1, "utcsdt", "utcsdt", NTPSDTOFST, 'p', 'n', new UTCSDT_Evnt());
 	/*8*/pars[p(UTCZONE)] = new ParInt(1, "utczone", "utczone", NTPZONEOFST, 'p', 'i', new UTCZONE_Evnt());
-	/*9*/pars[p(THALT1)] = new ParInt(thalt1,"thalt1", "thalt1", THALT1OFST, 'p','i');
-	/*10*/pars[p(THALT2)] = new ParInt(thalt2, "thalt2", "thalt2", THALT2OFST, 'p','i');
-	/*11*/pars[p(THALT3)] = new ParInt(thalt3,"thalt3", "thalt3", THALT3OFST, 'p','i');
-	/*12*/pars[p(THALT4)] = new ParInt(thalt4, "thalt4", "thalt4", THALT4OFST, 'p','i');
+	/*9*/pars[p(THALT1)] = new ParLong(thalt1,"thalt1", "thalt1", THALT1OFST, 'p','i');
+	/*10*/pars[p(THALT2)] = new ParLong(thalt2, "thalt2", "thalt2", THALT2OFST, 'p','i');
+	/*11*/pars[p(THALT3)] = new ParLong(thalt3,"thalt3", "thalt3", THALT3OFST, 'p','i');
+	/*12*/pars[p(THALT4)] = new ParLong(thalt4, "thalt4", "thalt4", THALT4OFST, 'p','i');
 	/*13*/pars[p(STDEL1)] = new ParFloat(400, "stdel1", "stdel1", STDEL1OFST, 'p','i');
 	/*14*/pars[p(STDEL2)] = new ParFloat(400, "stdel2", "stdel2", STDEL2OFST, 'p','i');
 	/*15*/pars[p(VALWEIGHT)] = new ParFloat(0.5, "valweight", "valweight", VALWEIGHTOFST, 'p','i');
@@ -2497,7 +2497,7 @@ void onTapStop(uint8_t n){
 }
 		
 void onCalibrEnd(unsigned long app, uint8_t n){
-	static_cast<ParInt*>(pars[p(THALT1 + n)])->load(app);
+	static_cast<ParLong*>(pars[p(THALT1 + n)])->load(app);
 	//initTapparellaLogic(in,inr,outLogic,(confcmd[THALT1]).toInt(),(confcmd[THALT2]).toInt(),(confcmd[STDEL1]).toInt(),(confcmd[STDEL2]).toInt(),BTNDEL1,BTNDEL2);
 	setTapThalt(app, n);
 	DEBUG2_PRINTLN(F("-----------------------------"));
@@ -2517,7 +2517,7 @@ void onCalibrEnd(unsigned long app, uint8_t n){
 	DEBUG2_PRINT(F("Modified THALT "));
 	DEBUG2_PRINTLN(THALT1 + n);
 	DEBUG2_PRINT(F(": "));
-	DEBUG2_PRINTLN(static_cast<ParInt*>(pars[p(THALT1 + n)])->getStrVal());
+	DEBUG2_PRINTLN(static_cast<ParLong*>(pars[p(THALT1 + n)])->getStrVal());
 }
 
 void manualCalibration(uint8_t btn){
