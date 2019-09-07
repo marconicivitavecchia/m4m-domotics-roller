@@ -1962,11 +1962,11 @@ inline void automaticStopManager(){
 						if(chk[0] == -1){
 							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
-							blocked[0] = secondPress(0,0,true);
+							blocked[0] = secondPress(0,50,true);
 							scriviOutDaStato();
 						}else if(chk[0] == 2){
 							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
-							blocked[0] = secondPress(0,0);
+							blocked[0] = secondPress(0,50);
 							scriviOutDaStato();
 							blocked[0] = 1;
 						}else if(chk[0] == 1){
@@ -2030,7 +2030,7 @@ inline void automaticStopManager(){
 							scriviOutDaStato();
 						}else if(chk[1] == 2){
 							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
-							blocked[1] = secondPress(1,0);
+							blocked[1] = secondPress(1,50);
 							scriviOutDaStato();
 							blocked[1] = 1;
 						}else if(chk[1] == 1){
@@ -2295,8 +2295,10 @@ void onElapse(uint8_t nn, unsigned long tm){
 	
 	DEBUG1_PRINT(F("\nElapse timer n: "));
 	DEBUG1_PRINT(nn);
-	DEBUG1_PRINT(F("  al tempo: "));
+	DEBUG1_PRINT(F("  al tempo del timer: "));
 	DEBUG1_PRINT(tm);
+	DEBUG1_PRINT(F("  al tempo del cronometro: "));
+	DEBUG1_PRINT(getCronoCount(n));
 	DEBUG1_PRINT(F("  con stato: "));
 	DEBUG1_PRINT(getGroupState(nn));
 	DEBUG1_PRINT(F("  con n: "));
@@ -2344,7 +2346,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 	#else
 				else if(getGroupState(nn)==2){//se il motore � in moto a vuoto
 					DEBUG1_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
-					secondPress(n,0,true);
+					secondPress(n,50,true);
 					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
 					scriviOutDaStato();//15/08/19
 					//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)

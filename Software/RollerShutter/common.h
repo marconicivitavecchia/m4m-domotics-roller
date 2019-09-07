@@ -215,7 +215,7 @@
 //2 byte offets (int)
 #define EEPROMLENOFST			10
 #define NTPADJUSTOFST			12
-//4 byte offets (float)
+//4 byte offets (float, unsigned long)
 #define THALT1OFST             	14
 #define THALT2OFST				18
 #define THALT3OFST				22

@@ -200,7 +200,7 @@ void initTapparellaLogic(byte *in, byte *out, byte *outlogic, Par **parsi, bool 
 	engdelay[3] = static_cast<ParLong*>(parsl[p(STDEL2)])->val;
 	taplen = static_cast<ParFloat*>(parsl[p(TLENGTH)])->val;
 	//correzzione per tapparelle a fisarmonica
-	float r = static_cast<ParFloat*>(parsl[SLATSRATIO])->val;
+	float r = static_cast<ParFloat*>(parsl[p(SLATSRATIO)])->val;
 	taplen = taplen*(1 + r);
 	posdelta = r / (1 + r)*100;
 	barrad = static_cast<ParFloat*>(parsl[p(BARRELRAD)])->val;
@@ -264,12 +264,10 @@ void startEndOfRunTimer(byte n){
 	//comincia a cronometrare la corsa
 	startCrono(n); 
 	setGroupState(3,toffset);	//														stato 3: il motore va in moto cronometrato
-	DEBUG2_PRINT(F("stato 3: il motore " ));
-	DEBUG2_PRINT(n);
-	DEBUG2_PRINT(F(" al tempo  " ));
-	DEBUG2_PRINT(getCronoCount(n));
-	DEBUG2_PRINT(F(" è cronometrato verso "));
-	DEBUG2_PRINTLN(target[toffset]);	
+	DEBUG1_PRINT(F("stato 3: il motore " ));
+	DEBUG1_PRINT(n);
+	DEBUG1_PRINT(F(" al tempo del timer 0 e al tempo del cronometro 0 è in moto cronometrato verso il tempo " ));
+	DEBUG1_PRINTLN(target[toffset]);	
 }
 
 bool startEngineDelayTimer(byte n){
@@ -387,8 +385,8 @@ short secondPress(byte n, int delay, bool end){
 			}
 		}
 #endif
-		DEBUG2_PRINT(F("\nSecond press: motore fermo al tempo "));
-		DEBUG2_PRINTLN(app);
+		DEBUG1_PRINTLN(F("Second press: motore fermo al tempo cronometrato "));
+		DEBUG1_PRINTLN(app);
 		setGroupState(0,n);
 	}else if(calibr == 1){
 		resetTimer(TMRHALT+toffset);//blocca timer di fine corsa		
