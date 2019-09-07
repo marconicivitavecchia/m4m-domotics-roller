@@ -380,7 +380,7 @@ inline void initOfst(){
 	/*5*/pars[p(SWROLL1)] = new ParUint8(ROLLMODE1, "swroll1", "swroll1", SWROLL1OFST, 'p', 'i');
 	/*6*/pars[p(SWROLL2)] = new ParUint8(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i');
 	/*7*/pars[p(UTCSDT)] = new ParUint8(1, "utcsdt", "utcsdt", NTPSDTOFST, 'p', 'n', new UTCSDT_Evnt());
-	/*8*/pars[p(UTCZONE)] = new ParUint8(1, "utczone", "utczone", NTPZONEOFST, 'p', 'i', new UTCZONE_Evnt());
+	/*8*/pars[p(UTCZONE)] = new ParInt(1, "utczone", "utczone", NTPZONEOFST, 'p', 'i', new UTCZONE_Evnt());
 	/*9*/pars[p(THALT1)] = new ParInt(thalt1,"thalt1", "thalt1", THALT1OFST, 'p','i');
 	/*10*/pars[p(THALT2)] = new ParInt(thalt2, "thalt2", "thalt2", THALT2OFST, 'p','i');
 	/*11*/pars[p(THALT3)] = new ParInt(thalt3,"thalt3", "thalt3", THALT3OFST, 'p','i');
@@ -2798,8 +2798,7 @@ void UTCZONE_Evnt:: doaction(bool save){
 	if(save) 
 		setTimeZone(saveIntConf(UTCZONE));
 	else
-		setTimeZone((int)static_cast<ParUint8*>(pars[p(UTCZONE)])->val);
-	DEBUG1_PRINTLN((int)static_cast<ParUint8*>(pars[p(UTCZONE)])->val);
+		setTimeZone((int)static_cast<ParInt*>(pars[p(UTCZONE)])->val);
 }
 void ACTIONEVAL_Evnt:: doaction(bool save){
 	//save confs and actions on new action received event
