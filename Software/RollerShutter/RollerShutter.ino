@@ -723,10 +723,6 @@ void printMcpRealOut(){
 
 void scriviOutDaStato(){
 #if (MCP2317) 
-	out[0] = HIGH;
-	out[1] = HIGH;
-	out[2] = HIGH;
-	out[3] = HIGH;
 	mcp.digitalWrite(OUT1EU,out[0]);	
 	mcp.digitalWrite(OUT1DD,out[1]);		
 	mcp.digitalWrite(OUT2EU,out[2]);	
@@ -1338,10 +1334,10 @@ void setup(){
 	mcp.pinMode(OUT1DD,OUTPUT);
 	mcp.pinMode(OUT2EU,OUTPUT);
 	mcp.pinMode(OUT2DD,OUTPUT);
-	mcp.digitalWrite(OUT1EU, HIGH);
-	mcp.digitalWrite(OUT1DD, HIGH);
-	mcp.digitalWrite(OUT2EU, HIGH);
-	mcp.digitalWrite(OUT2DD, HIGH);
+	mcp.digitalWrite(OUT1EU, LOW);
+	mcp.digitalWrite(OUT1DD, LOW);
+	mcp.digitalWrite(OUT2EU, LOW);
+	mcp.digitalWrite(OUT2DD, LOW);
 	
 	//pinMode(OUTSLED,OUTPUT);
 	//digitalWrite(OUTSLED, LOW);
