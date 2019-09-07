@@ -203,7 +203,7 @@
 #define RSLTBUFLEN		218
 //--------------------------EEPROM offsets-------------------------------------------
 //First two uint8_t reserved for EEPROM check
-//1 uint8_t offets (char)
+//1 byte offets (char)
 #define DONOTUSE				2
 #define RESERVEBYTE2OFST		3
 #define LOGSLCTOFST				4
@@ -212,56 +212,56 @@
 #define SWROLL2OFST				7
 #define NTPSDTOFST				8
 #define NTPZONEOFST				9
-//2 uint8_t offets (int)
+//2 byte offets (int)
 #define EEPROMLENOFST			10
-#define THALT1OFST             	12
-#define THALT2OFST				14
-#define THALT3OFST				16
-#define THALT4OFST				18
-#define NTPADJUSTOFST  			20
-//4 uint8_t offets (float)
-#define PWRMULTOFST				22
-#define STDEL1OFST				26
-#define STDEL2OFST				30
-#define VALWEIGHTOFST			34
-#define	TLENGTHOFST				38
-#define	BARRELRADOFST			42
-#define	THICKNESSOFST			46
-#define SLATSRATIOFST			50
-#define NTPSYNCINTOFST			54
-#define CALPWROFST				58
-#define RESERVED1FLOTAFST		62
-//32 uint8_t offsets (fixed medium String)
-#define	MQTTIDOFST				66
-#define	OUTTOPICOFST			98
-#define	INTOPICOFST				130
-#define	MQTTUP1OFST				162
-#define	MQTTDOWN1OFST			194
-#define	MQTTUP2OFST				226
-#define	MQTTDOWN2OFST			258
-#define	MQTTPORTOFST			290
-#define	WSPORTOFST				322
-#define	MQTTPROTOFST			354
-#define	RESERVEDSTR3			386
-#define	WIFICLIENTSSIDOFST1		418
-#define	WIFICLIENTPSWOFST1		450
-#define	WIFICLIENTSSIDOFST2		482
-#define	WIFICLIENTPSWOFST2		514
-#define	WIFIAPSSIDOFST			546
-#define	WIFIAPPPSWOFST			578
-#define	WEBUSROFST				610
-#define	WEBPSWOFST				642
-#define	MQTTUSROFST				674
-#define	MQTTPSWOFST				706
-#define	MQTTLOGOFST				738
-//64 uint8_t offsets (fixed long String)
-#define MQTTADDROFST			770
-#define NTP1ADDROFST			834
-#define NTP2ADDROFST			898
-#define NTP3ADDROFST			962
+#define NTPADJUSTOFST			12
+//4 byte offets (float)
+#define THALT1OFST             	14
+#define THALT2OFST				18
+#define THALT3OFST				22
+#define THALT4OFST				26
+#define PWRMULTOFST				30
+#define STDEL1OFST				34
+#define STDEL2OFST				38
+#define VALWEIGHTOFST			42
+#define	TLENGTHOFST				46
+#define	BARRELRADOFST			50
+#define	THICKNESSOFST			54
+#define SLATSRATIOFST			58
+#define NTPSYNCINTOFST			62
+#define CALPWROFST				66
+#define RESERVED1FLOTAFST		70
+//32 byte offsets (fixed medium String)
+#define	MQTTIDOFST				74
+#define	OUTTOPICOFST			106
+#define	INTOPICOFST				138
+#define	MQTTUP1OFST				170
+#define	MQTTDOWN1OFST			202
+#define	MQTTUP2OFST				234
+#define	MQTTDOWN2OFST			266
+#define	MQTTPORTOFST			298
+#define	WSPORTOFST				330
+#define	MQTTPROTOFST			362
+#define	RESERVEDSTR3			394
+#define	WIFICLIENTSSIDOFST1		426
+#define	WIFICLIENTPSWOFST1		458
+#define	WIFICLIENTSSIDOFST2		490
+#define	WIFICLIENTPSWOFST2		522
+#define	WIFIAPSSIDOFST			554
+#define	WIFIAPPPSWOFST			586
+#define	WEBUSROFST				618
+#define	WEBPSWOFST				650
+#define	MQTTUSROFST				682
+#define	MQTTPSWOFST				714
+#define	MQTTLOGOFST				746
+//64 byte offsets (fixed long String)
+#define MQTTADDROFST			778
+#define NTP1ADDROFST			842
+#define NTP2ADDROFST			906
+#define NTP3ADDROFST			970
 //end fixed lenght params
-#define FIXEDPARAMSLEN			1022
-//x uint8_t offsets (variable String)
+#define FIXEDPARAMSLEN			1034
+//x byte offsets (variable String)
 //--------------------------Fine EEPROM offsets-------------------------------------------
 
 //--------------------------Inizio MQTT array indexes-----------------------------------

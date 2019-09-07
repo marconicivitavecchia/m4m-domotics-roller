@@ -385,8 +385,8 @@ inline void initOfst(){
 	/*10*/pars[p(THALT2)] = new ParLong(thalt2, "thalt2", "thalt2", THALT2OFST, 'p','i');
 	/*11*/pars[p(THALT3)] = new ParLong(thalt3,"thalt3", "thalt3", THALT3OFST, 'p','i');
 	/*12*/pars[p(THALT4)] = new ParLong(thalt4, "thalt4", "thalt4", THALT4OFST, 'p','i');
-	/*13*/pars[p(STDEL1)] = new ParFloat(400, "stdel1", "stdel1", STDEL1OFST, 'p','i');
-	/*14*/pars[p(STDEL2)] = new ParFloat(400, "stdel2", "stdel2", STDEL2OFST, 'p','i');
+	/*13*/pars[p(STDEL1)] = new ParLong(400, "stdel1", "stdel1", STDEL1OFST, 'p','i');
+	/*14*/pars[p(STDEL2)] = new ParLong(400, "stdel2", "stdel2", STDEL2OFST, 'p','i');
 	/*15*/pars[p(VALWEIGHT)] = new ParFloat(0.5, "valweight", "valweight", VALWEIGHTOFST, 'p','i');
 	/*16*/pars[p(TLENGTH)] = new ParFloat(53, "tlength","tlength", TLENGTHOFST, 'p','i');
 	/*17*/pars[p(BARRELRAD)] = new ParFloat(3.37, "barrelrad", "barrelrad", BARRELRADOFST, 'p','i');
@@ -723,11 +723,9 @@ void printMcpRealOut(){
 }
 
 void scriviOutDaStato(){
+	DEBUG1_PRINTLN("Evento scriviOutDaStato: ");
 #if (MCP2317) 
-	//mcp.digitalWrite(OUT1EU,out[0]);	
-	//mcp.digitalWrite(OUT1DD,out[1]);		
-	//mcp.digitalWrite(OUT2EU,out[2]);	
-	//mcp.digitalWrite(OUT2DD,out[3]);
+	out[0]=out[1]=out[2]=out[3]=HIGH;
 	mcp.writeOuts(out);
 	//rstldcnt(0);
 #else										
@@ -736,8 +734,8 @@ void scriviOutDaStato(){
 	digitalWrite(OUT2EU,out[2]);	
 	digitalWrite(OUT2DD,out[3]);		
 #endif
-	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0] > 0;				//sempre falso se si � in modalit� switch!			
-	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1] > 0;		//sempre falso se si � in modalit� switch!
+	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0] > 0;						
+	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1] > 0;		
 	mov = isrun[0] || isrun[1];
 }
 
@@ -1221,7 +1219,7 @@ inline void setupNTP() {
   setNtpServer(1,(const char*) static_cast<ParStr32*>(pars[p(NTPADDR2)])->val); 
   setSyncInterval((unsigned long) static_cast<ParLong*>(pars[p(UTCSYNC)])->val);
   setSDT((uint8_t) static_cast<ParUint8*>(pars[p(UTCSDT)])->val);
-  adjustTime((unsigned long) static_cast<ParLong*>(pars[p(UTCADJ)])->val); 
+  adjustTime((unsigned long) static_cast<ParInt*>(pars[p(UTCADJ)])->val); 
   setTimeZone((int) static_cast<ParInt*>(pars[p(UTCZONE)])->val);
   sntpInit();  
 }
@@ -1299,8 +1297,8 @@ void setup(){
 #if (AUTOCAL)
   weight[0] =  static_cast<ParFloat*>(pars[p(VALWEIGHT)])->val;
   weight[1] = 1 - weight[0];
-  pars[p(STDEL1)]->load(TENDCHECK*1000); 
-  pars[p(STDEL2)]->load(TENDCHECK*1000);
+  static_cast<ParLong*>(pars[p(STDEL1)])->load((unsigned long)TENDCHECK*1000); 
+  static_cast<ParLong*>(pars[p(STDEL2)])->load((unsigned long)TENDCHECK*1000);
 #endif
   delay(100);
   httpSetup();
@@ -1730,7 +1728,7 @@ inline void loop2() {
 			readParamAndPub(MQTTDATE,printUNIXTimeMin(gbuf));
 			readStatesAndPub(true);
 		}
-		leggiTastiLocaliDaExp();
+		//leggiTastiLocaliDaExp();
 	}//END 1 sec scheduler-----------------------------------------------------
 	
 	//---------------------------------------------------------------------
@@ -1801,12 +1799,16 @@ inline void updateCounters(){
 inline void leggiTastiLocaliDaExp(){
 	if(roll[0] == false){
 		//modalit� switch generico
-		if(testUpCntEvnt(0,true,SMPLCNT1))
+		if(testUpCntEvnt(0,true,SMPLCNT1)){
 			setActionLogic(eval(((String) pars[p(0)]->getStrVal()).c_str()),0);
-		if(testUpCntEvnt(0,true,SMPLCNT2))
+			//legge lo stato finale e lo scrive sulle uscite
+			scriviOutDaStato();
+		}
+		if(testUpCntEvnt(0,true,SMPLCNT2)){
 			setActionLogic(eval(((String) pars[p(1)]->getStrVal()).c_str()),1);
-		//legge lo stato finale e lo scrive sulle uscite
-		scriviOutDaStato();
+			//legge lo stato finale e lo scrive sulle uscite
+			scriviOutDaStato();
+		}
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
 	}else{
@@ -1817,14 +1819,16 @@ inline void leggiTastiLocaliDaExp(){
 	}
 	if(roll[1] == false){
 		//modalit� switch generico
-		if(testUpCntEvnt(0,true,SMPLCNT3))
+		if(testUpCntEvnt(0,true,SMPLCNT3)){
 			setActionLogic(eval(((String) pars[p(2)]->getStrVal()).c_str()),2);
+			//legge lo stato finale e lo scrive sulle uscite
+			scriviOutDaStato();
+		}
 		if(testUpCntEvnt(1,true,SMPLCNT4)){
 			setActionLogic(eval(((String) pars[p(3)]->getStrVal()).c_str()),3);
-			DEBUG2_PRINTLN(getCntValue(SMPLCNT4));
+			//legge lo stato finale e lo scrive sulle uscite
+			scriviOutDaStato();
 		}
-		//legge lo stato finale e lo scrive sulle uscite
-		scriviOutDaStato();
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
 	}else{
@@ -1958,11 +1962,11 @@ inline void automaticStopManager(){
 						if(chk[0] == -1){
 							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
-							blocked[0] = secondPress(0,50,true);
+							blocked[0] = secondPress(0,0,true);
 							scriviOutDaStato();
 						}else if(chk[0] == 2){
 							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
-							blocked[0] = secondPress(0,50);
+							blocked[0] = secondPress(0,0);
 							scriviOutDaStato();
 							blocked[0] = 1;
 						}else if(chk[0] == 1){
@@ -2022,11 +2026,11 @@ inline void automaticStopManager(){
 						if(chk[1] == -1){
 							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
-							blocked[1] = secondPress(1,50,true);
+							blocked[1] = secondPress(1,0,true);
 							scriviOutDaStato();
 						}else if(chk[1] == 2){
 							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
-							blocked[1] = secondPress(1,50);
+							blocked[1] = secondPress(1,0);
 							scriviOutDaStato();
 							blocked[1] = 1;
 						}else if(chk[1] == 1){
