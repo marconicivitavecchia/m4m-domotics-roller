@@ -165,7 +165,7 @@ void printIn(){
 
 
 #if (MCP2317) 
-	Adafruit_MCP23017 mcp;
+	Adafruit_MCP23017_MY mcp;
     void MCP2317_init(){
 // Connect pin #12 of the expander to Analog 5 (i2c clock)
 // Connect pin #13 of the expander to Analog 4 (i2c data)
@@ -175,6 +175,7 @@ void printIn(){
 // Connect pin #18 through a ~10kohm resistor to 5V (reset pin, active low)
 // Output #0 is on pin 21 so connect an LED or whatever from that to ground
 		mcp.begin();      		// use default address 0
+		mcp.setWritePorts(OUT1EU, OUT1DD, OUT2EU, OUT2DD);  		
 	}	
 #endif
 //-----------------------------------------Begin of prototypes---------------------------------------------------------
@@ -723,10 +724,11 @@ void printMcpRealOut(){
 
 void scriviOutDaStato(){
 #if (MCP2317) 
-	mcp.digitalWrite(OUT1EU,out[0]);	
-	mcp.digitalWrite(OUT1DD,out[1]);		
-	mcp.digitalWrite(OUT2EU,out[2]);	
-	mcp.digitalWrite(OUT2DD,out[3]);
+	//mcp.digitalWrite(OUT1EU,out[0]);	
+	//mcp.digitalWrite(OUT1DD,out[1]);		
+	//mcp.digitalWrite(OUT2EU,out[2]);	
+	//mcp.digitalWrite(OUT2DD,out[3]);
+	mcp.writeOuts(out);
 	//rstldcnt(0);
 #else										
 	digitalWrite(OUT1EU,out[0]);	
@@ -1319,17 +1321,19 @@ void setup(){
 	mcp.pinMode(BTN1D, INPUT);
 	mcp.pinMode(BTN2U, INPUT);
 	mcp.pinMode(BTN2D, INPUT);
- #if (INPULLUP)
+	
+  #if (INPULLUP)
 	mcp.pullUp(BTN1U, HIGH);
 	mcp.pullUp(BTN1D, HIGH);
 	mcp.pullUp(BTN2U, HIGH);
 	mcp.pullUp(BTN2D, HIGH);
- #else
+  #else
 	mcp.pullUp(BTN1U, LOW);
 	mcp.pullUp(BTN1D, LOW);
 	mcp.pullUp(BTN2U, LOW);
 	mcp.pullUp(BTN2D, LOW);
- #endif	
+  #endif	
+ 
 	mcp.pinMode(OUT1EU,OUTPUT);
 	mcp.pinMode(OUT1DD,OUTPUT);
 	mcp.pinMode(OUT2EU,OUTPUT);
@@ -1347,18 +1351,21 @@ void setup(){
 	mcp.digitalWrite(GREEN, LOW);
 	mcp.digitalWrite(RED, LOW);
 	mcp.digitalWrite(GREEN, LOW);
+	
 #else
- #if (INPULLUP)
+	
+  #if (INPULLUP)
 	pinMode(BTN1U, INPUT_PULLUP);
 	pinMode(BTN1D, INPUT_PULLUP);
 	pinMode(BTN2U, INPUT_PULLUP);
 	pinMode(BTN2D, INPUT_PULLUP);
- #else
+  #else
 	pinMode(BTN1U, INPUT);
 	pinMode(BTN1D, INPUT);
 	pinMode(BTN2U, INPUT);
 	pinMode(BTN2D, INPUT);
- #endif
+  #endif
+ 
 	pinMode(OUTSLED,OUTPUT);
 	digitalWrite(OUTSLED, LOW);
 	pinMode(OUT1EU,OUTPUT);
@@ -1369,6 +1376,7 @@ void setup(){
 	digitalWrite(OUT1DD, LOW);
 	digitalWrite(OUT2EU, LOW);
 	digitalWrite(OUT2DD, LOW);
+	
 #endif
 
  /* 

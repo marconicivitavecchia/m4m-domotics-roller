@@ -61,8 +61,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				1
-#define ROLLERSHUTTER 			0
+#define SONOFF_4CH				0
+#define ROLLERSHUTTER 			1
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------NON MODIFICARE LA PARTE SOTTOSTATNTE------------------------------------------------------------------------------------------------
 //#define AUTOCAL_HLW8012			0
@@ -429,7 +429,7 @@
 
 #if (MCP2317) 
 	#include <Wire.h>
-	#include <Adafruit_MCP23017.h>
+	#include "Adafruit_MCP23017_MY.h"
 #endif
 
 //#define NELEMS(x)  (sizeof(x) / sizeof((x)[0]))
