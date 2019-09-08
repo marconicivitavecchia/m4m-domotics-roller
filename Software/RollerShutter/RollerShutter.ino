@@ -395,25 +395,25 @@ inline void initOfst(){
 	/*20*/pars[p(SLATSRATIO)] = new ParFloat(0.8, "slatsratio", "slatsratio", SLATSRATIOFST, 'p','i');
 	/*21*/pars[p(UTCSYNC)] = new ParInt(50, "utcsync", "utcsync", NTPSYNCINTOFST, 'p','i', new UTCSYNC_Evnt());
 	/*22*/pars[p(MQTTID)] = new ParStr32(MQTTCLIENTID, "mqttid", "mqttid", MQTTIDOFST, 'p','i');
-	/*23*/pars[p(MQTTOUTTOPIC)] = new ParStr32(OUTTOPIC, "mqttouttopic", "mqttouttopic", OUTTOPICOFST, 'p','i');
+	/*23*/pars[p(MQTTOUTTOPIC)] = new ParStr32(OUTTOPIC, "mqttouttopic", "mqttouttopic", OUTTOPICOFST, 'p','i', new MQTTTOPIC_Evnt());
 	/*23*/pars[p(MQTTLOG)] = new ParStr32(LOGPATH, "mqttlog", "mqttlog", MQTTLOGOFST, 'p','i');
-	/*24*/pars[p(MQTTINTOPIC)] = new ParStr32(INTOPIC, "mqttintopic", "mqttintopic", INTOPICOFST, 'p','i');
-	/*25*/pars[p(CLNTSSID1)] = new ParStr32(SSID1, "clntssid1", "clntssid1", WIFICLIENTSSIDOFST1, 'p','i');
-	/*26*/pars[p(CLNTPSW1)] = new ParStr32(PSW1, "clntpsw1", "clntpsw1", WIFICLIENTPSWOFST1, 'p','i');
-	/*27*/pars[p(CLNTSSID2)] = new ParStr32(SSID2, "clntssid2", "clntpsw1", WIFICLIENTSSIDOFST2, 'p','i');
-	/*28*/pars[p(CLNTPSW2)] = new ParStr32(PSW2, "clntpsw2", "clntpsw2", WIFICLIENTPSWOFST2, 'p','i');
+	/*24*/pars[p(MQTTINTOPIC)] = new ParStr32(INTOPIC, "mqttintopic", "mqttintopic", INTOPICOFST, 'p','i', new MQTTTOPIC_Evnt());
+	/*25*/pars[p(CLNTSSID1)] = new ParStr32(SSID1, "clntssid1", "clntssid1", WIFICLIENTSSIDOFST1, 'p','i', new WIFICHANGED_Evnt());
+	/*26*/pars[p(CLNTPSW1)] = new ParStr32(PSW1, "clntpsw1", "clntpsw1", WIFICLIENTPSWOFST1, 'p','i', new WIFICHANGED_Evnt());
+	/*27*/pars[p(CLNTSSID2)] = new ParStr32(SSID2, "clntssid2", "clntpsw1", WIFICLIENTSSIDOFST2, 'p','i', new WIFICHANGED_Evnt());
+	/*28*/pars[p(CLNTPSW2)] = new ParStr32(PSW2, "clntpsw2", "clntpsw2", WIFICLIENTPSWOFST2, 'p','i', new WIFICHANGED_Evnt());
 	/*29*/pars[p(APPSSID)] = new ParStr32(SSIDAP, "appssid", "appssid", WIFIAPSSIDOFST, 'p','i');
 	/*30*/pars[p(APPPSW)] = new ParStr32(PSWAP, "apppsw", "apppsw", WIFIAPPPSWOFST, 'p','i');
 	/*31*/pars[p(WEBUSR)] = new ParStr32(WBUSR, "webusr", "webusr", WEBUSROFST, 'p','i');
 	/*32*/pars[p(WEBPSW)] = new ParStr32(WBPSW, "webpsw", "webpsw", WEBPSWOFST, 'p','i');
-	/*33*/pars[p(MQTTUSR)] = new ParStr32(MQUSR, "mqttusr", "mqttusr", MQTTUSROFST, 'p','i');
-	/*34*/pars[p(MQTTPSW)] = new ParStr32(MQPSW, "mqttpsw", "mqttpsw", MQTTPSWOFST, 'p','i');
-	/*35*/pars[p(MQTTADDR)] = new ParStr64(MQTTSRV, "mqttaddr", "mqttaddr", MQTTADDROFST, 'p','i');
-	/*36*/pars[p(MQTTPORT)] = new ParLong(MQTTPRT, "mqttport", "mqttport", MQTTPORTOFST, 'p','i');
+	/*33*/pars[p(MQTTUSR)] = new ParStr32(MQUSR, "mqttusr", "mqttusr", MQTTUSROFST, 'p','i', new MQTTCONNCHANGED_Evnt());
+	/*34*/pars[p(MQTTPSW)] = new ParStr32(MQPSW, "mqttpsw", "mqttpsw", MQTTPSWOFST, 'p','i', new MQTTCONNCHANGED_Evnt());
+	/*35*/pars[p(MQTTADDR)] = new ParStr64(MQTTSRV, "mqttaddr", "mqttaddr", MQTTADDROFST, 'p','i', new MQTTADDR_Evnt());
+	/*36*/pars[p(MQTTPORT)] = new ParLong(MQTTPRT, "mqttport", "mqttport", MQTTPORTOFST, 'p','i', new MQTTADDR_Evnt());
 	/*37*/pars[p(WSPORT)] = new ParStr32(WSPRT, "wsport", "wsport", WSPORTOFST, 'p','i');
 	/*38*/pars[p(MQTTPROTO)] = new ParStr32(MQTTPT, "mqttproto", "mqttproto", MQTTPROTOFST, 'p','i');
-	/*39*/pars[p(NTPADDR1)] = new ParStr64(NTP1, "ntpaddr1", "ntpaddr1", NTP1ADDROFST, 'p','i');
-	/*40*/pars[p(NTPADDR2)] = new ParStr64(NTP2, "ntpaddr2", "ntpaddr2", NTP2ADDROFST, 'p','i');
+	/*39*/pars[p(NTPADDR1)] = new ParStr64(NTP1, "ntpaddr1", "ntpaddr1", NTP1ADDROFST, 'p','i', new NTPADDR1_Evnt());
+	/*40*/pars[p(NTPADDR2)] = new ParStr64(NTP2, "ntpaddr2", "ntpaddr2", NTP2ADDROFST, 'p','i', new NTPADDR2_Evnt());
 	/*41*/pars[p(PWRMULT)] = new ParFloat(1, "pwrmult", "pwrmult", PWRMULTOFST, 'p','i');
 	/*42*/pars[p(ACVOLT)] = new ParUint8(230, "acvolt", "acvolt", ACVOLTOFST, 'p','i');
 	/*43*/pars[p(ONCOND1)] = new ParVarStr("-1", "oncond1", "oncond1", 2, 'n','n', new ONCOND1_Evnt());
@@ -422,12 +422,12 @@ inline void initOfst(){
 	/*46*/pars[p(ONCOND4)] = new ParVarStr("-1", "oncond4","oncond4", 2, 'n','n', new ONCOND4_Evnt());
 	/*47*/pars[p(ONCOND5)] = new ParVarStr("(td1=4000)|(ma1=0)|(ma4=2)|(tsmpl4=4)|(oe1=1)", "oncond5","oncond5", 0, 'n','n', new ONCOND5_Evnt());
 	/*48*/pars[p(ACTIONEVAL)] = new ParVarStr("-1","onaction","onaction", 2, 'n','n', new ACTIONEVAL_Evnt());
-	/*5*/pars[p(WIFICHANGED)] = new ParUint8(0, "WIFICHANGED","");
-	/*5*/pars[p(CONFLOADED)] = new ParUint8(0, "CONFLOADED","");
-	/*5*/pars[p(MQTTADDRMODFIED)] = new ParUint8(0, "MQTTADDRMODFIED","");
-	/*5*/pars[p(TOPICCHANGED)] = new ParUint8(0, "TOPICCHANGED","");
-	/*5*/pars[p(MQTTCONNCHANGED)] = new ParUint8(0, "MQTTCONNCHANGED","");
-	/*5*/pars[p(TIMINGCHANGED)] = new ParUint8(0, "TIMINGCHANGED","");
+	///*5*/pars[p(WIFICHANGED)] = new ParUint8(0, "WIFICHANGED","", new WIFICHANGED_Evnt());
+	///*5*/pars[p(CONFLOADED)] = new ParUint8(0, "CONFLOADED","");
+	///*5*/pars[p(MQTTADDRMODFIED)] = new ParUint8(0, "MQTTADDRMODFIED","");
+	///*5*/pars[p(TOPICCHANGED)] = new ParUint8(0, "TOPICCHANGED","", new TOPICCHANGED_Evnt());
+	///*5*/pars[p(MQTTCONNCHANGED)] = new ParUint8(0, "MQTTCONNCHANGED","");
+	///*5*/pars[p(TIMINGCHANGED)] = new ParUint8(0, "TIMINGCHANGED","");
 	/*5*/pars[p(SWACTION1)] = new ParUint8(0, "SWACTION1","");
 	/*5*/pars[p(SWACTION2)] = new ParUint8(0, "SWACTION2","");
 	/*5*/pars[p(SWACTION3)] = new ParUint8(0, "SWACTION3","");
@@ -1524,7 +1524,7 @@ void httpSetup(){
   DEBUG2_PRINTLN("Avvio il responder mDNS.");
   delay(100);
   //setup_mDNS();
-  MDNS.addService(F("http"), F("tcp"), 80); 
+  //MDNS.addService(F("http"), F("tcp"), 80); 
   DEBUG2_PRINT("HTTPUpdateServer ready! Open http://");
   DEBUG2_PRINT(pars[p(MQTTID)]->getStrVal()); 
   DEBUG2_PRINTLN(".local/update in your browser");
@@ -1664,7 +1664,7 @@ inline void loop2() {
   //- azioni pesanti si dovrebbero eseguire molto raramente (o per pochi loop)
   //- azioni leggere possono essere eseguite molto frequentemente (o per molti loop)
   //- vie di mezzo di complessit� da eseguire con tempi intermedi
-  //- evitare il pi� possibile la contemporaneit� di azioni pesanti 
+  //- evitare il più possibile la contemporaneit� di azioni pesanti 
   //-----------------------------------------------------------------------------------------------
   
   //---------------------------------------------------------------------
@@ -1716,13 +1716,12 @@ inline void loop2() {
 			wifiConn = (stat == WL_CONNECTED);	
 			//DEBUG2_PRINT(F(" - Wifi mode: "));
 			//DEBUG2_PRINTLN(WiFi.getMode());
-			
 			sensorStatePoll();
 			if(wificnt > WIFISTEP){
 				wifiFailoverManager();
 			}
 			MQTTReconnectManager();
-			paramsModificationPoll();
+			//paramsModificationPoll();
 		}
 		if(sampleCurrTime()){//1min
 			readParamAndPub(MQTTDATE,printUNIXTimeMin(gbuf));
@@ -2210,9 +2209,10 @@ inline void MQTTReconnectManager(){
 			}
 }
 
+/*
 inline void paramsModificationPoll(){
 	//actions on parametrs saving
-		//is else if per gestione priorit�, l'ordine � importante! vanno fatti in momenti successivi
+		//is else if per gestione priorità, l'ordine � importante! vanno fatti in momenti successivi
 		if((uint8_t) static_cast<ParUint8*>(pars[p(WIFICHANGED)])->val == 1){
 			pars[p(WIFICHANGED)]->load(0);
 			wifindx=0;
@@ -2286,6 +2286,7 @@ inline void paramsModificationPoll(){
 			}
 		}
 }
+*/
 
 //-----------------------------------------------INIZIO TIMER----------------------------------------------------------------------
 //azione da compiere allo scadere di uno dei timer dell'array	
@@ -2782,8 +2783,90 @@ void MQTTBTN_Evnt::doaction(bool save){
 	}
 }
 
+void WIFICHANGED_Evnt::doaction(bool save){	
+	wifindx=0;
+	Serial.println(F("Doing WiFi disconnection"));
+	WiFi.persistent(false);
+	WiFi.disconnect(false);
+	WiFi.mode(WIFI_OFF);    
+	//WiFi.mode(WIFI_STA);
+	wifindx = 0;
+}
+
+void MQTTADDR_Evnt::doaction(bool save){	
+	if(wifiConn == true){
+		DEBUG2_PRINTLN(F("confcmd[MQTTADDRMODFIED] eseguo la reconnect()"));
+		mqttReconnect();
+	}
+}
+
+void MQTTCONNCHANGED_Evnt::doaction(bool save){
+	if(wifiConn == true){
+		if(mqttClient==NULL){
+			DEBUG2_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
+			mqttReconnect();
+		}else{
+			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la setUserPwd() con usr "));
+			DEBUG2_PRINTLN(pars[p(MQTTUSR)]->getStrVal());
+			DEBUG2_PRINTLN(F(" e psw "));
+			DEBUG2_PRINTLN(pars[p(MQTTPSW)]->getStrVal());
+
+			mqttClient->setUserPwd((const char*) static_cast<ParStr32*>(pars[p(MQTTUSR)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTPSW)])->val);
+			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la connect() ..."));
+			mqttClient->connect();
+
+			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la subscribe() con "));
+			DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
+			DEBUG2_PRINTLN(F("..."));
+
+			mqttClient->subscribe(pars[p(MQTTINTOPIC)]->getStrVal());
+
+			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! publish(): "));
+			DEBUG2_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
+			DEBUG2_PRINTLN(F(" Intopic: "));
+			DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
+
+			mqttClient->publish((const char*) static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
+		}
+	}
+		
+}
+
+void MQTTTOPIC_Evnt::doaction(bool save){	
+	if(wifiConn == true){
+		if(mqttClient==NULL){
+			DEBUG2_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
+			mqttReconnect();
+		}else{
+			
+			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la subscribe() con "));
+			DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
+			DEBUG2_PRINTLN(F("..."));
+
+			mqttClient->subscribe(pars[p(MQTTINTOPIC)]->getStrVal());
+
+			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! publish(): "));
+			DEBUG2_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
+			DEBUG2_PRINTLN(F(" Intopic: "));
+			DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
+
+			mqttClient->publish((const char*) static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
+		}
+	}
+}
+
 void UTCVAL_Evnt:: doaction(bool){
 	updateNTP(static_cast<ParLong*>(pars[p(UTCVAL)])->val);
+}
+void NTPADDR1_Evnt:: doaction(bool save){
+	if(save)   
+		saveConf(p(NTPADDR1));
+	setNtpServer(0,static_cast<ParStr64*>(pars[p(NTPADDR1)])->val);
+}
+void NTPADDR2_Evnt:: doaction(bool save){
+	if(save)   
+		saveConf(p(NTPADDR2));
+	setNtpServer(1,static_cast<ParStr64*>(pars[p(NTPADDR2)])->val);
 }
 void UTCSYNC_Evnt:: doaction(bool save){
 	if(save) 

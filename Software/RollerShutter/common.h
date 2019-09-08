@@ -355,17 +355,11 @@
 #define	LOGSLCT				47
 #define MQTTLOG				48
 //parametri di stato (da non esporre)
-#define WIFICHANGED			49
-#define CONFLOADED			50
-#define MQTTADDRMODFIED		51
-#define TOPICCHANGED		52
-#define MQTTCONNCHANGED		53
-#define	TIMINGCHANGED		54
-#define SWACTION1			55
-#define SWACTION2			56
-#define SWACTION3			57
-#define SWACTION4			58
-#define CONFDIM				59
+#define SWACTION1			49
+#define SWACTION2			50
+#define SWACTION3			51
+#define SWACTION4			52
+#define CONFDIM				53
 #define VARCONFDIM			6
 #define EXTCONFDIM			14 + 16
 #define TOSAVEPARAMS		49
@@ -550,6 +544,31 @@ class INSTACV_Evnt: public BaseEvnt{
 #endif
 //-----------------------------------------------------------------------
 class UTCVAL_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+
+class NTPADDR2_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class NTPADDR1_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class MQTTADDR_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class MQTTCONNCHANGED_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class MQTTTOPIC_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class WIFICHANGED_Evnt: public BaseEvnt{
 	public:
 		void doaction(bool);
 };

@@ -1739,10 +1739,10 @@ void handleModify(){
   page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
   serverp.send(200, "text/html", page);
 	
-  if(static_cast<ParUint8*>(parsp[TIMINGCHANGED])->val == 1){
-	parsp[TIMINGCHANGED]->load(0);
-	initIiming(false);
-  } 
+  //if(static_cast<ParUint8*>(parsp[TIMINGCHANGED])->val == 1){
+	//parsp[TIMINGCHANGED]->load(0);
+	//initIiming(false);
+  //} 
 }
 
 void loadConfig() {
@@ -1773,7 +1773,7 @@ void loadConfig() {
 		
 		saveOnEEPROM(FIXEDPARAMSLEN);
 		
-		parsp[p(CONFLOADED)]->load(0);
+		//parsp[p(CONFLOADED)]->load(0);
 		delay(1000);
 	} else {
 		EEPROM.begin(THALT1OFST);//the next after EEPROMLENOFST
@@ -1800,7 +1800,6 @@ void loadConfig() {
 				DEBUG1_PRINTLN(parsp[p(i)]->getStrVal());
 		}
 		
-		parsp[p(CONFLOADED)]->load(1);
 		EEPROM.end();
 		DEBUG1_PRINTLN(F("EEPROM configuration readed"));
 	}

@@ -372,7 +372,7 @@ TimeElements DSTToTimeEl(char *str){
 	  dateTime[i] = (unsigned short) atoi(token);
 	  ++i;
 	}
-		ts.Year = year();
+	ts.Year = year();
 	ts.Month = (dateTime[0] == 255)?month():dateTime[0];
 	ts.Wday = (dateTime[2] == 255)?weekday():dateTime[2];
 	ts.Day = NthDate(ts.Year, ts.Month, ts.Wday, dateTime[1]);
