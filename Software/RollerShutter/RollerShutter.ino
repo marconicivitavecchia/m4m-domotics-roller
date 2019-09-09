@@ -1569,14 +1569,27 @@ void leggiTastiLocali2(){
 		DEBUG1_PRINT(s);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(regA));
 		DEBUG1_PRINT(s);
-		static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)((regA >> BTN1U) & 0x1)?0:255); 
-		static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
-		static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t)((regA >> BTN1D) & 0x1)?0:255); 
-		static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction();
-		static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t)((regA >> BTN2U) & 0x1)?0:255); 
-		static_cast<ParUint8*>(pars[MQTTUP2])->doaction();
-		static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)((regA >> BTN2D) & 0x1)?0:255);
-		static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
+		//static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)((regA >> BTN1U) & 0x1)?0:255); 
+		//static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
+		//static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t)((regA >> BTN1D) & 0x1)?0:255); 
+		//static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction();
+		//static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t)((regA >> BTN2U) & 0x1)?0:255); 
+		//static_cast<ParUint8*>(pars[MQTTUP2])->doaction();
+		//static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)((regA >> BTN2D) & 0x1)?0:255);
+		//static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
+		if(!bitRead(regA, BTN1U)){
+			static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)255); 
+			static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
+		}else if(!bitRead(regA, BTN1D)){
+			static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t)255); 
+			static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction();
+		}else if(!bitRead(regA, BTN2U)){
+			static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t)255); 
+			static_cast<ParUint8*>(pars[MQTTUP2])->doaction();
+		}else if(!bitRead(regA, BTN2D)){
+			static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)255); 
+			static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
+		}
 	}else if(inl[0] != 0){
 		DEBUG1_PRINTLN(F("Fronte di discesa "));
 		*inl = (unsigned long) 0UL;
@@ -1605,14 +1618,19 @@ void leggiTastiLocali2(){
 		DEBUG1_PRINT(s);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(inmask>>8), BYTE_TO_BINARY(inmask));
 		DEBUG1_PRINT(s);
-		static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)(GPIP(BTN1U))?0:255); 
-		static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
-		static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t)(GPIP(BTN1D))?0:255); 
-		static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction();
-		static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t)(GPIP(BTN2U))?0:255);
-		static_cast<ParUint8*>(pars[MQTTUP2])->doaction();
-		static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)(GPIP(BTN2D))?0:255);  
-		static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
+		if(!GPIP(BTN1U)){
+			static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)255); 
+			static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
+		}else if(!GPIP(BTN1D)){
+			static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t)255); 
+			static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction();
+		}else if(!GPIP(BTN2U)){
+			static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t)255); 
+			static_cast<ParUint8*>(pars[MQTTUP2])->doaction();
+		}else if(!GPIP(BTN2D)){
+			static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)255); 
+			static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
+		}
 	}else if(inl[0] != 0){
 		DEBUG1_PRINTLN(F("Fronte di discesa "));
 		*inl = (unsigned long) 0UL;
