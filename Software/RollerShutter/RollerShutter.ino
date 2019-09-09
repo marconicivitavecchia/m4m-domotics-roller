@@ -1813,8 +1813,14 @@ inline void leggiTastiLocaliDaExp(){
 	}else{
 		//modalit� tapparella
 		//simula pressione di un tasto locale
-		//in[0] = eval(((String) pars[p(0)]->getStrVal()).c_str());
-		//in[1] = eval(((String) pars[p(1)]->getStrVal()).c_str());
+		if(eval(((String) pars[p(2)]->getStrVal()).c_str())){
+			static_cast<ParUint8*>(pars[BTN1IN + 0*BTNDIM])->load((uint8_t) 255);			//codice comando attiva calibrazione
+			static_cast<ParUint8*>(pars[BTN1IN + 0*BTNDIM])->doaction(false);
+		}
+		if(eval(((String) pars[p(2)]->getStrVal()).c_str())){
+			static_cast<ParUint8*>(pars[BTN1IN + 1*BTNDIM])->load((uint8_t) 255);			//codice comando attiva calibrazione
+			static_cast<ParUint8*>(pars[BTN1IN + 1*BTNDIM])->doaction(false);
+		}
 	}
 	if(roll[1] == false){
 		//modalit� switch generico
@@ -1833,8 +1839,14 @@ inline void leggiTastiLocaliDaExp(){
 	}else{
 		//modalit� tapparella
 		//simula pressione di un tasto locale
-		//in[2] = eval(((String) pars[p(2)]->getStrVal()).c_str());
-		//in[3] = eval(((String) pars[p(3)]->getStrVal()).c_str());
+		if(eval(((String) pars[p(2)]->getStrVal()).c_str())){
+			static_cast<ParUint8*>(pars[BTN2IN + 0*BTNDIM])->load((uint8_t) 255);			//codice comando attiva calibrazione
+			static_cast<ParUint8*>(pars[BTN2IN + 0*BTNDIM])->doaction(false);
+		}
+		if(eval(((String) pars[p(2)]->getStrVal()).c_str())){
+			static_cast<ParUint8*>(pars[BTN2IN + 1*BTNDIM])->load((uint8_t) 255);			//codice comando attiva calibrazione
+			static_cast<ParUint8*>(pars[BTN2IN + 1*BTNDIM])->doaction(false);
+		}
 	}
 	//imposta le configurazioni dinamiche in base ad eventi locali valutati periodicamente
 	//eval((confcmd[JSONONCOND5]).c_str());
