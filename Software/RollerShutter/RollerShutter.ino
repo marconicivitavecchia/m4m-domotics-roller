@@ -2805,12 +2805,18 @@ void MQTTBTN_Evnt::doaction(bool save){
 	static_cast<ParUint8*>(pars[i])->load((uint8_t) 0); //flag reset
 	DEBUG1_PRINT(" inval: ");
 	DEBUG1_PRINTLN(in[i]);
+	DEBUG1_PRINTLN("Prima");
+	printDfn();
+	printOutlogic();
 	
 	if(roll[n]){
 		switchLogic(sw, n);
 	}else{
 		toggleLogic(sw, n);
 	}
+	DEBUG1_PRINTLN("Dopo");
+	printDfn();
+	printOutlogic();
 }
 
 void WIFICHANGED_Evnt::doaction(bool save){	

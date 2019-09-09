@@ -41,17 +41,13 @@ inline bool switchdfn(byte val, byte n){
 	return changed;
 }
 
-inline void copytout(){
+inline void copytout(byte n){
 #if (SCR)
-	 outp[0]=(outlogicp[ENABLES] && (outlogicp[DIRS]==LOW));	
-	 outp[1]=(outlogicp[ENABLES] && (outlogicp[DIRS]==HIGH));		
-	 outp[2]=(outlogicp[ENABLES+STATUSDIM] && (outlogicp[DIRS+STATUSDIM]==LOW));	
-	 outp[3]=(outlogicp[ENABLES+STATUSDIM] && (outlogicp[DIRS+STATUSDIM]==HIGH));		
+	 outp[0 + n*BTNDIM]=(outlogicp[ENABLES + n*STATUSDIM] && (outlogicp[DIRS + n*STATUSDIM]==LOW));	
+	 outp[1 + n*BTNDIM]=(outlogicp[ENABLES + n*STATUSDIM] && (outlogicp[DIRS + n*STATUSDIM]==HIGH));		
 #else		
-	 outp[0]=outlogicp[ENABLES];	
-	 outp[1]=outlogicp[DIRS];		
-	 outp[2]=outlogicp[ENABLES+STATUSDIM];		
-	 outp[3]=outlogicp[DIRS+STATUSDIM];					 
+	 outp[0 + n*BTNDIM]=outlogicp[ENABLES + n*STATUSDIM];	
+	 outp[1 + n*BTNDIM]=outlogicp[DIRS + n*STATUSDIM];					 
 #endif
 }
 
@@ -452,7 +448,7 @@ short secondPress(byte n, int delay, bool end){
 	}else{
 		calibr = 0;
 	}
-	copytout();
+	copytout(n);
 	onTapStop(n);
 	return rslt;
 }
@@ -542,7 +538,7 @@ void firstPress(byte sw, byte n){
 	//abilita il motore
 	outlogicp[ENABLES+offset]=HIGH;
 	nrun++;
-	copytout();
+	copytout(n);
 }
 
 bool isRunning(byte n){
