@@ -5,7 +5,6 @@ byte groupState[4];
 byte *inp;
 byte *outp;
 byte *outlogicp;
-Par **parsl;
 byte act[4] = {0,0,0,0};
 float taplen, deltal;
 float barrad;
@@ -175,25 +174,61 @@ byte tapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt, b
 	tapparellaLogic(n);
 }
 */
-void initTapparellaLogic(byte *in, byte *out, byte *outlogic, Par **parsi, bool firstTime=false){
-	parsl=parsi;
+void setSTDelays(unsigned long dly1, unsigned long dly2){
+	engdelay[0] = dly1;
+	engdelay[1] = dly2;
+	engdelay[2] = dly1;
+	engdelay[3] = dly2;
+}
+
+void setTHalts(unsigned long hlt1, unsigned long hlt2, unsigned long hlt3, unsigned long hlt4){
+	haltdelay[0] = hlt1;
+	haltdelay[1] = hlt2;
+	haltdelay[2] = hlt3;
+	haltdelay[3] = hlt4;
+	
+	thaltp[0] = hlt1;
+	thaltp[1] = hlt3;	
+	
+	setupTimer(hlt1, TMRHALT);
+	setupTimer(hlt2, TMRHALT + TIMERDIM); 
+	setupTimer(hlt3, TMRHALT2);
+	setupTimer(hlt4, TMRHALT2 + TIMERDIM);
+}
+
+void setSLRatio(float slratio){
+	float r = slratio;
+	taplen = taplen*(1 + r);
+	posdelta = r / (1 + r)*100;
+}
+
+void setBarrRadius(float rad){
+	barrad = rad;
+}
+
+void setThickness(float thick){
+	tapthick = thick;
+}
+
+void setTapLen(float len){
+	taplen = len;
+}
+
+void initTapparellaLogic(byte *in, byte *out, byte *outlogic, bool firstTime=false){
 	inp=in;
 	outp=out;
 	outlogicp=outlogic;
+	/*
 	thaltp[0] = static_cast<ParLong*>(parsl[p(THALT1)])->val;
 	thaltp[1] = static_cast<ParLong*>(parsl[p(THALT3)])->val;
 	engdelay[0] = static_cast<ParLong*>(parsl[p(STDEL1)])->val;
 	engdelay[1] = static_cast<ParLong*>(parsl[p(STDEL2)])->val;
-	btndelay[0] = BTNDEL1;
-	btndelay[1] = BTNDEL2;
-	btndelay[2] = BTNDEL1;
-	btndelay[3] = BTNDEL2;
+	engdelay[2] = static_cast<ParLong*>(parsl[p(STDEL1)])->val;
+	engdelay[3] = static_cast<ParLong*>(parsl[p(STDEL2)])->val;
 	haltdelay[0] = static_cast<ParLong*>(parsl[p(THALT1)])->val;
 	haltdelay[1] = static_cast<ParLong*>(parsl[p(THALT2)])->val;
 	haltdelay[2] = static_cast<ParLong*>(parsl[p(THALT3)])->val;
 	haltdelay[3] = static_cast<ParLong*>(parsl[p(THALT4)])->val;
-	engdelay[2] = static_cast<ParLong*>(parsl[p(STDEL1)])->val;
-	engdelay[3] = static_cast<ParLong*>(parsl[p(STDEL2)])->val;
 	taplen = static_cast<ParFloat*>(parsl[p(TLENGTH)])->val;
 	//correzzione per tapparelle a fisarmonica
 	float r = static_cast<ParFloat*>(parsl[p(SLATSRATIO)])->val;
@@ -201,6 +236,12 @@ void initTapparellaLogic(byte *in, byte *out, byte *outlogic, Par **parsi, bool 
 	posdelta = r / (1 + r)*100;
 	barrad = static_cast<ParFloat*>(parsl[p(BARRELRAD)])->val;
 	tapthick = static_cast<ParFloat*>(parsl[p(THICKNESS)])->val;
+	*/
+	btndelay[0] = BTNDEL1;
+	btndelay[1] = BTNDEL2;
+	btndelay[2] = BTNDEL1;
+	btndelay[3] = BTNDEL2;
+	//correzzione per tapparelle a fisarmonica
 	resetCronoCount(0);
 	resetCronoCount(1);
 	setCronoLimits(-THALTMAX,THALTMAX,0);
@@ -307,7 +348,7 @@ short secondPress(byte n, int delay, bool end){
 		nrun--;
 		outlogicp[DIRS+offset]=LOW;
 		//setGroupState(0,n);												//stato 0: il motore va in stato fermo
-		addCronoCount(stopCrono(n)-delay, (short) getCronoDir(n),n); 
+		addCronoCount(stopCrono(n) + delay*getCronoDir(n), (short) getCronoDir(n),n); 
 		long app = getCronoCount(n);
 #if (AUTOCAL) 
 		if(getGroupState(n) == 3 && end){
@@ -702,14 +743,14 @@ void setSWAction(byte in, byte n){
 		DEBUG2_PRINT(F("setSWAction normalmente aperto: "));
 		DEBUG2_PRINTLN(in);
 		oe[n]=true;
-		haltdelay[n] = static_cast<ParLong*>(parsl[p(THALT1+n)])->val;
+		//haltdelay[n] = static_cast<ParLong*>(parsl[p(THALT1+n)])->val;
 		setLogic(LOW,n);
 		DEBUG2_PRINT(F("act==2: "));
 	}else if(in==3){
 		DEBUG2_PRINT(F("setSWAction normalmente chiuso: "));
 		DEBUG2_PRINTLN(in);
 		oe[n]=true;
-		haltdelay[n] = static_cast<ParLong*>(parsl[p(THALT1+n)])->val;
+		//haltdelay[n] = static_cast<ParLong*>(parsl[p(THALT1+n)])->val;
 		setLogic(HIGH,n);
 		DEBUG2_PRINT(F("act==3: "));
 	}

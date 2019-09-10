@@ -68,7 +68,7 @@ unsigned long _connectTimeout  = 10*1000;
 //int haltPrm[2] = {THALT1,THALT2};
 //int haltOfs[2] = {THALT1OFST,THALT2OFST};
 uint8_t blocked[2]={0,0};
-unsigned long edelay[2]={0,0};
+//unsigned long edelay[2]={0,0};
 uint8_t wsnconn = 0;
 IPAddress myip(192, 168, 43, 1);
 IPAddress mygateway(192, 168, 43, 1);
@@ -79,6 +79,9 @@ uint8_t cols[] = {7,4,2,1,6,5,3,0};
 uint8_t ledcnt = 0;
 uint8_t ledslct = 0;
 uint8_t ledpause = 0;
+uint8_t halfStop = STOP_STEP * TBASE / 2;
+uint8_t halfProc = MAINPROCSTEP * TBASE / 2;
+	
 
 #if(LARGEFW)
 RemoteDebug telnet;
@@ -381,18 +384,23 @@ inline void initOfst(){
 	/*6*/pars[p(SWROLL2)] = new ParUint8(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i');
 	/*7*/pars[p(UTCSDT)] = new ParUint8(1, "utcsdt", "utcsdt", NTPSDTOFST, 'p', 'n', new UTCSDT_Evnt());
 	/*8*/pars[p(UTCZONE)] = new ParInt(1, "utczone", "utczone", NTPZONEOFST, 'p', 'i', new UTCZONE_Evnt());
-	/*9*/pars[p(THALT1)] = new ParLong(thalt1,"thalt1", "thalt1", THALT1OFST, 'p','i');
-	/*10*/pars[p(THALT2)] = new ParLong(thalt2, "thalt2", "thalt2", THALT2OFST, 'p','i');
-	/*11*/pars[p(THALT3)] = new ParLong(thalt3,"thalt3", "thalt3", THALT3OFST, 'p','i');
-	/*12*/pars[p(THALT4)] = new ParLong(thalt4, "thalt4", "thalt4", THALT4OFST, 'p','i');
-	/*13*/pars[p(STDEL1)] = new ParLong(400, "stdel1", "stdel1", STDEL1OFST, 'p','i');
-	/*14*/pars[p(STDEL2)] = new ParLong(400, "stdel2", "stdel2", STDEL2OFST, 'p','i');
-	/*15*/pars[p(VALWEIGHT)] = new ParFloat(0.5, "valweight", "valweight", VALWEIGHTOFST, 'p','i');
-	/*16*/pars[p(TLENGTH)] = new ParFloat(53, "tlength","tlength", TLENGTHOFST, 'p','i');
-	/*17*/pars[p(BARRELRAD)] = new ParFloat(3.37, "barrelrad", "barrelrad", BARRELRADOFST, 'p','i');
-	/*18*/pars[p(THICKNESS)] = new ParFloat(1.5, "thickness", "thickness", THICKNESSOFST, 'p','i');
+	/*9*/pars[p(THALT1)] = new ParLong(thalt1,"thalt1", "thalt1", THALT1OFST, 'p','i', new THALTX_Evnt());
+	/*10*/pars[p(THALT2)] = new ParLong(thalt2, "thalt2", "thalt2", THALT2OFST, 'p','i', new THALTX_Evnt());
+	/*11*/pars[p(THALT3)] = new ParLong(thalt3,"thalt3", "thalt3", THALT3OFST, 'p','i', new THALTX_Evnt());
+	/*12*/pars[p(THALT4)] = new ParLong(thalt4, "thalt4", "thalt4", THALT4OFST, 'p','i', new THALTX_Evnt());
+#if (AUTOCAL) 	
+	/*13*/pars[p(STDEL1)] = new ParLong(TENDCHECK*1000, "stdel1", "stdel1", STDEL1OFST, 'p','i', new STDELX_Evnt());
+	/*14*/pars[p(STDEL2)] = new ParLong(TENDCHECK*1000, "stdel2", "stdel2", STDEL2OFST, 'p','i', new STDELX_Evnt());
+#else	
+	/*13*/pars[p(STDEL1)] = new ParLong(400, "stdel1", "stdel1", STDEL1OFST, 'p','i', new STDELX_Evnt());
+	/*14*/pars[p(STDEL2)] = new ParLong(400, "stdel2", "stdel2", STDEL2OFST, 'p','i', new STDELX_Evnt());
+#endif	
+	/*15*/pars[p(VALWEIGHT)] = new ParFloat(0.5, "valweight", "valweight", VALWEIGHTOFST, 'p','i', new VALWEIGHT_Evnt());
+	/*16*/pars[p(TLENGTH)] = new ParFloat(53, "tlength","tlength", TLENGTHOFST, 'p','i', new TLENGTH_Evnt());
+	/*17*/pars[p(BARRELRAD)] = new ParFloat(3.37, "barrelrad", "barrelrad", BARRELRADOFST, 'p','i', new BARRELRAD_Evnt());
+	/*18*/pars[p(THICKNESS)] = new ParFloat(1.5, "thickness", "thickness", THICKNESSOFST, 'p','i', new THICKNESS_Evnt());
 	/*19*/pars[p(UTCADJ)] = new ParInt(0, "utcadj", "utcadj", NTPADJUSTOFST, 'p','i', new UTCADJ_Evnt());
-	/*20*/pars[p(SLATSRATIO)] = new ParFloat(0.8, "slatsratio", "slatsratio", SLATSRATIOFST, 'p','i');
+	/*20*/pars[p(SLATSRATIO)] = new ParFloat(0.8, "slatsratio", "slatsratio", SLATSRATIOFST, 'p','i', new SLATSRATIO_Evnt());
 	/*21*/pars[p(UTCSYNC)] = new ParInt(50, "utcsync", "utcsync", NTPSYNCINTOFST, 'p','i', new UTCSYNC_Evnt());
 	/*22*/pars[p(MQTTID)] = new ParStr32(MQTTCLIENTID, "mqttid", "mqttid", MQTTIDOFST, 'p','i');
 	/*23*/pars[p(MQTTOUTTOPIC)] = new ParStr32(OUTTOPIC, "mqttouttopic", "mqttouttopic", OUTTOPICOFST, 'p','i', new MQTTTOPIC_Evnt());
@@ -1198,8 +1206,8 @@ void publishStr2(String &str){
 }
 
 void initIiming(bool first){
-  edelay[0] = static_cast<ParLong*>(pars[p(STDEL1)])->val; 
-  edelay[1] = static_cast<ParLong*>(pars[p(STDEL2)])->val;
+  //edelay[0] = static_cast<ParLong*>(pars[p(STDEL1)])->val; 
+  //edelay[1] = static_cast<ParLong*>(pars[p(STDEL2)])->val;
   roll[0] = static_cast<ParUint8*>(pars[p(SWROLL1)])->val;
   roll[1] = static_cast<ParUint8*>(pars[p(SWROLL2)])->val;
   DEBUG2_PRINT(F("Roll1: "));
@@ -1207,7 +1215,7 @@ void initIiming(bool first){
   DEBUG2_PRINT(F("Roll2: "));
   DEBUG2_PRINTLN(roll[1]);
   mov = false;
-  initTapparellaLogic(in,out,outLogic,pars,first);
+  initTapparellaLogic(in,out,outLogic,first);
 #if (AUTOCAL)  
   resetAVGStats(0,0);
   resetAVGStats(0,1);
@@ -1223,6 +1231,13 @@ inline void setupNTP() {
   setTimeZone((int) static_cast<ParInt*>(pars[p(UTCZONE)])->val);
   sntpInit();  
 }
+
+#if (AUTOCAL)
+void setValweight(float wht){
+	weight[0] = wht;
+	weight[1] = 1 - weight[0];
+}
+#endif
 
 void setup(){
   dbg1 = new SerialLog(1);
@@ -1245,9 +1260,9 @@ void setup(){
   //carica la configurazione dalla EEPROM
   //DEBUG2_PRINTLN(F("Carico configurazione."));
   //for(int i=0;i<CONFDIM;i++)
+  delay(7000);
   DEBUG2_PRINTLN(F("initCommon."));
   initCommon(&server,pars);
-  delay(7000);
   initOfst();
   DEBUG2_PRINTLN(F("loadConfig."));
   loadConfig();
@@ -1282,24 +1297,14 @@ void setup(){
   DEBUG2_PRINTLN(F("Activated remote _DEBUG"));
 #endif  
   DEBUG2_PRINTLN(F("Inizializzo i pulsanti."));
-  initdfn(LOW, 0);  //pull DOWN init (in realt� � un pull up, c'� un not in ogni ingresso sui pulsanti)
+  initdfn(LOW, 0);  //pull DOWN init (in realt� � un pull up, c'è un not in ogni ingresso sui pulsanti)
   initdfn(LOW, 1);
   initdfn(LOW, 2);
   initdfn(LOW, 3);
   //Timing init
-  setupTimer(static_cast<ParLong*>(pars[p(THALT1)])->val,TMRHALT);				//function timer switch1
-  setupTimer(static_cast<ParLong*>(pars[p(THALT2)])->val,TMRHALT+TIMERDIM);	//function timer switch2 
-  setupTimer(RSTTIME*1000,RESETTIMER);						//special timer btn1 
-  setupTimer(APOFFT*1000,APOFFTIMER);						//special timer btn1
   initIiming(true);
   setSWMode(roll[0],0);
   setSWMode(roll[1],1);
-#if (AUTOCAL)
-  weight[0] =  static_cast<ParFloat*>(pars[p(VALWEIGHT)])->val;
-  weight[1] = 1 - weight[0];
-  static_cast<ParLong*>(pars[p(STDEL1)])->load((unsigned long)TENDCHECK*1000); 
-  static_cast<ParLong*>(pars[p(STDEL2)])->load((unsigned long)TENDCHECK*1000);
-#endif
   delay(100);
   httpSetup();
   delay(100);
@@ -1991,11 +1996,11 @@ inline void automaticStopManager(){
 						if(chk[0] == -1){
 							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
-							blocked[0] = secondPress(0,50,true);
+							blocked[0] = secondPress(0,halfStop,true);
 							scriviOutDaStato();
 						}else if(chk[0] == 2){
 							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
-							blocked[0] = secondPress(0,50);
+							blocked[0] = secondPress(0,halfStop);
 							scriviOutDaStato();
 							blocked[0] = 1;
 						}else if(chk[0] == 1){
@@ -2055,11 +2060,11 @@ inline void automaticStopManager(){
 						if(chk[1] == -1){
 							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
-							blocked[1] = secondPress(1,0,true);
+							blocked[1] = secondPress(1,halfStop,true);
 							scriviOutDaStato();
 						}else if(chk[1] == 2){
 							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
-							blocked[1] = secondPress(1,50);
+							blocked[1] = secondPress(1,halfStop);
 							scriviOutDaStato();
 							blocked[1] = 1;
 						}else if(chk[1] == 1){
@@ -2345,7 +2350,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 	DEBUG1_PRINTLN(getCntValue(3));
 	DEBUG1_PRINTLN(F("-----------------"));
 	
-	if(nn != RESETTIMER || nn != APOFFTIMER) //se � scaduto il timer di attesa o di blocco  (0,1) --> state n
+	if(nn != RESETTIMER || nn != APOFFTIMER) //se è scaduto il timer di attesa o di blocco  (0,1) --> state n
 	{   
 		DEBUG2_PRINT(F("\nCount value: "));
 		DEBUG2_PRINTLN(getCntValue(nn));
@@ -2367,7 +2372,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 					readStatesAndPub();
 				}
 	#if (!AUTOCAL)	
-				else if(getGroupState(nn)==2){//se il motore � in moto a vuoto
+				else if(getGroupState(nn)==2){//se il motore è in moto a vuoto
 					DEBUG1_PRINTLN(F("onElapse roll mode manual:  timer di corsa a vuoto scaduto"));
 					///setGroupState(3,n);	//il motore va in moto cronometrato
 					startEndOfRunTimer(n);
@@ -2375,9 +2380,9 @@ void onElapse(uint8_t nn, unsigned long tm){
 					readStatesAndPub();
 				}
 	#else
-				else if(getGroupState(nn)==2){//se il motore � in moto a vuoto
+				else if(getGroupState(nn)==2){//se il motore è in moto a vuoto
 					DEBUG1_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
-					secondPress(n,50,true);
+					secondPress(n,halfProc,true);
 					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
 					scriviOutDaStato();//15/08/19
 					//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
@@ -2891,47 +2896,68 @@ void MQTTTOPIC_Evnt::doaction(bool save){
 	}
 }
 
-void UTCVAL_Evnt:: doaction(bool){
+void VALWEIGHT_Evnt::doaction(bool){
+	setValweight(static_cast<ParFloat*>(pars[p(VALWEIGHT)])->val);
+}
+void STDELX_Evnt::doaction(bool){
+	setSTDelays(static_cast<ParLong*>(pars[p(STDEL1)])->val, static_cast<ParLong*>(pars[p(STDEL2)])->val);
+}
+void THALTX_Evnt::doaction(bool){
+	setTHalts(static_cast<ParLong*>(pars[p(THALT1)])->val, static_cast<ParLong*>(pars[p(THALT2)])->val, static_cast<ParLong*>(pars[p(THALT3)])->val, static_cast<ParLong*>(pars[p(THALT4)])->val);
+}
+void THICKNESS_Evnt::doaction(bool){
+	setThickness(static_cast<ParFloat*>(pars[p(THICKNESS)])->val);
+}
+void BARRELRAD_Evnt::doaction(bool){
+	setBarrRadius(static_cast<ParFloat*>(pars[p(BARRELRAD)])->val);
+}
+void SLATSRATIO_Evnt::doaction(bool){
+	setSLRatio(static_cast<ParFloat*>(pars[p(SLATSRATIO)])->val);
+}
+void TLENGTH_Evnt::doaction(bool){
+	setTapLen(static_cast<ParFloat*>(pars[p(TLENGTH)])->val);
+}
+void UTCVAL_Evnt::doaction(bool){
 	updateNTP(static_cast<ParLong*>(pars[p(UTCVAL)])->val);
 }
-void NTPADDR1_Evnt:: doaction(bool save){
+void NTPADDR1_Evnt::doaction(bool save){
 	if(save)   
 		saveConf(p(NTPADDR1));
 	setNtpServer(0,static_cast<ParStr64*>(pars[p(NTPADDR1)])->val);
 }
-void NTPADDR2_Evnt:: doaction(bool save){
+void NTPADDR2_Evnt::doaction(bool save){
 	if(save)   
 		saveConf(p(NTPADDR2));
 	setNtpServer(1,static_cast<ParStr64*>(pars[p(NTPADDR2)])->val);
 }
-void UTCSYNC_Evnt:: doaction(bool save){
+void UTCSYNC_Evnt::doaction(bool save){
 	if(save) 
 		setSyncInterval(saveLongConf(UTCSYNC));
 	else
 		setSyncInterval(static_cast<ParLong*>(pars[p(UTCSYNC)])->val);
 }
-void UTCADJ_Evnt:: doaction(bool save){
+void UTCADJ_Evnt::doaction(bool save){
 	if(save) adjustTime(saveIntConf(UTCADJ));
 }
-void UTCSDT_Evnt:: doaction(bool save){
+void UTCSDT_Evnt::doaction(bool save){
 	if(save) 
 		setSDT(saveByteConf(UTCSDT));
 	else
 		setSDT(static_cast<ParUint8*>(pars[p(UTCSDT)])->val);
 }
-void UTCZONE_Evnt:: doaction(bool save){
+void UTCZONE_Evnt::doaction(bool save){
 	if(save) 
 		setTimeZone(saveIntConf(UTCZONE));
 	else
 		setTimeZone((int)static_cast<ParInt*>(pars[p(UTCZONE)])->val);
 }
-void ACTIONEVAL_Evnt:: doaction(bool save){
+void ACTIONEVAL_Evnt::doaction(bool save){
 	//save confs and actions on new action received event
 	if(save) writeOnOffConditions();
 	//run actions one time on new action received event
 	readActionConfAndSet();
 }
-void ONCOND1_Evnt:: doaction(bool save){
+void ONCOND1_Evnt::doaction(bool save){
 	//save confs and actions on new action received event
 	if(save) writeOnOffConditions();
 }
@@ -2939,19 +2965,19 @@ void ONCOND2_Evnt:: doaction(bool save){
 	//save confs and actions on new config received event
 	if(save) writeOnOffConditions();
 }
-void ONCOND3_Evnt:: doaction(bool save){
+void ONCOND3_Evnt::doaction(bool save){
 	//save confs and actions on new config received event
 	if(save) writeOnOffConditions();
 }
-void ONCOND4_Evnt:: doaction(bool save){
+void ONCOND4_Evnt::doaction(bool save){
 	//save confs and actions on new config received event
 	if(save) writeOnOffConditions();
 }
-void ONCOND5_Evnt:: doaction(bool save){
+void ONCOND5_Evnt::doaction(bool save){
 	//save confs and actions on new config received event
 	if(save) writeOnOffConditions();
 }
-void LOGSLCT_Evnt:: doaction(bool save){
+void LOGSLCT_Evnt::doaction(bool save){
 	uint8_t ser, tlnt, mqtt, num;
 	
 	DEBUG_PRINT("LOGSLCT_Evnt ");

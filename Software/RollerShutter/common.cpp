@@ -1700,14 +1700,14 @@ void handleModify(){
   }else if(serverp.hasArg("svlog")){
 	  uint8_t num = static_cast<ParUint8*>(parsp[p(LOGSLCT)])->val;
 	  uint8_t oldNum = num;
-		DEBUG2_PRINT(F("{L1]: "));
-		DEBUG2_PRINTLN(String((num >> 0) & 0x3));
+	  DEBUG2_PRINT(F("{L1]: "));
+	  DEBUG2_PRINTLN(String((num >> 0) & 0x3));
 		
-		DEBUG2_PRINT(F("{L2]: "));
-		DEBUG2_PRINTLN(String((num >> 2) & 0x3));
+	  DEBUG2_PRINT(F("{L2]: "));
+	  DEBUG2_PRINTLN(String((num >> 2) & 0x3));
 		
-		DEBUG2_PRINT(F("{L3]: "));
-		DEBUG2_PRINTLN(String((num >> 4) & 0x3));
+	  DEBUG2_PRINT(F("{L3]: "));
+	  DEBUG2_PRINTLN(String((num >> 4) & 0x3));
 	  if( serverp.hasArg("serlog") && String((num >> 0) & 0x3) != serverp.arg("serlog") ){
 		num -= (num >>0) & 0x3;
 		num += serverp.arg("serlog").toInt();

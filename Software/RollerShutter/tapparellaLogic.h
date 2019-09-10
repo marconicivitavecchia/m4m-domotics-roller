@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "common.h"
 
-void initTapparellaLogic(byte *, byte *, byte *, Par *[], bool);
+void initTapparellaLogic(byte *, byte *, byte *, bool);
 byte tapparellaLogic(byte *, byte *, byte*, unsigned long , byte n);
 //byte tapparellaLogic(byte);
 void setTapThalt(unsigned long, byte);
@@ -46,6 +46,13 @@ void setSWAction(byte in, byte nn);
 void setActionLogic(int, byte);
 void setOE(bool, byte);
 void resetOutlogic(byte);
+void setThickness(float);
+void setTapLen(float);
+void setSLRatio(float);
+void setBarrRadius(float);
+void setTHalts(unsigned long, unsigned long, unsigned long, unsigned long);
+void setSTDelays(unsigned long, unsigned long);
+
 
 void printOutlogic();
 //bool inline initdfn(byte,  byte);

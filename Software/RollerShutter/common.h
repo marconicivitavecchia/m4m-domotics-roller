@@ -432,7 +432,7 @@
 //#define PGMT( pgm_ptr ) ( reinterpret_cast< const const __FlashStringHelper * >( pgm_ptr ) )
 
 //legge gli ingressi dei tasti già puliti dai rimbalzi
-
+/*
 #if (MCP2317) 
     #define leggiTastiLocali()  in[BTN1IN] = !mcp.digitalRead(BTN1U);	\		
 		in[BTN2IN] = !mcp.digitalRead(BTN1D);	\
@@ -444,13 +444,13 @@
 		in[BTN1IN+BTNDIM] = !digitalRead(BTN2U); 	\
 		in[BTN2IN+BTNDIM] = !digitalRead(BTN2D)				
 #endif
+*/
 	
 #define p(x) 	x + USRMODIFICABLEFLAGS
 #define pp(x) 	(x < USRMODIFICABLEFLAGS)?x:x + USRMODIFICABLEFLAGS
 #define ESP8266_REG(addr) *((volatile uint32_t *)(0x60000000+(addr)))
 #define GPI    ESP8266_REG(0x318) //GPIO_IN RO (Read Input Level)
 #define GPIP(p) ((GPI & (1 << ((p) & 0xF))) != 0)
-
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(uint8_t)  \
@@ -613,6 +613,34 @@ class ONCOND5_Evnt: public BaseEvnt{
 		void doaction(bool);
 };
 class LOGSLCT_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class SLATSRATIO_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class BARRELRAD_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class THICKNESS_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class TLENGTH_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class THALTX_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class STDELX_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class VALWEIGHT_Evnt: public BaseEvnt{
 	public:
 		void doaction(bool);
 };
@@ -1126,6 +1154,7 @@ void writeOnOffConditions();
 void writeOnOffAction(uint8_t, uint8_t);
 void writeSWMode(uint8_t, uint8_t);
 void writeHaltDelay(unsigned int, uint8_t);
+void setTimers();
 //void readMqttConfAndSet(int);
 #endif
 /*
