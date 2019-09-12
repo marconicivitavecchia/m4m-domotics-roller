@@ -10,7 +10,7 @@
  Written by Limor Fried/Ladyada for Adafruit Industries.
  BSD license, all text above must be included in any redistribution
  ****************************************************/
-
+#include "common.h"
 #ifdef __AVR
   #include <avr/pgmspace.h>
 #elif defined(ESP8266)
@@ -280,22 +280,36 @@ uint8_t Adafruit_MCP23017_MY::getLastInterruptPinValue(){
 	return MCP23017_INT_ERR;
 }
 
-void Adafruit_MCP23017_MY::writeOuts(uint8_t *outs){
+void Adafruit_MCP23017_MY::writeOuts(uint8_t *outs, uint8_t n){
 	uint8_t gpio;
 	
 	// read the current GPIO output latches
-	uint8_t regAddr = regForPin(wrtPrts[0],MCP23017_OLATA,MCP23017_OLATB);
-	gpio = readRegister(regAddr);
+	//gpio = readRegister(MCP23017_OLATB);
+	//gpio = readRegister(MCP23017_GPIOB);
+	gpio = 0;
 	
 	// set the pin and direction
-	bitWrite(gpio,bitForPin(wrtPrts[0]),outs[0]);
-	bitWrite(gpio,bitForPin(wrtPrts[1]),outs[1]);
-	bitWrite(gpio,bitForPin(wrtPrts[2]),outs[2]);
-	bitWrite(gpio,bitForPin(wrtPrts[3]),outs[3]);
-
+	//bitWrite(gpio, bit1, outs[n*2]);
+	//bitWrite(gpio, bit2,outs[1 + n*2]);
+	Serial.print("\ngpio: ");
+	Serial.print(gpio, BIN);
+	
+	gpio = (gpio & ~((uint8_t) 1 << 0)) | (uint8_t)(outs[0] << 0);
+	gpio = (gpio & ~((uint8_t) 1 << 1)) | (uint8_t)(outs[1] << 1);
+	gpio = (gpio & ~((uint8_t) 1 << 2)) | (uint8_t)(outs[2] << 2);
+	gpio = (gpio & ~((uint8_t) 1 << 3)) | (uint8_t)(outs[3] << 3);
+	
+	Serial.print(" reg ");
+	Serial.println(gpio,BIN);
+	
 	// write the new GPIO
-	regAddr = regForPin(wrtPrts[0],MCP23017_GPIOA,MCP23017_GPIOB);
-	writeRegister(regAddr,gpio);
+	//writeRegister(MCP23017_OLATB,gpio);
+	writeRegister(MCP23017_GPIOB,gpio);
+	//delay(20);
+}
+
+uint8_t  Adafruit_MCP23017_MY::readInputs() {
+	return readRegister(MCP23017_GPIOA);
 }
 
 

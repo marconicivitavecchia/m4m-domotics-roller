@@ -1629,7 +1629,7 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 
 inline void savegroup(uint8_t fields[], uint8_t len){
 	for(int i=0; i<len; i++){
-		saveParamFromForm(fields[i]);		//save param on eeprom
+		saveParamFromForm(fields[i]);		//load and save param on eeprom
 		parsp[fields[i]]->doaction(false);		//execute onreceive param event manager
 	}
 }
@@ -1656,11 +1656,11 @@ void handleModify(){
   }else if(serverp.hasArg("svsystem")){
 	  DEBUG2_PRINTLN(F("savegroup svsystem"));
 #if (AUTOCAL_HLW8012) 
-	  uint8_t fields[11] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE), p(ACVOLT), p(CALPWR)};
-	  savegroup(fields, 11);
+	  uint8_t fields[9] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE), p(ACVOLT), p(CALPWR)};
+	  savegroup(fields, 9);
 #else
-	  uint8_t fields[8] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE)};
-	  savegroup(fields, 8);
+	  uint8_t fields[7] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE)};
+	  savegroup(fields, 7);
 #endif	  
 	  if( serverp.hasArg("rebootd") && String("y") == serverp.arg("rebootd") ){
 		rebootSystem();
@@ -1903,20 +1903,23 @@ void printConfig(){
 
 		DEBUG1_PRINT(F("\neeprom EEPROMLENOFST: "));
 		DEBUG1_PRINT(varStrOfst[VARCONFDIM]);
-}		
-
+}	
+	
+//open and close the eeprom!
 void saveSingleConf(unsigned confofst){
 	eepromBegin();
 	saveConf(p(confofst));
 	EEPROM.end();
 }
 
+//open and close the eeprom!
 void saveSingleJson(unsigned jsnofst){
 	eepromBegin();
 	saveConf(jsnofst);
 	EEPROM.end();
 }
 
+//do NOT open and close the eeprom!
 void updtConf(unsigned paramofst, String v){
 	char intype = parsp[paramofst]->getType();
 	
@@ -1948,6 +1951,7 @@ void updtConf(unsigned paramofst, String v){
 	}
 }
 
+//do NOT open and close the eeprom!
 void saveConf(unsigned paramofst){
 	char intype = parsp[paramofst]->getType();
 	
@@ -1980,6 +1984,7 @@ void saveConf(unsigned paramofst){
 	}
 }
 
+//do NOT open and close the eeprom!
 void loadConf(unsigned paramofst){
 	char intype = parsp[paramofst]->getType();
 	
@@ -2262,22 +2267,22 @@ void ParVarStr::loadFromEprom(){
 	writeOnOffConditions();
 }
 
-
+//open and close the eeprom!
 uint8_t saveByteConf(unsigned confofst){
-	saveConf(p(confofst));
+	saveSingleConf(confofst);
 	return (uint8_t) static_cast<ParUint8*>(parsp[p(confofst)])->val;
 }
-
+//open and close the eeprom!
 int saveIntConf(unsigned confofst){
-	saveConf(p(confofst));
+	saveSingleConf(confofst);
 	return  static_cast<ParInt*>(parsp[p(confofst)])->val;
 }
-
+//open and close the eeprom!
 long saveLongConf(unsigned confofst){
-	saveConf(p(confofst));
+	saveSingleConf(confofst);
 	return  static_cast<ParLong*>(parsp[p(confofst)])->val;
 }
-
+//open and close the eeprom!
 float saveFloatConf(unsigned confofst){
 	saveConf(p(confofst));
 	return  static_cast<ParFloat*>(parsp[p(confofst)])->val;

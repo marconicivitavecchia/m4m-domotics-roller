@@ -61,8 +61,8 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				1
-#define ROLLERSHUTTER 			0
+#define SONOFF_4CH				0
+#define ROLLERSHUTTER 			1
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------NON MODIFICARE LA PARTE SOTTOSTATNTE------------------------------------------------------------------------------------------------
 //#define AUTOCAL_HLW8012			0
@@ -79,7 +79,12 @@
   #define OUT2DD  	11      		// OUT4 =  MOTOR2 DOWN
   #define GREEN  	12  
   #define RED  		13
-  #define BLUE  	14      		
+  #define BLUE  	14   
+  #define UNUSE1  	4 
+  #define UNUSE2 	5
+  #define UNUSE3 	6
+  #define UNUSE4  	7
+  #define UNUSE5 	15 
   //local buttons
   #define BTN1U    	0    		// IN1   =  MOTOR1 UP    
   #define BTN1D    	1    		// IN2   =  MOTOR1 DOWN    
@@ -376,18 +381,18 @@
 #define ONESEC_STEP		40
 #define	LED_STEP		10
 #define STOP_STEP		3
-#define SEL_PIN			5
+#define SEL_PIN			12
 #define CF1_PIN			13
 #define CF_PIN			14
 // Set SEL_PIN to HIGH to sample current
 // This is the case for Itead's Sonoff POW, where a
 // the SEL_PIN drives a transistor that pulls down
 // the SEL pin in the HLW8012 when closed
-#define CURRENT_MODE                    LOW
+#define CURRENT_MODE                    HIGH
 
 // These are the nominal values for the resistors in the circuit
 #define CURRENT_RESISTOR                0.001
-#define VOLTAGE_RESISTOR_UPSTREAM       ( 5 * 470000 ) // Real: 2280k
+#define VOLTAGE_RESISTOR_UPSTREAM       ( 4 * 470000 ) // Real: 2280k
 #define VOLTAGE_RESISTOR_DOWNSTREAM     ( 1000 ) // Real 1.009k
 #endif
 
@@ -541,6 +546,10 @@ class INSTACV_Evnt: public BaseEvnt{
 	public:
 		void doaction(bool);
 };
+class CALPWR_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
 #endif
 //-----------------------------------------------------------------------
 class UTCVAL_Evnt: public BaseEvnt{
@@ -654,13 +663,6 @@ class WEBPSW_Evnt: public BaseEvnt{
 		void doaction(bool);
 };
 */
-#if (AUTOCAL_HLW8012)
-class CALPWR_Evnt: public BaseEvnt{
-	public:
-		void doaction(bool);
-};	
-#endif
-
 
 class Par{
 	public:
@@ -1084,7 +1086,7 @@ void publishStr2(String &);
 float getAmpRMS(float);
 float getTemperature();
 //void leggiTasti();
-void scriviOutDaStato();
+void scriviOutDaStato(byte);
 void saveOnEEPROM(int);
 void loadConfig();
 void rebootSystem();

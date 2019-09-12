@@ -192,7 +192,7 @@ void HLW8012::expectedVoltage(unsigned int value) {
     if (_voltage > 0) _voltage_multiplier *= ((double) value / _voltage);
 }
 
-void HLW8012::expectedActivePower(unsigned int value) {
+void HLW8012::expectedActivePower(double value) {
     if (_power == 0) getActivePower();
     if (_power > 0) _power_multiplier *= ((double) value / _power);
 }

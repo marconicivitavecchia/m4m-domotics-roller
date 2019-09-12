@@ -17,7 +17,6 @@ Tipi di tasto:
 
 byte dprecval2[SWITCHND]; 
 float asyncBuf[GATEND]; 
-unsigned long *dpvl = (unsigned long *)dprecval2;
 //#define SWITCHN 	5 
 //#define stateN 	0 
 
@@ -52,8 +51,8 @@ void initdfn(byte val, byte n){
 	dprecval2[n]=val;
 }
 
-void initdfnUL(unsigned long val, byte n){
-	*(dpvl + n) = (unsigned long) val;
+void initdfnUL(byte val, byte n){
+	memset(dprecval2,val,n);
 }
 
 /*

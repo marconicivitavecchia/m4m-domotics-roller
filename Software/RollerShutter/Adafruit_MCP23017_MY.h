@@ -46,11 +46,9 @@ public:
   void setupInterruptPin(uint8_t p, uint8_t mode);
   uint8_t getLastInterruptPin();
   uint8_t getLastInterruptPinValue();
+  uint8_t readInputs();
+  void writeOuts(uint8_t *, uint8_t);
   
-  //added by me
-  void setWritePorts(uint8_t w1, uint8_t w2, uint8_t w3, uint8_t w4){wrtPrts[0] = w1; wrtPrts[1] = w2; wrtPrts[2] = w3; wrtPrts[3] = w4;};
-  void writeOuts(uint8_t *);
-
  private:
   uint8_t i2caddr;
 
@@ -59,9 +57,6 @@ public:
 
   uint8_t readRegister(uint8_t addr);
   void writeRegister(uint8_t addr, uint8_t value);
-  
-  //added by me
-  uint8_t wrtPrts[4];
 
   /**
    * Utility private method to update a register associated with a pin (whether port A/B)

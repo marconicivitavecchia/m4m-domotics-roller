@@ -81,7 +81,10 @@ uint8_t ledslct = 0;
 uint8_t ledpause = 0;
 uint8_t halfStop = STOP_STEP * TBASE / 2;
 uint8_t halfProc = MAINPROCSTEP * TBASE / 2;
-	
+
+#if (MCP2317) 
+Adafruit_MCP23017_MY mcp;	
+#endif
 
 #if(LARGEFW)
 RemoteDebug telnet;
@@ -108,6 +111,7 @@ unsigned int thalt4=5000;
 int ncifre=4;
 //vettori di ingresso, uscite e stato
 uint8_t in[NBTN*BTNDIM], out[NBTN*BTNDIM];
+bool inflag = false;
 Par *pars[PARAMSDIM];
 unsigned long *inl = (unsigned long *)in;
 
@@ -167,20 +171,6 @@ void printIn(){
 }
 
 
-#if (MCP2317) 
-	Adafruit_MCP23017_MY mcp;
-    void MCP2317_init(){
-// Connect pin #12 of the expander to Analog 5 (i2c clock)
-// Connect pin #13 of the expander to Analog 4 (i2c data)
-// Connect pins #15, 16 and 17 of the expander to ground (address selection)
-// Connect pin #9 of the expander to 5V (power)
-// Connect pin #10 of the expander to ground (common ground)
-// Connect pin #18 through a ~10kohm resistor to 5V (reset pin, active low)
-// Output #0 is on pin 21 so connect an LED or whatever from that to ground
-		mcp.begin();      		// use default address 0
-		mcp.setWritePorts(OUT1EU, OUT1DD, OUT2EU, OUT2DD);  		
-	}	
-#endif
 //-----------------------------------------Begin of prototypes---------------------------------------------------------
 #if (AUTOCAL_HLW8012 && LARGEFW) 
 HLW8012 hlw8012;
@@ -207,13 +197,13 @@ void calibrate_pwr() {
 	//while ((millis() - timeout) < 10000) {
 	//	delay(1);
 	//}
-
+	DEBUG1_PRINT(F("CALPWR : ")); DEBUG1_PRINTLN(static_cast<ParFloat*>(pars[p(CALPWR)])->val);
 	// Calibrate using a 60W bulb (pure resistive) on a 230V line
 	hlw8012.expectedActivePower(static_cast<ParFloat*>(pars[p(CALPWR)])->val);
 	hlw8012.expectedVoltage(static_cast<ParUint8*>(pars[p(ACVOLT)])->val);
 	hlw8012.expectedCurrent((float) static_cast<ParFloat*>(pars[p(CALPWR)])->val / static_cast<ParUint8*>(pars[p(ACVOLT)])->val);
 	//Save parameter in the system array
-	pars[p(PWRMULT)]->load(hlw8012.getPowerMultiplier());
+	static_cast<ParFloat*>(pars[p(PWRMULT)])->load(hlw8012.getPowerMultiplier());
 	
 	// Show corrected factors
 	DEBUG1_PRINT(F("[HLW] New current multiplier : ")); DEBUG1_PRINTLN(hlw8012.getCurrentMultiplier());
@@ -372,17 +362,18 @@ inline void initOfst(){
 	/*4*/pars[INSTPWR] = new ParUint8(10, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
 	/*4*/pars[INSTACV] = new ParUint8(230, "iacvolt", "iacvolt", 2,'n','n', new INSTACV_Evnt());
 	//------------------------------------------------------------------------------------------------------------------------------------
-	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'p','i');
+	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'p', 'i', new CALPWR_Evnt());
 #else
 	/*4*/pars[DOPWRCAL] = new ParUint8(0, "dopwrcal", "dopwrcal", 2, 'n','n');
 	/*4*/pars[INSTPWR] = new ParUint8(0, "ipwr", "ipwr", 2,'n','n');
 	/*4*/pars[INSTACV] = new ParUint8(0, "iacvolt", "iacvolt", 2,'n','n');
-	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'n','n');
+	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'n', 'n');
 #endif
 	/*5*/pars[p(LOCALIP)] = new ParStr32("ip", "localip","ip");
 	/*5*/pars[p(SWROLL1)] = new ParUint8(ROLLMODE1, "swroll1", "swroll1", SWROLL1OFST, 'p', 'i');
 	/*6*/pars[p(SWROLL2)] = new ParUint8(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i');
 	/*7*/pars[p(UTCSDT)] = new ParUint8(1, "utcsdt", "utcsdt", NTPSDTOFST, 'p', 'n', new UTCSDT_Evnt());
+	/*8*/pars[p(UTCZONE)] = new ParInt(1, "utczone", "utczone", NTPZONEOFST, 'p', 'i', new UTCZONE_Evnt());
 	/*8*/pars[p(UTCZONE)] = new ParInt(1, "utczone", "utczone", NTPZONEOFST, 'p', 'i', new UTCZONE_Evnt());
 	/*9*/pars[p(THALT1)] = new ParLong(thalt1,"thalt1", "thalt1", THALT1OFST, 'p','i', new THALTX_Evnt());
 	/*10*/pars[p(THALT2)] = new ParLong(thalt2, "thalt2", "thalt2", THALT2OFST, 'p','i', new THALTX_Evnt());
@@ -709,38 +700,37 @@ float variables(char *key){
 	}
 	return result;
 }
-
+/*
 void printMcpRealOut(){
 	char s[47];
 	uint16_t m;
 
 #if (MCP2317)	
 	m = mcp.readGPIOAB();
-	//sprintf(s, "Lettura uscite MCP: - up1: %d, down1: %d, up2: %d, down2: %d\n", mcp.digitalRead(OUT1EU), mcp.digitalRead(OUT1DD), mcp.digitalRead(OUT2EU), mcp.digitalRead(OUT2DD));
-	//sprintf(s, "Lettura registri AB MCP: %d",);
-	//printf(s,"Leading text "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(uint8_t));
-	sprintf(s,"readGPIOAB: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN" ", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
+	sprintf(s, "Lettura uscite MCP: - %d%d%d%d ", mcp.digitalRead(OUT1EU), mcp.digitalRead(OUT1DD), mcp.digitalRead(OUT2EU), mcp.digitalRead(OUT2DD));
 	DEBUG1_PRINT(s);
+	//sprintf(s," readGPIOAB: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN" ", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
+	//DEBUG1_PRINT(s);
 #else
 	m = (uint16_t)GPI;
 	sprintf(s,"GPIO: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN" ", BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
 	DEBUG1_PRINT(s);
 #endif
 	sprintf(s,"%d%d%d%d\n", out[0], out[1], out[2], out[3]);
-	DEBUG1_PRINT(s);
+	DEBUG1_PRINTLN(s);
 }
-
-void scriviOutDaStato(){
+*/
+void scriviOutDaStato(byte n){
 	DEBUG1_PRINTLN("Evento scriviOutDaStato: ");
 #if (MCP2317) 
-	out[0]=out[1]=out[2]=out[3]=HIGH;
-	mcp.writeOuts(out);
-	//rstldcnt(0);
+	//uint8_t out2[4];
+	//out2[0]=out2[1]=out2[2]=out2[3]=HIGH;
+	mcp.writeOuts(out,n);
+	//mcp.digitalWrite(OUT1EU + n*BTNDIM,out[n*BTNDIM]);	
+	//mcp.digitalWrite(OUT1DD + n*BTNDIM,out[1 + n*BTNDIM]);	
 #else										
-	digitalWrite(OUT1EU,out[0]);	
-	digitalWrite(OUT1DD,out[1]);		
-	digitalWrite(OUT2EU,out[2]);	
-	digitalWrite(OUT2DD,out[3]);		
+	digitalWrite(OUT1EU + n*BTNDIM,out[n*BTNDIM]);	
+	digitalWrite(OUT1DD + n*BTNDIM,out[1 + n*BTNDIM]);			
 #endif
 	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0] > 0;						
 	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1] > 0;		
@@ -1036,7 +1026,7 @@ void readStatesAndPub(bool all){
 		s+=end;
   }
   publishStr2(s);
-  printMcpRealOut();
+  //printMcpRealOut();
 }
 
 inline uint8_t percfdbck(uint8_t n){
@@ -1112,33 +1102,39 @@ void readTempAndPub(){
 }
 
 void readMacAndPub(){
-  String s=openbrk2;
-  publishStr(s);
+  //String s=openbrk2;
+  //publishStr(s);
+  readTempAndPub();
 }
 
 void readIpAndPub(){
-  String s=openbrk2;
-  publishStr(s);
+  //String s=openbrk2;
+  //publishStr(s);
+  readTempAndPub();
 }
 
 void readTimeAndPub(){
-  String s=openbrk2;
-  publishStr(s);
+  //String s=openbrk2;
+  //publishStr(s);
+  readTempAndPub();
 }
 
 void readMQTTIdAndPub(){
-  String s=openbrk2;
-  publishStr(s);
+  //String s=openbrk2;
+  //publishStr(s);
+  readTempAndPub();
 }
 
 void readIpwrAndPub(){
-  String s=openbrk2;
-  publishStr(s);
+  //String s=openbrk2;
+  //publishStr(s);
+  readTempAndPub();
 }
 
 void readIacvoltAndPub(){
-  String s=openbrk2;
-  publishStr(s);
+  //String s=openbrk2;
+  //publishStr(s);
+  readTempAndPub();
 }
 
 void inline readActionConfAndSet(){
@@ -1168,7 +1164,7 @@ void publishStr(String &str){
   {
 	  //str deve essere convertita in array char altrimenti la libreria introduce un carattere spurio all'inizio del messaggio
 	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str.c_str(), str.length());
-	  DEBUG1_PRINT(F("Published data: "));
+	  DEBUG1_PRINT(F("Published data 1: "));
 	  DEBUG1_PRINTLN(str);
   }
   //if(!webSocket){
@@ -1193,7 +1189,7 @@ void publishStr2(String &str){
   {
 	  //str deve essere convertita in array char altrimenti la libreria introduce un carattere spurio all'inizio del messaggio
 	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str.c_str(), str.length());
-	  DEBUG1_PRINT(F("Published data: "));
+	  DEBUG1_PRINT(F("Published data 2: "));
 	  DEBUG1_PRINTLN(str);
   }
   //if(!webSocket){
@@ -1240,6 +1236,73 @@ void setValweight(float wht){
 #endif
 
 void setup(){
+	Serial.begin(115200);
+#if (MCP2317) 
+		mcp.begin(); 
+	//pinMode INPUT
+	mcp.pinMode(BTN1U, INPUT);
+	mcp.pinMode(BTN1D, INPUT);
+	mcp.pinMode(BTN2U, INPUT);
+	mcp.pinMode(BTN2D, INPUT);
+	//pinMode OUTPUT
+	mcp.pinMode(OUT1EU,OUTPUT);
+	mcp.pinMode(OUT1DD,OUTPUT);
+	mcp.pinMode(OUT2EU,OUTPUT);
+	mcp.pinMode(OUT2DD,OUTPUT);
+	mcp.pinMode(GREEN,OUTPUT);
+	mcp.pinMode(RED,OUTPUT);
+	mcp.pinMode(BLUE,OUTPUT);
+	mcp.pinMode(UNUSE1,INPUT);
+	mcp.pinMode(UNUSE2,INPUT);
+	mcp.pinMode(UNUSE3,INPUT);
+	mcp.pinMode(UNUSE4,INPUT);
+	mcp.pinMode(UNUSE5,INPUT);
+	mcp.digitalWrite(OUT1EU, LOW);
+	mcp.digitalWrite(OUT1DD, LOW);
+	mcp.digitalWrite(OUT2EU, LOW);
+	mcp.digitalWrite(OUT2DD, LOW);
+	mcp.digitalWrite(GREEN, LOW);
+	mcp.digitalWrite(RED, LOW);
+	mcp.digitalWrite(BLUE, LOW);
+
+	mcp.pullUp(BTN1U, LOW);
+	mcp.pullUp(BTN1D, LOW);
+	mcp.pullUp(BTN2U, LOW);
+	mcp.pullUp(BTN2D, LOW);
+	
+	mcp.pullUp(UNUSE1, HIGH);
+	mcp.pullUp(UNUSE2, HIGH);
+	mcp.pullUp(UNUSE3, HIGH);
+	mcp.pullUp(UNUSE4, HIGH);
+	mcp.pullUp(UNUSE5, HIGH);
+	//pinMode(OUTSLED,OUTPUT);
+	//digitalWrite(OUTSLED, LOW);
+#else
+	
+  #if (INPULLUP)
+	pinMode(BTN1U, INPUT_PULLUP);
+	pinMode(BTN1D, INPUT_PULLUP);
+	pinMode(BTN2U, INPUT_PULLUP);
+	pinMode(BTN2D, INPUT_PULLUP);
+  #else
+	pinMode(BTN1U, INPUT);
+	pinMode(BTN1D, INPUT);
+	pinMode(BTN2U, INPUT);
+	pinMode(BTN2D, INPUT);
+  #endif
+ 
+	pinMode(OUTSLED,OUTPUT);
+	digitalWrite(OUTSLED, LOW);
+	pinMode(OUT1EU,OUTPUT);
+	pinMode(OUT1DD,OUTPUT);
+	pinMode(OUT2EU,OUTPUT);
+	pinMode(OUT2DD,OUTPUT);
+	digitalWrite(OUT1EU, LOW);
+	digitalWrite(OUT1DD, LOW);
+	digitalWrite(OUT2EU, LOW);
+	digitalWrite(OUT2DD, LOW);
+	
+#endif
   dbg1 = new SerialLog(1);
   dbg2 = new SerialLog(2);
   mqttClient = NULL;
@@ -1253,7 +1316,6 @@ void setup(){
   mqttcnt = 0;
   mqttofst = 2;
   //inizializza la seriale
-  Serial.begin(115200);
   //importante per il _DEBUG del WIFI!
   //Serial.setDebugOutput(true);
   //WiFi.printDiag(Serial);
@@ -1283,20 +1345,8 @@ void setup(){
   //inizializza l'AP wifi
   //setup_AP(true);
   wifiState = WIFISTA;
-  WiFi.mode(WIFI_STA);
-  setup_wifi(wifindx); 
-  setupNTP();
-  //setTimerState(wfs, CONNSTATSW);
-#if(LARGEFW)
-#if (AUTOCAL_HLW8012) 
-  HLW8012_init();
-#endif    
-  telnet.begin((const char *) static_cast<ParStr32*>(pars[p(LOCALIP)])->val); // Initiaze the telnet server
-  telnet.setResetCmdEnabled(true); // Enable the reset command
-  telnet.setCallBackProjectCmds(&processCmdRemoteDebug);
-  DEBUG2_PRINTLN(F("Activated remote _DEBUG"));
-#endif  
-  DEBUG2_PRINTLN(F("Inizializzo i pulsanti."));
+  //WiFi.mode(WIFI_STA);
+  //WiFi.mode(WIFI_OFF); 
   initdfn(LOW, 0);  //pull DOWN init (in realt� � un pull up, c'è un not in ogni ingresso sui pulsanti)
   initdfn(LOW, 1);
   initdfn(LOW, 2);
@@ -1305,6 +1355,21 @@ void setup(){
   initIiming(true);
   setSWMode(roll[0],0);
   setSWMode(roll[1],1);
+  
+  setup_wifi(wifindx); 
+  setupNTP();
+  //setTimerState(wfs, CONNSTATSW);
+#if(LARGEFW)
+#if (AUTOCAL_HLW8012) //////
+  HLW8012_init();		////////
+#endif    
+  telnet.begin((const char *) static_cast<ParStr32*>(pars[p(LOCALIP)])->val); // Initiaze the telnet server
+  telnet.setResetCmdEnabled(true); // Enable the reset command
+  telnet.setCallBackProjectCmds(&processCmdRemoteDebug);
+  DEBUG2_PRINTLN(F("Activated remote _DEBUG"));
+#endif  
+  DEBUG2_PRINTLN(F("Inizializzo i pulsanti."));
+  
   delay(100);
   httpSetup();
   delay(100);
@@ -1316,102 +1381,8 @@ void setup(){
   }
   //startCnt(0,60,TIMECNT);
   //read and set dynamic configurations
-  readActionConfAndSet(); 
+  readActionConfAndSet();  
 
-#if (MCP2317) 
-	MCP2317_init();
-	mcp.pinMode(BTN1U, INPUT);
-	mcp.pinMode(BTN1D, INPUT);
-	mcp.pinMode(BTN2U, INPUT);
-	mcp.pinMode(BTN2D, INPUT);
-	
-  #if (INPULLUP)
-	mcp.pullUp(BTN1U, HIGH);
-	mcp.pullUp(BTN1D, HIGH);
-	mcp.pullUp(BTN2U, HIGH);
-	mcp.pullUp(BTN2D, HIGH);
-  #else
-	mcp.pullUp(BTN1U, LOW);
-	mcp.pullUp(BTN1D, LOW);
-	mcp.pullUp(BTN2U, LOW);
-	mcp.pullUp(BTN2D, LOW);
-  #endif	
- 
-	mcp.pinMode(OUT1EU,OUTPUT);
-	mcp.pinMode(OUT1DD,OUTPUT);
-	mcp.pinMode(OUT2EU,OUTPUT);
-	mcp.pinMode(OUT2DD,OUTPUT);
-	mcp.digitalWrite(OUT1EU, LOW);
-	mcp.digitalWrite(OUT1DD, LOW);
-	mcp.digitalWrite(OUT2EU, LOW);
-	mcp.digitalWrite(OUT2DD, LOW);
-	
-	//pinMode(OUTSLED,OUTPUT);
-	//digitalWrite(OUTSLED, LOW);
-	mcp.pinMode(GREEN,OUTPUT);
-	mcp.pinMode(RED,OUTPUT);
-	mcp.pinMode(BLUE,OUTPUT);
-	mcp.digitalWrite(GREEN, LOW);
-	mcp.digitalWrite(RED, LOW);
-	mcp.digitalWrite(GREEN, LOW);
-	
-#else
-	
-  #if (INPULLUP)
-	pinMode(BTN1U, INPUT_PULLUP);
-	pinMode(BTN1D, INPUT_PULLUP);
-	pinMode(BTN2U, INPUT_PULLUP);
-	pinMode(BTN2D, INPUT_PULLUP);
-  #else
-	pinMode(BTN1U, INPUT);
-	pinMode(BTN1D, INPUT);
-	pinMode(BTN2U, INPUT);
-	pinMode(BTN2D, INPUT);
-  #endif
- 
-	pinMode(OUTSLED,OUTPUT);
-	digitalWrite(OUTSLED, LOW);
-	pinMode(OUT1EU,OUTPUT);
-	pinMode(OUT1DD,OUTPUT);
-	pinMode(OUT2EU,OUTPUT);
-	pinMode(OUT2DD,OUTPUT);
-	digitalWrite(OUT1EU, LOW);
-	digitalWrite(OUT1DD, LOW);
-	digitalWrite(OUT2EU, LOW);
-	digitalWrite(OUT2DD, LOW);
-	
-#endif
-
- /* 
-	MCP2317_init();
-	mcp.pinMode(BTN1U, INPUT);
-	mcp.pinMode(BTN1D, INPUT);
-	mcp.pinMode(BTN2U, INPUT);
-	mcp.pinMode(BTN2D, INPUT);
-	
-	mcp.pullUp(BTN1U, LOW);
-	mcp.pullUp(BTN1D, LOW);
-	mcp.pullUp(BTN2U, LOW);
-	mcp.pullUp(BTN2D, LOW);
-	
-	mcp.pinMode(OUT1EU,OUTPUT);
-	mcp.pinMode(OUT1DD,OUTPUT);
-	mcp.pinMode(OUT2EU,OUTPUT);
-	mcp.pinMode(OUT2DD,OUTPUT);
-	mcp.digitalWrite(OUT1EU, LOW);
-	mcp.digitalWrite(OUT1DD, LOW);
-	mcp.digitalWrite(OUT2EU, LOW);
-	mcp.digitalWrite(OUT2DD, LOW);
-	
-	//pinMode(OUTSLED,OUTPUT);
-	//digitalWrite(OUTSLED, LOW);
-	mcp.pinMode(GREEN,OUTPUT);
-	mcp.pinMode(RED,OUTPUT);
-	mcp.pinMode(BLUE,OUTPUT);
-	mcp.digitalWrite(GREEN, LOW);
-	mcp.digitalWrite(RED, LOW);
-	mcp.digitalWrite(GREEN, LOW);
-	*/	
   //imposta la DIRSezione delle porte dei led, imposta inizialmente i led come spento  
   
   //------------------------------------------OTA SETUP---------------------------------------------------------------------------------------
@@ -1429,28 +1400,7 @@ void setup(){
   stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
   // Call "onStationDisconnected" each time a station disconnects
   stationDisconnectedHandler = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
-/*  
-  gotIpEventHandler = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP& event)
-  {
-	Serial.print("DHCP got an IP. Station connected, IP: ");
-	Serial.println(WiFi.localIP());
-	//wifiConn = true;
-  });
-  
-  disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event)
-  {
-    //Serial.println("Station disconnected");
-	//wifiConn = false;
-	//keepConn = false; //rallenta il loop()
-  });
-  
-  connectedEventHandler =  WiFi.onStationModeConnected([](const WiFiEventStationModeConnected& event){
-    //Serial.print("Station connected");
-	//wifiConn = true;
-  });
-*/
-  //initTapparellaLogic(in,inr,outLogic,(confcmd[THALT1]).toInt(),(confcmd[THALT2]).toInt(),(confcmd[STDEL1]).toInt(),(confcmd[STDEL2]).toInt());
-  //esp_log_set_vprintf(_log_vprintf);
+
 #if defined (_DEBUG) || defined (_DEBUGR)  
   testFlash();
 #endif
@@ -1458,6 +1408,7 @@ void setup(){
   zeroDetect();
 #endif
   cont=0;
+  
   while (WiFi.status() != WL_CONNECTED && cont<30000/500) {
      delay(500);
 	 cont++;
@@ -1493,6 +1444,8 @@ void setup(){
   
   DEBUG2_PRINTLN(F("sampleCurrTime()"));
   sampleCurrTime();
+  //Turn off WiFi
+  //WiFi.mode(WIFI_OFF);    //This also w
 }
 
 void httpSetup(){
@@ -1560,7 +1513,7 @@ void stopPageLoad(){
 void leggiTastiLocali2(){
 #if (MCP2317) 
 	char s[18];
-	uint8_t regA = mcp.readGPIO(0);
+	uint8_t regA = mcp.readInputs();
 	uint8_t inmask = regA & 0xF;	//00001111 (15)
 	uint8_t inmask2;
 	
@@ -1574,14 +1527,6 @@ void leggiTastiLocali2(){
 		DEBUG1_PRINT(s);
 		sprintf(s,"GPIOIN: "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(regA));
 		DEBUG1_PRINT(s);
-		//static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)((regA >> BTN1U) & 0x1)?0:255); 
-		//static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
-		//static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t)((regA >> BTN1D) & 0x1)?0:255); 
-		//static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction();
-		//static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t)((regA >> BTN2U) & 0x1)?0:255); 
-		//static_cast<ParUint8*>(pars[MQTTUP2])->doaction();
-		//static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)((regA >> BTN2D) & 0x1)?0:255);
-		//static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
 		if(!bitRead(regA, BTN1U)){
 			static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t)255); 
 			static_cast<ParUint8*>(pars[MQTTUP1])->doaction();
@@ -1595,10 +1540,11 @@ void leggiTastiLocali2(){
 			static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)255); 
 			static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
 		}
-	}else if(inl[0] != 0){
+		//printMcpRealOut();
+	}else if(inflag){
 		DEBUG1_PRINTLN(F("Fronte di discesa "));
-		*inl = (unsigned long) 0UL;
-		initdfnUL(0UL,0);
+		inflag = false;
+		initdfnUL(LOW,4);
 		resetTimer(RESETTIMER);
 		//rilascio interblocco gruppo 1
 		if(roll[0] == true){
@@ -1636,10 +1582,10 @@ void leggiTastiLocali2(){
 			static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t)255); 
 			static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
 		}
-	}else if(inl[0] != 0){
+	}else if(inflag){
 		DEBUG1_PRINTLN(F("Fronte di discesa "));
-		*inl = (unsigned long) 0UL;
-		initdfnUL(0UL,0);
+		inflag = false;
+		initdfnUL(LOW,4);
 		resetTimer(RESETTIMER);
 		//rilascio interblocco gruppo 1
 		if(roll[0] == true){
@@ -1741,9 +1687,9 @@ inline void loop2() {
 			//DEBUG2_PRINTLN(WiFi.getMode());
 			sensorStatePoll();
 			if(wificnt > WIFISTEP){
-				wifiFailoverManager();
+				//wifiFailoverManager();
 			}
-			MQTTReconnectManager();
+			//MQTTReconnectManager();
 			//paramsModificationPoll();
 		}
 		if(sampleCurrTime()){//1min
@@ -1774,7 +1720,7 @@ inline void loop2() {
 			if(wificnt > WIFISTEP){
 				wificnt = 0;
 				DEBUG1_PRINTLN(F("\nGiving time to ESP stack... "));
-				delay(30);//give 30ms to the ESP stack for wifi connect
+				//delay(30);//give 30ms to the ESP stack for wifi connect
 	//#endif  
 			}else{
 				wificnt++;
@@ -1824,12 +1770,12 @@ inline void leggiTastiLocaliDaExp(){
 		if(testUpCntEvnt(0,true,SMPLCNT1)){
 			setActionLogic(eval(((String) pars[p(0)]->getStrVal()).c_str()),0);
 			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato();
+			scriviOutDaStato(0);
 		}
 		if(testUpCntEvnt(0,true,SMPLCNT2)){
 			setActionLogic(eval(((String) pars[p(1)]->getStrVal()).c_str()),1);
 			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato();
+			scriviOutDaStato(0);
 		}
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
@@ -1850,12 +1796,12 @@ inline void leggiTastiLocaliDaExp(){
 		if(testUpCntEvnt(0,true,SMPLCNT3)){
 			setActionLogic(eval(((String) pars[p(2)]->getStrVal()).c_str()),2);
 			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato();
+			scriviOutDaStato(1);
 		}
 		if(testUpCntEvnt(1,true,SMPLCNT4)){
 			setActionLogic(eval(((String) pars[p(3)]->getStrVal()).c_str()),3);
 			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato();
+			scriviOutDaStato(1);
 		}
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
@@ -1997,11 +1943,11 @@ inline void automaticStopManager(){
 							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
 							blocked[0] = secondPress(0,halfStop,true);
-							scriviOutDaStato();
+							scriviOutDaStato(0);
 						}else if(chk[0] == 2){
 							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
 							blocked[0] = secondPress(0,halfStop);
-							scriviOutDaStato();
+							scriviOutDaStato(0);
 							blocked[0] = 1;
 						}else if(chk[0] == 1){
 							ex[0] = getAVG(0);
@@ -2061,11 +2007,11 @@ inline void automaticStopManager(){
 							DEBUG2_PRINTLN(F(") Stop: sottosoglia"));
 							//fine dorsa raggiunto
 							blocked[1] = secondPress(1,halfStop,true);
-							scriviOutDaStato();
+							scriviOutDaStato(1);
 						}else if(chk[1] == 2){
 							DEBUG2_PRINTLN(F(") Stop: soprasoglia"));
 							blocked[1] = secondPress(1,halfStop);
-							scriviOutDaStato();
+							scriviOutDaStato(1);
 							blocked[1] = 1;
 						}else if(chk[1] == 1){
 							DEBUG2_PRINTLN(F(") Start: fronte di salita"));	
@@ -2360,14 +2306,14 @@ void onElapse(uint8_t nn, unsigned long tm){
 					DEBUG2_PRINTLN(F("stato 0 roll mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 					secondPress(n);
 					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
-					scriviOutDaStato();
+					scriviOutDaStato(n);
 					//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 					readStatesAndPub();
 				}else if(getGroupState(nn)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
 					DEBUG1_PRINTLN(F("onElapse roll mode:  timer di attesa scaduto"));
 					startEngineDelayTimer(n);
 					//adesso parte...
-					scriviOutDaStato();
+					scriviOutDaStato(n);
 					//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 					readStatesAndPub();
 				}
@@ -2384,7 +2330,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 					DEBUG1_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
 					secondPress(n,halfProc,true);
 					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
-					scriviOutDaStato();//15/08/19
+					scriviOutDaStato(n);//15/08/19
 					//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
 					readStatesAndPub();
 				}
@@ -2399,7 +2345,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 					endPress(nn);
 				}
 				//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
-				scriviOutDaStato();
+				scriviOutDaStato(n);
 				//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 				readStatesAndPub();
 			}
@@ -2533,7 +2479,7 @@ void onTapStop(uint8_t n){
 	resetStatDelayCounter(n);
 #endif
 	//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
-	scriviOutDaStato();//15/08/19
+	scriviOutDaStato(n);
 	//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
 	readStatesAndPub();
 }
@@ -2789,6 +2735,11 @@ void INSTPWR_Evnt::doaction(bool save){
 void INSTACV_Evnt::doaction(bool save){
 	void readIacvoltAndPub();
 }
+void CALPWR_Evnt::doaction(bool save){
+	if(save)   
+		saveSingleConf(CALPWR);
+	
+}
 #endif
 //----------------------------------------------------------------------------
 //richieste da remoto di valori locali
@@ -2808,6 +2759,7 @@ void MQTTBTN_Evnt::doaction(bool save){
 	DEBUG1_PRINT(v);
 	in[i] = v;
 	static_cast<ParUint8*>(pars[i])->load((uint8_t) 0); //flag reset
+	inflag = true;
 	DEBUG1_PRINT(" inval: ");
 	DEBUG1_PRINTLN(in[i]);
 	DEBUG1_PRINTLN("Prima");
@@ -2922,12 +2874,12 @@ void UTCVAL_Evnt::doaction(bool){
 }
 void NTPADDR1_Evnt::doaction(bool save){
 	if(save)   
-		saveConf(p(NTPADDR1));
+		saveSingleConf(NTPADDR1);
 	setNtpServer(0,static_cast<ParStr64*>(pars[p(NTPADDR1)])->val);
 }
 void NTPADDR2_Evnt::doaction(bool save){
 	if(save)   
-		saveConf(p(NTPADDR2));
+		saveSingleConf(NTPADDR2);
 	setNtpServer(1,static_cast<ParStr64*>(pars[p(NTPADDR2)])->val);
 }
 void UTCSYNC_Evnt::doaction(bool save){
@@ -3210,13 +3162,6 @@ void WEBPSW_Evnt:: doaction(bool save){
 	saveSingleConf(WEBPSW);
 }
 */
-#if (AUTOCAL_HLW8012) 
-void CALPWR_Evnt:: doaction(bool save){
-	//save confs and actions on new config received event
-	saveSingleConf(CALPWR);
-}
-#endif
-
 //-----------------------------------------------------------------------------------------------------------------------------
 /*inline void leggiTastiRemoti(){
 	//--------------------------------------------------------------------------------------------------

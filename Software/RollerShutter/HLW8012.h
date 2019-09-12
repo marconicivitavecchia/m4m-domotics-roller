@@ -96,8 +96,8 @@ class HLW8012 {
         void setResistors(double current, double voltage_upstream, double voltage_downstream);
 
         void expectedCurrent(double current);
-        void expectedVoltage(unsigned int current);
-        void expectedActivePower(unsigned int power);
+        void expectedVoltage(unsigned int volt);
+        void expectedActivePower(double power);
 
         double getCurrentMultiplier() { return _current_multiplier; };
         double getVoltageMultiplier() { return _voltage_multiplier; };
