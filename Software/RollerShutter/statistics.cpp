@@ -124,7 +124,7 @@ short checkRange(double mval, byte n) {
 		}
 		
         //calcolo delle medie attivo solo sulla marcia cronometrata!
-		if(run){
+		if(run[n]){
 			//calcolo statistiche (media e varianza) solo con motore in movimento	
 			count[n]++;		
 			double delta = (double) mval - avg[n];

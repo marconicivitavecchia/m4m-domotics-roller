@@ -123,7 +123,7 @@
 #define ONE_WIRE_BUS 2  // DS18B20 pin
 #define RUNDELAY  	1
 #define DELTAL		4
-#define NSIGMA 		3
+#define NSIGMA 		1.001
 #define EMA  		0.8
 #define THALTMAX   	90000 
 #define	TCOUNT		5		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION

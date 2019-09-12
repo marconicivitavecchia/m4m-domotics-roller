@@ -28,6 +28,7 @@ void setupTimer(unsigned long, byte);
 //---------------------------------------------------------------------------------------------------------
 //                                       Cronometro vettoriale
 //---------------------------------------------------------------------------------------------------------
+unsigned long getTimerLapse(byte);
 void startCrono(byte);
 unsigned long stopCrono(byte);
 unsigned long restartCrono(byte);

@@ -38,6 +38,10 @@ void setupTimer(unsigned long duration, byte n){
 	timelapseN[n]=duration;
 }
 
+unsigned long getTimerLapse(byte n){
+	return timelapseN[n];
+}
+
 void startTimer(byte n){
 	//n: numero del timer
 	timerStateN[n]=1;

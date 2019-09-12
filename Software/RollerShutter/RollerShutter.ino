@@ -1898,26 +1898,27 @@ inline void sensorStatePoll(){
 
 
 inline void automaticStopManager(){
-	if(mov){ //sempre falso se si � in modalit� switch!	
+	if(mov){ //sempre falso se si è in modalit� switch!	
 			//automatic stop manager
 #if (AUTOCAL_ACS712) 
 			dd = maxx - minx;
 #elif (AUTOCAL_HLW8012) 
 			//dd = hlw8012.getActivePower();
-			//dd = hlw8012.getExtimActivePower();
+			dd = hlw8012.getExtimActivePower();
 			//dd = hlw8012.getAvgdExtimActivePower();
-			dd = 10;
 #endif
 			//EMA calculation
 			//ACSVolt = (double) ex/2.0;
 			//peak = (double) ex/2.0;
 			//reset of peak sample value
-			DEBUG2_PRINT(F("\n("));
-			DEBUG2_PRINT(0);
-			DEBUG2_PRINT(F(") sensor enable: "));
-			DEBUG2_PRINT(dosmpl);
+			DEBUG2_PRINT("Isrun: ");
+			DEBUG2_PRINTLN(isrun[0]);
 			
+#if (AUTOCAL_ACS712) 
 			if(isrun[0] && dosmpl){
+#elif (AUTOCAL_HLW8012) 
+			if(isrun[0]){
+#endif
 				DEBUG2_PRINT(0);
 				if(isrundelay[0] == 0){
 					ex[0] = dd*EMA + (1.0 - EMA)*ex[0];
@@ -1931,9 +1932,11 @@ inline void automaticStopManager(){
 					DEBUG2_PRINT(F(" - Mean sensor: "));
 					DEBUG2_PRINT(m);
 #endif
-					DEBUG2_PRINT(F(" - Peak: "));
+					DEBUG2_PRINT(F(" -rundelay: "));
+					DEBUG2_PRINT(isrundelay[0]);
+					DEBUG2_PRINT(F(" - EMA: "));
 					DEBUG2_PRINT(ex[0]);
-					DEBUG2_PRINT(F(" - diff: "));
+					DEBUG2_PRINT(F(" - Inst: "));
 					DEBUG2_PRINT(dd);
 					chk[0] = checkRange((double) ex[0]*(1 - weight[1]*isMoving(1)),0);
 					if(chk[0] != 0){
@@ -1954,8 +1957,11 @@ inline void automaticStopManager(){
 							DEBUG2_PRINTLN(F(") Start: fronte di salita"));					
 							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(0);
+							DEBUG1_PRINT(F("Timer lapse: "));		
+							DEBUG1_PRINTLN(getTimerLapse(0));
 						}
 						readStatesAndPub();
+						//ex[0] = getAVG(0);
 						yield();
 					}
 				}else{
@@ -1982,7 +1988,11 @@ inline void automaticStopManager(){
 				resetEdges(0);
 			}
 			
+#if (AUTOCAL_ACS712) 
 			if(isrun[1] && dosmpl){
+#elif (AUTOCAL_HLW8012) 
+			if(isrun[1]){
+#endif
 				if(isrundelay[1] == 0){
 					ex[1] = dd*EMA + (1.0 - EMA)*ex[1];
 					DEBUG2_PRINT(F("\n("));
@@ -1995,10 +2005,12 @@ inline void automaticStopManager(){
 					DEBUG2_PRINT(F(" - Mean sensor: "));
 					DEBUG2_PRINT(m);
 #endif
+					DEBUG2_PRINT(F(" -rundelay: "));
+					DEBUG2_PRINT(isrundelay[1]);
 					DEBUG2_PRINT(F(" - Peak: "));
 					DEBUG2_PRINT(ex[1]);
-					DEBUG2_PRINT(F(" - ADC enable: "));
-					DEBUG2_PRINT(dosmpl);
+					//DEBUG2_PRINT(F(" - ADC enable: "));
+					//DEBUG2_PRINT(dosmpl);
 					chk[1] = checkRange((double) ex[1]*(1 - weight[0]*isMoving(0)),1);
 					if(chk[1] != 0){
 						DEBUG2_PRINT(F("\n("));
@@ -2018,8 +2030,11 @@ inline void automaticStopManager(){
 							ex[1] = getAVG(1);
 							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(1);
+							DEBUG2_PRINT(F("Timer lapse: "));		
+							DEBUG2_PRINTLN(getTimerLapse(3));
 						}
 						readStatesAndPub();
+						//ex[1] = getAVG(1);
 						yield();
 					}
 				}else{		
@@ -2039,9 +2054,9 @@ inline void automaticStopManager(){
 			dosmpl = true;
 #endif
 			//DEBUG2_PRINT(F("\n------------------------------------------------------------------------------------------"));
-		}
+		}else{
 #if (AUTOCAL_ACS712) 		
-		else{ //sempre vero se si � in modalit� switch!	
+		 //sempre vero se si � in modalit� switch!	
 			//zero detection manager
 			//zero detection scheduler
 			zeroCnt = (zeroCnt + 1) % ZEROSMPL;
@@ -2061,8 +2076,13 @@ inline void automaticStopManager(){
 				smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
 				DEBUG2_PRINTLN(F("Zero detection manager"));	
 			}
-		}
 #endif
+			isrundelay[0] = isrundelay[1] = RUNDELAY;
+			//reset dei fronti su blocco marcia (sia manuale che automatica)
+			resetEdges(0);
+			resetEdges(1);
+		}
+
 }
 
 inline void wifiFailoverManager(){
