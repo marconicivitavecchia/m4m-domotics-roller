@@ -121,7 +121,7 @@
 #define ENDFACT		2	// (%) margine di posizionamento con i sensori in percentuale dell'escursione totale, dopo avviene col timer
 #define PUSHINTERV	60 // in sec
 #define ONE_WIRE_BUS 2  // DS18B20 pin
-#define RUNDELAY  	1
+#define RUNDELAY  	2
 #define DELTAL		4
 #define NSIGMA 		1.001
 #define EMA  		0.8
