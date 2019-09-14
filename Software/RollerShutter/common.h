@@ -49,7 +49,7 @@
 #define WSPRT			"8000"
 #define MQTTPT			"mqtt"
 #define MQTTCLIENTID 	"mytapparella"
-#define ROLLMODE1 		0
+#define ROLLMODE1 		1
 #define ROLLMODE2 		0
 #define NTP1 			"ntp1.inrim.it"
 #define NTP2 			"0.it.pool.ntp.org"
@@ -235,37 +235,40 @@
 #define SLATSRATIOFST			58
 #define NTPSYNCINTOFST			62
 #define CALPWROFST				66
-#define RESERVED1FLOTAFST		70
+#define CURRMULTOFST			70
+#define VACMULTOFST				74
+#define SWSPLDPWR1OFST3			78
+#define SWSPLDPWR1OFST4			82
 //32 byte offsets (fixed medium String)
-#define	MQTTIDOFST				74
-#define	OUTTOPICOFST			106
-#define	INTOPICOFST				138
-#define	MQTTUP1OFST				170
-#define	MQTTDOWN1OFST			202
-#define	MQTTUP2OFST				234
-#define	MQTTDOWN2OFST			266
-#define	MQTTPORTOFST			298
-#define	WSPORTOFST				330
-#define	MQTTPROTOFST			362
-#define	RESERVEDSTR3			394
-#define	WIFICLIENTSSIDOFST1		426
-#define	WIFICLIENTPSWOFST1		458
-#define	WIFICLIENTSSIDOFST2		490
-#define	WIFICLIENTPSWOFST2		522
-#define	WIFIAPSSIDOFST			554
-#define	WIFIAPPPSWOFST			586
-#define	WEBUSROFST				618
-#define	WEBPSWOFST				650
-#define	MQTTUSROFST				682
-#define	MQTTPSWOFST				714
-#define	MQTTLOGOFST				746
+#define	MQTTIDOFST				86
+#define	OUTTOPICOFST			118
+#define	INTOPICOFST				140
+#define	MQTTUP1OFST				182
+#define	MQTTDOWN1OFST			214
+#define	MQTTUP2OFST				246
+#define	MQTTDOWN2OFST			278
+#define	MQTTPORTOFST			310
+#define	WSPORTOFST				342
+#define	MQTTPROTOFST			374
+#define	RESERVEDSTR3			406
+#define	WIFICLIENTSSIDOFST1		438
+#define	WIFICLIENTPSWOFST1		470
+#define	WIFICLIENTSSIDOFST2		502
+#define	WIFICLIENTPSWOFST2		534
+#define	WIFIAPSSIDOFST			566
+#define	WIFIAPPPSWOFST			598
+#define	WEBUSROFST				630
+#define	WEBPSWOFST				662
+#define	MQTTUSROFST				694
+#define	MQTTPSWOFST				726
+#define	MQTTLOGOFST				758
 //64 byte offsets (fixed long String)
-#define MQTTADDROFST			778
-#define NTP1ADDROFST			842
-#define NTP2ADDROFST			906
-#define NTP3ADDROFST			970
+#define MQTTADDROFST			790
+#define NTP1ADDROFST			854
+#define NTP2ADDROFST			918
+#define NTP3ADDROFST			982
 //end fixed lenght params
-#define FIXEDPARAMSLEN			1034
+#define FIXEDPARAMSLEN			1046
 //x byte offsets (variable String)
 //--------------------------Fine EEPROM offsets-------------------------------------------
 
@@ -359,15 +362,18 @@
 #define ACVOLT				46
 #define	LOGSLCT				47
 #define MQTTLOG				48
+#define VACMULT				49
+#define CURRMULT			50
+//#define SWSPLDPWR3			51
+//#define SWSPLDPWR4			52
 //parametri di stato (da non esporre)
-#define SWACTION1			49
-#define SWACTION2			50
-#define SWACTION3			51
-#define SWACTION4			52
-#define CONFDIM				53
+#define SWACTION1			51
+#define SWACTION2			52
+#define SWACTION3			53
+#define SWACTION4			54
+#define CONFDIM				55
 #define VARCONFDIM			6
 #define EXTCONFDIM			14 + 16
-#define TOSAVEPARAMS		49
 //#define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
 #define PARAMSDIM 			CONFDIM + USRMODIFICABLEFLAGS
 //--------------------------Fine array indexes-----------------------------------
@@ -650,6 +656,40 @@ class STDELX_Evnt: public BaseEvnt{
 		void doaction(bool);
 };
 class VALWEIGHT_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+/*
+class SWSPLDPWR1_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class SWSPLDPWR2_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class SWSPLDPWR3_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class SWSPLDPWR4_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+*/
+class PWRMULT_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class CURRMULT_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class VACMULT_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class ACVOLT_Evnt: public BaseEvnt{
 	public:
 		void doaction(bool);
 };

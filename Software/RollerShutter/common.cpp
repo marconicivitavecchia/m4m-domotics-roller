@@ -2264,23 +2264,22 @@ void ParVarStr::loadFromEprom(){
 
 
 uint8_t saveByteConf(unsigned confofst){
-	saveConf(p(confofst));
+	saveSingleConf(confofst);
 	return (uint8_t) static_cast<ParUint8*>(parsp[p(confofst)])->val;
 }
 
 int saveIntConf(unsigned confofst){
-	saveConf(p(confofst));
+	saveSingleConf(confofst);
 	return  static_cast<ParInt*>(parsp[p(confofst)])->val;
 }
 
 long saveLongConf(unsigned confofst){
-	saveConf(p(confofst));
+	saveSingleConf(confofst);
 	return  static_cast<ParLong*>(parsp[p(confofst)])->val;
 }
 
 float saveFloatConf(unsigned confofst){
-
-saveConf(p(confofst));
+	saveSingleConf(confofst);
 	return  static_cast<ParFloat*>(parsp[p(confofst)])->val;
 }
 

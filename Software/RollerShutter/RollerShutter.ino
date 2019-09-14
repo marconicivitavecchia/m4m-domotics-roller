@@ -21,6 +21,7 @@ char IP[] = "xxx.xxx.xxx.xxx";          // buffer
 //end global string
 //stats variables
 #if (AUTOCAL)
+float overallSwPower = 0;
 int samples[10];
 uint8_t indx = 0;
 uint8_t stat;
@@ -111,6 +112,8 @@ unsigned int thalt4=5000;
 int ncifre=4;
 //vettori di ingresso, uscite e stato
 uint8_t in[NBTN*BTNDIM], out[NBTN*BTNDIM];
+float outPwr[NBTN*BTNDIM];
+byte doPwrSpl[NBTN*BTNDIM] = {255, 255, 255, 255};
 bool inflag = false;
 Par *pars[PARAMSDIM];
 unsigned long *inl = (unsigned long *)in;
@@ -198,12 +201,19 @@ void calibrate_pwr() {
 	//	delay(1);
 	//}
 	DEBUG1_PRINT(F("CALPWR : ")); DEBUG1_PRINTLN(static_cast<ParFloat*>(pars[p(CALPWR)])->val);
+	hlw8012.resetMultipliers();
 	// Calibrate using a 60W bulb (pure resistive) on a 230V line
 	hlw8012.expectedActivePower(static_cast<ParFloat*>(pars[p(CALPWR)])->val);
 	hlw8012.expectedVoltage(static_cast<ParUint8*>(pars[p(ACVOLT)])->val);
 	hlw8012.expectedCurrent((float) static_cast<ParFloat*>(pars[p(CALPWR)])->val / static_cast<ParUint8*>(pars[p(ACVOLT)])->val);
+	
+	DEBUG1_PRINT(F("[HLW] Expected power : ")); DEBUG1_PRINTLN(static_cast<ParFloat*>(pars[p(CALPWR)])->val);
+	DEBUG1_PRINT(F("[HLW] Expected voltage : ")); DEBUG1_PRINTLN(static_cast<ParUint8*>(pars[p(ACVOLT)])->val);
+	DEBUG1_PRINT(F("[HLW] Expected current : ")); DEBUG1_PRINTLN((float) static_cast<ParFloat*>(pars[p(CALPWR)])->val / static_cast<ParUint8*>(pars[p(ACVOLT)])->val);
 	//Save parameter in the system array
 	static_cast<ParFloat*>(pars[p(PWRMULT)])->load(hlw8012.getPowerMultiplier());
+	static_cast<ParFloat*>(pars[p(CURRMULT)])->load(hlw8012.getCurrentMultiplier());
+	static_cast<ParFloat*>(pars[p(VACMULT)])->load(hlw8012.getVoltageMultiplier());
 	
 	// Show corrected factors
 	DEBUG1_PRINT(F("[HLW] New current multiplier : ")); DEBUG1_PRINTLN(hlw8012.getCurrentMultiplier());
@@ -362,7 +372,8 @@ inline void initOfst(){
 	/*4*/pars[INSTPWR] = new ParUint8(10, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
 	/*4*/pars[INSTACV] = new ParUint8(230, "iacvolt", "iacvolt", 2,'n','n', new INSTACV_Evnt());
 	//------------------------------------------------------------------------------------------------------------------------------------
-	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'p', 'i', new CALPWR_Evnt());
+	/*42*/pars[p(ACVOLT)] = new ParUint8(230, "acvolt", "acvolt", ACVOLTOFST, 'p','i', new ACVOLT_Evnt());
+	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'p', 'i', new CALPWR_Evnt());//Must be after ACVOLT!
 #else
 	/*4*/pars[DOPWRCAL] = new ParUint8(0, "dopwrcal", "dopwrcal", 2, 'n','n');
 	/*4*/pars[INSTPWR] = new ParUint8(0, "ipwr", "ipwr", 2,'n','n');
@@ -413,8 +424,9 @@ inline void initOfst(){
 	/*38*/pars[p(MQTTPROTO)] = new ParStr32(MQTTPT, "mqttproto", "mqttproto", MQTTPROTOFST, 'p','i');
 	/*39*/pars[p(NTPADDR1)] = new ParStr64(NTP1, "ntpaddr1", "ntpaddr1", NTP1ADDROFST, 'p','i', new NTPADDR1_Evnt());
 	/*40*/pars[p(NTPADDR2)] = new ParStr64(NTP2, "ntpaddr2", "ntpaddr2", NTP2ADDROFST, 'p','i', new NTPADDR2_Evnt());
-	/*41*/pars[p(PWRMULT)] = new ParFloat(1, "pwrmult", "pwrmult", PWRMULTOFST, 'p','i');
-	/*42*/pars[p(ACVOLT)] = new ParUint8(230, "acvolt", "acvolt", ACVOLTOFST, 'p','i');
+	/*41*/pars[p(PWRMULT)] = new ParFloat(1, "pwrmult", "pwrmult", PWRMULTOFST, 'p','i', new PWRMULT_Evnt());
+	/*41*/pars[p(VACMULT)] = new ParFloat(1, "vacmult", "vacmult", VACMULTOFST, 'p','n', new VACMULT_Evnt());
+	/*41*/pars[p(CURRMULT)] = new ParFloat(1, "currmult", "currmult", CURRMULTOFST, 'p','n', new CURRMULT_Evnt());
 	/*43*/pars[p(ONCOND1)] = new ParVarStr("-1", "oncond1", "oncond1", 2, 'n','n', new ONCOND1_Evnt());
 	/*44*/pars[p(ONCOND2)] = new ParVarStr("-1", "oncond2","oncond2", 2, 'n','n', new ONCOND2_Evnt());
 	/*45*/pars[p(ONCOND3)] = new ParVarStr("-1", "oncond3","oncond3", 2, 'n','n', new ONCOND3_Evnt());
@@ -433,7 +445,10 @@ inline void initOfst(){
 	/*5*/pars[p(SWACTION4)] = new ParUint8(0, "SWACTION4","");
 	/*5*/pars[p(UTCVAL)] = new ParLong(0, "UTCVAL","utcval");
 	/*5*/pars[p(LOGSLCT)] = new ParUint8(33, "logslct","logslct", LOGSLCTOFST, 'n', 'n', new LOGSLCT_Evnt());
-
+	///*5*/pars[p(SWSPLDPWR1)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST1, 'n', 'n', new SWSPLDPWR1_Evnt());
+	///*5*/pars[p(SWSPLDPWR2)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST2, 'n', 'n', new SWSPLDPWR2_Evnt());
+	///*5*/pars[p(SWSPLDPWR3)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST3, 'n', 'n', new SWSPLDPWR3_Evnt());
+	///*5*/pars[p(SWSPLDPWR4)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST4, 'n', 'n', new SWSPLDPWR4_Evnt());
 	//printparams();
 }
 
@@ -1152,7 +1167,8 @@ void publishStr(String &str){
   str += pars[MQTTIP]->getStrJsonName()+twodot+pars[p(LOCALIP)]->getStrVal()+comma;
   str += pars[MQTTMQTTID]->getStrJsonName()+twodot+pars[p(MQTTID)]->getStrVal()+comma;
  #if (AUTOCAL_HLW8012) 
-  str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getActivePower()+comma;
+  //str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getActivePower()+comma;getExtimActivePower
+str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getExtimActivePower()+comma;
   str += pars[INSTACV]->getStrJsonName()+twodot+hlw8012.getVoltage()+comma;
  #endif
   str += pars[MQTTDATE]->getStrJsonName()+twodot+printUNIXTimeMin(gbuf)+closebrk;
@@ -1326,6 +1342,9 @@ void setup(){
   DEBUG2_PRINTLN(F("initCommon."));
   initCommon(&server,pars);
   initOfst();
+ #if (AUTOCAL_HLW8012) //////
+  HLW8012_init();		////////
+#endif   
   DEBUG2_PRINTLN(F("loadConfig."));
   loadConfig();
   delay(100);
@@ -1360,9 +1379,6 @@ void setup(){
   setupNTP();
   //setTimerState(wfs, CONNSTATSW);
 #if(LARGEFW)
-#if (AUTOCAL_HLW8012) //////
-  HLW8012_init();		////////
-#endif    
   telnet.begin((const char *) static_cast<ParStr32*>(pars[p(LOCALIP)])->val); // Initiaze the telnet server
   telnet.setResetCmdEnabled(true); // Enable the reset command
   telnet.setCallBackProjectCmds(&processCmdRemoteDebug);
@@ -1687,10 +1703,10 @@ inline void loop2() {
 			//DEBUG2_PRINTLN(WiFi.getMode());
 			sensorStatePoll();
 			if(wificnt > WIFISTEP){
-				//wifiFailoverManager();
+				wifiFailoverManager();
 			}
-			//MQTTReconnectManager();
-			//paramsModificationPoll();
+			MQTTReconnectManager();
+			pwrSampler();
 		}
 		if(sampleCurrTime()){//1min
 			readParamAndPub(MQTTDATE,printUNIXTimeMin(gbuf));
@@ -1720,7 +1736,7 @@ inline void loop2() {
 			if(wificnt > WIFISTEP){
 				wificnt = 0;
 				DEBUG1_PRINTLN(F("\nGiving time to ESP stack... "));
-				//delay(30);//give 30ms to the ESP stack for wifi connect
+				delay(30);//give 30ms to the ESP stack for wifi connect
 	//#endif  
 			}else{
 				wificnt++;
@@ -1857,7 +1873,7 @@ inline void sensorStatePoll(){
 		DEBUG2_PRINT(F("\nTemperatura cambiata"));
 	}
 #if (AUTOCAL_HLW8012) 	
-	if(gatedfn(hlw8012.getActivePower(),GTIPWR, IPWRRND)){
+	if(gatedfn(hlw8012.getExtimActivePower(),GTIPWR, IPWRRND)){
 		readIpAndPub();
 		DEBUG2_PRINT(F("\nPotenza camiata"));
 	}
@@ -1896,22 +1912,101 @@ inline void sensorStatePoll(){
 	*/
 }
 
+inline float getPower(){
+	return hlw8012.getExtimActivePower() - overallSwPower;
+}
+/*
+inline void pwrSampler2(){
+	overallSwPower = hlw8012.getExtimActivePower();
+	if(roll[1] && !roll[0]){
+		if((out[1] + out[2] + out[3]) == 0)
+			if(doPwrSpl[0]==0  && (doPwrSpl[0] = 1)){
+				outPwr[0] = overallSwPower;
+			}else{
+				--doPwrSpl[0];
+			}
+		if((out[0] + out[2] + out[3]) == 0)
+			if(doPwrSpl[1]==0 && (doPwrSpl[1] = 1)){
+				outPwr[1] = overallSwPower;
+			}else{
+				--doPwrSpl[1];
+			}
+	}else if(roll[0] && !roll[1]){
+		DEBUG1_PRINT(F("Sum3: "));	
+		DEBUG1_PRINTLN(out[0] + out[1] + out[3]);	
+		if((out[0] + out[1] + out[3]) == 0)
+			if(doPwrSpl[2]==0 && (doPwrSpl[2] = 1)){
+				outPwr[2] = overallSwPower;
+			}else{
+				--doPwrSpl[2];
+			}
+		DEBUG1_PRINT(F("Sum4: "));	
+		DEBUG1_PRINTLN(out[0] + out[1] + out[2]);	
+		if((out[0] + out[1] + out[2]) == 0) 
+			if(doPwrSpl[3]==0 && (doPwrSpl[3] = 1)){
+				outPwr[3] = overallSwPower;
+			}else{
+				--doPwrSpl[3];
+			}
+	}
+	DEBUG1_PRINT(F("OverallSwPower: "));	
+	DEBUG1_PRINT(overallSwPower);	
+	DEBUG1_PRINT(F(", pwr1: "));	
+	DEBUG1_PRINT(outPwr[0]);
+	DEBUG1_PRINT(F(", pwr2: "));	
+	DEBUG1_PRINT(outPwr[1]);
+	DEBUG1_PRINT(F(", pwr3: "));	
+	DEBUG1_PRINT(outPwr[2]);
+	DEBUG1_PRINT(F(", pwr4: "));	
+	DEBUG1_PRINTLN(outPwr[3]);
+}
+*/
 
+inline void pwrSampler(){
+	overallSwPower = hlw8012.getExtimActivePower();
+	if(roll[1] && !roll[0]){
+		if(out[0] && (out[1] + out[2] + out[3]) == 0)
+			outPwr[0] = overallSwPower;
+		if(out[1] && (out[0] + out[2] + out[3]) == 0)
+			outPwr[1] = overallSwPower;
+	}else if(roll[0] && !roll[1]){
+		DEBUG1_PRINT(F("Sum3: "));	
+		DEBUG1_PRINTLN(out[0] + out[1] + out[3]);	
+		if(out[2] && (out[0] + out[1] + out[3]) == 0)
+			outPwr[2] = overallSwPower;
+		DEBUG1_PRINT(F("Sum4: "));	
+		DEBUG1_PRINTLN(out[0] + out[1] + out[2]);	
+		if(out[3] && (out[0] + out[1] + out[2]) == 0) 
+			outPwr[3] = overallSwPower;
+	}
+	DEBUG1_PRINT(F("OverallSwPower: "));	
+	DEBUG1_PRINT(overallSwPower);	
+	DEBUG1_PRINT(F(", pwr1: "));	
+	DEBUG1_PRINT(outPwr[0]);
+	DEBUG1_PRINT(F(", pwr2: "));	
+	DEBUG1_PRINT(outPwr[1]);
+	DEBUG1_PRINT(F(", pwr3: "));	
+	DEBUG1_PRINT(outPwr[2]);
+	DEBUG1_PRINT(F(", pwr4: "));	
+	DEBUG1_PRINTLN(outPwr[3]);
+}
 inline void automaticStopManager(){
-	if(mov){ //sempre falso se si è in modalit� switch!	
+	if(mov){ //sempre falso se si è in modalità switch!	
 			//automatic stop manager
 #if (AUTOCAL_ACS712) 
 			dd = maxx - minx;
 #elif (AUTOCAL_HLW8012) 
 			//dd = hlw8012.getActivePower();
-			dd = hlw8012.getExtimActivePower();
+			dd = getPower();
+			DEBUG1_PRINT(F(" \nOverallSwPower: "));
+			DEBUG1_PRINT(overallSwPower);
 			//dd = hlw8012.getAvgdExtimActivePower();
 #endif
 			//EMA calculation
 			//ACSVolt = (double) ex/2.0;
 			//peak = (double) ex/2.0;
 			//reset of peak sample value
-			DEBUG2_PRINT("Isrun: ");
+			DEBUG2_PRINT(" Isrun: ");
 			DEBUG2_PRINTLN(isrun[0]);
 			
 #if (AUTOCAL_ACS712) 
@@ -2042,6 +2137,7 @@ inline void automaticStopManager(){
 					ex[1] = dd;
 				}
 			}else{
+				//NOT is mov
 				isrundelay[1] = RUNDELAY;
 				//reset dei fronti su blocco marcia (sia manuale che automatica)
 				resetEdges(1);
@@ -2081,6 +2177,8 @@ inline void automaticStopManager(){
 			//reset dei fronti su blocco marcia (sia manuale che automatica)
 			resetEdges(0);
 			resetEdges(1);
+			//overallSwPower = hlw8012.getExtimActivePower();
+			//pwrSampler();
 		}
 
 }
@@ -2210,85 +2308,6 @@ inline void MQTTReconnectManager(){
 			}
 }
 
-/*
-inline void paramsModificationPoll(){
-	//actions on parametrs saving
-		//is else if per gestione priorità, l'ordine � importante! vanno fatti in momenti successivi
-		if((uint8_t) static_cast<ParUint8*>(pars[p(WIFICHANGED)])->val == 1){
-			pars[p(WIFICHANGED)]->load(0);
-			wifindx=0;
-			Serial.println(F("Doing WiFi disconnection"));
-			WiFi.persistent(false);
-			WiFi.disconnect(false);
-			WiFi.mode(WIFI_OFF);    
-			//WiFi.mode(WIFI_STA);
-			wifindx = 0;
-		}
-	
-		if((uint8_t) static_cast<ParUint8*>(pars[p(MQTTADDRMODFIED)])->val == 1){ 
-			pars[p(MQTTADDRMODFIED)]->load(0);
-			DEBUG2_PRINTLN(F("confcmd[MQTTADDRMODFIED] eseguo la reconnect()"));
-			mqttReconnect();
-		}else if((uint8_t) static_cast<ParUint8*>(pars[p(MQTTCONNCHANGED)])->val == 1){ 
-			pars[p(MQTTCONNCHANGED)]->load(0);
-			if(mqttClient==NULL){
-				DEBUG2_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
-				mqttReconnect();
-			}
-			else
-			{
-			#if defined (_DEBUG) || defined (_DEBUGR)	
-				DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la setUserPwd() con usr "));
-				DEBUG2_PRINTLN(pars[p(MQTTUSR)]->getStrVal());
-				DEBUG2_PRINTLN(F(" e psw "));
-				DEBUG2_PRINTLN(pars[p(MQTTPSW)]->getStrVal());
-			#endif		
-				mqttClient->setUserPwd((const char*) static_cast<ParStr32*>(pars[p(MQTTUSR)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTPSW)])->val);
-				DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la connect() ..."));
-				mqttClient->connect();
-			#if defined (_DEBUG) || defined (_DEBUGR)	
-				DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la subscribe() con "));
-				DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
-				DEBUG2_PRINTLN(F("..."));
-			#endif	
-				mqttClient->subscribe(pars[p(MQTTINTOPIC)]->getStrVal());
-			#if defined (_DEBUG) || defined (_DEBUGR)	
-				DEBUG2_PRINTLN(F("MQTTCONNCHANGED! publish(): "));
-				DEBUG2_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
-				DEBUG2_PRINTLN(F(" Intopic: "));
-				DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
-			#endif		
-				mqttClient->publish((const char*) static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
-			}
-		}else if((uint8_t) static_cast<ParUint8*>(pars[p(TOPICCHANGED)])->val == 1){
-			pars[p(TOPICCHANGED)]->load(0);
-			if(mqttClient==NULL){
-				DEBUG2_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
-				mqttReconnect();
-			}
-			else
-			{
-			#if defined (_DEBUG) || defined (_DEBUGR)	
-				DEBUG2_PRINTLN(F("TOPICCHANGED! Outtopic: "));
-				DEBUG2_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
-				DEBUG2_PRINTLN(F(" Intopic: "));
-				DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
-				DEBUG2_PRINTLN(F("TOPICCHANGED! Eseguo la subscribe() con "));
-				DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
-				DEBUG2_PRINTLN(F("..."));
-			#endif		
-				mqttClient->subscribe(pars[p(MQTTINTOPIC)]->getStrVal());
-			#if defined (_DEBUG) || defined (_DEBUGR)	
-				DEBUG2_PRINTLN(F("TOPICCHANGED! Eseguo la publish() con "));
-				DEBUG2_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
-				DEBUG2_PRINTLN(F(" ..."));
-			#endif		
-				mqttClient->publish((const char*) static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val,(const char*) static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
-			}
-		}
-}
-*/
-
 //-----------------------------------------------INIZIO TIMER----------------------------------------------------------------------
 //azione da compiere allo scadere di uno dei timer dell'array	
 void onElapse(uint8_t nn, unsigned long tm){
@@ -2360,7 +2379,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 					DEBUG1_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
 					startSimpleSwitchDelayTimer(nn);
 					//adesso commuta...
-				}else if(getGroupState(nn)==2){ //se lo switch � monostabile (timer di eccitazione scaduto)
+				}else if(getGroupState(nn)==2){ //se lo switch è monostabile (timer di eccitazione scaduto)
 					DEBUG1_PRINTLN(F("stato 0 switch mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 					endPress(nn);
 				}
@@ -2484,7 +2503,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 			//mqttReconnect();
 			//wifi_station_dhcpc_start();
 			DEBUG2_PRINTLN(F("-----------------------------"));
-			DEBUG1_PRINTLN(F("Nussun client si � ancora connesso, disatttivato AP mode"));
+			DEBUG1_PRINTLN(F("Nussun client si è ancora connesso, disatttivato AP mode"));
 			DEBUG2_PRINTLN(F("-----------------------------"));
 		}
 		//setGroupState(0,n%2);				 								//stato 0: il motore va in stato fermo
@@ -2502,6 +2521,36 @@ void onTapStop(uint8_t n){
 	scriviOutDaStato(n);
 	//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
 	readStatesAndPub();
+}
+
+void onSWStateChange(uint8_t nn){
+	int n = nn / TIMERDIM;
+	//int sw = nn % TIMERDIM;
+	DEBUG1_PRINT(F("onSWStateChange nn: "));
+	DEBUG1_PRINT(nn);
+	DEBUG1_PRINT(F(", n: "));
+	DEBUG1_PRINT(n);
+	if(roll[n] == 0){
+		if(out[nn] == HIGH){
+			DEBUG1_PRINT(F(", n: "));
+			DEBUG1_PRINT(out[nn]);
+			//OFF --> ON
+			if(mov){
+				//modifica stima potenza tapparella solo se questa è in movimento
+				overallSwPower += outPwr[nn]; //add previously sampled value
+			}
+			DEBUG1_PRINT(F(", out HIGH corrected overallSwPower: "));
+			DEBUG1_PRINTLN(overallSwPower);
+		}else if(mov){
+			//modifica stima potenza tapparella solo se questa è in movimento
+			//ON --> OFF
+			overallSwPower -= outPwr[nn]; //subtract previously sampled value
+			DEBUG1_PRINT(F(", mov corrected overallSwPower: "));
+			DEBUG1_PRINTLN(overallSwPower);
+		}
+		//unsigned short p = (packetBuffer[1] << 8) | packetBuffer[2];
+	}
+	
 }
 		
 void onCalibrEnd(unsigned long app, uint8_t n){
@@ -2747,6 +2796,8 @@ void MQTTPEAKPWR_Evnt::doaction(bool save){
 void DOPWRCAL_Evnt::doaction(bool save){
 	calibrate_pwr();
 	saveSingleConf(PWRMULT);
+	saveSingleConf(CURRMULT);
+	saveSingleConf(VACMULT);
 	readPwrCalAndPub();
 }
 void INSTPWR_Evnt::doaction(bool save){
@@ -2758,7 +2809,31 @@ void INSTACV_Evnt::doaction(bool save){
 void CALPWR_Evnt::doaction(bool save){
 	if(save)   
 		saveSingleConf(CALPWR);
-	
+}
+void PWRMULT_Evnt::doaction(bool save){
+	if(save)   
+		saveSingleConf(PWRMULT);
+	hlw8012.setPowerMultiplier(static_cast<ParFloat*>(pars[p(PWRMULT)])->val);
+		// Show corrected factors
+	DEBUG1_PRINT(F("[HLW] New power multiplier   : ")); DEBUG1_PRINTLN(hlw8012.getPowerMultiplier());
+}
+void CURRMULT_Evnt::doaction(bool save){
+	if(save)   
+		saveSingleConf(CURRMULT);
+	hlw8012.setCurrentMultiplier(static_cast<ParFloat*>(pars[p(CURRMULT)])->val);
+		// Show corrected factors
+	DEBUG1_PRINT(F("[HLW] New current multiplier : ")); DEBUG1_PRINTLN(hlw8012.getCurrentMultiplier());
+}
+void VACMULT_Evnt::doaction(bool save){
+	if(save)   
+		saveSingleConf(VACMULT);
+	hlw8012.setVoltageMultiplier(static_cast<ParFloat*>(pars[p(VACMULT)])->val);
+		// Show corrected factors
+	DEBUG1_PRINT(F("[HLW] New voltage multiplier : ")); DEBUG1_PRINTLN(hlw8012.getVoltageMultiplier());
+}
+void ACVOLT_Evnt::doaction(bool save){
+	if(save)   
+		saveSingleConf(ACVOLT);
 }
 #endif
 //----------------------------------------------------------------------------
@@ -2949,6 +3024,32 @@ void ONCOND5_Evnt::doaction(bool save){
 	//save confs and actions on new config received event
 	if(save) writeOnOffConditions();
 }
+/*
+void SWSPLDPWR1_Evnt::doaction(bool save){
+	//save confs and actions on new config received event
+	if(save) 
+		saveFloatConf(SWSPLDPWR1);
+	outPwr[0] = static_cast<ParFloat*>(pars[p(SWSPLDPWR1)])->val;
+}
+void SWSPLDPWR2_Evnt::doaction(bool save){
+	//save confs and actions on new config received event
+	if(save) 
+		saveFloatConf(SWSPLDPWR2);
+	outPwr[1] = static_cast<ParFloat*>(pars[p(SWSPLDPWR2)])->val;
+}
+void SWSPLDPWR3_Evnt::doaction(bool save){
+	//save confs and actions on new config received event
+	if(save) 
+		saveFloatConf(SWSPLDPWR3);
+	outPwr[2] = static_cast<ParFloat*>(pars[p(SWSPLDPWR3)])->val;
+}
+void SWSPLDPWR4_Evnt::doaction(bool save){
+	//save confs and actions on new config received event
+	if(save) 
+		saveFloatConf(SWSPLDPWR4);
+	outPwr[3] = static_cast<ParFloat*>(pars[p(SWSPLDPWR4)])->val;
+}
+*/
 void LOGSLCT_Evnt::doaction(bool save){
 	uint8_t ser, tlnt, mqtt, num;
 	

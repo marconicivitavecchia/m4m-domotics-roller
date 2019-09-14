@@ -775,10 +775,11 @@ bool startSimpleSwitchDelayTimer(byte n){
 		resetCnt(n);
 	}
 	DEBUG2_PRINTLN(F("startSimpleSwitchDelayTimer switch mode: il contatto va in stato modifica abilitata"));
+	onSWStateChange(n);
 	return true;
 }
 
-void startPress(byte state,byte n){
+void startPress(byte state, byte n){
 	//cambio lo stato dell'uscita (SET)
 	lastCmd[n]=state;
 	startTimer(haltdelay[n],n);	
@@ -800,6 +801,7 @@ void endPress(byte n){
 	DEBUG2_PRINTLN(n);
 	DEBUG2_PRINTLN(!lastCmd[n]);
 	DEBUG2_PRINTLN(haltdelay[n]);
+	onSWStateChange(n);
 }
 /*
 *******************************************************************
