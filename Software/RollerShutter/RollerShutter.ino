@@ -1962,21 +1962,25 @@ inline void pwrSampler2(){
 }
 */
 
-inline void pwrSampler(){
+inline void pwrSampler(){//only if mov is 0
 	overallSwPower = hlw8012.getExtimActivePower();
-	if(roll[1] && !roll[0]){
-		if(out[0] && (out[1] + out[2] + out[3]) == 0)
+	if(roll[1] && roll[0] == 0){
+		//if(out[0] && (out[1] + out[2] + out[3]) == 0)
+		if(out[0] && out[1] == 0)
 			outPwr[0] = overallSwPower;
-		if(out[1] && (out[0] + out[2] + out[3]) == 0)
+		//if(out[1] && (out[0] + out[2] + out[3]) == 0)
+		if(out[1] && out[0] == 0)
 			outPwr[1] = overallSwPower;
-	}else if(roll[0] && !roll[1]){
-		DEBUG1_PRINT(F("Sum3: "));	
-		DEBUG1_PRINTLN(out[0] + out[1] + out[3]);	
-		if(out[2] && (out[0] + out[1] + out[3]) == 0)
+	}else if(roll[0] && roll[1] == 0){
+		//DEBUG1_PRINT(F("Sum3: "));	
+		//DEBUG1_PRINTLN(out[0] + out[1] + out[3]);	
+		//if(out[2] && (out[0] + out[1] + out[3]) == 0)
+		if(out[2] && out[3] == 0)
 			outPwr[2] = overallSwPower;
-		DEBUG1_PRINT(F("Sum4: "));	
-		DEBUG1_PRINTLN(out[0] + out[1] + out[2]);	
-		if(out[3] && (out[0] + out[1] + out[2]) == 0) 
+		//DEBUG1_PRINT(F("Sum4: "));	
+		//DEBUG1_PRINTLN(out[0] + out[1] + out[2]);	
+		//if(out[3] && (out[0] + out[1] + out[2]) == 0) 
+		if(out[3] && out[2] == 0) 	
 			outPwr[3] = overallSwPower;
 	}
 	DEBUG1_PRINT(F("OverallSwPower: "));	
