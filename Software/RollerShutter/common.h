@@ -121,10 +121,7 @@
 #define ENDFACT		2	// (%) margine di posizionamento con i sensori in percentuale dell'escursione totale, dopo avviene col timer
 #define PUSHINTERV	60 // in sec
 #define ONE_WIRE_BUS 2  // DS18B20 pin
-#define RUNDELAY  	2
 #define DELTAL		4
-#define NSIGMA 		1.001
-#define EMA  		0.8
 #define THALTMAX   	90000 
 #define	TCOUNT		5		//MAX FAILED CONNECTION ATTEMPTS BEFORE WIFI CLIENT COMMUTATION
 #define RSTTIME		20		//DEFINE HOW MANY SECONDS BUTTON1 MUST BE PRESSED UNTIL A RESET OCCUR 
@@ -382,6 +379,9 @@
 #endif
 
 #if (AUTOCAL_HLW8012) 
+#define RUNDELAY  		3
+#define NSIGMA 			1.001
+#define EMA  			0.99
 #define TBASE 			25	
 #define MAINPROCSTEP	2
 #define ONESEC_STEP		40
@@ -403,12 +403,17 @@
 #endif
 
 #if (AUTOCAL_ACS712) 
+#define RUNDELAY  		1
 #define TBASE 			2
+#define EMA  			0.8
 #define MAINPROCSTEP 	25
 #define ONESEC_STEP		500
 #define STOP_STEP		20
 #define ZEROSMPL		400		//per non interrompere il caricamento delle pagine durante
 								//il campionamento dello zero
+#define NPWRSMPL		4
+#define NZEROSMPL		4
+#define NSIGMA 			2.5
 #endif
 
 #define WIFISTEP 	1000 / (MAINPROCSTEP+1)
@@ -556,6 +561,22 @@ class CALPWR_Evnt: public BaseEvnt{
 	public:
 		void doaction(bool);
 };
+class PWRMULT_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class CURRMULT_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class VACMULT_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class ACVOLT_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
 #endif
 //-----------------------------------------------------------------------
 class UTCVAL_Evnt: public BaseEvnt{
@@ -677,22 +698,7 @@ class SWSPLDPWR4_Evnt: public BaseEvnt{
 		void doaction(bool);
 };
 */
-class PWRMULT_Evnt: public BaseEvnt{
-	public:
-		void doaction(bool);
-};
-class CURRMULT_Evnt: public BaseEvnt{
-	public:
-		void doaction(bool);
-};
-class VACMULT_Evnt: public BaseEvnt{
-	public:
-		void doaction(bool);
-};
-class ACVOLT_Evnt: public BaseEvnt{
-	public:
-		void doaction(bool);
-};
+
 /*
 class WEBUSR_Evnt: public BaseEvnt{
 	public:

@@ -22,6 +22,7 @@ char IP[] = "xxx.xxx.xxx.xxx";          // buffer
 //stats variables
 #if (AUTOCAL)
 float overallSwPower = 0;
+//float overallSwPower2 = 0;
 int samples[10];
 uint8_t indx = 0;
 uint8_t stat;
@@ -36,8 +37,8 @@ double VMCU = 0;
 double AmpsRMS = 0;
 int zero, l=0, h=1024;
 unsigned wificnt = 0;
-boolean pageLoad = 0;
-unsigned long smplcnt; //sampleCount;
+boolean pageLoad = false;
+unsigned long smplcnt, smplcnt2; //sampleCount;
 unsigned short zeroCnt = 0;
 unsigned long mqttcnt = 0;
 unsigned short mqttofst = 0;
@@ -49,8 +50,8 @@ unsigned long pn=0;
 volatile int minx = 1024;
 volatile int maxx = 0;
 volatile int x;
-int dd = 0;
-volatile float m;
+float dd = 0;
+volatile float m, m2;
 double ex[2] = {0,0};
 double calAvg[2] = {0,0};
 double weight[2] = {0,0};
@@ -58,6 +59,7 @@ short chk[2]={0,0};
 #endif
 bool isrun[2]={false,false};
 volatile bool dosmpl = false;
+bool zsampled = false;
 uint8_t cont=0;
 //end of stats variables
 unsigned long prec=0;
@@ -111,9 +113,11 @@ unsigned int thalt4=5000;
 //{"OUTSLED":"0","up1":"1","down1":"0","up2":"50","down2":"0", pr1:"12", pr2:"76"}
 int ncifre=4;
 //vettori di ingresso, uscite e stato
-uint8_t in[NBTN*BTNDIM], out[NBTN*BTNDIM];
+uint8_t in[NBTN*BTNDIM], out[NBTN*BTNDIM], outPorts[NBTN*BTNDIM];;
 float outPwr[NBTN*BTNDIM];
 byte doPwrSpl[NBTN*BTNDIM] = {255, 255, 255, 255};
+short doZeroSampl = -1;
+short doPwrSampl = -1;
 bool inflag = false;
 Par *pars[PARAMSDIM];
 unsigned long *inl = (unsigned long *)in;
@@ -369,15 +373,16 @@ inline void initOfst(){
 	/*4*/pars[MQTTDATE] = new ParUint8(0, "date", "date", 2, 'n','n');
 #if (AUTOCAL_HLW8012) 
 	/*4*/pars[DOPWRCAL] = new ParUint8(0, "dopwrcal", "dopwrcal", 2, 'n','n', new DOPWRCAL_Evnt());
-	/*4*/pars[INSTPWR] = new ParUint8(10, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
 	/*4*/pars[INSTACV] = new ParUint8(230, "iacvolt", "iacvolt", 2,'n','n', new INSTACV_Evnt());
+	/*4*/pars[INSTPWR] = new ParUint8(10, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
 	//------------------------------------------------------------------------------------------------------------------------------------
 	/*42*/pars[p(ACVOLT)] = new ParUint8(230, "acvolt", "acvolt", ACVOLTOFST, 'p','i', new ACVOLT_Evnt());
 	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'p', 'i', new CALPWR_Evnt());//Must be after ACVOLT!
 #else
 	/*4*/pars[DOPWRCAL] = new ParUint8(0, "dopwrcal", "dopwrcal", 2, 'n','n');
-	/*4*/pars[INSTPWR] = new ParUint8(0, "ipwr", "ipwr", 2,'n','n');
 	/*4*/pars[INSTACV] = new ParUint8(0, "iacvolt", "iacvolt", 2,'n','n');
+	/*4*/pars[INSTPWR] = new ParUint8(0, "ipwr", "ipwr", 2,'n','n');
+	/*42*/pars[p(ACVOLT)] = new ParUint8(230, "acvolt", "acvolt", ACVOLTOFST, 'n','n');
 	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'n', 'n');
 #endif
 	/*5*/pars[p(LOCALIP)] = new ParStr32("ip", "localip","ip");
@@ -423,9 +428,15 @@ inline void initOfst(){
 	/*38*/pars[p(MQTTPROTO)] = new ParStr32(MQTTPT, "mqttproto", "mqttproto", MQTTPROTOFST, 'p','i');
 	/*39*/pars[p(NTPADDR1)] = new ParStr64(NTP1, "ntpaddr1", "ntpaddr1", NTP1ADDROFST, 'p','i', new NTPADDR1_Evnt());
 	/*40*/pars[p(NTPADDR2)] = new ParStr64(NTP2, "ntpaddr2", "ntpaddr2", NTP2ADDROFST, 'p','i', new NTPADDR2_Evnt());
+#if (AUTOCAL_HLW8012) 
 	/*41*/pars[p(PWRMULT)] = new ParFloat(1, "pwrmult", "pwrmult", PWRMULTOFST, 'p','i', new PWRMULT_Evnt());
 	/*41*/pars[p(VACMULT)] = new ParFloat(1, "vacmult", "vacmult", VACMULTOFST, 'p','n', new VACMULT_Evnt());
 	/*41*/pars[p(CURRMULT)] = new ParFloat(1, "currmult", "currmult", CURRMULTOFST, 'p','n', new CURRMULT_Evnt());
+#else	
+	/*41*/pars[p(PWRMULT)] = new ParFloat(1, "pwrmult", "pwrmult", PWRMULTOFST, 'n','n');
+	/*41*/pars[p(VACMULT)] = new ParFloat(1, "vacmult", "vacmult", VACMULTOFST, 'n','n');
+	/*41*/pars[p(CURRMULT)] = new ParFloat(1, "currmult", "currmult", CURRMULTOFST, 'n','n');
+#endif
 	/*43*/pars[p(ONCOND1)] = new ParVarStr("-1", "oncond1", "oncond1", 2, 'n','n', new ONCOND1_Evnt());
 	/*44*/pars[p(ONCOND2)] = new ParVarStr("-1", "oncond2","oncond2", 2, 'n','n', new ONCOND2_Evnt());
 	/*45*/pars[p(ONCOND3)] = new ParVarStr("-1", "oncond3","oncond3", 2, 'n','n', new ONCOND3_Evnt());
@@ -735,7 +746,12 @@ void printMcpRealOut(){
 }
 */
 void scriviOutDaStato(byte n){
-	DEBUG1_PRINTLN("Evento scriviOutDaStato: ");
+	DEBUG1_PRINT("Evento scriviOutDaStato n: ");
+	DEBUG1_PRINT(n);
+	DEBUG1_PRINT(" out 1: ");
+	DEBUG1_PRINT(out[n*BTNDIM]);
+	DEBUG1_PRINT(" out 2: ");
+	DEBUG1_PRINT(out[1+n*BTNDIM]);
 #if (MCP2317) 
 	//uint8_t out2[4];
 	//out2[0]=out2[1]=out2[2]=out2[3]=HIGH;
@@ -743,8 +759,8 @@ void scriviOutDaStato(byte n){
 	//mcp.digitalWrite(OUT1EU + n*BTNDIM,out[n*BTNDIM]);	
 	//mcp.digitalWrite(OUT1DD + n*BTNDIM,out[1 + n*BTNDIM]);	
 #else										
-	digitalWrite(OUT1EU + n*BTNDIM,out[n*BTNDIM]);	
-	digitalWrite(OUT1DD + n*BTNDIM,out[1 + n*BTNDIM]);			
+	digitalWrite(outPorts[n*BTNDIM],out[n*BTNDIM]);	
+	digitalWrite(outPorts[1+n*BTNDIM],out[1 + n*BTNDIM]);			
 #endif
 	isrun[0] = (outLogic[ENABLES]==HIGH) && roll[0] > 0;						
 	isrun[1] = (outLogic[ENABLES+STATUSDIM]==HIGH) && roll[1] > 0;		
@@ -875,25 +891,32 @@ void mqttReconnect() {
 	if(mqttClient!=NULL){
 		DEBUG_PRINTLN(F("Distruggo l'oggetto MQTT client."));
 		DEBUG_PRINTLN(F("Mi disconetto dal server MQTT"));
-		if(mqttClient->isConnected()){
-			noInterrupts ();
+		//if(mqttClient->isConnected()){
+		if(mqttConnected){
 			mqttClient->disconnect();
-			interrupts ();
 		}
-		delay(50);
-		DEBUG_PRINTLN(F("Chiamo il distruttore dell'oggetto MQTT"));
-		//noInterrupts ();
-		ESP.wdtFeed();
-		//mqttClient->~MQTT();
-		delete mqttClient;
 		delay(100);
-		//free((mqttClient));
-		//DEBUG2_PRINTLN(F("Cancello la vechia istanza dell'oggetto MQTT"));
-		DEBUG_PRINTLN(F("Annullo istanza dell'oggetto MQTT"));
-		ESP.wdtFeed();
-		mqttClient = NULL;
+		//ESP.wdtFeed();
+		//mqttClient->~MQTT();
+		//noInterrupts ();
+		while(mqttClient->isConnected())
+			delay(50);
+		DEBUG_PRINTLN(F("Sono disconesso dal server MQTT"));
+		DEBUG_PRINTLN(F("Chiamo il distruttore dell'oggetto MQTT"));
+		//ESP.wdtFeed();
+		//ESP.wdtDisable(); 
+		//noInterrupts ();
+		mqttClient->~MQTT();
+		//interrupts ();
+		//ESP.wdtEnable(0); 
+		//ESP.wdtFeed();
 		//interrupts ();
 		delay(50);
+		//DEBUG2_PRINTLN(F("Cancello la vechia istanza dell'oggetto MQTT"));
+		DEBUG_PRINTLN(F("Annullo istanza dell'oggetto MQTT"));
+		//ESP.wdtFeed();
+		mqttClient = NULL;
+		//interrupts ();
 	}
 	DEBUG_PRINTLN(F("Instanzio un nuovo oggetto MQTT client."));
 	/////noInterrupts ();
@@ -915,14 +938,14 @@ void mqttReconnect() {
 	{
 		mqttClient->onData(mqttCallback);
 		mqttClient->onConnected([]() {
-		DEBUG_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
+			DEBUG_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
 			mqttcnt = 0;
-			//Altrimenti dice che � connesso ma non comunica
+			//Altrimenti dice che è connesso ma non comunica
 			delay(50);
 			mqttClient->subscribe(static_cast<ParStr32*>(pars[p(MQTTINTOPIC)])->val); 
 			mqttClient->publish((const char *)(static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)]))->val, (const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, 32);
 			pars[p(LOGSLCT)]->doaction(false);	
-			//mqttConnected=true;
+			mqttConnected=true;//bho
 		});
 		mqttClient->onDisconnected([]() {
 			//DEBUG2_PRINTLN("MQTT disconnected.");
@@ -932,7 +955,10 @@ void mqttReconnect() {
 		DEBUG_PRINTLN(F("MQTT: Eseguo la prima connect."));
 		mqttClient->setUserPwd((const char*)static_cast<ParStr32*>(pars[p(MQTTUSR)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTPSW)])->val);
 		//////noInterrupts ();
-		mqttClient->connect();
+		if((wifiConn == true)&& WiFi.status()==WL_CONNECTED && WiFi.getMode()==WIFI_STA){
+			delay(50);
+			mqttClient->connect();
+		}
 		
 		//////interrupts ();
 		//delay(50);
@@ -1245,6 +1271,8 @@ inline void setupNTP() {
 
 #if (AUTOCAL)
 void setValweight(float wht){
+	DEBUG1_PRINT(F("setValweight: "));
+	DEBUG1_PRINTLN(wht);
 	weight[0] = wht;
 	weight[1] = 1 - weight[0];
 }
@@ -1305,7 +1333,7 @@ void setup(){
 	pinMode(BTN2U, INPUT);
 	pinMode(BTN2D, INPUT);
   #endif
- 
+	
 	pinMode(OUTSLED,OUTPUT);
 	digitalWrite(OUTSLED, LOW);
 	pinMode(OUT1EU,OUTPUT);
@@ -1316,7 +1344,10 @@ void setup(){
 	digitalWrite(OUT1DD, LOW);
 	digitalWrite(OUT2EU, LOW);
 	digitalWrite(OUT2DD, LOW);
-	
+	outPorts[0] = OUT1EU;
+	outPorts[1] = OUT1DD;
+	outPorts[2] = OUT2EU;
+	outPorts[3] = OUT2DD;
 #endif
   dbg1 = new SerialLog(1);
   dbg2 = new SerialLog(2);
@@ -1514,6 +1545,7 @@ void zeroDetect(){
 	smplcnt = 0;
 	minx = 1024;
 	maxx = 0;
+	smplcnt2 = 0;
 }
 #endif
 
@@ -1669,7 +1701,7 @@ inline void loop2() {
 	//---------------------------------------------------------------------
 	// 10-20 msec scheduler
 	//---------------------------------------------------------------------
-	if(!(step % STOP_STEP)){		
+	if(!(step % STOP_STEP)){
 		automaticStopManager();
 	}//END 20ms scheduler--------------------------------------------------
 #endif
@@ -1704,7 +1736,7 @@ inline void loop2() {
 			if(wificnt > WIFISTEP){
 				wifiFailoverManager();
 			}
-			MQTTReconnectManager();
+			//MQTTReconnectManager();
 			pwrSampler();
 		}
 		if(sampleCurrTime()){//1min
@@ -1730,7 +1762,7 @@ inline void loop2() {
 		//Finestra idle di riconnessione (necessaria se il loop � molto denso di eventi e il wifi non si aggancia!!!)
 		//------------------------------------------------------------------------------------------------------------
 		//sostituisce la bloccante WiFi.waitForConnectResult();	
-		if(wifiConn == false && !mov && pageLoad == false){ //sempre vero se si � in modalit� switch!	
+		if(wifiConn == false && !mov && pageLoad == false){ //sempre vero se si è in modalità switch!	
 //#if (AUTOCAL_ACS712) 
 			if(wificnt > WIFISTEP){
 				wificnt = 0;
@@ -1766,18 +1798,6 @@ inline void updateCounters(){
 	 //incCnt(TIMECNT);
 }
 
-//legge gli ingressi remoti e mette il loro valore sull'array val[]
-//inr: memoria tampone per l'evento asincrono scrittura da remoto
-//si deve mischiare con la lettura locale DOPO che questa viene scritta
-//al giro di loop() successivo in[] locale riporta a livello basso l'eccitazione remota
-//legge gli ingressi dei tasti gi� puliti dai rimbalzi	
-/*inline void leggiTastiLocaliRemoto(){
-	for(int i=0;i<4;i++){
-		(in[i]) && (in[i] = 255);
-		(static_cast<ParUint8*>(pars[i])->val) && (in[i] = static_cast<ParUint8*>(pars[i])->val);
-		static_cast<ParUint8*>(pars[i])->load(LOW);
-	}
-}*/
 //legge PERIODICAMENTE il parser delle condizioni sui sensori
 inline void leggiTastiLocaliDaExp(){
 	if(roll[0] == false){
@@ -1836,6 +1856,26 @@ inline void leggiTastiLocaliDaExp(){
 	//eval((confcmd[JSONONCOND5]).c_str());
 }
 
+inline void sensorStatePoll(){
+	//sensor variation polling management
+	//on events basis push of reports
+
+	if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
+		readTempAndPub();
+		DEBUG2_PRINT(F("\nTemperatura cambiata"));
+	}
+#if (AUTOCAL_HLW8012) 	
+	if(gatedfn(hlw8012.getActivePower(),GTIPWR, IPWRRND)){
+		readIpAndPub();
+		DEBUG2_PRINT(F("\nPotenza cambiata"));
+	}
+	if(gatedfn(hlw8012.getVoltage(),GTIVAC, IVACRND)){
+		readIpAndPub();
+		DEBUG2_PRINT(F("\nVolt cambiati"));
+	}
+#endif	
+}
+
 #if (AUTOCAL_ACS712) 
 inline void currentPeakDetector(){
 	//AC current peak detector
@@ -1860,125 +1900,123 @@ inline void currentPeakDetector(){
         ets_intr_unlock(); //open interrupt
         system_soft_wdt_restart();
 }
+
+void inline zeroAndPwrSampler(){
+	//zero detection manager and scheduler
+	if(doZeroSampl > 0){
+		system_soft_wdt_stop();
+		ets_intr_lock( ); //close interrupt
+		noInterrupts();
+		x = system_adc_read();
+		interrupts();
+		ets_intr_unlock(); //open interrupt
+		system_soft_wdt_restart();
+		//running mean calculation
+		smplcnt++;
+		smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
+		DEBUG1_PRINTLN(F("Zero detection manager"));	
+		DEBUG1_PRINT(F("doZeroSampl: "));	
+		DEBUG1_PRINT(doZeroSampl);	
+		DEBUG1_PRINT(F(", dosmpl: "));	
+		DEBUG1_PRINT(dosmpl);	
+		DEBUG1_PRINT(F(", x: "));	
+		DEBUG1_PRINT(x);	
+		DEBUG1_PRINT(F(", smplcnt: "));	
+		DEBUG1_PRINTLN(smplcnt);
+		--doZeroSampl;
+	}
+	if(doPwrSampl > 0){
+		dd = maxx - minx;
+		DEBUG1_PRINT(F("doPwrSampl: "));	
+		DEBUG1_PRINT(doPwrSampl);	
+		DEBUG1_PRINT(F(", dosmpl: "));	
+		DEBUG1_PRINT(dosmpl);	
+		DEBUG1_PRINT(F(", dd: "));	
+		DEBUG1_PRINT(dd);
+		DEBUG1_PRINT(F(", m2: "));	
+		DEBUG1_PRINT(m2);
+		DEBUG1_PRINT(F(", smplcnt2: "));	
+		DEBUG1_PRINTLN(smplcnt2);
+		
+		smplcnt2++;
+		smplcnt2 && (m2 += (float) (dd- m2) / smplcnt2);
+		minx = 1024;
+		maxx = 0;
+		--doPwrSampl;
+		overallSwPower = m2;
+		sampleOne(m2);
+	}else if(doPwrSampl == 0){
+		dosmpl = false;
+		overallSwPower = m2;
+		sampleOne(m2);
+		m2 = 0;
+		smplcnt2 = 0;
+		--doPwrSampl;
+		DEBUG1_PRINT(F(", final dd: "));	
+		DEBUG1_PRINT(dd);
+		DEBUG1_PRINT(F(", overallSwPower: "));	
+		DEBUG1_PRINT(overallSwPower);
+		DEBUG1_PRINT(F(", final smplcnt2: "));	
+		DEBUG1_PRINTLN(smplcnt2);
+	}
+}	
 #endif
 
-
-inline void sensorStatePoll(){
-	//sensor variation polling management
-	//on events basis push of reports
-
-	if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
-		readTempAndPub();
-		DEBUG2_PRINT(F("\nTemperatura cambiata"));
+inline void sampleOne(float pwr){
+	if(roll[1] && roll[0] == 0){
+		//if(out[0] && (out[1] + out[2] + out[3]) == 0)
+		(out[0] && out[1] == 0) && (outPwr[0] = pwr);
+		//if(out[1] && (out[0] + out[2] + out[3]) == 0)
+		(out[1] && out[0] == 0) && (outPwr[1] = pwr);
+		//(out[0] == 0 && out[1] == 0) && (overallSwPower = 0);
+	}else if(roll[0] && roll[1] == 0){
+		//if(out[2] && (out[0] + out[1] + out[3]) == 0)
+		(out[2] && out[3] == 0) && (outPwr[2] = pwr);
+		//if(out[3] && (out[0] + out[1] + out[2]) == 0) 
+		(out[3] && out[2] == 0) && (outPwr[3] = pwr);
+		//(out[2] == 0 && out[3] == 0) && (overallSwPower = 0);
 	}
-#if (AUTOCAL_HLW8012) 	
-	if(gatedfn(hlw8012.getActivePower(),GTIPWR, IPWRRND)){
-		readIpAndPub();
-		DEBUG2_PRINT(F("\nPotenza cambiata"));
-	}
-	if(gatedfn(hlw8012.getVoltage(),GTIVAC, IVACRND)){
-		readIpAndPub();
-		DEBUG2_PRINT(F("\nVolt cambiati"));
-	}
-#endif	
-/*
-	bool updatePwr = false;
-	if(gatedfn(getAmpRMS(getAVG(0)/2),GTMEANPWR1, MEANPWR1RND)){
-		updatePwr == true;
-	}
-	if(gatedfn(getAmpRMS(getAVG(1)/2),GTMEANPWR2, MEANPWR2RND)){
-		updatePwr == true;
-	}
-	if(updatePwr){
-		readAvgPowerAndPub();
-		updatePwr = false;
-	}
-	if(gatedfn(getAmpRMS(getAVG(0)+getThresholdUp(0)/2),GTPEAKPWR1, PEAKPWR1RND)){
-		updatePwr == true;
-	}
-	if(gatedfn(getAmpRMS(getAVG(1)+getThresholdUp(1)/2),GTPEAKPWR2, PEAKPWR2RND)){
-		updatePwr == true;
-	}
-	if(updatePwr){
-		readPeakPowerAndPub();
-	}
-	
-	//periodic push of all reports
-	if(pushCnt == PUSHINTERV){
-		pushCnt = 0;
-		readStatesAndPub(true);
-	}
-	*/
 }
 
 inline float getPower(){
-	return hlw8012.getExtimActivePower() - overallSwPower;
+#if (AUTOCAL_ACS712) 
+	dd = maxx - minx - overallSwPower;
+	minx = 1024;
+	maxx = 0;
+#elif (AUTOCAL_HLW8012) 			
+	dd = hlw8012.getExtimActivePower() - overallSwPower;
+#endif
+return dd;
 }
-/*
-inline void pwrSampler2(){
-	overallSwPower = hlw8012.getExtimActivePower();
-	if(roll[1] && !roll[0]){
-		if((out[1] + out[2] + out[3]) == 0)
-			if(doPwrSpl[0]==0  && (doPwrSpl[0] = 1)){
-				outPwr[0] = overallSwPower;
-			}else{
-				--doPwrSpl[0];
-			}
-		if((out[0] + out[2] + out[3]) == 0)
-			if(doPwrSpl[1]==0 && (doPwrSpl[1] = 1)){
-				outPwr[1] = overallSwPower;
-			}else{
-				--doPwrSpl[1];
-			}
-	}else if(roll[0] && !roll[1]){
-		DEBUG1_PRINT(F("Sum3: "));	
-		DEBUG1_PRINTLN(out[0] + out[1] + out[3]);	
-		if((out[0] + out[1] + out[3]) == 0)
-			if(doPwrSpl[2]==0 && (doPwrSpl[2] = 1)){
-				outPwr[2] = overallSwPower;
-			}else{
-				--doPwrSpl[2];
-			}
-		DEBUG1_PRINT(F("Sum4: "));	
-		DEBUG1_PRINTLN(out[0] + out[1] + out[2]);	
-		if((out[0] + out[1] + out[2]) == 0) 
-			if(doPwrSpl[3]==0 && (doPwrSpl[3] = 1)){
-				outPwr[3] = overallSwPower;
-			}else{
-				--doPwrSpl[3];
-			}
-	}
-	DEBUG1_PRINT(F("OverallSwPower: "));	
-	DEBUG1_PRINT(overallSwPower);	
-	DEBUG1_PRINT(F(", pwr1: "));	
-	DEBUG1_PRINT(outPwr[0]);
-	DEBUG1_PRINT(F(", pwr2: "));	
-	DEBUG1_PRINT(outPwr[1]);
-	DEBUG1_PRINT(F(", pwr3: "));	
-	DEBUG1_PRINT(outPwr[2]);
-	DEBUG1_PRINT(F(", pwr4: "));	
-	DEBUG1_PRINTLN(outPwr[3]);
-}
-*/
 
-inline void pwrSampler(){//only if mov is 0
-	overallSwPower = hlw8012.getExtimActivePower();
-	if(roll[1] && roll[0] == 0){
-		//if(out[0] && (out[1] + out[2] + out[3]) == 0)
-		(out[0] && out[1] == 0) && (outPwr[0] = overallSwPower);
-		//if(out[1] && (out[0] + out[2] + out[3]) == 0)
-		(out[1] && out[0] == 0) && (outPwr[1] = overallSwPower);
-	}else if(roll[0] && roll[1] == 0){
-		//DEBUG1_PRINT(F("Sum3: "));	
-		//DEBUG1_PRINTLN(out[0] + out[1] + out[3]);	
-		//if(out[2] && (out[0] + out[1] + out[3]) == 0)
-		(out[2] && out[3] == 0) && (outPwr[2] = overallSwPower);
-		//DEBUG1_PRINT(F("Sum4: "));	
-		//DEBUG1_PRINTLN(out[0] + out[1] + out[2]);	
-		//if(out[3] && (out[0] + out[1] + out[2]) == 0) 
-		(out[3] && out[2] == 0) && (outPwr[3] = overallSwPower);
+inline void pwrSampler(){//only if !mov
+#if (AUTOCAL_HLW8012) 
+	if(out[0] + out[1] + out[2] + out[3] != 0){
+		overallSwPower = hlw8012.getExtimActivePower();
+	}else{
+		overallSwPower = 0;
 	}
-	DEBUG1_PRINT(F("OverallSwPower: "));	
+	
+	sampleOne(overallSwPower);
+#elif (AUTOCAL_ACS712) 
+	if(out[0] + out[1] + out[2] + out[3] != 0){
+		dosmpl = true;
+		doZeroSampl = -1;
+		doPwrSampl = NPWRSMPL;
+	}else{
+		dosmpl = false;
+		doPwrSampl = -1;
+		doZeroSampl = NZEROSMPL;
+		overallSwPower = 0;
+	}
+	DEBUG1_PRINT(F("getPower: doPwrSampl: "));	
+	DEBUG1_PRINT(doPwrSampl);
+	DEBUG1_PRINT(F(", getPower: doZeroSampl: "));	
+	DEBUG1_PRINT(doZeroSampl);
+	DEBUG1_PRINT(F(", dosmpl: "));	
+	DEBUG1_PRINT(dosmpl);
+#endif
+	DEBUG1_PRINT(F(", OverallSwPower: "));	
 	DEBUG1_PRINT(overallSwPower);	
 	DEBUG1_PRINT(F(", pwr1: "));	
 	DEBUG1_PRINT(outPwr[0]);
@@ -1988,28 +2026,58 @@ inline void pwrSampler(){//only if mov is 0
 	DEBUG1_PRINT(outPwr[2]);
 	DEBUG1_PRINT(F(", pwr4: "));	
 	DEBUG1_PRINTLN(outPwr[3]);
+}
+
+void onSWStateChange(uint8_t nn){
+	int n = nn / TIMERDIM;
+	//int sw = nn % TIMERDIM;
+	DEBUG1_PRINT(F("onSWStateChange nn: "));
+	DEBUG1_PRINT(nn);
+	DEBUG1_PRINT(F(", n: "));
+	DEBUG1_PRINT(n);
+
+	if(roll[n] == 0){
+		if(out[nn] == HIGH){
+			DEBUG1_PRINT(F(", out: "));
+			DEBUG1_PRINT(out[nn]);
+			//OFF --> ON
+			if(mov){
+				//modifica stima potenza tapparella solo se questa è in movimento
+				overallSwPower += outPwr[nn]; //add previously sampled value
+			}
+			DEBUG1_PRINT(F(", out HIGH corrected overallSwPower: "));
+			DEBUG1_PRINTLN(overallSwPower);
+		}else if(mov){
+			//modifica stima potenza tapparella solo se questa è in movimento
+			//ON --> OFF
+			overallSwPower -= outPwr[nn]; //subtract previously sampled value
+			DEBUG1_PRINT(F(", mov corrected overallSwPower: "));
+			DEBUG1_PRINTLN(overallSwPower);
+		}
+		//unsigned short p = (packetBuffer[1] << 8) | packetBuffer[2];
+	}
+	
 }
 
 inline void automaticStopManager(){
 	if(mov){ //sempre falso se si è in modalità switch!	
-			//automatic stop manager
-#if (AUTOCAL_ACS712) 
-			dd = maxx - minx;
-#elif (AUTOCAL_HLW8012) 
-			//dd = hlw8012.getActivePower();
-			dd = getPower();
+			getPower();
 			DEBUG1_PRINT(F(" \nOverallSwPower: "));
 			DEBUG1_PRINT(overallSwPower);
-			//dd = hlw8012.getAvgdExtimActivePower();
-#endif
 			//EMA calculation
 			//ACSVolt = (double) ex/2.0;
 			//peak = (double) ex/2.0;
 			//reset of peak sample value
-			DEBUG2_PRINT(" Isrun: ");
-			DEBUG2_PRINTLN(isrun[0]);
+			DEBUG1_PRINT(" Isrun: ");
+			DEBUG1_PRINT(isrun[0]);
+			DEBUG1_PRINT(", dosmpl: ");
+			DEBUG1_PRINT(dosmpl);
+			DEBUG1_PRINT(", dd: ");
+			DEBUG1_PRINTLN(dd);
 			
 #if (AUTOCAL_ACS712) 
+			//doZeroSampl = -1;
+			//doPwrSampl = -1;
 			if(isrun[0] && dosmpl){
 #elif (AUTOCAL_HLW8012) 
 			if(isrun[0]){
@@ -2033,7 +2101,10 @@ inline void automaticStopManager(){
 					DEBUG2_PRINT(ex[0]);
 					DEBUG2_PRINT(F(" - Inst: "));
 					DEBUG2_PRINT(dd);
+					DEBUG1_PRINT(F(" - weight[1]: "));
+					DEBUG1_PRINT(weight[1]);
 					chk[0] = checkRange((double) ex[0]*(1 - weight[1]*isMoving(1)),0);
+					//chk[0] = checkRange((double) ex[0],0);
 					if(chk[0] != 0){
 						DEBUG2_PRINT(F("\n("));
 						DEBUG2_PRINT(0);
@@ -2145,40 +2216,18 @@ inline void automaticStopManager(){
 			//AC peak measure init
 			//indx = 0;
 #if (AUTOCAL_ACS712) 
-			minx = 1024;
-			maxx = 0;
 			dosmpl = true;
 #endif
 			//DEBUG2_PRINT(F("\n------------------------------------------------------------------------------------------"));
 		}else{
-#if (AUTOCAL_ACS712) 		
-		 //sempre vero se si � in modalit� switch!	
-			//zero detection manager
-			//zero detection scheduler
-			zeroCnt = (zeroCnt + 1) % ZEROSMPL;
-			dosmpl = false;
-			//all motors are stopped
-			if(zeroCnt < 3 && pageLoad == false){
-				//zero detection activation (2 values every second)
-				system_soft_wdt_stop();
-				ets_intr_lock( ); //close interrupt
-				noInterrupts();
-				x = system_adc_read();
-				interrupts();
-				ets_intr_unlock(); //open interrupt
-				system_soft_wdt_restart();
-				//running mean calculation
-				smplcnt++;
-				smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
-				DEBUG2_PRINTLN(F("Zero detection manager"));	
-			}
-#endif
 			isrundelay[0] = isrundelay[1] = RUNDELAY;
 			//reset dei fronti su blocco marcia (sia manuale che automatica)
 			resetEdges(0);
 			resetEdges(1);
 			//overallSwPower = hlw8012.getExtimActivePower();
-			//pwrSampler();
+#if (AUTOCAL_ACS712) 
+			zeroAndPwrSampler();
+#endif
 		}
 
 }
@@ -2233,61 +2282,55 @@ inline void wifiFailoverManager(){
 	}
 }
 
+/*
 inline void MQTTReconnectManager(){
 	//MQTT reconnect management
-			//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione
-			if(wifiConn && mqttClient!=NULL){
-				//noInterrupts ();
-				uint8_t mqttStat = mqttClient->isConnected();
-				//interrupts ();
-				//delay(50);
-				//noInterrupts ();
-				//mqttStat = mqttClient->isConnected();
-				//interrupts ();
-				//DEBUG2_PRINT(F("MQTT check : "));
-				//DEBUG2_PRINT(mqttStat);
-				if(!mqttStat){
-					DEBUG1_PRINT(F("\nMQTT dice non sono connesso."));
-					mqttConnected=false;
-				}	
-				else{
-					//DEBUG_PRINT(F("\nMQTT  dice sono connesso. Local IP: "));
-					//DEBUG_PRINT(WiFi.localIP());
-					mqttConnected=true;
-					mqttcnt = 0;
-					mqttofst = 2;
-				}
-			}
-			else
-			{
-				mqttConnected=false;
-			}
+			//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione		
 			
 			if((wifiConn == true)&&(!mqttConnected) && WiFi.status()==WL_CONNECTED && WiFi.getMode()==WIFI_STA) {
 				mqttcnt++;
 				
+				DEBUG2_PRINTLN(F("ERROR! MQTT client is not connected."));
+				
 				if(mqttClient==NULL){
-					DEBUG2_PRINTLN(F("ERROR! MQTT client is not allocated."));
+					DEBUG2_PRINTLN(F("ERROR! MQTT client is not allocated: doing reconnect..."));
 					mqttReconnect();
 					mqttcnt = 0;
-					mqttofst = 2;
-				}else if(mqttcnt == 20){
-					DEBUG2_PRINTLN(F("ERROR! MQTT client is not allocated."));
 					mqttofst = 4;
-				}else if(mqttcnt == 40){
-					mqttofst = 8;
-				}else if(mqttcnt == 100){
-					mqttofst = 10;
-				}else{
+				}else{ 
+					
+					if(mqttcnt <= 8){
+						DEBUG2_PRINTLN(F("ERROR! MQTT client is not connected: 4."));
+						mqttofst = 4;
+					}if(mqttcnt <= 16){
+						DEBUG2_PRINTLN(F("ERROR! MQTT client is not connected: 8."));
+						mqttofst = 8;
+					}else if(mqttcnt <= 32){
+						DEBUG2_PRINTLN(F("ERROR! MQTT client is not connected: 16."));
+						mqttofst = 16;
+					}else if(mqttcnt <= 128){
+						DEBUG2_PRINTLN(F("ERROR! MQTT client is not connected: 32."));
+						mqttofst = 32;
+					}else if(mqttcnt <= 256){
+						DEBUG2_PRINTLN(F("ERROR! MQTT client is not connected: 64."));
+						mqttofst = 64;
+					}else if(mqttcnt <= 512){
+						DEBUG2_PRINTLN(F("ERROR! MQTT client is not connected: 128."));
+						mqttofst = 128;
+					}else{ 
+						DEBUG2_PRINTLN(F("ERROR! MQTT client is not connected: 256."));
+						mqttofst = 256;
+					}
+					
 					if(!(mqttcnt % mqttofst)){
-						//non si pu� fare perch� dopo pochi loop crasha
+						//non si può fare perch� dopo pochi loop crasha
 						if(dscnct){
 							dscnct=false;
 							DEBUG1_PRINT(F("eseguo la MQTT connect()...Cnt: "));
 							//noInterrupts ();
 							mqttClient->connect();
 							//interrupts ();
-							delay(50);
+							//delay(30);
 						}
 						else
 						{
@@ -2296,17 +2339,19 @@ inline void MQTTReconnectManager(){
 							//noInterrupts ();
 							mqttClient->disconnect();
 							//interrupts ();
-							delay(50);
+							//delay(30);
 						}
-						DEBUG2_PRINT(mqttcnt);
-						DEBUG2_PRINT(F(" - Passo: "));
-						DEBUG2_PRINTLN(mqttofst);
+						DEBUG1_PRINT(mqttcnt);
+						DEBUG1_PRINT(F(" - Passo: "));
+						DEBUG1_PRINTLN(mqttofst);
 					}
 					//non si pu� fare senza disconnect perch� dopo pochi loop crasha
 					//mqttClient->setUserPwd((confcmd[MQTTUSR]).c_str(), (confcmd[MQTTPSW]).c_str());
+					
 				}
 			}
 }
+*/
 
 //-----------------------------------------------INIZIO TIMER----------------------------------------------------------------------
 //azione da compiere allo scadere di uno dei timer dell'array	
@@ -2521,36 +2566,6 @@ void onTapStop(uint8_t n){
 	scriviOutDaStato(n);
 	//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
 	readStatesAndPub();
-}
-
-void onSWStateChange(uint8_t nn){
-	int n = nn / TIMERDIM;
-	//int sw = nn % TIMERDIM;
-	DEBUG1_PRINT(F("onSWStateChange nn: "));
-	DEBUG1_PRINT(nn);
-	DEBUG1_PRINT(F(", n: "));
-	DEBUG1_PRINT(n);
-	if(roll[n] == 0){
-		if(out[nn] == HIGH){
-			DEBUG1_PRINT(F(", n: "));
-			DEBUG1_PRINT(out[nn]);
-			//OFF --> ON
-			if(mov){
-				//modifica stima potenza tapparella solo se questa è in movimento
-				overallSwPower += outPwr[nn]; //add previously sampled value
-			}
-			DEBUG1_PRINT(F(", out HIGH corrected overallSwPower: "));
-			DEBUG1_PRINTLN(overallSwPower);
-		}else if(mov){
-			//modifica stima potenza tapparella solo se questa è in movimento
-			//ON --> OFF
-			overallSwPower -= outPwr[nn]; //subtract previously sampled value
-			DEBUG1_PRINT(F(", mov corrected overallSwPower: "));
-			DEBUG1_PRINTLN(overallSwPower);
-		}
-		//unsigned short p = (packetBuffer[1] << 8) | packetBuffer[2];
-	}
-	
 }
 		
 void onCalibrEnd(unsigned long app, uint8_t n){

@@ -1136,6 +1136,7 @@ void handleNotFound(){
 	startPageLoad();
 	DEBUG2_PRINTLN(F("Enter handleNotFound"));
 	is_authentified(serverp);
+	stopPageLoad();
 }
 	
 void handleRoot() {   // When URI / is requested, send a web page with a button to toggle the LED
@@ -1583,6 +1584,7 @@ void handleCmd() {  // If a POST request is made to URI /login
 	serverp.sendHeader("Cache-Control", "no-cache");
 	serverp.sendHeader("Set-Cookie", "ESPSESSIONID=0");
 	serverp.send(200, "text/html", page);
+	stopPageLoad();
 }
 
 void handleMqttCmd() {  // If a POST request is made to URI /login
@@ -1625,6 +1627,8 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 	serverp.sendHeader("Set-Cookie", "ESPSESSIONID=0");
 	serverp.sendHeader("Connection", "close");
 	serverp.send(200, "text/html", page);
+	
+	stopPageLoad();
 }
 
 inline void savegroup(uint8_t fields[], uint8_t len){
@@ -1657,10 +1661,10 @@ void handleModify(){
 	  DEBUG2_PRINTLN(F("savegroup svsystem"));
 #if (AUTOCAL_HLW8012) 
 	  uint8_t fields[11] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE), p(ACVOLT), p(CALPWR)};
-	  savegroup(fields, 11);
+	  savegroup(fields, 9);
 #else
 	  uint8_t fields[8] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE)};
-	  savegroup(fields, 8);
+	  savegroup(fields, 7);
 #endif	  
 	  if( serverp.hasArg("rebootd") && String("y") == serverp.arg("rebootd") ){
 		rebootSystem();
@@ -1739,6 +1743,7 @@ void handleModify(){
   page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD) );
   serverp.send(200, "text/html", page);
 	
+  stopPageLoad();
   //if(static_cast<ParUint8*>(parsp[TIMINGCHANGED])->val == 1){
 	//parsp[TIMINGCHANGED]->load(0);
 	//initIiming(false);
