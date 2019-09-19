@@ -10,8 +10,8 @@
 //-------------------------------------------------------------------------------------------------------------
 //                                                  Counter vettoriale
 //--------------------------------------------------------------------------------------------------------
-bool testUpCntEvnt(unsigned long, bool, byte);
-bool testDownCntEvnt(unsigned long, bool, byte);
+bool incAndtestUpCntEvnt(unsigned long, bool, byte);
+bool incAndtestDownCntEvnt(unsigned long, bool, byte);
 void incCnt(byte);
 void decCnt(byte);
 unsigned long getCntValue(byte);

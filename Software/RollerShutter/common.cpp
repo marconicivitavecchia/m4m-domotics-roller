@@ -707,12 +707,12 @@ const char HTTP_FORM_LOGIC[] PROGMEM =
 					"<input type='checkbox' id='oe4' name='oe4' value='0' {O4}>"
 				"</div>"
 				"<div class='col-12 col-s-12 boxed'>"
-					"<label for='act'>Switches action commands:</label>"
-					"<textarea id='act' name='act' cols='100' rows='4' {H4}>{AC}</textarea>"
+					"<label for='call'>Periodic evaluation of local action commands:</label>"
+					"<textarea id='call' name='call' cols='100' rows='4' {H5}>{AD}</textarea>"
 				"</div>"
 				"<div class='col-12 col-s-12 boxed'>"
-					"<label for='call'>General action commands:</label>"
-					"<textarea id='call' name='call' cols='100' rows='4' {H5}>{AD}</textarea>"
+					"<label for='act'>On event basis evaluation of extern action commands:</label>"
+					"<textarea id='act' name='act' cols='100' rows='4' {H4}>{AC}</textarea>"
 				"</div>"
 				"<div class='col-12 col-s-12'>"
 					"<input type='submit' value='Back'>"
@@ -1517,16 +1517,22 @@ void handleEventConf() {  // If a POST request is made to URI /login
 		page.replace(F("{D2}"), parsp[p(THALT2)]->getStrVal());
 		page.replace(F("{D3}"), parsp[p(THALT3)]->getStrVal());
 		page.replace(F("{D4}"), parsp[p(THALT4)]->getStrVal());
-		page.replace(F("{S1}"), String(getCntValue(1)));
-		page.replace(F("{S2}"), String(getCntValue(2)));
-		page.replace(F("{S3}"), String(getCntValue(3)));
-		page.replace(F("{S4}"), String(getCntValue(4)));
-		if(static_cast<ParUint8*>(parsp[SWROLL1])->val == 0){
+		page.replace(F("{S1}"), String(getCntValue(SMPLCNT1)));
+		page.replace(F("{S2}"), String(getCntValue(SMPLCNT2)));
+		page.replace(F("{S3}"), String(getCntValue(SMPLCNT3)));
+		page.replace(F("{S4}"), String(getCntValue(SMPLCNT4)));
+		
+		DEBUG1_PRINT(F("SWROLL1: "));
+		DEBUG1_PRINTLN(static_cast<ParUint8*>(parsp[p(SWROLL1]))->val);
+		DEBUG1_PRINT(F("SWROLL2: "));
+		DEBUG1_PRINTLN(static_cast<ParUint8*>(parsp[p(SWROLL2]))->val);
+		if(static_cast<ParUint8*>(parsp[p(SWROLL1)])->val == 0){
 			page.replace(F("{V1}"), "style=\"display:block\"");
 		}else{
 			page.replace(F("{V1}"), "style=\"display:none\"");
 		}
-		if(static_cast<ParUint8*>(parsp[SWROLL2])->val == 0){
+
+		if(static_cast<ParUint8*>(parsp[p(SWROLL2)])->val == 0){
 			page.replace(F("{V2}"), "style=\"display:block\"");
 		}else{
 			page.replace(F("{V2}"), "style=\"display:none\"");
@@ -2131,13 +2137,13 @@ void ParUint8::load(uint8_t b){
 	this->val = b;
 }
 void ParUint8::loadFromEprom(){
-	this->val = EEPROM.read(eprom);
+	this->val = (uint8_t) EEPROM.read(eprom);
 }
 void ParUint8::saveOnEprom(){
-	EEPROM.write(eprom, this->val);
+	EEPROM.write(eprom, (uint8_t) this->val);
 }
 void ParUint8::loadFromStr(String str){
-	this->val = str.toInt();
+	this->val = (uint8_t) str.toInt();
 }
 
 
@@ -2266,7 +2272,6 @@ void ParVarStr::load(String str){
 void ParVarStr::loadFromEprom(){
 	writeOnOffConditions();
 }
-
 
 uint8_t saveByteConf(unsigned confofst){
 	saveSingleConf(confofst);

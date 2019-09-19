@@ -680,6 +680,14 @@ class VALWEIGHT_Evnt: public BaseEvnt{
 	public:
 		void doaction(bool);
 };
+class SWROLL1_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
+class SWROLL2_Evnt: public BaseEvnt{
+	public:
+		void doaction(bool);
+};
 /*
 class SWSPLDPWR1_Evnt: public BaseEvnt{
 	public:

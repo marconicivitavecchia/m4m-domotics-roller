@@ -15,7 +15,8 @@ bool staten[NCNT];
 //------------------------------------------------------------------------------------------------------------------
 //                                                  Contatori vettoriali
 //-------------------------------------------------------------------------------------------------------------------
-bool testUpCntEvnt(unsigned long cnt, bool repeat, byte n){
+bool incAndtestUpCntEvnt(unsigned long cnt, bool repeat, byte n){
+	countn[n]++;
 	if(countn[n] >= targetn[n] && staten[n]){
 		staten[n] = repeat;
 		countn[n] = cnt;
@@ -24,7 +25,8 @@ bool testUpCntEvnt(unsigned long cnt, bool repeat, byte n){
 	return false;	
 }
 
-bool testDownCntEvnt(unsigned long cnt, bool repeat, byte n){
+bool incAndtestDownCntEvnt(unsigned long cnt, bool repeat, byte n){
+	countn[n]--;
 	if(countn[n] <= targetn[n] && staten[n]){
 		staten[n] = repeat;
 		countn[n] = cnt;

@@ -386,8 +386,8 @@ inline void initOfst(){
 	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'n', 'n');
 #endif
 	/*5*/pars[p(LOCALIP)] = new ParStr32("ip", "localip","ip");
-	/*5*/pars[p(SWROLL1)] = new ParUint8(ROLLMODE1, "swroll1", "swroll1", SWROLL1OFST, 'p', 'i');
-	/*6*/pars[p(SWROLL2)] = new ParUint8(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i');
+	/*5*/pars[p(SWROLL1)] = new ParUint8(ROLLMODE1, "swroll1", "swroll1", SWROLL1OFST, 'p', 'i', new SWROLL1_Evnt());
+	/*6*/pars[p(SWROLL2)] = new ParUint8(ROLLMODE2, "swroll2", "swroll2", SWROLL2OFST, 'p', 'i', new SWROLL2_Evnt());
 	/*7*/pars[p(UTCSDT)] = new ParUint8(1, "utcsdt", "utcsdt", NTPSDTOFST, 'p', 'n', new UTCSDT_Evnt());
 	/*8*/pars[p(UTCZONE)] = new ParInt(1, "utczone", "utczone", NTPZONEOFST, 'p', 'i', new UTCZONE_Evnt());
 	/*9*/pars[p(THALT1)] = new ParLong(thalt1,"thalt1", "thalt1", THALT1OFST, 'p','i', new THALTX_Evnt());
@@ -437,12 +437,13 @@ inline void initOfst(){
 	/*41*/pars[p(VACMULT)] = new ParFloat(1, "vacmult", "vacmult", VACMULTOFST, 'n','n');
 	/*41*/pars[p(CURRMULT)] = new ParFloat(1, "currmult", "currmult", CURRMULTOFST, 'n','n');
 #endif
-	/*43*/pars[p(ONCOND1)] = new ParVarStr("-1", "oncond1", "oncond1", 2, 'n','n', new ONCOND1_Evnt());
-	/*44*/pars[p(ONCOND2)] = new ParVarStr("-1", "oncond2","oncond2", 2, 'n','n', new ONCOND2_Evnt());
-	/*45*/pars[p(ONCOND3)] = new ParVarStr("-1", "oncond3","oncond3", 2, 'n','n', new ONCOND3_Evnt());
-	/*46*/pars[p(ONCOND4)] = new ParVarStr("-1", "oncond4","oncond4", 2, 'n','n', new ONCOND4_Evnt());
-	/*47*/pars[p(ONCOND5)] = new ParVarStr("(td1=4000)|(ma1=0)|(ma4=2)|(tsmpl4=4)|(oe1=1)", "oncond5","oncond5", 0, 'n','n', new ONCOND5_Evnt());
-	/*48*/pars[p(ACTIONEVAL)] = new ParVarStr("-1","onaction","onaction", 2, 'n','n', new ACTIONEVAL_Evnt());
+	/*43*/pars[p(ONCOND1)] = new ParVarStr("-1", "oncond1", "oncond1", 2, 'p','n', new ONCOND1_Evnt());
+	/*44*/pars[p(ONCOND2)] = new ParVarStr("-1", "oncond2","oncond2", 2, 'p','n', new ONCOND2_Evnt());
+	/*45*/pars[p(ONCOND3)] = new ParVarStr("-1", "oncond3","oncond3", 2, 'p','n', new ONCOND3_Evnt());
+	/*46*/pars[p(ONCOND4)] = new ParVarStr("-1", "oncond4","oncond4", 2, 'p','n', new ONCOND4_Evnt());
+	///*47*/pars[p(ONCOND5)] = new ParVarStr("(td1=4000)|(ma1=0)|(ma4=2)|(tsmpl4=4)|(oe1=1)", "oncond5","oncond5", 0, 'p','n', new ONCOND5_Evnt());
+	/*47*/pars[p(ONCOND5)] = new ParVarStr("-1", "oncond5","oncond5", 0, 'p','n', new ONCOND5_Evnt());
+	/*48*/pars[p(ACTIONEVAL)] = new ParVarStr("-1","onaction","onaction", 2, 'p','n', new ACTIONEVAL_Evnt());
 	///*5*/pars[p(WIFICHANGED)] = new ParUint8(0, "WIFICHANGED","", new WIFICHANGED_Evnt());
 	///*5*/pars[p(CONFLOADED)] = new ParUint8(0, "CONFLOADED","");
 	///*5*/pars[p(MQTTADDRMODFIED)] = new ParUint8(0, "MQTTADDRMODFIED","");
@@ -481,14 +482,14 @@ float getAmpRMS(float ACSVolt){
 }
 #endif
 
-void setSWMode(uint8_t mode,uint8_t n){
+void setSWMode(uint8_t mode, uint8_t n){
 	roll[n] = mode;
 	isrun[n] = false;
 	DEBUG2_PRINT("setSWMode");
 	DEBUG2_PRINTLN(n);
 	DEBUG2_PRINT(": ");
 	DEBUG2_PRINTLN(mode);
-	
+	//setSWModeTap(mode,0);	
 	//readModeAndPub(n);
 }
 
@@ -553,7 +554,7 @@ float actions(char *key, float val)
 			}
 			if(n>=0){
 				//writeHaltDelay(val,n);
-				updtConf(THALT1+n, String(val));
+				updtConf(p(THALT1+n), String(val));
 				setHaltDelay(val,n);
 				readActModeAndPub(n);
 			}
@@ -586,21 +587,21 @@ float actions(char *key, float val)
 			if(val==1){
 				setSWMode(1,0);
 				//writeSWMode(1,0);
-				updtConf(SWROLL1OFST, String(1));
+				updtConf(p(SWROLL1), String(1));
 			}else if(val==0){
 				setSWMode(0,0);
 				//writeSWMode(0,0);
-				updtConf(SWROLL1OFST, String(0));
+				updtConf(p(SWROLL1), String(0));
 			}
 		}else if(strcmp(key,"mode2")==0){
 			if(val==1){
 				setSWMode(1,1);
 				//writeSWMode(1,1);
-				updtConf(SWROLL1OFST+1, String(0));
+				updtConf(p(SWROLL2), String(0));
 			}else if(val==0){
 				setSWMode(0,1);
 				//writeSWMode(0,1);
-				updtConf(SWROLL1OFST+1, String(1));
+				updtConf(p(SWROLL2), String(1));
 			}
 		}
 		return 1;
@@ -630,7 +631,7 @@ float actions(char *key, float val)
 		return val;
 	}else if(key[0]=='s'){
 		if(strcmp(key,"sdt")==0){
-			updtConf(UTCSDT, String(val));
+			updtConf(p(UTCSDT), String(val));
 			setSDT((uint8_t) val);
 		}
 		return val;
@@ -1180,7 +1181,7 @@ void readIacvoltAndPub(){
 void inline readActionConfAndSet(){
 	//imposta le configurazioni dinamiche in base ad eventi esterni
 	DEBUG2_PRINTLN(F("readActionConfAndSet."));
-	eval(((String) pars[p(ACTIONEVAL)]->getStrVal()).c_str());
+	eval( (static_cast<ParVarStr*>(pars[p(ACTIONEVAL)])->getStrVal()).c_str() );
 }
 
 void publishStr(String &str){
@@ -1192,8 +1193,8 @@ void publishStr(String &str){
   str += pars[MQTTIP]->getStrJsonName()+twodot+pars[p(LOCALIP)]->getStrVal()+comma;
   str += pars[MQTTMQTTID]->getStrJsonName()+twodot+pars[p(MQTTID)]->getStrVal()+comma;
  #if (AUTOCAL_HLW8012) 
-  //str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getActivePower()+comma;getExtimActivePower
-str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getExtimActivePower()+comma;
+  str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getActivePower()+comma;
+  //str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getExtimActivePower()+comma;
   str += pars[INSTACV]->getStrJsonName()+twodot+hlw8012.getVoltage()+comma;
  #endif
   str += pars[MQTTDATE]->getStrJsonName()+twodot+printUNIXTimeMin(gbuf)+closebrk;
@@ -1245,8 +1246,8 @@ void publishStr2(String &str){
 void initIiming(bool first){
   //edelay[0] = static_cast<ParLong*>(pars[p(STDEL1)])->val; 
   //edelay[1] = static_cast<ParLong*>(pars[p(STDEL2)])->val;
-  roll[0] = static_cast<ParUint8*>(pars[p(SWROLL1)])->val;
-  roll[1] = static_cast<ParUint8*>(pars[p(SWROLL2)])->val;
+  //roll[0] = static_cast<ParUint8*>(pars[p(SWROLL1)])->val;
+  //roll[1] = static_cast<ParUint8*>(pars[p(SWROLL2)])->val;
   DEBUG2_PRINT(F("Roll1: "));
   DEBUG2_PRINTLN(roll[0]);
   DEBUG2_PRINT(F("Roll2: "));
@@ -1374,10 +1375,11 @@ void setup(){
   initOfst();
  #if (AUTOCAL_HLW8012) //////
   HLW8012_init();		////////
-#endif   
+#endif 
   DEBUG2_PRINTLN(F("loadConfig."));
   loadConfig();
   delay(100);
+
   wifiConn = false;
   startWait=false;
   endWait=true;
@@ -1402,8 +1404,8 @@ void setup(){
   initdfn(LOW, 3);
   //Timing init
   initIiming(true);
-  setSWMode(roll[0],0);
-  setSWMode(roll[1],1);
+  setSWMode(static_cast<ParUint8*>(pars[p(SWROLL1)])->val,0);
+  setSWMode(static_cast<ParUint8*>(pars[p(SWROLL2)])->val,1);
   
   setup_wifi(wifindx); 
   setupNTP();
@@ -1743,7 +1745,7 @@ inline void loop2() {
 			readParamAndPub(MQTTDATE,printUNIXTimeMin(gbuf));
 			readStatesAndPub(true);
 		}
-		//leggiTastiLocaliDaExp();
+		leggiTastiLocaliDaExp();
 	}//END 1 sec scheduler-----------------------------------------------------
 	
 	//---------------------------------------------------------------------
@@ -1791,69 +1793,87 @@ inline void updateCounters(){
 	 incCnt(CNTIME2);
 	 incCnt(CNTIME3);
 	 incCnt(CNTIME4);
-	 incCnt(SMPLCNT1);
-	 incCnt(SMPLCNT2);
-	 incCnt(SMPLCNT3);
-	 incCnt(SMPLCNT4);
 	 //incCnt(TIMECNT);
 }
 
 //legge PERIODICAMENTE il parser delle condizioni sui sensori
 inline void leggiTastiLocaliDaExp(){
+	int app;
+	//imposta le configurazioni dinamiche in base ad eventi locali valutati periodicamente
+	eval( (static_cast<ParVarStr*>(pars[p(ONCOND5)])->getStrVal()).c_str() );
+	
 	if(roll[0] == false){
 		//modalit� switch generico
-		if(testUpCntEvnt(0,true,SMPLCNT1)){
-			setActionLogic(eval(((String) pars[p(0)]->getStrVal()).c_str()),0);
-			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato(0);
+		if(incAndtestUpCntEvnt(0,true,SMPLCNT1)){
+			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND1)])->getStrVal()).c_str() );
+			if(app != -1){
+				setActionLogic(app, 0);
+				//legge lo stato finale e lo scrive sulle uscite
+				scriviOutDaStato(0);
+			}
 		}
-		if(testUpCntEvnt(0,true,SMPLCNT2)){
-			setActionLogic(eval(((String) pars[p(1)]->getStrVal()).c_str()),1);
-			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato(0);
+		if(incAndtestUpCntEvnt(0,true,SMPLCNT2)){
+			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND2)])->getStrVal()).c_str() );
+			if(app != -1){
+				setActionLogic(app, 1);
+				//legge lo stato finale e lo scrive sulle uscite
+				scriviOutDaStato(0);
+			}
 		}
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
 	}else{
 		//modalit� tapparella
 		//simula pressione di un tasto locale
-		if(eval(((String) pars[p(2)]->getStrVal()).c_str())){
-			static_cast<ParUint8*>(pars[BTN1IN + 0*BTNDIM])->load((uint8_t) 255);			//codice comando attiva calibrazione
-			static_cast<ParUint8*>(pars[BTN1IN + 0*BTNDIM])->doaction(false);
+		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND1)])->getStrVal()).c_str() );
+		DEBUG1_PRINT(F("MQTTUP1: "));	
+		DEBUG1_PRINTLN(app);
+		if(app == HIGH){
+			static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t) 255);			
+			static_cast<ParUint8*>(pars[MQTTUP1])->doaction(false);
 		}
-		if(eval(((String) pars[p(2)]->getStrVal()).c_str())){
-			static_cast<ParUint8*>(pars[BTN1IN + 1*BTNDIM])->load((uint8_t) 255);			//codice comando attiva calibrazione
-			static_cast<ParUint8*>(pars[BTN1IN + 1*BTNDIM])->doaction(false);
+		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND2)])->getStrVal()).c_str() );
+		DEBUG1_PRINT(F("MQDOWN1: "));	
+		DEBUG1_PRINTLN(app);
+		if(app == HIGH){
+			static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t) 255);			
+			static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction(false);
 		}
 	}
 	if(roll[1] == false){
 		//modalit� switch generico
-		if(testUpCntEvnt(0,true,SMPLCNT3)){
-			setActionLogic(eval(((String) pars[p(2)]->getStrVal()).c_str()),2);
-			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato(1);
+		if(incAndtestUpCntEvnt(0,true,SMPLCNT3)){
+			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND3)])->getStrVal()).c_str() );
+			if(app != -1){
+				setActionLogic(app, 2);
+				//legge lo stato finale e lo scrive sulle uscite
+				scriviOutDaStato(0);
+			}
 		}
-		if(testUpCntEvnt(1,true,SMPLCNT4)){
-			setActionLogic(eval(((String) pars[p(3)]->getStrVal()).c_str()),3);
-			//legge lo stato finale e lo scrive sulle uscite
-			scriviOutDaStato(1);
+		if(incAndtestUpCntEvnt(0,true,SMPLCNT4)){
+			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND4)])->getStrVal()).c_str() );
+			if(app != -1){
+				setActionLogic(app, 3);
+				//legge lo stato finale e lo scrive sulle uscite
+				scriviOutDaStato(0);
+			}
 		}
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
 	}else{
 		//modalit� tapparella
 		//simula pressione di un tasto locale
-		if(eval(((String) pars[p(2)]->getStrVal()).c_str())){
-			static_cast<ParUint8*>(pars[BTN2IN + 0*BTNDIM])->load((uint8_t) 255);			//codice comando attiva calibrazione
-			static_cast<ParUint8*>(pars[BTN2IN + 0*BTNDIM])->doaction(false);
+		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND3)])->getStrVal()).c_str() );
+		if(app == HIGH){
+			static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t) 255);			
+			static_cast<ParUint8*>(pars[MQTTUP2])->doaction(false);
 		}
-		if(eval(((String) pars[p(2)]->getStrVal()).c_str())){
-			static_cast<ParUint8*>(pars[BTN2IN + 1*BTNDIM])->load((uint8_t) 255);			//codice comando attiva calibrazione
-			static_cast<ParUint8*>(pars[BTN2IN + 1*BTNDIM])->doaction(false);
+		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND4)])->getStrVal()).c_str() );
+		if(app == HIGH){
+			static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t) 255);			
+			static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction(false);
 		}
 	}
-	//imposta le configurazioni dinamiche in base ad eventi locali valutati periodicamente
-	//eval((confcmd[JSONONCOND5]).c_str());
 }
 
 inline void sensorStatePoll(){
@@ -2620,6 +2640,8 @@ void manualCalibration(uint8_t btn){
 	DEBUG1_PRINTLN(btn+1);
 	DEBUG2_PRINTLN(F("-----------------------------"));
 	
+	//set initial power balancement extimation
+	setValweight(0.5);
 	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->load((uint8_t) 101);			//codice comando attiva calibrazione
 	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->doaction(false);
 }
@@ -2999,7 +3021,8 @@ void UTCSYNC_Evnt::doaction(bool save){
 		setSyncInterval(static_cast<ParLong*>(pars[p(UTCSYNC)])->val);
 }
 void UTCADJ_Evnt::doaction(bool save){
-	if(save) adjustTime(saveIntConf(UTCADJ));
+	if(save) 
+		adjustTime(saveIntConf(UTCADJ));
 }
 void UTCSDT_Evnt::doaction(bool save){
 	if(save) 
@@ -3013,31 +3036,47 @@ void UTCZONE_Evnt::doaction(bool save){
 	else
 		setTimeZone((int)static_cast<ParInt*>(pars[p(UTCZONE)])->val);
 }
+void SWROLL1_Evnt::doaction(bool save){
+	if(save) 
+		saveSingleConf(SWROLL1);	
+	setSWMode((uint8_t) static_cast<ParUint8*>(pars[p(SWROLL1)])->val,0); 
+}
+void SWROLL2_Evnt::doaction(bool save){
+	if(save) 
+		saveSingleConf(SWROLL2);	
+	setSWMode((uint8_t) static_cast<ParUint8*>(pars[p(SWROLL2)])->val,0); 
+}
 void ACTIONEVAL_Evnt::doaction(bool save){
 	//save confs and actions on new action received event
-	if(save) writeOnOffConditions();
+	if(save) 
+		writeOnOffConditions();
 	//run actions one time on new action received event
 	readActionConfAndSet();
 }
 void ONCOND1_Evnt::doaction(bool save){
 	//save confs and actions on new action received event
-	if(save) writeOnOffConditions();
+	if(save) 
+		writeOnOffConditions();
 }
 void ONCOND2_Evnt:: doaction(bool save){
 	//save confs and actions on new config received event
-	if(save) writeOnOffConditions();
+	if(save) 
+		writeOnOffConditions();
 }
 void ONCOND3_Evnt::doaction(bool save){
 	//save confs and actions on new config received event
-	if(save) writeOnOffConditions();
+	if(save) 
+		writeOnOffConditions();
 }
 void ONCOND4_Evnt::doaction(bool save){
 	//save confs and actions on new config received event
-	if(save) writeOnOffConditions();
+	if(save) 
+		writeOnOffConditions();
 }
 void ONCOND5_Evnt::doaction(bool save){
 	//save confs and actions on new config received event
-	if(save) writeOnOffConditions();
+	if(save) 
+		writeOnOffConditions();
 }
 /*
 void SWSPLDPWR1_Evnt::doaction(bool save){

@@ -30,7 +30,7 @@ byte moving[2]={false,false};
 bool first[2]={true,true};
 double nmax;
 float posdelta = 0;
-//bool rollmode[2] = {true,true};
+bool rollmode[2] = {true,true};
 
 inline bool switchdfn(byte val, byte n){
 	//n: numero di pulsanti
@@ -174,6 +174,20 @@ byte tapparellaLogic(byte *in, byte *inr, byte *outlogic, unsigned long thalt, b
 	tapparellaLogic(n);
 }
 */
+void setSWModeTap(uint8_t mode, uint8_t n){
+	rollmode[n] = mode;
+	DEBUG2_PRINT("setSWModeTap");
+	DEBUG2_PRINTLN(n);
+	DEBUG2_PRINT(": ");
+	DEBUG2_PRINTLN(mode);
+	
+	//readModeAndPub(n);
+}
+
+uint8_t getSWMode(uint8_t n){
+	return rollmode[n];
+}
+
 void setSTDelays(unsigned long dly1, unsigned long dly2){
 	engdelay[0] = dly1;
 	engdelay[1] = dly2;
@@ -689,41 +703,52 @@ void setOE(bool in, byte n){
 	DEBUG2_PRINTLN(oe[n]);
 }
 
-void setActionLogic(int in, byte n){
+void setActionLogic(int in, byte nn){
+	int n = nn / TIMERDIM;
 	//0: setReset
 	//1: nessuna azione
 	//2: normalmente aperto, chiuso per un haltdelay alla pressione
 	//3: normalmente chiuso, aperto per un haltdelay alla pressione
-	if(act[n]==0){
-		DEBUG2_PRINT(F("setActionLogic setReset: "));
-		DEBUG2_PRINTLN(in);
-		if(in>=LOW && oe[n])
-			setLogic(in,n);
-	}else if(act[n]==1){
-		DEBUG2_PRINT(F("setActionLogic doNothing: "));
-		DEBUG2_PRINTLN(in);	
-	}else if(act[n]==2){
-		DEBUG2_PRINT(F("setActionLogic monoNormalAperto: "));
-		DEBUG2_PRINTLN(in);
-		lastCmd[n] = HIGH;
-		if(in>=LOW && oe[n])
+	//if(rollmode[n] == false){
+	DEBUG1_PRINT(F("setActionLogic nn: "));
+	DEBUG1_PRINT(nn);
+	DEBUG1_PRINT(F(" , in: "));
+	DEBUG1_PRINT(in);
+	DEBUG1_PRINT(F(" , oe[nn]: "));
+	DEBUG1_PRINTLN(oe[nn]);
+	if(in != -1 && oe[nn]){
+		if(act[n]==0){
+			DEBUG1_PRINT(F("setActionLogic setReset: "));
+			DEBUG1_PRINTLN(in);
+			setLogic(in,nn);
+		}else if(act[n]==1){
+			DEBUG1_PRINT(F("setActionLogic doNothing: "));
+			DEBUG2_PRINTLN(in);	
+		}else if(act[n]==2){
+			DEBUG1_PRINT(F("setActionLogic monoNormalAperto: "));
+			DEBUG1_PRINTLN(in);
+			lastCmd[n] = HIGH;
 			if(in==HIGH)
-				startSimpleSwitchDelayTimer(n);	
+				startSimpleSwitchDelayTimer(nn);	
 			else
 				setLogic(LOW,n);
-	}else if(act[n]==3){
-		DEBUG2_PRINT(F("setActionLogic monoNormalChiuso: "));
-		DEBUG2_PRINTLN(in);
-		lastCmd[n] = LOW; 
-		if(in>=LOW && oe[n])
+		}else if(act[n]==3){
+			DEBUG1_PRINT(F("setActionLogic monoNormalChiuso: "));
+			DEBUG1_PRINTLN(in);
+			lastCmd[n] = LOW; 
 			if(in==HIGH)
-				startSimpleSwitchDelayTimer(n);	
+				startSimpleSwitchDelayTimer(nn);	
 			else
-				setLogic(HIGH,n);
+				setLogic(HIGH,nn);
+		}
 	}
+	//}else{
+		//oe[nn] == false;
+	//}
 }
 
 void setSWAction(byte in, byte n){
+	//if(rollmode[n] == false){
 	act[n] = in;
 	//0: toggleLogic
 	//1: condition output disabled
@@ -732,7 +757,7 @@ void setSWAction(byte in, byte n){
 	if(in==0){
 		DEBUG2_PRINT(F("setSWAction toggleLogic: "));
 		DEBUG2_PRINTLN(in);
-		oe[n]=true;
+		//oe[n]=true;
 		haltdelay[n] = 0;
 	}else if(in==1){
 		DEBUG2_PRINT(F("setSWAction output disabled: "));
@@ -742,18 +767,19 @@ void setSWAction(byte in, byte n){
 	}else if(in==2){
 		DEBUG2_PRINT(F("setSWAction normalmente aperto: "));
 		DEBUG2_PRINTLN(in);
-		oe[n]=true;
+		//oe[n]=true;
 		//haltdelay[n] = static_cast<ParLong*>(parsl[p(THALT1+n)])->val;
 		setLogic(LOW,n);
 		DEBUG2_PRINT(F("act==2: "));
 	}else if(in==3){
 		DEBUG2_PRINT(F("setSWAction normalmente chiuso: "));
 		DEBUG2_PRINTLN(in);
-		oe[n]=true;
+		//oe[n]=true;
 		//haltdelay[n] = static_cast<ParLong*>(parsl[p(THALT1+n)])->val;
 		setLogic(HIGH,n);
 		DEBUG2_PRINT(F("act==3: "));
 	}
+	//}
 }
 	
 bool startSimpleSwitchDelayTimer(byte n){	

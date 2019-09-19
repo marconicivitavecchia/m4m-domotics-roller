@@ -4,10 +4,12 @@
 #include <Arduino.h>
 #include "common.h"
 
+uint8_t getSWMode(uint8_t);
 void initTapparellaLogic(byte *, byte *, byte *, bool);
 byte tapparellaLogic(byte *, byte *, byte*, unsigned long , byte n);
 //byte tapparellaLogic(byte);
 void setTapThalt(unsigned long, byte);
+void setSWMode(uint8_t, uint8_t);
 unsigned long getTapThalt(byte);
 extern void onTapStop(byte);
 extern void onSWStateChange(byte);
