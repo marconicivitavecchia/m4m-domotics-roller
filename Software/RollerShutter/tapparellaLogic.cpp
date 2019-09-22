@@ -12,6 +12,7 @@ float tapthick;
 long thaltp[2]={THALTMAX/2,THALTMAX/2};
 long base[2]={0,0};
 bool oe[4];  //output enable
+short endrun[2] = {false, false};
 #if (AUTOCAL) 
 float fact;
 #endif
@@ -290,6 +291,10 @@ long getTarget(byte n){
 	return target[n];
 }
 
+bool isCalibr(){
+	return calibr == 1 || calibr == 2;
+}
+
 void setTarget(long val, byte n){
 	target[n] = val;
 }
@@ -313,7 +318,7 @@ void startEndOfRunTimer(byte n){
 	//il motore va in moto cronometrato
 	startTimer(target[toffset],TMRHALT+toffset);
 	//comincia a cronometrare la corsa
-	startCrono(n); 
+	startCrono(n); //////////////////////////////
 	setGroupState(3,toffset);	//														stato 3: il motore va in moto cronometrato
 	DEBUG1_PRINT(F("stato 3: il motore " ));
 	DEBUG1_PRINT(n);
@@ -324,7 +329,8 @@ void startEndOfRunTimer(byte n){
 bool startEngineDelayTimer(byte n){
 	    int toffset=n*TIMERDIM;
 		
-		moving[n]=false;	
+		moving[n]=false;
+		endrun[n] = 0;
 		setGroupState(2,n);												//stato 2: il motore va in moto a vuoto (o libero)
 		byte btn = (short) (1-getCronoDir(n))/2+ n*BTNDIM;  //conversion from direction to index
 		//DEBUG2_PRINTLN(F("startEngineDelayTimer: getGroupState(n), btn, inp[btn]"));
@@ -341,6 +347,42 @@ bool startEngineDelayTimer(byte n){
 		//}else{
 		//	return false;
 		//}	
+}
+
+short isEndRun(byte n){
+	DEBUG1_PRINT(F("isEndRun: "));
+	DEBUG1_PRINTLN(endrun[n]);
+	return endrun[n];
+}
+
+bool isOnTarget(byte tgt, byte n){
+	unsigned short p = 0;
+	if(tgt <= 100){
+		p = tgt + posdelta;
+		if(p == posdelta){
+			//obbliga chiusura di lume porta + doghe
+			p = 0;
+		}
+	}else if(tgt <= 210){
+		p = tgt - 110;
+	}else if(tgt == 255){
+		p = 100;
+	}
+		
+	unsigned long t = (unsigned long) (thaltp[n]*calcTiming(p))/100;
+	long dlt = (long) (t - getCronoCount(n));
+	bool ont = (dlt > 0) && (dlt < 40) || (dlt < 0) && (-dlt < 40);
+	DEBUG1_PRINT(F("tgt: "));
+	DEBUG1_PRINT(tgt);
+	DEBUG1_PRINT(F("p: "));
+	DEBUG1_PRINT(p);
+	DEBUG1_PRINT(F("isOnTarget: "));
+	DEBUG1_PRINT(ont);
+	DEBUG1_PRINT(F(", t: "));
+	DEBUG1_PRINT((t));
+	DEBUG1_PRINT(F(", delta: "));
+	DEBUG1_PRINTLN(dlt);
+	return ont;
 }
 
 short secondPress(byte n, int delay, bool end){
@@ -596,6 +638,7 @@ void firstPress(byte sw, byte n){
 	copytout(n);
 }
 
+
 bool isRunning(byte n){
 	return (outlogicp[ENABLES+n*STATUSDIM]==HIGH);
 }
@@ -717,25 +760,25 @@ void setActionLogic(int in, byte nn){
 	DEBUG1_PRINT(F(" , oe[nn]: "));
 	DEBUG1_PRINTLN(oe[nn]);
 	if(in != -1 && oe[nn]){
-		if(act[n]==0){
+		if(act[nn]==0){
 			DEBUG1_PRINT(F("setActionLogic setReset: "));
 			DEBUG1_PRINTLN(in);
 			setLogic(in,nn);
-		}else if(act[n]==1){
+		}else if(act[nn]==1){
 			DEBUG1_PRINT(F("setActionLogic doNothing: "));
 			DEBUG2_PRINTLN(in);	
-		}else if(act[n]==2){
+		}else if(act[nn]==2){
 			DEBUG1_PRINT(F("setActionLogic monoNormalAperto: "));
 			DEBUG1_PRINTLN(in);
-			lastCmd[n] = HIGH;
+			lastCmd[nn] = HIGH;
 			if(in==HIGH)
 				startSimpleSwitchDelayTimer(nn);	
 			else
-				setLogic(LOW,n);
+				setLogic(LOW,nn);
 		}else if(act[n]==3){
 			DEBUG1_PRINT(F("setActionLogic monoNormalChiuso: "));
 			DEBUG1_PRINTLN(in);
-			lastCmd[n] = LOW; 
+			lastCmd[nn] = LOW; 
 			if(in==HIGH)
 				startSimpleSwitchDelayTimer(nn);	
 			else
@@ -748,6 +791,12 @@ void setActionLogic(int in, byte nn){
 }
 
 void setSWAction(byte in, byte n){
+	DEBUG1_PRINT(F("setSWAction n: "));
+	DEBUG1_PRINT(n);
+	DEBUG1_PRINT(F(" , in: "));
+	DEBUG1_PRINT(in);
+	DEBUG1_PRINT(F(" , oe[nn]: "));
+	DEBUG1_PRINTLN(oe[n]);
 	//if(rollmode[n] == false){
 	act[n] = in;
 	//0: toggleLogic

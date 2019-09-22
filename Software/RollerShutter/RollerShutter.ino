@@ -442,7 +442,7 @@ inline void initOfst(){
 	/*45*/pars[p(ONCOND3)] = new ParVarStr("-1", "oncond3","oncond3", 2, 'p','n', new ONCOND3_Evnt());
 	/*46*/pars[p(ONCOND4)] = new ParVarStr("-1", "oncond4","oncond4", 2, 'p','n', new ONCOND4_Evnt());
 	///*47*/pars[p(ONCOND5)] = new ParVarStr("(td1=4000)|(ma1=0)|(ma4=2)|(tsmpl4=4)|(oe1=1)", "oncond5","oncond5", 0, 'p','n', new ONCOND5_Evnt());
-	/*47*/pars[p(ONCOND5)] = new ParVarStr("-1", "oncond5","oncond5", 0, 'p','n', new ONCOND5_Evnt());
+	/*47*/pars[p(ONCOND5)] = new ParVarStr("temp", "oncond5","oncond5", 0, 'p','n', new ONCOND5_Evnt());
 	/*48*/pars[p(ACTIONEVAL)] = new ParVarStr("-1","onaction","onaction", 2, 'p','n', new ACTIONEVAL_Evnt());
 	///*5*/pars[p(WIFICHANGED)] = new ParUint8(0, "WIFICHANGED","", new WIFICHANGED_Evnt());
 	///*5*/pars[p(CONFLOADED)] = new ParUint8(0, "CONFLOADED","");
@@ -520,43 +520,41 @@ float actions(char *key, float val)
 	if(key[0]=='t'){
 		if(roll[0] == false){
 			if(strcmp(key,"tsmpl1")==0){
-				n = 0;
+				startCnt(0,(unsigned long)val,SMPLCNT1);
 			}else if(strcmp(key,"tsmpl2")==0){
-				n = 1;
+				startCnt(0,(unsigned long)val,SMPLCNT2);
+			}
+			//haldelay 1 e 2
+			if(key[1]=='d'){
+				n = key[2] - 49;
+				DEBUG2_PRINT("d");
+				DEBUG2_PRINTLN(n);
+				if(n>=0){
+					//writeHaltDelay(val,n);
+					updtConf(p(THALT1+n), String(val));
+					setHaltDelay(val,n);
+					readActModeAndPub(n);
+				}
 			}
 		}
+		
 		if(roll[1] == false){
 			if(strcmp(key,"tsmpl3")==0){
-				n = 2;
+				startCnt(0,(unsigned long)val,SMPLCNT3);
 			}else if(strcmp(key,"tsmpl4")==0){
-				n = 3;
+				startCnt(0,(unsigned long)val,SMPLCNT4);
 			}
-		}
-		if(n>=0){
-			startCnt(0,(unsigned long)val,SMPLCNT1+n);
-			DEBUG2_PRINT("\nstartCnt: ");
-			DEBUG2_PRINTLN(val);
-		}
-		if(key[1]=='d'){
-			if(roll[0] == false){
-				if(key[2]=='1'){
-					n = 0;
-				}else if(key[2]=='2'){
-					n = 1;
+			//haldelay 3 e 4
+			if(key[1]=='d'){
+				n = key[2] - 49;
+				DEBUG2_PRINT("d");
+				DEBUG2_PRINTLN(n);
+				if(n>=0){
+					//writeHaltDelay(val,n);
+					updtConf(p(THALT1+n), String(val));
+					setHaltDelay(val,n);
+					readActModeAndPub(n);
 				}
-			}
-			if(roll[1] == false){
-				if(key[2]=='3'){
-					n = 2;
-				}else if(key[2]=='4'){
-					n = 3;
-				}
-			}
-			if(n>=0){
-				//writeHaltDelay(val,n);
-				updtConf(p(THALT1+n), String(val));
-				setHaltDelay(val,n);
-				readActModeAndPub(n);
 			}
 		}
 	}else if(key[0]=='m'){
@@ -604,7 +602,46 @@ float actions(char *key, float val)
 				updtConf(p(SWROLL2), String(1));
 			}
 		}
-		return 1;
+	}else if(key[0]=='u'){
+		uint8_t act=0;
+		if(key[1]=='p'){
+			if(roll[0] == true){
+				DEBUG1_PRINT("up1: ");
+				DEBUG1_PRINTLN(val);
+				if(key[2] == '1' && val > 0 && !isOnTarget(val, 0) && !isrun[0] && !isCalibr()){
+					static_cast<ParUint8*>(pars[MQTTUP1])->load((int)val);				
+					static_cast<ParUint8*>(pars[MQTTUP1])->doaction(false);
+				}
+			}
+			if(roll[1] == true){
+				if(key[2] == '2' && val > 0 && !isOnTarget(val, 1) && !isrun[1] && !isCalibr()){
+					static_cast<ParUint8*>(pars[MQTTUP2])->load((int)val);		
+					static_cast<ParUint8*>(pars[MQTTUP2])->doaction(false);
+				}
+			}
+		}
+		act=val;
+	}else if(key[0]=='d'){		
+		uint8_t act=0;
+		if(key[1]=='w'){
+			if(roll[0] == true){
+				DEBUG1_PRINT("dw1: ");
+				DEBUG1_PRINTLN(val);
+				if(key[2] == '1' && val > 0 && !isOnTarget(val, 0) && !isrun[0] && !isCalibr()){
+					DEBUG1_PRINT("dw1: ");
+					DEBUG1_PRINTLN(val);
+					static_cast<ParUint8*>(pars[MQTTDOWN1])->load((int)val);			
+					static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction(false);
+				}
+			}
+			if(roll[1] == true){
+				if(key[2] == '2' && val > 0 && !isOnTarget(val, 1) && !isrun[1] && !isCalibr()){
+					static_cast<ParUint8*>(pars[MQTTDOWN2])->load((int)val);		
+					static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction(false);
+				}
+			}
+		}
+		act=val;
 	}else if(key[0]=='r'){
 		unsigned long cnt = val;
 		if(strcmp(key,"r1")==0){
@@ -641,8 +678,8 @@ float actions(char *key, float val)
 //parser function calls
 float variables(char *key){
 	float result=1;
-	
-	if(key[0]=='t'){
+
+	/*if(key[0]=='t'){
 		if(strcmp(key,"tsec")==0){
 			result = second();
 		}else if(strcmp(key,"tmin")==0){
@@ -680,7 +717,7 @@ float variables(char *key){
 		}else{
 			result = 0;
 		}
-	}else if(key[0]=='o'){
+	}else */if(key[0]=='o'){
 		if(strcmp(key,"o1")==0){
 			result = outLogic[ENABLES];
 		}else if(strcmp(key,"o2")==0){
@@ -700,15 +737,25 @@ float variables(char *key){
 				ip.fromString(key);
 			result = pinger.Ping(ip);
 		}
-	}else if(key[0] =='i'){
+	}else if(key[0] =='p'){
+		if(strcmp(key,"percpos2")==0){
+			result = percfdbck(1);
+		}else if(strcmp(key,"pwrall")==0){
+			result = overallSwPower;
+		}else
 #if (AUTOCAL_ACS712) 
-		if(strcmp(key,"p1")==0){
+		if(strcmp(key,"ptapavg1")==0){
 			result = getAmpRMS(getAVG(0)/2);
-		}else if(strcmp(key,"p2")==0){
+		}else if(strcmp(key,"ptapavg2")==0){
 			result = getAmpRMS(getAVG(1)/2);
+		}else
+#endif 		
+		if(strcmp(key,"percpos1")==0){
+			result = percfdbck(0);
+			DEBUG1_PRINT(" percpos1: ");
+			DEBUG1_PRINTLN(result);
 		}
-#endif
-	}else if(key[0]=='p'){
+	}else if(key[0]=='i'){
 		char *app;
 		if(strcmp(key,"isPM")==0){
 			result = isPM();
@@ -721,8 +768,6 @@ float variables(char *key){
 		result = wifiConn;
 	}else if(strcmp(key,"temp")==0){
 		result = getTemperature();
-	}else if(strcmp(key,"wifi")==0){
-		result = wifiConn;
 	}
 	return result;
 }
@@ -1081,10 +1126,10 @@ inline uint8_t percfdbck(uint8_t n){
 }
 
 void readActModeAndPub(uint8_t n){
-  //DEBUG2_PRINTLN(F("\nreadTempAndPub")); 
+  DEBUG2_PRINTLN(F("\nreadActionsAndPub")); 
   String s=openbrk;
   //char sd[300];
-  s+="actmode"+String(n+1)+twodot+pars[p(SWACTION1+n)]->getStrVal()+enda; 
+  s+="actmode"+String(n+1)+twodot+pars[p(SWACTION1+n)]->getStrVal()+end; 
   //sprintf(sd,"%s%s%s%f%s",openbrk,mqttJson[MQTTJSONTEMP].c_str(),twodot,asyncBuf[GTTEMP],closebrk);
   //s=String(sd);
   publishStr(s);
@@ -1402,6 +1447,11 @@ void setup(){
   initdfn(LOW, 1);
   initdfn(LOW, 2);
   initdfn(LOW, 3);
+  
+  startCnt(0, 1, CONDCNT1);
+  startCnt(0, 1, CONDCNT2);
+  startCnt(0, 1, CONDCNT3);
+  startCnt(0, 1, CONDCNT4);
   //Timing init
   initIiming(true);
   setSWMode(static_cast<ParUint8*>(pars[p(SWROLL1)])->val,0);
@@ -1800,24 +1850,43 @@ inline void updateCounters(){
 inline void leggiTastiLocaliDaExp(){
 	int app;
 	//imposta le configurazioni dinamiche in base ad eventi locali valutati periodicamente
-	eval( (static_cast<ParVarStr*>(pars[p(ONCOND5)])->getStrVal()).c_str() );
+	DEBUG1_PRINT(F("Periodic local cmds: "));	
+	DEBUG1_PRINTLN( eval( (static_cast<ParVarStr*>(pars[p(ONCOND5)])->getStrVal()).c_str() ) );
 	
 	if(roll[0] == false){
-		//modalit� switch generico
+		//modalità switch generico
 		if(incAndtestUpCntEvnt(0,true,SMPLCNT1)){
 			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND1)])->getStrVal()).c_str() );
 			if(app != -1){
-				setActionLogic(app, 0);
-				//legge lo stato finale e lo scrive sulle uscite
-				scriviOutDaStato(0);
+				if(app){
+					if(incAndtestUpCntEvnt(0, false, CONDCNT1)){
+						setActionLogic(app, 0);
+						//legge lo stato finale e lo scrive sulle uscite
+						scriviOutDaStato(0);
+					}
+				}else{
+					startCnt(0, 1, CONDCNT1);
+					setActionLogic(app, 0);
+					//legge lo stato finale e lo scrive sulle uscite
+					scriviOutDaStato(0);
+				}
 			}
 		}
 		if(incAndtestUpCntEvnt(0,true,SMPLCNT2)){
 			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND2)])->getStrVal()).c_str() );
-			if(app != -1){
-				setActionLogic(app, 1);
-				//legge lo stato finale e lo scrive sulle uscite
-				scriviOutDaStato(0);
+			if(app != -1){				
+				if(app){
+					if(incAndtestUpCntEvnt(0, false, CONDCNT2)){
+						setActionLogic(app, 1);
+						//legge lo stato finale e lo scrive sulle uscite
+						scriviOutDaStato(0);
+					}
+				}else{
+					startCnt(0, 1, CONDCNT2);
+					setActionLogic(app, 1);
+					//legge lo stato finale e lo scrive sulle uscite
+					scriviOutDaStato(0);
+				}
 			}
 		}
 		//legge lo stato finale e lo pubblica su MQTT
@@ -1828,48 +1897,70 @@ inline void leggiTastiLocaliDaExp(){
 		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND1)])->getStrVal()).c_str() );
 		DEBUG1_PRINT(F("MQTTUP1: "));	
 		DEBUG1_PRINTLN(app);
-		if(app == HIGH){
+		if(app > 0 && !isOnTarget(app, 0) && !isrun[0] && !isCalibr()){
 			static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t) 255);			
 			static_cast<ParUint8*>(pars[MQTTUP1])->doaction(false);
 		}
 		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND2)])->getStrVal()).c_str() );
 		DEBUG1_PRINT(F("MQDOWN1: "));	
 		DEBUG1_PRINTLN(app);
-		if(app == HIGH){
+		if(app > 0 && !isOnTarget(app, 0) && !isrun[0] && !isCalibr()){
 			static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t) 255);			
 			static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction(false);
 		}
 	}
 	if(roll[1] == false){
-		//modalit� switch generico
+		//modalità switch generico
 		if(incAndtestUpCntEvnt(0,true,SMPLCNT3)){
 			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND3)])->getStrVal()).c_str() );
+			DEBUG1_PRINT(F("MQTTUP2: "));	
+			DEBUG1_PRINTLN(app);
 			if(app != -1){
-				setActionLogic(app, 2);
-				//legge lo stato finale e lo scrive sulle uscite
-				scriviOutDaStato(0);
+				if(app){
+					if(incAndtestUpCntEvnt(0, false, CONDCNT3)){
+						setActionLogic(app, 2);
+						//legge lo stato finale e lo scrive sulle uscite
+						scriviOutDaStato(0);
+					}
+				}else{
+					startCnt(0, 1, CONDCNT3);
+					setActionLogic(app, 2);
+					//legge lo stato finale e lo scrive sulle uscite
+					scriviOutDaStato(0);
+				}
 			}
 		}
 		if(incAndtestUpCntEvnt(0,true,SMPLCNT4)){
 			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND4)])->getStrVal()).c_str() );
-			if(app != -1){
-				setActionLogic(app, 3);
-				//legge lo stato finale e lo scrive sulle uscite
-				scriviOutDaStato(0);
+			DEBUG1_PRINT(F("MQTTDOWN2: "));	
+			DEBUG1_PRINTLN(app);
+			if(app != -1){				
+				if(app){
+					if(incAndtestUpCntEvnt(0, false, CONDCNT4)){
+						setActionLogic(app, 3);
+						//legge lo stato finale e lo scrive sulle uscite
+						scriviOutDaStato(0);
+					}
+				}else{
+					startCnt(0, 1, CONDCNT4);
+					setActionLogic(app, 3);
+					//legge lo stato finale e lo scrive sulle uscite
+					scriviOutDaStato(0);
+				}
 			}
 		}
 		//legge lo stato finale e lo pubblica su MQTT
 		//readStatesAndPub();
 	}else{
-		//modalit� tapparella
+		//modalità tapparella
 		//simula pressione di un tasto locale
 		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND3)])->getStrVal()).c_str() );
-		if(app == HIGH){
+		if(app > 0 && !isOnTarget(app, 1) && !isrun[1] && !isCalibr()){
 			static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t) 255);			
 			static_cast<ParUint8*>(pars[MQTTUP2])->doaction(false);
 		}
 		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND4)])->getStrVal()).c_str() );
-		if(app == HIGH){
+		if(app > 0 && !isOnTarget(app, 1) && !isrun[1] && !isCalibr()){
 			static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t) 255);			
 			static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction(false);
 		}
@@ -2439,7 +2530,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 					readStatesAndPub();
 				}
 	#endif
-			}else{//se è in modalit� switch
+			}else{//se è in modalità switch
 				if(getGroupState(nn)==1){//se lo switch era inibito (timer di attesa scaduto)
 					DEBUG1_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
 					startSimpleSwitchDelayTimer(nn);

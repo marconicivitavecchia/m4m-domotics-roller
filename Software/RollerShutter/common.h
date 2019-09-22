@@ -62,15 +62,16 @@
 //----------------------------------------
 //Definizione modello
 #define SONOFF_4CH				0
-#define ROLLERSHUTTER 			1
+#define ROLLERSHUTTER_V1 		0
+#define ROLLERSHUTTER_V2 		1
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------NON MODIFICARE LA PARTE SOTTOSTATNTE------------------------------------------------------------------------------------------------
 //#define AUTOCAL_HLW8012			0
 //#define AUTOCAL_ACS712			1
 //#define MCP2317					1
 
-#if (ROLLERSHUTTER)
-  #define SCR    1  
+#if (ROLLERSHUTTER_V2)
+  #define SCR   	1  
   #define INPULLUP  0  			//disable internal pullup
   #define OUTSLED  	2     
   #define OUT1EU  	8      		// OUT1 =  MOTOR1 UP   
@@ -93,6 +94,22 @@
   #define AUTOCAL_HLW8012			1
   #define AUTOCAL_ACS712			0
   #define MCP2317					1
+#elif (ROLLERSHUTTER_V1)
+  #define SCR    	1  
+  #define INPULLUP  0  			//disable internal pullup
+  #define OUTSLED  	2     
+  #define OUT1EU  	12      	// OUT1 =  MOTOR1 UP   
+  #define OUT1DD  	4 //5    	// OUT2 =  MOTOR1 DOWN     
+  #define OUT2EU  	5 //4     	// OUT3 =  MOTOR2 UP  
+  #define OUT2DD  	15       	// OUT4 =  MOTOR2 DOWN
+  //local buttons
+  #define BTN1U    	0    		// IN1   =  MOTOR1 UP    
+  #define BTN1D    	13    		// IN2   =  MOTOR1 DOWN    
+  #define BTN2U    	16    		// IN3   =  MOTOR2 UP    
+  #define BTN2D    	14    		// IN4   =  MOTOR2 DOWN
+  #define AUTOCAL_ACS712			1
+  #define AUTOCAL_HLW8012			0
+  #define MCP2317					0
 #elif (SONOFF_4CH)
   #define SCR		1 
   #define INPULLUP  1   		//enable internal pullup
@@ -177,8 +194,12 @@
 #define SMPLCNT2	9		//INDEX OF
 #define SMPLCNT3	10		//INDEX OF
 #define SMPLCNT4	11		//INDEX OF
+#define CONDCNT1	12		//INDEX OF
+#define CONDCNT2	13		//INDEX OF
+#define CONDCNT3	14		//INDEX OF
+#define CONDCNT4	15		//INDEX OF
 //#define TIMECNT		12	//INDEX OF
-#define NCNT	 	12		//OVERALL NUMBER OF COUNTERS (FUNCTION COUNTERS + SPECIAL COUNTERS) 
+#define NCNT	 	16		//OVERALL NUMBER OF COUNTERS (FUNCTION COUNTERS + SPECIAL COUNTERS) 
 #define BTNUP		0		//INDEX OF CALIBRATION CRONO (DETECTS UP TIME AND DOWN TIME)
 #define BTNDOWN		1		//INDEX OF CALIBRATION CRONO (DETECTS UP TIME AND DOWN TIME)
 #define WIFISTA		0
@@ -1107,6 +1128,21 @@ class SerialTelnetMQTTLog: public BaseLog{
 		void destroy();
 		~SerialTelnetMQTTLog();
 };
+
+/*
+class BaseLocalEvnt{
+	protected:
+		bool ontlnt = false;
+		MQTTC *mqtc = NULL;
+	public:
+		bool isTelnet();
+		byte getLevel(){return level;};
+		uint8_t level;
+		BaseLog(uint8_t lev){level = lev;};
+		virtual void print(const char*);
+		virtual void println(const char*);
+};
+*/
 
 //PRIMA DEFINISCO LE COSTANTI, POI INCLUDO I FILES HEADERS (.h) CHE LE USANO
 #include "tapparellaLogic.h"

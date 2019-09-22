@@ -4,10 +4,13 @@
 #include <Arduino.h>
 #include "common.h"
 
+bool isCalibr();
 uint8_t getSWMode(uint8_t);
+bool isOnTarget(byte, byte);
 void initTapparellaLogic(byte *, byte *, byte *, bool);
 byte tapparellaLogic(byte *, byte *, byte*, unsigned long , byte n);
 //byte tapparellaLogic(byte);
+short isEndRun(byte);
 void setTapThalt(unsigned long, byte);
 void setSWMode(uint8_t, uint8_t);
 unsigned long getTapThalt(byte);
