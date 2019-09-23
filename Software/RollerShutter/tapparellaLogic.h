@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include "common.h"
 
+void setDiffActionLogic(int, byte);
+void setDiffLogic(byte, byte);
 bool isCalibr();
 uint8_t getSWMode(uint8_t);
 bool isOnTarget(byte, byte);

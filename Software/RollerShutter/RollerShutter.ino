@@ -621,6 +621,27 @@ float actions(char *key, float val)
 			}
 		}
 		act=val;
+	}else if(key[0]=='a'){
+		uint8_t act=0;
+		if(roll[0] == false){
+			if(strcmp(key,"actlgc1")==0){
+				setDiffActionLogic(val,0);
+				scriviOutDaStato(0);
+			}else if(strcmp(key,"actlgc2")==0){
+				setDiffActionLogic(val,1);
+				scriviOutDaStato(1);
+			}
+		}
+		if(roll[1] == false){
+			if(strcmp(key,"actlgc3")==0){
+				setDiffActionLogic(val,2);
+				scriviOutDaStato(2);
+			}else if(strcmp(key,"actlgc4")==0){
+				setDiffActionLogic(val,3);
+				scriviOutDaStato(3);
+			}
+		}
+		act=val;
 	}else if(key[0]=='d'){		
 		uint8_t act=0;
 		if(key[1]=='w'){
@@ -1868,7 +1889,7 @@ inline void leggiTastiLocaliDaExp(){
 					startCnt(0, 1, CONDCNT1);
 					setActionLogic(app, 0);
 					//legge lo stato finale e lo scrive sulle uscite
-					scriviOutDaStato(0);
+					scriviOutDaStato(1);
 				}
 			}
 		}
@@ -1879,13 +1900,13 @@ inline void leggiTastiLocaliDaExp(){
 					if(incAndtestUpCntEvnt(0, false, CONDCNT2)){
 						setActionLogic(app, 1);
 						//legge lo stato finale e lo scrive sulle uscite
-						scriviOutDaStato(0);
+						scriviOutDaStato(2);
 					}
 				}else{
 					startCnt(0, 1, CONDCNT2);
 					setActionLogic(app, 1);
 					//legge lo stato finale e lo scrive sulle uscite
-					scriviOutDaStato(0);
+					scriviOutDaStato(3);
 				}
 			}
 		}
@@ -1939,13 +1960,13 @@ inline void leggiTastiLocaliDaExp(){
 					if(incAndtestUpCntEvnt(0, false, CONDCNT4)){
 						setActionLogic(app, 3);
 						//legge lo stato finale e lo scrive sulle uscite
-						scriviOutDaStato(0);
+						scriviOutDaStato(1);
 					}
 				}else{
 					startCnt(0, 1, CONDCNT4);
 					setActionLogic(app, 3);
 					//legge lo stato finale e lo scrive sulle uscite
-					scriviOutDaStato(0);
+					scriviOutDaStato(1);
 				}
 			}
 		}

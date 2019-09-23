@@ -17,6 +17,7 @@ short endrun[2] = {false, false};
 float fact;
 #endif
 byte lastCmd[4]; //{sw1,sw2,sw3,sw4}
+byte triggered[4]= {false, false, false, false};
 unsigned long target[4];			 //allineati con i timers corrispondenti
 unsigned long engdelay[4]={0,0,0,0}; //allineati con i timers corrispondenti
 unsigned long btndelay[4]={0,0,0,0}; //allineati con i timers corrispondenti
@@ -738,6 +739,14 @@ void setLogic(byte in, byte n){
 	DEBUG2_PRINTLN(outp[n]);
 }
 
+void setDiffLogic(byte in, byte n){
+	(outp[n] != in) && (outp[n] = in);
+	DEBUG2_PRINT(F("outp: "));
+	DEBUG2_PRINT(n);
+	DEBUG2_PRINT(F(" val: "));
+	DEBUG2_PRINTLN(outp[n]);
+}
+
 void setOE(bool in, byte n){
 	oe[n] = in;
 	DEBUG2_PRINT(F("OE: "));
@@ -747,7 +756,7 @@ void setOE(bool in, byte n){
 }
 
 void setActionLogic(int in, byte nn){
-	int n = nn / TIMERDIM;
+	//int n = nn / TIMERDIM;
 	//0: setReset
 	//1: nessuna azione
 	//2: normalmente aperto, chiuso per un haltdelay alla pressione
@@ -775,7 +784,7 @@ void setActionLogic(int in, byte nn){
 				startSimpleSwitchDelayTimer(nn);	
 			else
 				setLogic(LOW,nn);
-		}else if(act[n]==3){
+		}else if(act[nn]==3){
 			DEBUG1_PRINT(F("setActionLogic monoNormalChiuso: "));
 			DEBUG1_PRINTLN(in);
 			lastCmd[nn] = LOW; 
@@ -783,6 +792,62 @@ void setActionLogic(int in, byte nn){
 				startSimpleSwitchDelayTimer(nn);	
 			else
 				setLogic(HIGH,nn);
+		}
+	}
+	//}else{
+		//oe[nn] == false;
+	//}
+}
+
+void setDiffActionLogic(int in, byte nn){
+	//int n = nn / TIMERDIM;
+	//0: setReset
+	//1: nessuna azione
+	//2: normalmente aperto, chiuso per un haltdelay alla pressione
+	//3: normalmente chiuso, aperto per un haltdelay alla pressione
+	//if(rollmode[n] == false){
+	DEBUG1_PRINT(F("setDiffActionLogic nn: "));
+	DEBUG1_PRINT(nn);
+	DEBUG1_PRINT(F(" , in: "));
+	DEBUG1_PRINT(in);
+	DEBUG1_PRINT(F(" , oe[nn]: "));
+	DEBUG1_PRINTLN(oe[nn]);
+	if(in != -1 && oe[nn]){
+		if(act[nn]==0){
+			DEBUG1_PRINT(F("setDiffActionLogic setReset: "));
+			DEBUG1_PRINTLN(in);
+			setDiffLogic(in,nn);
+		}else if(act[nn]==1){
+			DEBUG1_PRINT(F("setDiffActionLogic doNothing: "));
+			DEBUG2_PRINTLN(in);	
+		}else if(act[nn]==2){
+			DEBUG1_PRINT(F("setDiffActionLogic monoNormalAperto: "));
+			DEBUG1_PRINTLN(in);
+			if(triggered[nn] == false){
+				DEBUG1_PRINT(F("setDiffActionLogic diff ok: "));
+				DEBUG1_PRINTLN(outp[nn]);
+				if(in==HIGH){
+					triggered[nn] = true;
+					lastCmd[nn] = HIGH;
+					startSimpleSwitchDelayTimer(nn);	
+				}else{
+					triggered[nn] = false;
+					setLogic(LOW,nn);
+				}
+			}
+		}else if(act[nn]==3){
+			DEBUG1_PRINT(F("setDiffActionLogic monoNormalChiuso: "));
+			DEBUG1_PRINTLN(in);
+			if(triggered[nn] == false){
+				lastCmd[nn] = LOW; 
+				if(in==HIGH){
+					triggered[nn] = true;
+					startSimpleSwitchDelayTimer(nn);	
+				}else{
+					triggered[nn] = false;
+					setLogic(HIGH,nn);
+				}
+			}
 		}
 	}
 	//}else{
@@ -809,11 +874,14 @@ void setSWAction(byte in, byte n){
 		//oe[n]=true;
 		haltdelay[n] = 0;
 	}else if(in==1){
+		triggered[n] = false;
+		setLogic(LOW,n);
 		DEBUG2_PRINT(F("setSWAction output disabled: "));
 		DEBUG2_PRINTLN(in);
 		haltdelay[n] = 0;
 		DEBUG2_PRINT(F("act==1: "));
 	}else if(in==2){
+		triggered[n] = false;
 		DEBUG2_PRINT(F("setSWAction normalmente aperto: "));
 		DEBUG2_PRINTLN(in);
 		//oe[n]=true;
@@ -821,6 +889,7 @@ void setSWAction(byte in, byte n){
 		setLogic(LOW,n);
 		DEBUG2_PRINT(F("act==2: "));
 	}else if(in==3){
+		triggered[n] = false;
 		DEBUG2_PRINT(F("setSWAction normalmente chiuso: "));
 		DEBUG2_PRINTLN(in);
 		//oe[n]=true;
