@@ -9,7 +9,7 @@ http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm
 //const char * expressionToParse = "((t!=0)&(a==(3-5)|0)&1";
 //const char * expressionToParse = "(p*(2.25>2.15))&1";
 char * expressionToParse;
-char key[20];
+char key[30];
 
 char peek()
 {
@@ -40,7 +40,7 @@ void keyterm(){
 	key[1] = '\0';
 
 	//for(int i=1; i<10 && (c>= 'a' && c<= 'z' ||c >= '0' && c <= '9'); i++){	
-	for(int i=1; i<10 && (c>= 'a' && c<= 'z' ||c >= '.' && c <= ':'); i++){	//per includere indirizzi IP e date
+	for(int i=1; i<29 && (c>= 'a' && c<= 'z' ||c >= '.' && c <= ':'); i++){	//per includere indirizzi IP e date
 		key[i] = c;
 		key[i+1] = '\0';
 		get();
@@ -110,7 +110,7 @@ float factor()
 
 float term()
 {
-    //gruppo di elementi con elevata precedenza (fattori) ovvero prodotto di fattori (cioè termine = monomio)
+    //gruppo di elementi con elevata precedenza (fattori) ovvero prodotto di fattori (cio termine = monomio)
 	//primo parametro
 	float result = factor();
     while (peek() == '[' || peek() == '*' || peek() == '/' || peek() == '^'|| peek() == '&' || peek() == '>' || peek() == '<' || peek() == '=' || peek() == '!' || peek() == '?'){
@@ -230,7 +230,7 @@ float term()
 
 float expression()
 {
-	//gruppo di elementi con bassa precedenza (termini) ovvero somma/differenza di termini (cioè espressione = somma_monomi)
+	//gruppo di elementi con bassa precedenza (termini) ovvero somma/differenza di termini (cio espressione = somma_monomi)
     //primo parametro
 	float result = term();
     while (peek() == '+' || peek() == '-' || peek() == '|' || peek() == '!'){

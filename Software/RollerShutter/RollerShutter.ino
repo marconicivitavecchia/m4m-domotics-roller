@@ -27,6 +27,14 @@ int samples[10];
 uint8_t indx = 0;
 uint8_t stat;
 bool mov = false;
+uint8_t lastPing[4] = {0, 0, 0, 0};
+unsigned pingCnt[4] = {0, 0, 0, 0};
+bool toPing[4] = {false, false, false, false};
+uint8_t nping[4] = {3, 3, 3, 3};
+uint8_t pingPer[4] = {10, 10, 10, 10};
+uint8_t pingPer2[4] = {10, 10, 10, 10};
+bool pingRes[4] = {false, false, false, false};
+//char * destips[4] = {"", "", "", ""};
 float vcosfi = 220*0.8;
 double ACSVolt;
 unsigned int mVperAmp = 185;   // 185 for 5A, 100 for 20A and 66 for 30A Module
@@ -131,7 +139,7 @@ extern "C"
 }
 
 // Set global to avoid object removing after setup() routine
-Pinger pinger;
+Pinger pinger[4];
 
 // fine variabili e costanti dello schedulatore
 // Update these with values suitabule for your network.
@@ -674,9 +682,11 @@ float actions(char *key, float val)
 		}else if(strcmp(key,"r4")==0){
 			setCntValue(cnt,CNTIME4);
 		}
-		return val;
+		////return val;
 	}else if(key[0]=='o'){
 		bool oe = val;
+		DEBUG1_PRINT("oeeeeee: ");
+				DEBUG1_PRINTLN(oe);
 		if(strcmp(key,"oe1")==0){
 			setOE(oe,0);
 		}else if(strcmp(key,"oe2")==0){
@@ -686,20 +696,20 @@ float actions(char *key, float val)
 		}else if(strcmp(key,"oe4")==0){
 			setOE(oe,3);
 		}
-		return val;
+		//return val;
 	}else if(key[0]=='s'){
 		if(strcmp(key,"sdt")==0){
 			updtConf(p(UTCSDT), String(val));
 			setSDT((uint8_t) val);
 		}
-		return val;
 	}
+	
+	return true;
 }
 
 //parser function calls
 float variables(char *key){
-	float result=1;
-
+	float result;
 	/*if(key[0]=='t'){
 		if(strcmp(key,"tsec")==0){
 			result = second();
@@ -751,13 +761,63 @@ float variables(char *key){
 			result = 0;
 		}
 	}else if(key[0]=='s'){
-		if(key[1]==':'==0){
-			key += strlen("s:");
-			IPAddress ip;
-			if (!WiFi.hostByName(key, ip))
-				ip.fromString(key);
-			result = pinger.Ping(ip);
+		byte n = key[1] - 49;
+		pingCnt[n] = (pingCnt[n] + 1) % 3600;
+		if(!(pingCnt[n] % pingPer2[n])){
+			if(key[2]==':'){
+				key += strlen("s1:");
+				DEBUG1_PRINT("\nkey: ");
+				DEBUG1_PRINT(key);
+				
+				char* k;
+				bool esci = false;
+				int i;
+				for(i=0; key[i] != ':' && key[i] != '\0'; i++);
+				if(key[i] == ':'){
+					key[i] = '\0';
+					k = (key+i+1);
+					for(i=0; k[i] != ':' && key[i] != '\0'; i++);
+					if(k[i] == ':'){
+						k[i] = '\0';
+						nping[n] = atoi(k);
+						k = (k+i+1);
+						for(i=0; k[i] != ':' && key[i] != '\0'; i++);
+						if(k[i] == ':'){
+							k[i] = '\0';
+							pingPer[n] = atoi(k);
+						}
+					}
+				}
+				
+				DEBUG1_PRINT(", key: ");
+				DEBUG1_PRINT(key); 
+				DEBUG1_PRINT(", nping[n]: ");
+				DEBUG1_PRINT(nping[n]); 
+				DEBUG1_PRINT(", pingPer[n]: ");
+				DEBUG1_PRINT(pingPer[n]); 
+				
+
+				//(tokens[1] != NULL) && (nping[n] = atoi(tokens[1]));
+				//(tokens[2] != NULL) && (pingPer[n] = atoi(tokens[2]));
+				
+				DEBUG1_PRINT(", ip: ");
+				//DEBUG1_PRINT(key);
+				IPAddress ip;
+				if (!WiFi.hostByName(key, ip))
+					ip.fromString(key);
+				DEBUG1_PRINT(ip.toString());
+				pinger[n].Ping(ip);
+				
+				if(lastPing[n] >= nping[n]){
+					pingRes[n] = 1;
+				}else if(lastPing[n] == 0){
+					pingRes[n] = 0;
+				}
+			}
 		}
+		result = pingRes[n];
+		DEBUG1_PRINT(", result: ");
+		DEBUG1_PRINTLN(result);
 	}else if(key[0] =='p'){
 		if(strcmp(key,"percpos2")==0){
 			result = percfdbck(1);
@@ -790,6 +850,7 @@ float variables(char *key){
 	}else if(strcmp(key,"temp")==0){
 		result = getTemperature();
 	}
+	
 	return result;
 }
 /*
@@ -1014,11 +1075,13 @@ void mqttReconnect() {
 			pars[p(LOGSLCT)]->doaction(false);	
 			mqttConnected=true;//bho
 		});
+		
 		mqttClient->onDisconnected([]() {
 			//DEBUG2_PRINTLN("MQTT disconnected.");
 		DEBUG_PRINTLN(F("MQTT: onDisconnected([]() dice mi sono disconnesso."));
 			mqttConnected=false;
 		});
+		
 		DEBUG_PRINTLN(F("MQTT: Eseguo la prima connect."));
 		mqttClient->setUserPwd((const char*)static_cast<ParStr32*>(pars[p(MQTTUSR)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTPSW)])->val);
 		//////noInterrupts ();
@@ -1563,6 +1626,163 @@ void setup(){
   
   DEBUG2_PRINTLN(F("sampleCurrTime()"));
   sampleCurrTime();
+  
+  pinger[0].SetPacketsId(0);
+  pinger[1].SetPacketsId(1);
+  pinger[2].SetPacketsId(2);
+  pinger[3].SetPacketsId(3);
+  
+  pinger[0].OnReceive([](const PingerResponse& response)
+  {
+    if (response.ReceivedResponse)
+    {
+      Serial.printf(
+        "Reply from %s: bytes=%d time=%lums TTL=%d\n",
+        response.DestIPAddress.toString().c_str(),
+        response.EchoMessageSize - sizeof(struct icmp_echo_hdr),
+        response.ResponseTime,
+        response.TimeToLive);
+		
+		if(lastPing[0] < nping[0]){
+			lastPing[0]++;
+			pingPer2[0] = 1;
+		}else{
+			pingPer2[0] = pingPer[0];
+		}
+		DEBUG1_PRINT(F(" ok-pingPer2[0]: "));
+		DEBUG1_PRINTLN(pingPer2[0]);
+		DEBUG1_PRINT(F(" ok-lastPing[0]: "));
+		DEBUG1_PRINTLN(lastPing[0]);
+		DEBUG1_PRINT(F(" ok-nping[0]: "));
+		DEBUG1_PRINTLN(nping[0]);
+    }
+    else
+    {
+	  if(lastPing[0] > 0){
+			lastPing[0]--;
+			pingPer2[0] = 1;
+		}else{
+			pingPer2[0] = pingPer[0];
+		}
+		DEBUG1_PRINT(F(" ko-pingPer2[0]: "));
+		DEBUG1_PRINTLN(pingPer2[0]);
+		DEBUG1_PRINT(F(" ko-lastPing[0]: "));
+		DEBUG1_PRINTLN(lastPing[0]);
+		DEBUG1_PRINT(F(" ko-nping[0]: "));
+		DEBUG1_PRINTLN(nping[0]);
+	  //toPing[id] = true;
+      Serial.printf("Request ping 0 timed out.\n");
+    }
+
+    // Return true to continue the ping sequence.
+    // If current event returns false, the ping sequence is interrupted.
+    return true;
+  });
+  
+  pinger[1].OnReceive([](const PingerResponse& response)
+  {
+    if (response.ReceivedResponse)
+    {
+      Serial.printf(
+        "Reply from %s: bytes=%d time=%lums TTL=%d\n",
+        response.DestIPAddress.toString().c_str(),
+        response.EchoMessageSize - sizeof(struct icmp_echo_hdr),
+        response.ResponseTime,
+        response.TimeToLive);
+		
+		if(lastPing[1] < nping[1]){
+			lastPing[1]++;
+			pingPer2[1] = 1;
+		}else{
+			pingPer2[1] = pingPer[1];
+		}
+    }
+    else
+    {
+	  if(lastPing[1] > 0){
+			lastPing[1]--;
+			pingPer2[1] = 1;
+		}else{
+			pingPer2[1] = pingPer[1];
+		}
+	  //toPing[id] = true;
+      Serial.printf("Request ping 2 timed out.\n");
+    }
+	
+    // Return true to continue the ping sequence.
+    // If current event returns false, the ping sequence is interrupted.
+    return true;
+  });
+  
+  pinger[2].OnReceive([](const PingerResponse& response)
+  {
+   if (response.ReceivedResponse)
+    {
+      Serial.printf(
+        "Reply from %s: bytes=%d time=%lums TTL=%d\n",
+        response.DestIPAddress.toString().c_str(),
+        response.EchoMessageSize - sizeof(struct icmp_echo_hdr),
+        response.ResponseTime,
+        response.TimeToLive);
+		
+		if(lastPing[2] < nping[2]){
+			lastPing[2]++;
+			pingPer2[2] = 1;
+		}else{
+			pingPer2[2] = pingPer[2];
+		}
+    }
+    else
+    {
+	  if(lastPing[2] > 0){
+			lastPing[2]--;
+			pingPer2[2] = 1;
+		}else{
+			pingPer2[2] = pingPer[2];
+		}
+	  //toPing[id] = true;
+      Serial.printf("Request ping 2 timed out.\n");
+    }
+
+    // Return true to continue the ping sequence.
+    // If current event returns false, the ping sequence is interrupted.
+    return true;
+  });
+
+  pinger[3].OnReceive([](const PingerResponse& response)
+  {
+    if (response.ReceivedResponse)
+    {
+      Serial.printf(
+        "Reply from %s: bytes=%d time=%lums TTL=%d\n",
+        response.DestIPAddress.toString().c_str(),
+        response.EchoMessageSize - sizeof(struct icmp_echo_hdr),
+        response.ResponseTime,
+        response.TimeToLive);
+		
+		if(lastPing[3] < nping[3]){
+			lastPing[3]++;
+			pingPer2[3] = 1;
+		}else{
+			pingPer2[3] = pingPer[3];
+		}
+    }
+    else
+    {
+	  if(lastPing[3] > 0){
+			lastPing[3]--;
+			pingPer2[3] = 1;
+		}else{
+			pingPer2[3] = pingPer[3];
+		}
+	  //toPing[id] = true;
+      Serial.printf("Request ping 3 timed out.\n");
+    }
+
+    // Return true to continue the ping sequence.
+    // If current event returns false, the ping sequence is interrupted.
+    return true;
+  });
   //Turn off WiFi
   //WiFi.mode(WIFI_OFF);    //This also w
 }
@@ -1809,7 +2029,7 @@ inline void loop2() {
 			if(wificnt > WIFISTEP){
 				wifiFailoverManager();
 			}
-			//MQTTReconnectManager();
+			MQTTReconnectManager();
 			pwrSampler();
 		}
 		if(sampleCurrTime()){//1min
@@ -1873,6 +2093,7 @@ inline void leggiTastiLocaliDaExp(){
 	//imposta le configurazioni dinamiche in base ad eventi locali valutati periodicamente
 	DEBUG1_PRINT(F("Periodic local cmds: "));	
 	DEBUG1_PRINTLN( eval( (static_cast<ParVarStr*>(pars[p(ONCOND5)])->getStrVal()).c_str() ) );
+	DEBUG1_PRINT(F("Bho: "));
 	
 	if(roll[0] == false){
 		//modalità switch generico
@@ -2414,7 +2635,7 @@ inline void wifiFailoverManager(){
 	}
 }
 
-/*
+
 inline void MQTTReconnectManager(){
 	//MQTT reconnect management
 			//a seguito di disconnessioni accidentali tenta una nuova procedura di riconnessione		
@@ -2483,7 +2704,6 @@ inline void MQTTReconnectManager(){
 				}
 			}
 }
-*/
 
 //-----------------------------------------------INIZIO TIMER----------------------------------------------------------------------
 //azione da compiere allo scadere di uno dei timer dell'array	
