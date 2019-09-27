@@ -376,11 +376,11 @@
 #define LOCALIP				42
 #define NTPADDR1			43
 #define NTPADDR2			44
-#define PWRMULT				45  
-#define ACVOLT				46
-#define	LOGSLCT				47
-#define MQTTLOG				48
-#define VACMULT				49
+#define LOGSLCT				45  
+#define	MQTTLOG				46
+#define	ACVOLT				47
+#define VACMULT				48
+#define PWRMULT				49
 #define CURRMULT			50
 //#define SWSPLDPWR3			51
 //#define SWSPLDPWR4			52
@@ -1204,7 +1204,7 @@ unsigned getConfofstFromParamofst(unsigned);
 void printOut();
 void rstldcnt(uint8_t);
 #if (AUTOCAL_HLW8012) 
-void calibrate_pwr();
+void calibrate_pwr(double pwr);
 void readIpwrAndPub();
 void readIacvoltAndPub();
 #elif (AUTOCAL_ACS712) 

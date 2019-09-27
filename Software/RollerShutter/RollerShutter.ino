@@ -206,7 +206,7 @@ void setInterrupts() {
 	attachInterrupt(CF_PIN, hlw8012_cf_interrupt, CHANGE);
 }
 
-void calibrate_pwr() {
+void calibrate_pwr(double pwr = 0) {
 	// Let some time to register values
 	//unsigned long timeout = millis();
 	//while ((millis() - timeout) < 10000) {
@@ -215,7 +215,11 @@ void calibrate_pwr() {
 	DEBUG1_PRINT(F("CALPWR : ")); DEBUG1_PRINTLN(static_cast<ParFloat*>(pars[p(CALPWR)])->val);
 	hlw8012.resetMultipliers();
 	// Calibrate using a 60W bulb (pure resistive) on a 230V line
-	hlw8012.expectedActivePower(static_cast<ParFloat*>(pars[p(CALPWR)])->val);
+	if(pwr > 0){
+		hlw8012.expectedActivePower(static_cast<ParFloat*>(pars[p(CALPWR)])->val, pwr);
+	}else{
+		hlw8012.expectedActivePower(static_cast<ParFloat*>(pars[p(CALPWR)])->val);
+	}
 	hlw8012.expectedVoltage(static_cast<ParUint8*>(pars[p(ACVOLT)])->val);
 	hlw8012.expectedCurrent((float) static_cast<ParFloat*>(pars[p(CALPWR)])->val / static_cast<ParUint8*>(pars[p(ACVOLT)])->val);
 	
@@ -343,14 +347,6 @@ inline void initOfst(){
 	//------------------------------------------
 	//pars[i][1] - type of eeprom saved data
 	//------------------------------------------
-	//i:integer
-	//b:uint8_t
-	//f:float
-	//s:string 32
-	//t:string 64
-	//l:long
-	//n:no save
-	//------------------------------------------
 	//pars[i][2] - type of form field
 	//------------------------------------------
 	//c:checkbox
@@ -366,6 +362,7 @@ inline void initOfst(){
 	for(int i=0; i<PARAMSDIM; i++){
 		pars[i] = NULL;
 	}
+	/*/pars[MQTTUP1] = new ParUint8(0, "param_name", "web_form_name", EEPROM_PARAM_OFST, 'j!p!n (type_of_load_from_eeprom)','i|s|n (type_of_load_from_form) new PARAM_NAME_MANAGER_Evnt(PARAM_NAME));
 	/*1*/pars[MQTTUP1] = new ParUint8(0, "up1", "up1", MQTTUP1OFST, 'j','i', new MQTTBTN_Evnt(MQTTUP1));
 	/*2*/pars[MQTTDOWN1] = new ParUint8(0, "down1", "down1", MQTTDOWN1OFST, 'j','i', new MQTTBTN_Evnt(MQTTDOWN1));
 	/*3*/pars[MQTTUP2] = new ParUint8(0, "up2", "up2", MQTTUP2OFST, 'j','i', new MQTTBTN_Evnt(MQTTUP2));
@@ -381,8 +378,8 @@ inline void initOfst(){
 	/*4*/pars[MQTTDATE] = new ParUint8(0, "date", "date", 2, 'n','n');
 #if (AUTOCAL_HLW8012) 
 	/*4*/pars[DOPWRCAL] = new ParUint8(0, "dopwrcal", "dopwrcal", 2, 'n','n', new DOPWRCAL_Evnt());
-	/*4*/pars[INSTACV] = new ParUint8(230, "iacvolt", "iacvolt", 2,'n','n', new INSTACV_Evnt());
-	/*4*/pars[INSTPWR] = new ParUint8(10, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
+	/*4*/pars[INSTACV] = new ParUint8(0, "iacvolt", "iacvolt", 2,'n','n', new INSTACV_Evnt());
+	/*4*/pars[INSTPWR] = new ParUint8(0, "ipwr", "ipwr", 2,'n','n', new INSTPWR_Evnt());
 	//------------------------------------------------------------------------------------------------------------------------------------
 	/*42*/pars[p(ACVOLT)] = new ParUint8(230, "acvolt", "acvolt", ACVOLTOFST, 'p','i', new ACVOLT_Evnt());
 	/*42*/pars[p(CALPWR)] = new ParFloat(60, "calpwr", "calpwr", CALPWROFST, 'p', 'i', new CALPWR_Evnt());//Must be after ACVOLT!
@@ -437,9 +434,9 @@ inline void initOfst(){
 	/*39*/pars[p(NTPADDR1)] = new ParStr64(NTP1, "ntpaddr1", "ntpaddr1", NTP1ADDROFST, 'p','i', new NTPADDR1_Evnt());
 	/*40*/pars[p(NTPADDR2)] = new ParStr64(NTP2, "ntpaddr2", "ntpaddr2", NTP2ADDROFST, 'p','i', new NTPADDR2_Evnt());
 #if (AUTOCAL_HLW8012) 
-	/*41*/pars[p(PWRMULT)] = new ParFloat(1, "pwrmult", "pwrmult", PWRMULTOFST, 'p','i', new PWRMULT_Evnt());
-	/*41*/pars[p(VACMULT)] = new ParFloat(1, "vacmult", "vacmult", VACMULTOFST, 'p','n', new VACMULT_Evnt());
-	/*41*/pars[p(CURRMULT)] = new ParFloat(1, "currmult", "currmult", CURRMULTOFST, 'p','n', new CURRMULT_Evnt());
+	/*41*/pars[p(VACMULT)] = new ParFloat(hlw8012.getVoltageMultiplier(), "vacmult", "vacmult", VACMULTOFST, 'p','n', new VACMULT_Evnt());
+	/*41*/pars[p(PWRMULT)] = new ParFloat(hlw8012.getPowerMultiplier(), "pwrmult", "pwrmult", PWRMULTOFST, 'p','i', new PWRMULT_Evnt());
+	/*41*/pars[p(CURRMULT)] = new ParFloat(hlw8012.getCurrentMultiplier(), "currmult", "currmult", CURRMULTOFST, 'p','n', new CURRMULT_Evnt());
 #else	
 	/*41*/pars[p(PWRMULT)] = new ParFloat(1, "pwrmult", "pwrmult", PWRMULTOFST, 'n','n');
 	/*41*/pars[p(VACMULT)] = new ParFloat(1, "vacmult", "vacmult", VACMULTOFST, 'n','n');
@@ -1501,10 +1498,10 @@ void setup(){
   delay(7000);
   DEBUG2_PRINTLN(F("initCommon."));
   initCommon(&server,pars);
-  initOfst();
  #if (AUTOCAL_HLW8012) //////
   HLW8012_init();		////////
 #endif 
+  initOfst();
   DEBUG2_PRINTLN(F("loadConfig."));
   loadConfig();
   delay(100);
@@ -2865,6 +2862,9 @@ void onElapse(uint8_t nn, unsigned long tm){
 					DEBUG2_PRINTLN(F("-----------------------------"));
 					calibrate_pwr();
 					saveSingleConf(PWRMULT);
+					saveSingleConf(CURRMULT);
+					saveSingleConf(VACMULT);
+					readPwrCalAndPub();
 				}
 #endif				
 				else{
@@ -2936,6 +2936,15 @@ void onCalibrEnd(unsigned long app, uint8_t n){
 	saveSingleConf(VALWEIGHT);
 	DEBUG2_PRINT(F("Modified current weight "));
 	DEBUG2_PRINTLN(static_cast<ParFloat*>(pars[p(VALWEIGHT)])->getStrVal());
+#if (AUTOCAL_HLW8012) 	
+	if(n == 0){
+		calibrate_pwr(getAVG(n));
+		saveSingleConf(PWRMULT);
+		saveSingleConf(CURRMULT);
+		saveSingleConf(VACMULT);
+		readPwrCalAndPub();
+	}
+#endif
 #endif
 	saveSingleConf(THALT1 + n);
 	DEBUG2_PRINT(F("Modified THALT "));

@@ -197,6 +197,11 @@ void HLW8012::expectedActivePower(double value) {
     if (_power > 0) _power_multiplier *= ((double) value / _power);
 }
 
+void HLW8012::expectedActivePower(double value, double pwr) {
+    _power = pwr;
+    if (_power > 0) _power_multiplier *= ((double) value / _power);
+}
+
 void HLW8012::resetMultipliers() {
     _calculateDefaultMultipliers();
 }

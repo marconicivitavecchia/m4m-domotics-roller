@@ -98,6 +98,7 @@ class HLW8012 {
         void expectedCurrent(double current);
         void expectedVoltage(unsigned int volt);
         void expectedActivePower(double power);
+		void expectedActivePower(double value, double pwr);
 
         double getCurrentMultiplier() { return _current_multiplier; };
         double getVoltageMultiplier() { return _voltage_multiplier; };
