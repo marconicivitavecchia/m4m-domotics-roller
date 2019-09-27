@@ -2008,8 +2008,8 @@ inline void loop2() {
 	if(!(step % ONESEC_STEP)){
 		updateCounters();
 		
-		//sempre vero se si � in modalit� switch!	
-		if(!mov){//solo a motore fermo! Per evitare contemporaneit� col currentPeakDetector
+		//sempre vero se si è in modalit� switch!	
+		if(!mov){//solo a motore fermo! Per evitare contemporaneità col currentPeakDetector
 			aggiornaTimer(RESETTIMER);
 			aggiornaTimer(APOFFTIMER);
 			pushCnt++;
@@ -2022,7 +2022,7 @@ inline void loop2() {
 			wifiConn = (stat == WL_CONNECTED);	
 			//DEBUG2_PRINT(F(" - Wifi mode: "));
 			//DEBUG2_PRINTLN(WiFi.getMode());
-			sensorStatePoll();
+			//sensorStatePoll();
 			if(wificnt > WIFISTEP){
 				wifiFailoverManager();
 			}
@@ -2034,6 +2034,7 @@ inline void loop2() {
 			readStatesAndPub(true);
 		}
 		leggiTastiLocaliDaExp();
+		sensorStatePoll();
 	}//END 1 sec scheduler-----------------------------------------------------
 	
 	//---------------------------------------------------------------------
