@@ -1071,6 +1071,9 @@ void mqttReconnect() {
 			mqttClient->publish((const char *)(static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)]))->val, (const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, 32);
 			pars[p(LOGSLCT)]->doaction(false);	
 			mqttConnected=true;//bho
+			readParamAndPub(MQTTDATE,printUNIXTimeMin(gbuf));
+			readStatesAndPub(true);
+			sensorStatePoll();
 		});
 		
 		mqttClient->onDisconnected([]() {
