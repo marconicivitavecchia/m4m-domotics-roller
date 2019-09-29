@@ -739,12 +739,12 @@ void setLogic(byte in, byte n){
 	DEBUG2_PRINTLN(outp[n]);
 }
 
-void setDiffLogic(byte in, byte n){
-	(outp[n] != in) && (outp[n] = in);
+bool setDiffLogic(byte in, byte n){
 	DEBUG2_PRINT(F("outp: "));
 	DEBUG2_PRINT(n);
 	DEBUG2_PRINT(F(" val: "));
 	DEBUG2_PRINTLN(outp[n]);
+	return (outp[n] != in) && (outp[n] = in);
 }
 
 void setOE(bool in, byte n){
@@ -755,7 +755,7 @@ void setOE(bool in, byte n){
 	DEBUG2_PRINTLN(oe[n]);
 }
 
-void setActionLogic(int in, byte nn){
+bool setActionLogic(int in, byte nn){
 	//int n = nn / TIMERDIM;
 	//0: setReset
 	//1: nessuna azione
@@ -773,6 +773,7 @@ void setActionLogic(int in, byte nn){
 			DEBUG1_PRINT(F("setActionLogic setReset: "));
 			DEBUG1_PRINTLN(in);
 			setLogic(in,nn);
+			return true;
 		}else if(act[nn]==1){
 			DEBUG1_PRINT(F("setActionLogic doNothing: "));
 			DEBUG2_PRINTLN(in);	
@@ -780,26 +781,31 @@ void setActionLogic(int in, byte nn){
 			DEBUG1_PRINT(F("setActionLogic monoNormalAperto: "));
 			DEBUG1_PRINTLN(in);
 			lastCmd[nn] = HIGH;
-			if(in==HIGH)
+			if(in==HIGH){
 				startSimpleSwitchDelayTimer(nn);	
-			else
+			}else{
 				setLogic(LOW,nn);
+				return true;
+			}
 		}else if(act[nn]==3){
 			DEBUG1_PRINT(F("setActionLogic monoNormalChiuso: "));
 			DEBUG1_PRINTLN(in);
 			lastCmd[nn] = LOW; 
-			if(in==HIGH)
+			if(in==HIGH){
 				startSimpleSwitchDelayTimer(nn);	
-			else
+			}else{
 				setLogic(HIGH,nn);
+				return true;
+			}
 		}
+		return false;
 	}
 	//}else{
 		//oe[nn] == false;
 	//}
 }
 
-void setDiffActionLogic(int in, byte nn){
+bool setDiffActionLogic(int in, byte nn){
 	//int n = nn / TIMERDIM;
 	//0: setReset
 	//1: nessuna azione
@@ -816,7 +822,7 @@ void setDiffActionLogic(int in, byte nn){
 		if(act[nn]==0){
 			DEBUG1_PRINT(F("setDiffActionLogic setReset: "));
 			DEBUG1_PRINTLN(in);
-			setDiffLogic(in,nn);
+			return setDiffLogic(in,nn);
 		}else if(act[nn]==1){
 			DEBUG1_PRINT(F("setDiffActionLogic doNothing: "));
 			DEBUG2_PRINTLN(in);	
@@ -833,6 +839,7 @@ void setDiffActionLogic(int in, byte nn){
 				}else{
 					triggered[nn] = false;
 					setLogic(LOW,nn);
+					return true;
 				}
 			}
 		}else if(act[nn]==3){
@@ -846,9 +853,11 @@ void setDiffActionLogic(int in, byte nn){
 				}else{
 					triggered[nn] = false;
 					setLogic(HIGH,nn);
+					return true;
 				}
 			}
 		}
+		return false;
 	}
 	//}else{
 		//oe[nn] == false;

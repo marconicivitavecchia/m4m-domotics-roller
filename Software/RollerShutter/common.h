@@ -61,9 +61,9 @@
 #define LARGEFW 		1
 //----------------------------------------
 //Definizione modello
-#define SONOFF_4CH				0
+#define SONOFF_4CH				1
 #define ROLLERSHUTTER_V1 		0
-#define ROLLERSHUTTER_V2 		1
+#define ROLLERSHUTTER_V2 		0
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------NON MODIFICARE LA PARTE SOTTOSTATNTE------------------------------------------------------------------------------------------------
 //#define AUTOCAL_HLW8012			0

@@ -349,20 +349,17 @@ inline void initOfst(){
 	//------------------------------------------
 	//pars[i][2] - type of form field
 	//------------------------------------------
-	//c:checkbox
 	//i:input, textarea
 	//s:select
 	//n:no form
 	//------------------------------------------
-	//pars[i][3] - type of parameter
-	//------------------------------------------
 	//p:parameter
 	//j:jsonname
 	//----------------------------------------------
+	//pars[PARAM_NAME] = new ParParam_type(initial_value_saved_on_eeprom_reset, "param_name", "web_form_name", EEPROM_PARAM_OFST, 'j!p!n (type_of_load_from_eeprom)','i|s|n (type_of_load_from_form) new PARAM_NAME_MANAGER_Evnt(PARAM_NAME));
 	for(int i=0; i<PARAMSDIM; i++){
 		pars[i] = NULL;
 	}
-	/*/pars[MQTTUP1] = new ParUint8(0, "param_name", "web_form_name", EEPROM_PARAM_OFST, 'j!p!n (type_of_load_from_eeprom)','i|s|n (type_of_load_from_form) new PARAM_NAME_MANAGER_Evnt(PARAM_NAME));
 	/*1*/pars[MQTTUP1] = new ParUint8(0, "up1", "up1", MQTTUP1OFST, 'j','i', new MQTTBTN_Evnt(MQTTUP1));
 	/*2*/pars[MQTTDOWN1] = new ParUint8(0, "down1", "down1", MQTTDOWN1OFST, 'j','i', new MQTTBTN_Evnt(MQTTDOWN1));
 	/*3*/pars[MQTTUP2] = new ParUint8(0, "up2", "up2", MQTTUP2OFST, 'j','i', new MQTTBTN_Evnt(MQTTUP2));
@@ -629,22 +626,33 @@ float actions(char *key, float val)
 	}else if(key[0]=='a'){
 		uint8_t act=0;
 		if(roll[0] == false){
-			if(strcmp(key,"actlgc1")==0){
-				setDiffActionLogic(val,0);
-				scriviOutDaStato(0);
+			bool pub = false;
+			if(strcmp(key,"actlgcd1")==0){
+				pub = setDiffActionLogic(val,0);
+			}else if(strcmp(key,"actlgcd2")==0){
+				pub = setDiffActionLogic(val,1);
+			}else if(strcmp(key,"actlgc1")==0){
+				pub = setActionLogic(val,0);
 			}else if(strcmp(key,"actlgc2")==0){
-				setDiffActionLogic(val,1);
-				scriviOutDaStato(1);
+				pub = setActionLogic(val,1);
 			}
+			scriviOutDaStato(0);
+			readStatesAndPub();
+				
 		}
 		if(roll[1] == false){
-			if(strcmp(key,"actlgc3")==0){
-				setDiffActionLogic(val,2);
-				scriviOutDaStato(2);
+			bool pub = false;
+			if(strcmp(key,"actlgcd3")==0){
+				pub = setDiffActionLogic(val,2);
+			}else if(strcmp(key,"actlgcd4")==0){
+				pub = setActionLogic(val,3);
+			}else if(strcmp(key,"actlgc3")==0){
+				pub = setActionLogic(val,2);
 			}else if(strcmp(key,"actlgc4")==0){
-				setDiffActionLogic(val,3);
-				scriviOutDaStato(3);
+				pub = setActionLogic(val,3);
 			}
+			scriviOutDaStato(1);
+			readStatesAndPub();
 		}
 		act=val;
 	}else if(key[0]=='d'){		
@@ -779,13 +787,17 @@ float variables(char *key){
 						nping[n] = atoi(k);
 						k = (k+i+1);
 						for(i=0; k[i] != ':' && key[i] != '\0'; i++);
-						if(k[i] == ':'){
+						if(k[i] == ':')
 							k[i] = '\0';
-							pingPer[n] = atoi(k);
-						}
+						pingPer[n] = atoi(k);
+						if(pingPer[n] < 0)
+							pingPer[n] = 0;
+						
 					}
 				}
 				
+				DEBUG1_PRINT(", n: ");
+				DEBUG1_PRINT(n); 
 				DEBUG1_PRINT(", key: ");
 				DEBUG1_PRINT(key); 
 				DEBUG1_PRINT(", nping[n]: ");
@@ -1650,9 +1662,9 @@ void setup(){
 			pingPer2[0] = pingPer[0];
 		}
 		DEBUG1_PRINT(F(" ok-pingPer2[0]: "));
-		DEBUG1_PRINTLN(pingPer2[0]);
+		DEBUG1_PRINT(pingPer2[0]);
 		DEBUG1_PRINT(F(" ok-lastPing[0]: "));
-		DEBUG1_PRINTLN(lastPing[0]);
+		DEBUG1_PRINT(lastPing[0]);
 		DEBUG1_PRINT(F(" ok-nping[0]: "));
 		DEBUG1_PRINTLN(nping[0]);
     }
@@ -1673,7 +1685,8 @@ void setup(){
 	  //toPing[id] = true;
       Serial.printf("Request ping 0 timed out.\n");
     }
-
+	DEBUG1_PRINT(F(" n: "));
+	DEBUG1_PRINTLN(0);
     // Return true to continue the ping sequence.
     // If current event returns false, the ping sequence is interrupted.
     return true;
@@ -1708,6 +1721,8 @@ void setup(){
 	  //toPing[id] = true;
       Serial.printf("Request ping 2 timed out.\n");
     }
+	DEBUG1_PRINT(F(" n: "));
+    DEBUG1_PRINTLN(1);
 	
     // Return true to continue the ping sequence.
     // If current event returns false, the ping sequence is interrupted.
@@ -1743,7 +1758,8 @@ void setup(){
 	  //toPing[id] = true;
       Serial.printf("Request ping 2 timed out.\n");
     }
-
+	DEBUG1_PRINT(F(" n: "));
+	DEBUG1_PRINTLN(2);
     // Return true to continue the ping sequence.
     // If current event returns false, the ping sequence is interrupted.
     return true;
@@ -1778,7 +1794,8 @@ void setup(){
 	  //toPing[id] = true;
       Serial.printf("Request ping 3 timed out.\n");
     }
-
+	DEBUG1_PRINT(F(" n: "));
+	DEBUG1_PRINTLN(3);
     // Return true to continue the ping sequence.
     // If current event returns false, the ping sequence is interrupted.
     return true;
@@ -2097,22 +2114,24 @@ inline void leggiTastiLocaliDaExp(){
 	DEBUG1_PRINT(F("Bho: "));
 	
 	if(roll[0] == false){
+		bool pub = false;
 		//modalità switch generico
 		if(incAndtestUpCntEvnt(0,true,SMPLCNT1)){
 			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND1)])->getStrVal()).c_str() );
 			if(app != -1){
 				if(app){
 					if(incAndtestUpCntEvnt(0, false, CONDCNT1)){
-						setActionLogic(app, 0);
+						pub = setActionLogic(app, 0);
 						//legge lo stato finale e lo scrive sulle uscite
 						scriviOutDaStato(0);
 					}
 				}else{
 					startCnt(0, 1, CONDCNT1);
-					setActionLogic(app, 0);
+					pub = setActionLogic(app, 0);
 					//legge lo stato finale e lo scrive sulle uscite
 					scriviOutDaStato(1);
 				}
+				readStatesAndPub();
 			}
 		}
 		if(incAndtestUpCntEvnt(0,true,SMPLCNT2)){
@@ -2120,16 +2139,17 @@ inline void leggiTastiLocaliDaExp(){
 			if(app != -1){				
 				if(app){
 					if(incAndtestUpCntEvnt(0, false, CONDCNT2)){
-						setActionLogic(app, 1);
+						pub = setActionLogic(app, 1);
 						//legge lo stato finale e lo scrive sulle uscite
 						scriviOutDaStato(2);
 					}
 				}else{
 					startCnt(0, 1, CONDCNT2);
-					setActionLogic(app, 1);
+					pub = setActionLogic(app, 1);
 					//legge lo stato finale e lo scrive sulle uscite
 					scriviOutDaStato(3);
 				}
+				readStatesAndPub();
 			}
 		}
 		//legge lo stato finale e lo pubblica su MQTT
@@ -2153,6 +2173,7 @@ inline void leggiTastiLocaliDaExp(){
 		}
 	}
 	if(roll[1] == false){
+		bool pub = false;
 		//modalità switch generico
 		if(incAndtestUpCntEvnt(0,true,SMPLCNT3)){
 			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND3)])->getStrVal()).c_str() );
@@ -2161,16 +2182,17 @@ inline void leggiTastiLocaliDaExp(){
 			if(app != -1){
 				if(app){
 					if(incAndtestUpCntEvnt(0, false, CONDCNT3)){
-						setActionLogic(app, 2);
+						pub = setActionLogic(app, 2);
 						//legge lo stato finale e lo scrive sulle uscite
 						scriviOutDaStato(0);
 					}
 				}else{
 					startCnt(0, 1, CONDCNT3);
-					setActionLogic(app, 2);
+					pub = setActionLogic(app, 2);
 					//legge lo stato finale e lo scrive sulle uscite
 					scriviOutDaStato(0);
 				}
+				readStatesAndPub();
 			}
 		}
 		if(incAndtestUpCntEvnt(0,true,SMPLCNT4)){
@@ -2180,16 +2202,17 @@ inline void leggiTastiLocaliDaExp(){
 			if(app != -1){				
 				if(app){
 					if(incAndtestUpCntEvnt(0, false, CONDCNT4)){
-						setActionLogic(app, 3);
+						pub = setActionLogic(app, 3);
 						//legge lo stato finale e lo scrive sulle uscite
 						scriviOutDaStato(1);
 					}
 				}else{
 					startCnt(0, 1, CONDCNT4);
-					setActionLogic(app, 3);
+					pub = setActionLogic(app, 3);
 					//legge lo stato finale e lo scrive sulle uscite
 					scriviOutDaStato(1);
 				}
+				readStatesAndPub();
 			}
 		}
 		//legge lo stato finale e lo pubblica su MQTT

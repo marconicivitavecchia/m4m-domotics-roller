@@ -4,8 +4,8 @@
 #include <Arduino.h>
 #include "common.h"
 
-void setDiffActionLogic(int, byte);
-void setDiffLogic(byte, byte);
+bool setDiffActionLogic(int, byte);
+bool setDiffLogic(byte, byte);
 bool isCalibr();
 uint8_t getSWMode(uint8_t);
 bool isOnTarget(byte, byte);
@@ -51,7 +51,7 @@ void endPress(byte);
 void setTarget(long, byte);
 void setLogic(byte, byte);
 void setSWAction(byte in, byte nn);
-void setActionLogic(int, byte);
+bool setActionLogic(int, byte);
 void setOE(bool, byte);
 void resetOutlogic(byte);
 void setThickness(float);
