@@ -609,8 +609,8 @@ float actions(char *key, float val)
 		uint8_t act=0;
 		if(key[1]=='p'){
 			if(roll[0] == true){
-				DEBUG1_PRINT("up1: ");
-				DEBUG1_PRINTLN(val);
+				DEBUG2_PRINT("up1: ");
+				DEBUG2_PRINTLN(val);
 				if(key[2] == '1' && val > 0 && !isOnTarget(val, 0) && !isrun[0] && !isCalibr()){
 					static_cast<ParUint8*>(pars[MQTTUP1])->load((int)val);				
 					static_cast<ParUint8*>(pars[MQTTUP1])->doaction(false);
@@ -660,11 +660,11 @@ float actions(char *key, float val)
 		uint8_t act=0;
 		if(key[1]=='w'){
 			if(roll[0] == true){
-				DEBUG1_PRINT("dw1: ");
-				DEBUG1_PRINTLN(val);
+				DEBUG2_PRINT("dw1: ");
+				DEBUG2_PRINTLN(val);
 				if(key[2] == '1' && val > 0 && !isOnTarget(val, 0) && !isrun[0] && !isCalibr()){
-					DEBUG1_PRINT("dw1: ");
-					DEBUG1_PRINTLN(val);
+					DEBUG2_PRINT("dw1: ");
+					DEBUG2_PRINTLN(val);
 					static_cast<ParUint8*>(pars[MQTTDOWN1])->load((int)val);			
 					static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction(false);
 				}
@@ -691,8 +691,8 @@ float actions(char *key, float val)
 		////return val;
 	}else if(key[0]=='o'){
 		bool oe = val;
-		DEBUG1_PRINT("oeeeeee: ");
-				DEBUG1_PRINTLN(oe);
+		DEBUG2_PRINT("oeeeeee: ");
+				DEBUG2_PRINTLN(oe);
 		if(strcmp(key,"oe1")==0){
 			setOE(oe,0);
 		}else if(strcmp(key,"oe2")==0){
@@ -772,8 +772,8 @@ float variables(char *key){
 		if(!(pingCnt[n] % pingPer2[n])){
 			if(key[2]==':'){
 				key += strlen("s1:");
-				DEBUG1_PRINT("\nkey: ");
-				DEBUG1_PRINT(key);
+				DEBUG2_PRINT("\nkey: ");
+				DEBUG2_PRINT(key);
 				
 				char* k;
 				bool esci = false;
@@ -797,25 +797,25 @@ float variables(char *key){
 					}
 				}
 				
-				DEBUG1_PRINT(", n: ");
-				DEBUG1_PRINT(n); 
-				DEBUG1_PRINT(", key: ");
-				DEBUG1_PRINT(key); 
-				DEBUG1_PRINT(", nping[n]: ");
-				DEBUG1_PRINT(nping[n]); 
-				DEBUG1_PRINT(", pingPer[n]: ");
-				DEBUG1_PRINT(pingPer[n]); 
+				DEBUG2_PRINT(", n: ");
+				DEBUG2_PRINT(n); 
+				DEBUG2_PRINT(", key: ");
+				DEBUG2_PRINT(key); 
+				DEBUG2_PRINT(", nping[n]: ");
+				DEBUG2_PRINT(nping[n]); 
+				DEBUG2_PRINT(", pingPer[n]: ");
+				DEBUG2_PRINT(pingPer[n]); 
 				
 
 				//(tokens[1] != NULL) && (nping[n] = atoi(tokens[1]));
 				//(tokens[2] != NULL) && (pingPer[n] = atoi(tokens[2]));
 				
-				DEBUG1_PRINT(", ip: ");
-				//DEBUG1_PRINT(key);
+				DEBUG2_PRINT(", ip: ");
+				//DEBUG2_PRINT(key);
 				IPAddress ip;
 				if (!WiFi.hostByName(key, ip))
 					ip.fromString(key);
-				DEBUG1_PRINT(ip.toString());
+				DEBUG2_PRINT(ip.toString());
 				pinger[n].Ping(ip);
 				
 				if(lastPing[n] >= nping[n]){
@@ -826,8 +826,8 @@ float variables(char *key){
 			}
 		}
 		result = pingRes[n];
-		DEBUG1_PRINT(", result: ");
-		DEBUG1_PRINTLN(result);
+		DEBUG2_PRINT(", result: ");
+		DEBUG2_PRINTLN(result);
 	}else if(key[0] =='p'){
 		if(strcmp(key,"percpos2")==0){
 			result = percfdbck(1);
@@ -843,8 +843,8 @@ float variables(char *key){
 #endif 		
 		if(strcmp(key,"percpos1")==0){
 			result = percfdbck(0);
-			DEBUG1_PRINT(" percpos1: ");
-			DEBUG1_PRINTLN(result);
+			DEBUG2_PRINT(" percpos1: ");
+			DEBUG2_PRINTLN(result);
 		}
 	}else if(key[0]=='i'){
 		char *app;
@@ -884,12 +884,12 @@ void printMcpRealOut(){
 }
 */
 void scriviOutDaStato(byte n){
-	DEBUG1_PRINT("Evento scriviOutDaStato n: ");
-	DEBUG1_PRINT(n);
-	DEBUG1_PRINT(" out 1: ");
-	DEBUG1_PRINT(out[n*BTNDIM]);
-	DEBUG1_PRINT(" out 2: ");
-	DEBUG1_PRINT(out[1+n*BTNDIM]);
+	DEBUG2_PRINT("Evento scriviOutDaStato n: ");
+	DEBUG2_PRINT(n);
+	DEBUG2_PRINT(" out 1: ");
+	DEBUG2_PRINT(out[n*BTNDIM]);
+	DEBUG2_PRINT(" out 2: ");
+	DEBUG2_PRINT(out[1+n*BTNDIM]);
 #if (MCP2317) 
 	//uint8_t out2[4];
 	//out2[0]=out2[1]=out2[2]=out2[3]=HIGH;
@@ -1354,8 +1354,8 @@ void publishStr(String &str){
   {
 	  //str deve essere convertita in array char altrimenti la libreria introduce un carattere spurio all'inizio del messaggio
 	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str.c_str(), str.length());
-	  DEBUG1_PRINT(F("Published data 1: "));
-	  DEBUG1_PRINTLN(str);
+	  DEBUG2_PRINT(F("Published data 1: "));
+	  DEBUG2_PRINTLN(str);
   }
   //if(!webSocket){
 	  //DEBUG2_PRINTLN(F("ERROR on readStatesAndPub webSocket server is not allocated."));
@@ -1379,8 +1379,8 @@ void publishStr2(String &str){
   {
 	  //str deve essere convertita in array char altrimenti la libreria introduce un carattere spurio all'inizio del messaggio
 	  mqttClient->publish((const char *)static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, str.c_str(), str.length());
-	  DEBUG1_PRINT(F("Published data 2: "));
-	  DEBUG1_PRINTLN(str);
+	  DEBUG2_PRINT(F("Published data 2: "));
+	  DEBUG2_PRINTLN(str);
   }
   //if(!webSocket){
 	  //DEBUG2_PRINTLN(F("ERROR on readStatesAndPub webSocket server is not allocated."));
@@ -1668,12 +1668,12 @@ void setup(){
 		}else{
 			pingPer2[0] = pingPer[0];
 		}
-		DEBUG1_PRINT(F(" ok-pingPer2[0]: "));
-		DEBUG1_PRINT(pingPer2[0]);
-		DEBUG1_PRINT(F(" ok-lastPing[0]: "));
-		DEBUG1_PRINT(lastPing[0]);
-		DEBUG1_PRINT(F(" ok-nping[0]: "));
-		DEBUG1_PRINTLN(nping[0]);
+		DEBUG2_PRINT(F(" ok-pingPer2[0]: "));
+		DEBUG2_PRINT(pingPer2[0]);
+		DEBUG2_PRINT(F(" ok-lastPing[0]: "));
+		DEBUG2_PRINT(lastPing[0]);
+		DEBUG2_PRINT(F(" ok-nping[0]: "));
+		DEBUG2_PRINTLN(nping[0]);
     }
     else
     {
@@ -1683,17 +1683,17 @@ void setup(){
 		}else{
 			pingPer2[0] = pingPer[0];
 		}
-		DEBUG1_PRINT(F(" ko-pingPer2[0]: "));
-		DEBUG1_PRINTLN(pingPer2[0]);
-		DEBUG1_PRINT(F(" ko-lastPing[0]: "));
-		DEBUG1_PRINTLN(lastPing[0]);
-		DEBUG1_PRINT(F(" ko-nping[0]: "));
-		DEBUG1_PRINTLN(nping[0]);
+		DEBUG2_PRINT(F(" ko-pingPer2[0]: "));
+		DEBUG2_PRINTLN(pingPer2[0]);
+		DEBUG2_PRINT(F(" ko-lastPing[0]: "));
+		DEBUG2_PRINTLN(lastPing[0]);
+		DEBUG2_PRINT(F(" ko-nping[0]: "));
+		DEBUG2_PRINTLN(nping[0]);
 	  //toPing[id] = true;
       Serial.printf("Request ping 0 timed out.\n");
     }
-	DEBUG1_PRINT(F(" n: "));
-	DEBUG1_PRINTLN(0);
+	DEBUG2_PRINT(F(" n: "));
+	DEBUG2_PRINTLN(0);
     // Return true to continue the ping sequence.
     // If current event returns false, the ping sequence is interrupted.
     return true;
@@ -1728,8 +1728,8 @@ void setup(){
 	  //toPing[id] = true;
       Serial.printf("Request ping 2 timed out.\n");
     }
-	DEBUG1_PRINT(F(" n: "));
-    DEBUG1_PRINTLN(1);
+	DEBUG2_PRINT(F(" n: "));
+    DEBUG2_PRINTLN(1);
 	
     // Return true to continue the ping sequence.
     // If current event returns false, the ping sequence is interrupted.
@@ -1765,8 +1765,8 @@ void setup(){
 	  //toPing[id] = true;
       Serial.printf("Request ping 2 timed out.\n");
     }
-	DEBUG1_PRINT(F(" n: "));
-	DEBUG1_PRINTLN(2);
+	DEBUG2_PRINT(F(" n: "));
+	DEBUG2_PRINTLN(2);
     // Return true to continue the ping sequence.
     // If current event returns false, the ping sequence is interrupted.
     return true;
@@ -1801,8 +1801,8 @@ void setup(){
 	  //toPing[id] = true;
       Serial.printf("Request ping 3 timed out.\n");
     }
-	DEBUG1_PRINT(F(" n: "));
-	DEBUG1_PRINTLN(3);
+	DEBUG2_PRINT(F(" n: "));
+	DEBUG2_PRINTLN(3);
     // Return true to continue the ping sequence.
     // If current event returns false, the ping sequence is interrupted.
     return true;
@@ -1906,7 +1906,7 @@ void leggiTastiLocali2(){
 		}
 		//printMcpRealOut();
 	}else if(inflag){
-		DEBUG1_PRINTLN(F("Fronte di discesa "));
+		DEBUG2_PRINTLN(F("Fronte di discesa "));
 		inflag = false;
 		initdfnUL(LOW,4);
 		resetTimer(RESETTIMER);
@@ -1947,7 +1947,7 @@ void leggiTastiLocali2(){
 			static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction();
 		}
 	}else if(inflag){
-		DEBUG1_PRINTLN(F("Fronte di discesa "));
+		DEBUG2_PRINTLN(F("Fronte di discesa "));
 		inflag = false;
 		initdfnUL(LOW,4);
 		resetTimer(RESETTIMER);
@@ -2116,9 +2116,9 @@ inline void updateCounters(){
 inline void leggiTastiLocaliDaExp(){
 	int app;
 	//imposta le configurazioni dinamiche in base ad eventi locali valutati periodicamente
-	DEBUG1_PRINT(F("Periodic local cmds: "));	
-	DEBUG1_PRINTLN( eval( (static_cast<ParVarStr*>(pars[p(ONCOND5)])->getStrVal()).c_str() ) );
-	DEBUG1_PRINT(F("Bho: "));
+	DEBUG2_PRINT(F("Periodic local cmds: "));	
+	DEBUG2_PRINTLN( eval( (static_cast<ParVarStr*>(pars[p(ONCOND5)])->getStrVal()).c_str() ) );
+	DEBUG2_PRINT(F("Bho: "));
 	
 	if(roll[0] == false){
 		bool pub = false;
@@ -2165,15 +2165,15 @@ inline void leggiTastiLocaliDaExp(){
 		//modalit� tapparella
 		//simula pressione di un tasto locale
 		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND1)])->getStrVal()).c_str() );
-		DEBUG1_PRINT(F("MQTTUP1: "));	
-		DEBUG1_PRINTLN(app);
+		DEBUG2_PRINT(F("MQTTUP1: "));	
+		DEBUG2_PRINTLN(app);
 		if(app > 0 && !isOnTarget(app, 0) && !isrun[0] && !isCalibr()){
 			static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t) 255);			
 			static_cast<ParUint8*>(pars[MQTTUP1])->doaction(false);
 		}
 		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND2)])->getStrVal()).c_str() );
-		DEBUG1_PRINT(F("MQDOWN1: "));	
-		DEBUG1_PRINTLN(app);
+		DEBUG2_PRINT(F("MQDOWN1: "));	
+		DEBUG2_PRINTLN(app);
 		if(app > 0 && !isOnTarget(app, 0) && !isrun[0] && !isCalibr()){
 			static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t) 255);			
 			static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction(false);
@@ -2184,8 +2184,8 @@ inline void leggiTastiLocaliDaExp(){
 		//modalità switch generico
 		if(incAndtestUpCntEvnt(0,true,SMPLCNT3)){
 			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND3)])->getStrVal()).c_str() );
-			DEBUG1_PRINT(F("MQTTUP2: "));	
-			DEBUG1_PRINTLN(app);
+			DEBUG2_PRINT(F("MQTTUP2: "));	
+			DEBUG2_PRINTLN(app);
 			if(app != -1){
 				if(app){
 					if(incAndtestUpCntEvnt(0, false, CONDCNT3)){
@@ -2204,8 +2204,8 @@ inline void leggiTastiLocaliDaExp(){
 		}
 		if(incAndtestUpCntEvnt(0,true,SMPLCNT4)){
 			app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND4)])->getStrVal()).c_str() );
-			DEBUG1_PRINT(F("MQTTDOWN2: "));	
-			DEBUG1_PRINTLN(app);
+			DEBUG2_PRINT(F("MQTTDOWN2: "));	
+			DEBUG2_PRINTLN(app);
 			if(app != -1){				
 				if(app){
 					if(incAndtestUpCntEvnt(0, false, CONDCNT4)){
@@ -2298,29 +2298,29 @@ void inline zeroAndPwrSampler(){
 		//running mean calculation
 		smplcnt++;
 		smplcnt && (m += (float) (x - m) / smplcnt);  //protected against overflow by a logic short circuit
-		DEBUG1_PRINTLN(F("Zero detection manager"));	
-		DEBUG1_PRINT(F("doZeroSampl: "));	
-		DEBUG1_PRINT(doZeroSampl);	
-		DEBUG1_PRINT(F(", dosmpl: "));	
-		DEBUG1_PRINT(dosmpl);	
-		DEBUG1_PRINT(F(", x: "));	
-		DEBUG1_PRINT(x);	
-		DEBUG1_PRINT(F(", smplcnt: "));	
-		DEBUG1_PRINTLN(smplcnt);
+		DEBUG2_PRINTLN(F("Zero detection manager"));	
+		DEBUG2_PRINT(F("doZeroSampl: "));	
+		DEBUG2_PRINT(doZeroSampl);	
+		DEBUG2_PRINT(F(", dosmpl: "));	
+		DEBUG2_PRINT(dosmpl);	
+		DEBUG2_PRINT(F(", x: "));	
+		DEBUG2_PRINT(x);	
+		DEBUG2_PRINT(F(", smplcnt: "));	
+		DEBUG2_PRINTLN(smplcnt);
 		--doZeroSampl;
 	}
 	if(doPwrSampl > 0){
 		dd = maxx - minx;
-		DEBUG1_PRINT(F("doPwrSampl: "));	
-		DEBUG1_PRINT(doPwrSampl);	
-		DEBUG1_PRINT(F(", dosmpl: "));	
-		DEBUG1_PRINT(dosmpl);	
-		DEBUG1_PRINT(F(", dd: "));	
-		DEBUG1_PRINT(dd);
-		DEBUG1_PRINT(F(", m2: "));	
-		DEBUG1_PRINT(m2);
-		DEBUG1_PRINT(F(", smplcnt2: "));	
-		DEBUG1_PRINTLN(smplcnt2);
+		DEBUG2_PRINT(F("doPwrSampl: "));	
+		DEBUG2_PRINT(doPwrSampl);	
+		DEBUG2_PRINT(F(", dosmpl: "));	
+		DEBUG2_PRINT(dosmpl);	
+		DEBUG2_PRINT(F(", dd: "));	
+		DEBUG2_PRINT(dd);
+		DEBUG2_PRINT(F(", m2: "));	
+		DEBUG2_PRINT(m2);
+		DEBUG2_PRINT(F(", smplcnt2: "));	
+		DEBUG2_PRINTLN(smplcnt2);
 		
 		smplcnt2++;
 		smplcnt2 && (m2 += (float) (dd- m2) / smplcnt2);
@@ -2336,12 +2336,12 @@ void inline zeroAndPwrSampler(){
 		m2 = 0;
 		smplcnt2 = 0;
 		--doPwrSampl;
-		DEBUG1_PRINT(F(", final dd: "));	
-		DEBUG1_PRINT(dd);
-		DEBUG1_PRINT(F(", overallSwPower: "));	
-		DEBUG1_PRINT(overallSwPower);
-		DEBUG1_PRINT(F(", final smplcnt2: "));	
-		DEBUG1_PRINTLN(smplcnt2);
+		DEBUG2_PRINT(F(", final dd: "));	
+		DEBUG2_PRINT(dd);
+		DEBUG2_PRINT(F(", overallSwPower: "));	
+		DEBUG2_PRINT(overallSwPower);
+		DEBUG2_PRINT(F(", final smplcnt2: "));	
+		DEBUG2_PRINTLN(smplcnt2);
 	}
 }	
 #endif
@@ -2394,50 +2394,50 @@ inline void pwrSampler(){//only if !mov
 		doZeroSampl = NZEROSMPL;
 		overallSwPower = 0;
 	}
-	DEBUG1_PRINT(F("getPower: doPwrSampl: "));	
-	DEBUG1_PRINT(doPwrSampl);
-	DEBUG1_PRINT(F(", getPower: doZeroSampl: "));	
-	DEBUG1_PRINT(doZeroSampl);
-	DEBUG1_PRINT(F(", dosmpl: "));	
-	DEBUG1_PRINT(dosmpl);
+	DEBUG2_PRINT(F("getPower: doPwrSampl: "));	
+	DEBUG2_PRINT(doPwrSampl);
+	DEBUG2_PRINT(F(", getPower: doZeroSampl: "));	
+	DEBUG2_PRINT(doZeroSampl);
+	DEBUG2_PRINT(F(", dosmpl: "));	
+	DEBUG2_PRINT(dosmpl);
 #endif
-	DEBUG1_PRINT(F(", OverallSwPower: "));	
-	DEBUG1_PRINT(overallSwPower);	
-	DEBUG1_PRINT(F(", pwr1: "));	
-	DEBUG1_PRINT(outPwr[0]);
-	DEBUG1_PRINT(F(", pwr2: "));	
-	DEBUG1_PRINT(outPwr[1]);
-	DEBUG1_PRINT(F(", pwr3: "));	
-	DEBUG1_PRINT(outPwr[2]);
-	DEBUG1_PRINT(F(", pwr4: "));	
-	DEBUG1_PRINTLN(outPwr[3]);
+	DEBUG2_PRINT(F(", OverallSwPower: "));	
+	DEBUG2_PRINT(overallSwPower);	
+	DEBUG2_PRINT(F(", pwr1: "));	
+	DEBUG2_PRINT(outPwr[0]);
+	DEBUG2_PRINT(F(", pwr2: "));	
+	DEBUG2_PRINT(outPwr[1]);
+	DEBUG2_PRINT(F(", pwr3: "));	
+	DEBUG2_PRINT(outPwr[2]);
+	DEBUG2_PRINT(F(", pwr4: "));	
+	DEBUG2_PRINTLN(outPwr[3]);
 }
 
 void onSWStateChange(uint8_t nn){
 	int n = nn / TIMERDIM;
 	//int sw = nn % TIMERDIM;
-	DEBUG1_PRINT(F("onSWStateChange nn: "));
-	DEBUG1_PRINT(nn);
-	DEBUG1_PRINT(F(", n: "));
-	DEBUG1_PRINT(n);
+	DEBUG2_PRINT(F("onSWStateChange nn: "));
+	DEBUG2_PRINT(nn);
+	DEBUG2_PRINT(F(", n: "));
+	DEBUG2_PRINT(n);
 
 	if(roll[n] == 0){
 		if(out[nn] == HIGH){
-			DEBUG1_PRINT(F(", out: "));
-			DEBUG1_PRINT(out[nn]);
+			DEBUG2_PRINT(F(", out: "));
+			DEBUG2_PRINT(out[nn]);
 			//OFF --> ON
 			if(mov){
 				//modifica stima potenza tapparella solo se questa è in movimento
 				overallSwPower += outPwr[nn]; //add previously sampled value
 			}
-			DEBUG1_PRINT(F(", out HIGH corrected overallSwPower: "));
-			DEBUG1_PRINTLN(overallSwPower);
+			DEBUG2_PRINT(F(", out HIGH corrected overallSwPower: "));
+			DEBUG2_PRINTLN(overallSwPower);
 		}else if(mov){
 			//modifica stima potenza tapparella solo se questa è in movimento
 			//ON --> OFF
 			overallSwPower -= outPwr[nn]; //subtract previously sampled value
-			DEBUG1_PRINT(F(", mov corrected overallSwPower: "));
-			DEBUG1_PRINTLN(overallSwPower);
+			DEBUG2_PRINT(F(", mov corrected overallSwPower: "));
+			DEBUG2_PRINTLN(overallSwPower);
 		}
 		//unsigned short p = (packetBuffer[1] << 8) | packetBuffer[2];
 	}
@@ -2447,18 +2447,18 @@ void onSWStateChange(uint8_t nn){
 inline void automaticStopManager(){
 	if(mov){ //sempre falso se si è in modalità switch!	
 			getPower();
-			DEBUG1_PRINT(F(" \nOverallSwPower: "));
-			DEBUG1_PRINT(overallSwPower);
+			DEBUG2_PRINT(F(" \nOverallSwPower: "));
+			DEBUG2_PRINT(overallSwPower);
 			//EMA calculation
 			//ACSVolt = (double) ex/2.0;
 			//peak = (double) ex/2.0;
 			//reset of peak sample value
-			DEBUG1_PRINT(" Isrun: ");
-			DEBUG1_PRINT(isrun[0]);
-			DEBUG1_PRINT(", dosmpl: ");
-			DEBUG1_PRINT(dosmpl);
-			DEBUG1_PRINT(", dd: ");
-			DEBUG1_PRINTLN(dd);
+			DEBUG2_PRINT(" Isrun: ");
+			DEBUG2_PRINT(isrun[0]);
+			DEBUG2_PRINT(", dosmpl: ");
+			DEBUG2_PRINT(dosmpl);
+			DEBUG2_PRINT(", dd: ");
+			DEBUG2_PRINTLN(dd);
 			
 #if (AUTOCAL_ACS712) 
 			//doZeroSampl = -1;
@@ -2486,8 +2486,8 @@ inline void automaticStopManager(){
 					DEBUG2_PRINT(ex[0]);
 					DEBUG2_PRINT(F(" - Inst: "));
 					DEBUG2_PRINT(dd);
-					DEBUG1_PRINT(F(" - weight[1]: "));
-					DEBUG1_PRINT(weight[1]);
+					DEBUG2_PRINT(F(" - weight[1]: "));
+					DEBUG2_PRINT(weight[1]);
 					chk[0] = checkRange((double) ex[0]*(1 - weight[1]*isMoving(1)),0);
 					//chk[0] = checkRange((double) ex[0],0);
 					if(chk[0] != 0){
@@ -2508,8 +2508,8 @@ inline void automaticStopManager(){
 							DEBUG2_PRINTLN(F(") Start: fronte di salita"));					
 							//inizio conteggio timer di posizionamento
 							startEndOfRunTimer(0);
-							DEBUG1_PRINT(F("Timer lapse: "));		
-							DEBUG1_PRINTLN(getTimerLapse(0));
+							DEBUG2_PRINT(F("Timer lapse: "));		
+							DEBUG2_PRINTLN(getTimerLapse(0));
 						}
 						readStatesAndPub();
 						//ex[0] = getAVG(0);
@@ -2630,7 +2630,7 @@ inline void wifiFailoverManager(){
 			#endif
 			//yield();
 			DEBUG2_PRINT(F("\nSwcount roll: "));
-			DEBUG1_PRINTLN(swcount);
+			DEBUG2_PRINTLN(swcount);
 			
 			if((swcount == 0)){
 				DEBUG1_PRINTLN(F("Connection timed out"));
@@ -2743,26 +2743,26 @@ void onElapse(uint8_t nn, unsigned long tm){
 	int n = nn / TIMERDIM;
 	int sw = nn % TIMERDIM;
 	
-	DEBUG1_PRINT(F("\nElapse timer n: "));
-	DEBUG1_PRINT(nn);
-	DEBUG1_PRINT(F("  al tempo del timer: "));
-	DEBUG1_PRINT(tm);
-	DEBUG1_PRINT(F("  al tempo del cronometro: "));
-	DEBUG1_PRINT(getCronoCount(n));
-	DEBUG1_PRINT(F("  con stato: "));
-	DEBUG1_PRINT(getGroupState(nn));
-	DEBUG1_PRINT(F("  con n: "));
-	DEBUG1_PRINT(n);
-	DEBUG1_PRINT(F("  con sw: "));
-	DEBUG1_PRINT(sw);
-	DEBUG1_PRINT(F("  con count value: "));
-	DEBUG1_PRINTLN(getCntValue(nn));
-	DEBUG1_PRINTLN(F("-----------------"));
-	DEBUG1_PRINTLN(getCntValue(0));
-	DEBUG1_PRINTLN(getCntValue(1));
-	DEBUG1_PRINTLN(getCntValue(2));
-	DEBUG1_PRINTLN(getCntValue(3));
-	DEBUG1_PRINTLN(F("-----------------"));
+	DEBUG2_PRINT(F("\nElapse timer n: "));
+	DEBUG2_PRINT(nn);
+	DEBUG2_PRINT(F("  al tempo del timer: "));
+	DEBUG2_PRINT(tm);
+	DEBUG2_PRINT(F("  al tempo del cronometro: "));
+	DEBUG2_PRINT(getCronoCount(n));
+	DEBUG2_PRINT(F("  con stato: "));
+	DEBUG2_PRINT(getGroupState(nn));
+	DEBUG2_PRINT(F("  con n: "));
+	DEBUG2_PRINT(n);
+	DEBUG2_PRINT(F("  con sw: "));
+	DEBUG2_PRINT(sw);
+	DEBUG2_PRINT(F("  con count value: "));
+	DEBUG2_PRINTLN(getCntValue(nn));
+	DEBUG2_PRINTLN(F("-----------------"));
+	DEBUG2_PRINTLN(getCntValue(0));
+	DEBUG2_PRINTLN(getCntValue(1));
+	DEBUG2_PRINTLN(getCntValue(2));
+	DEBUG2_PRINTLN(getCntValue(3));
+	DEBUG2_PRINTLN(F("-----------------"));
 	
 	if(nn != RESETTIMER || nn != APOFFTIMER) //se è scaduto il timer di attesa o di blocco  (0,1) --> state n
 	{   
@@ -2778,7 +2778,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 					//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 					readStatesAndPub();
 				}else if(getGroupState(nn)==1){	//se il motore era in attesa di partire (timer di attesa scaduto)
-					DEBUG1_PRINTLN(F("onElapse roll mode:  timer di attesa scaduto"));
+					DEBUG2_PRINTLN(F("onElapse roll mode:  timer di attesa scaduto"));
 					startEngineDelayTimer(n);
 					//adesso parte...
 					scriviOutDaStato(n);
@@ -2787,7 +2787,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 				}
 	#if (!AUTOCAL)	
 				else if(getGroupState(nn)==2){//se il motore è in moto a vuoto
-					DEBUG1_PRINTLN(F("onElapse roll mode manual:  timer di corsa a vuoto scaduto"));
+					DEBUG2_PRINTLN(F("onElapse roll mode manual:  timer di corsa a vuoto scaduto"));
 					///setGroupState(3,n);	//il motore va in moto cronometrato
 					startEndOfRunTimer(n);
 					//pubblica lo stato di UP o DOWN attivo su MQTT (non lo fa il loop stavolta!)
@@ -2795,7 +2795,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 				}
 	#else
 				else if(getGroupState(nn)==2){//se il motore è in moto a vuoto
-					DEBUG1_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
+					DEBUG2_PRINTLN(F("onElapse roll mode autocal:  timer di check pressione su fine corsa scaduto"));
 					secondPress(n,halfProc,true);
 					//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
 					scriviOutDaStato(n);//15/08/19
@@ -2805,11 +2805,11 @@ void onElapse(uint8_t nn, unsigned long tm){
 	#endif
 			}else{//se è in modalità switch
 				if(getGroupState(nn)==1){//se lo switch era inibito (timer di attesa scaduto)
-					DEBUG1_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
+					DEBUG2_PRINTLN(F("onElapse switch mode:  timer di attesa scaduto"));
 					startSimpleSwitchDelayTimer(nn);
 					//adesso commuta...
 				}else if(getGroupState(nn)==2){ //se lo switch è monostabile (timer di eccitazione scaduto)
-					DEBUG1_PRINTLN(F("stato 0 switch mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
+					DEBUG2_PRINTLN(F("stato 0 switch mode: il motore va in stato fermo da fine corsa (TIMER ELAPSED!)"));
 					endPress(nn);
 				}
 				//comanda gli attuatori per fermare (non lo fa il loop stavolta!)
@@ -2819,7 +2819,7 @@ void onElapse(uint8_t nn, unsigned long tm){
 			}
 		}else if(getCntValue(nn) > 1){ //in tutte le modalit�
 			if(n == 0){
-				DEBUG1_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
+				DEBUG2_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
 				if(getCntValue(nn)==3){
 					//DEBUG2_PRINT(F("Resettato contatore dei servizi: "));
 					resetCnt(nn);
@@ -2827,12 +2827,12 @@ void onElapse(uint8_t nn, unsigned long tm){
 					//wifi_station_dhcpc_stop();
 					//WiFi.enableAP(true);
 					//wifi_softap_dhcps_start();
-					DEBUG1_PRINTLN(F("-----------------------------"));
-					DEBUG1_PRINTLN(F("Attivato AP mode"));
-					DEBUG1_PRINTLN(F("-----------------------------"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
+					DEBUG2_PRINTLN(F("Attivato AP mode"));
+					DEBUG2_PRINTLN(F("-----------------------------"));
 					startTimer(APOFFTIMER);
 					//WiFi.enableSTA(false);
-					DEBUG1_PRINTLN(F("AP mode on"));
+					DEBUG2_PRINTLN(F("AP mode on"));
 					//WiFi.setAutoConnect(false);
 					//WiFi.setAutoReconnect(false);	
 					//ETS_UART_INTR_DISABLE();
