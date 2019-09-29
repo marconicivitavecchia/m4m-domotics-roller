@@ -17,6 +17,7 @@ Tipi di tasto:
 
 byte dprecval2[SWITCHND]; 
 float asyncBuf[GATEND]; 
+bool changed[GATEND];
 //#define SWITCHN 	5 
 //#define stateN 	0 
 

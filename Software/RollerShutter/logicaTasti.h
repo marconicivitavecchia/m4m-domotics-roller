@@ -33,6 +33,7 @@
 void printDfn();
 extern byte dprecval2[SWITCHND]; 
 extern float asyncBuf[GATEND]; 
+extern bool changed[GATEND];
 void initdfn(byte,  byte);
 void initdfnUL(byte, byte);
 //void initTogglen(byte,  byte);

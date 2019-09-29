@@ -22,6 +22,7 @@ char IP[] = "xxx.xxx.xxx.xxx";          // buffer
 //stats variables
 #if (AUTOCAL)
 float overallSwPower = 0;
+float overallSwPower2 = 0;
 //float overallSwPower2 = 0;
 int samples[10];
 uint8_t indx = 0;
@@ -467,7 +468,7 @@ inline void initOfst(){
 
 inline bool gatedfn(float val, uint8_t n, float rnd){
 	//n: numero di porte
-	bool changed = (val < asyncBuf[n] - rnd || val > asyncBuf[n] + rnd);
+	changed[n] = (val < asyncBuf[n] - rnd || val > asyncBuf[n] + rnd);
 	asyncBuf[n] = val;            // valore di val campionato al loop precedente 
 	return changed;
 }
@@ -1084,7 +1085,7 @@ void mqttReconnect() {
 			pars[p(LOGSLCT)]->doaction(false);	
 			mqttConnected=true;//bho
 			readParamAndPub(MQTTDATE,printUNIXTimeMin(gbuf));
-			readStatesAndPub(true);
+			readStatesAndPub();
 			sensorStatePoll();
 		});
 		
@@ -1147,7 +1148,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         IPAddress wip = webSocket.remoteIP(num);
 		sprintf(s,"[%u] Connected from %d.%d.%d.%d url: %s\n", num, wip[0], wip[1], wip[2], wip[3], payload);
 		DEBUG2_PRINT(s);
-		readStatesAndPub(true);
+		readStatesAndPub();
 	}
     break;
     case WStype_TEXT:                     // if new text data is received 
@@ -1202,8 +1203,14 @@ void readStatesAndPub(bool all){
   if(all){
 	    s += comma;
 		s += pars[MQTTTEMP]->getStrJsonName()+twodot+String(asyncBuf[GTTEMP])+comma;
+#if (AUTOCAL_HLW8012)
+		str += pars[INSTPWR]->getStrJsonName()+twodot+asyncBuf[GTIPWR]+comma;
+		//str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getExtimActivePower()+comma;
+		str += pars[INSTACV]->getStrJsonName()+twodot+asyncBuf[GTIVAC];
+#else
 		s += pars[MQTTMEANPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTMEANPWR1])+comma+String(asyncBuf[GTMEANPWR2])+closesqr2;
 		s += pars[MQTTPEAKPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTPEAKPWR1])+comma+String(asyncBuf[GTPEAKPWR2])+"\"]";
+#endif
   }else{
 		s+=end;
   }
@@ -1334,9 +1341,9 @@ void publishStr(String &str){
   str += pars[MQTTIP]->getStrJsonName()+twodot+pars[p(LOCALIP)]->getStrVal()+comma;
   str += pars[MQTTMQTTID]->getStrJsonName()+twodot+pars[p(MQTTID)]->getStrVal()+comma;
  #if (AUTOCAL_HLW8012) 
-  str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getActivePower()+comma;
+  str += pars[INSTPWR]->getStrJsonName()+twodot+asyncBuf[GTIPWR]+comma;
   //str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getExtimActivePower()+comma;
-  str += pars[INSTACV]->getStrJsonName()+twodot+hlw8012.getVoltage()+comma;
+  str += pars[INSTACV]->getStrJsonName()+twodot+asyncBuf[GTIVAC]+comma;
  #endif
   str += pars[MQTTDATE]->getStrJsonName()+twodot+printUNIXTimeMin(gbuf)+closebrk;
   
@@ -2051,7 +2058,7 @@ inline void loop2() {
 		}
 		if(sampleCurrTime()){//1min
 			readParamAndPub(MQTTDATE,printUNIXTimeMin(gbuf));
-			readStatesAndPub(true);
+			readStatesAndPub();
 		}
 		leggiTastiLocaliDaExp();
 		sensorStatePoll();
@@ -2236,20 +2243,20 @@ inline void leggiTastiLocaliDaExp(){
 inline void sensorStatePoll(){
 	//sensor variation polling management
 	//on events basis push of reports
-
-	if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
-		readTempAndPub();
-		DEBUG2_PRINT(F("\nTemperatura cambiata"));
+	gatedfn(getTemperature(),GTTEMP, TEMPRND);
+#if (AUTOCAL_HLW8012)
+ 	if(mov){
+		gatedfn(overallSwPower2,GTIPWR, IPWRRND)){
+		//no voltage measurement to grant more precision on time calculation	
+	}else{
+		gatedfn(hlw8012.getActivePower(),GTIPWR, IPWRRND)){
+		gatedfn(hlw8012.getVoltage(),GTIVAC, IVACRND)){
 	}
-#if (AUTOCAL_HLW8012) 	
-	if(gatedfn(hlw8012.getActivePower(),GTIPWR, IPWRRND)){
+	if(changed[GTTEMP] || changed[GTIPWR] || changed[GTIVAC])
 		readIpAndPub();
-		DEBUG2_PRINT(F("\nPotenza cambiata"));
-	}
-	if(gatedfn(hlw8012.getVoltage(),GTIVAC, IVACRND)){
+#else
+	if(changed[GTTEMP])
 		readIpAndPub();
-		DEBUG2_PRINT(F("\nVolt cambiati"));
-	}
 #endif	
 }
 
@@ -2360,8 +2367,9 @@ inline float getPower(){
 	dd = maxx - minx - overallSwPower;
 	minx = 1024;
 	maxx = 0;
-#elif (AUTOCAL_HLW8012) 			
-	dd = hlw8012.getExtimActivePower() - overallSwPower;
+#elif (AUTOCAL_HLW8012) 
+	overallSwPower2 = hlw8012.getExtimActivePower();
+	dd = overallSwPower2 - overallSwPower;
 #endif
 return dd;
 }
