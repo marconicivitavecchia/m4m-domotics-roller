@@ -88,8 +88,12 @@ float factor()
         return number();
     }else if (peek() == '(')
     {
-        get(); // '('
+        while(peek2()==' ')
+			get();
+		get(); // '('
         float result = expression();
+		while(peek2()==' ')
+			get();
         get(); // ')'
         return result;
     }
@@ -113,7 +117,7 @@ float term()
     //gruppo di elementi con elevata precedenza (fattori) ovvero prodotto di fattori (cio termine = monomio)
 	//primo parametro
 	float result = factor();
-    while (peek() == '[' || peek() == '*' || peek() == '/' || peek() == '^'|| peek() == '&' || peek() == '>' || peek() == '<' || peek() == '=' || peek() == '!' || peek() == '?'){
+    while (peek() == '[' || peek() == '*' || peek() == '/' || peek() == '^'|| peek() == '&' || peek() == '>' || peek() == '<' || peek() == '=' || peek() == '!' || peek() == '?' || peek() == ' '){
         if (peek() == '*'){
 			get();
             result *= factor();
@@ -173,7 +177,9 @@ float term()
 				get(); // salto ';'
 			}
 			return result;
-		}else if (peek() == '['){
+		}else if (peek2() == ' '){
+			get();
+        }else if (peek() == '['){
 			float a,b,c;
 			bool o;
 			unsigned short nc = 0;
@@ -202,16 +208,23 @@ float term()
 					result = (result > o && result < a); //0<res<a
 				break;
 				case 2:
-					if(result < (a-b)){
+					/*if(result < (a-b)){
 						result = 0;
-					}else if(result > (a+b)){
+					}else if(result > (a+b)){//a-b<res<a+b
 						result = 1;
 					}else{
 						//lo stato non cambia
 						result = o;
+					}*/
+					if(result < (a-b)){
+						result = 0;
+					}else if(result > (a+b)){//a-b<res<a+b
+						result = 0;
+					}else{
+						result = 1;
 					}
 				break;
-				case 3:
+				case 3://?
 					if(result < (a-b)){
 						result = 0;
 					}else if(result > (a+c)){

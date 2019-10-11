@@ -319,20 +319,23 @@ void setNtpServer(byte id, const char* serv){// set the number of seconds betwee
 char *printUNIXTime(char *buf){
   memset(buf, 0, DATEBUFLEN);
   //snprintf(buf, 50, "%04i-%02i-%02i %02i:%02i:%02i UTC", tm.Year+1970, tm.Month, tm.Day, tm.Hour, tm.Minute, tm.Second);
-  snprintf(buf, DATEBUFLEN, "%02i/%02i/%04i %02i:%02i:%02i", tm.Day, tm.Month, tm.Year+1970, tm.Hour, tm.Minute, tm.Second);
+  //snprintf(buf, DATEBUFLEN, "%02i/%02i/%04i %02i:%02i:%02i", tm.Day, tm.Month, tm.Year+1970, tm.Hour, tm.Minute, tm.Second);
+  snprintf(buf, DATEBUFLEN, "%04i-%02i-%02iT%02i:%02i:%02i", tm.Year+1970, tm.Month, tm.Day, tm.Hour, tm.Minute, tm.Second);
   return buf;
 }
 
 char *printUNIXTimeMin(char *buf){
   memset(buf, 0, DATEBUFLEN);
   //snprintf(buf, 50, "%04i-%02i-%02i %02i:%02i:%02i UTC", tm.Year+1970, tm.Month, tm.Day, tm.Hour, tm.Minute, tm.Second);
-  snprintf(buf, DATEBUFLEN, "%02i/%02i/%04i-%02i:%02i", tm.Day, tm.Month, tm.Year+1970, tm.Hour, tm.Minute);
+  snprintf(buf, DATEBUFLEN, "%04i-%02i-%02iT%02i:%02i", tm.Year+1970, tm.Month, tm.Day, tm.Hour, tm.Minute, tm.Second);
   return buf;
 }
 	
 TimeElements fromStrToTimeEl(char *str){ 
+	//2019:07:30/03:57:30
+	//2019-10-08T09:28:40
 	TimeElements ts;
-	const char s[4] = ":-/";
+	const char s[5] = ":-/T";
 	char *token;
     unsigned short dateTime[7] = {0,0,0,0,0,0,0};
 	//2019:07:30/03:57:30

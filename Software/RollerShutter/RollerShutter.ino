@@ -716,14 +716,14 @@ float actions(char *key, float val)
 //parser function calls
 float variables(char *key){
 	float result;
-	/*if(key[0]=='t'){
-		if(strcmp(key,"tsec")==0){
+	if(key[0]=='t'){
+		if(strcmp(key,"tsec")==0){ //secondi 
 			result = second();
-		}else if(strcmp(key,"tmin")==0){
+		}else if(strcmp(key,"tmin")==0){//minuti 
 			result = minute();
-		}else if(strcmp(key,"thour")==0){
+		}else if(strcmp(key,"thour")==0){//ora
 			result = hour();
-		}else if(key[1]=='e' && key[2]==':'){//2019:07:30/03:57:30
+		}else if(key[1]=='e' && key[2]==':'){// 2019:07:30/03:57:30 o 2019-10-08T09:28:40
 			key += strlen("te:");
 			result = makeTime(fromStrToTimeEl(key));
 		}else if(strcmp(key,"telem")==0){
@@ -742,7 +742,7 @@ float variables(char *key){
 		}else if(strcmp(key,"day")==0){
 			result = day();
 		}
-	}else if(key[0]=='c'){
+	}else /*if(key[0]=='c'){
 		if(strcmp(key,"c1")==0){
 			result = getCntValue(CNTIME1);
 		}else if(strcmp(key,"c2")==0){
