@@ -25,8 +25,8 @@ unsigned long syncInterval;
 TimeElements tm;
 
 unsigned dst;
-unsigned long lastNTPTime = 0;
-unsigned long lastNTPMillis = 0;
+volatile unsigned long lastNTPTime = 0;
+volatile unsigned long lastNTPMillis = 0;
 long adjust = 0;
 short timeZone = 0;
 short lastSec=0;
@@ -35,20 +35,28 @@ unsigned long getUNIXTime() {
   if(lastNTPTime == 0) {
     return 0;
   }
-  unsigned long diffms = millis() - lastNTPMillis;
+  unsigned long diffms = (unsigned long) (millis() - lastNTPMillis) / 1000;
   //return (unsigned long) lastNTPTime + (diffms + adjust)/1000 + timeZone + dst;
-  return (unsigned long) lastNTPTime + (diffms + adjust)/1000 + dst;
+  //return (unsigned long) lastNTPTime + (diffms + adjust) + dst*1000;
+  //DEBUG1_PRINT(F("diffms: "));	
+  //DEBUG1_PRINT(diffms);
+  //DEBUG1_PRINT(F(", "));
+  //DEBUG1_PRINTLN(lastNTPTime + diffms);
+  return  (unsigned long) (lastNTPTime + diffms);
 }
 
 inline unsigned long updateNTP() {
+  //chiama il server NTP se non c'è stato un altro tipo di sincronizazione prima
+  //di un intervallo prefissato
   if(lastNTPMillis == 0 || millis() - lastNTPMillis > 1000 * syncInterval) {
     //unsigned long ntpTime = ntpUnixTime();
 	os_timer_disarm(&sntp_timer);
-	lastNTPMillis = millis();
-	unsigned long ntpTime =	sntp_get_current_timestamp(); 
+	unsigned long ntpTime =	sntp_get_current_timestamp(); //richiesta NTP non bloccante!
     if(ntpTime != 0) {
+		//se il valore NTP è valido
 		updateNTP(ntpTime);
     }else{
+		//altrimenti riprova dopo 100ms
 		os_timer_arm(&sntp_timer, 100, 0);
 	}
   }
@@ -123,29 +131,41 @@ inline unsigned long ntpUnixTime()
 void sntpInit(){
 	sntp_init();
 	os_timer_disarm(&sntp_timer);
+	//impostazione callback function del timer
 	os_timer_setfn(&sntp_timer,	(os_timer_func_t *)user_check_sntp_stamp, NULL);
 }
 
+//definizione callback function del timer
 void ICACHE_FLASH_ATTR	user_check_sntp_stamp(void *arg){
 
 	uint32	current_stamp;
-	current_stamp =	sntp_get_current_timestamp();
+	current_stamp =	sntp_get_current_timestamp(); //richiesta NTP non bloccante!
 	if(current_stamp ==	0){
+		//se il valore NTP non è valido riprova tra 100ms
 		os_timer_arm(&sntp_timer, 100, 0);
 	}else{
+		//se è valido blocca il timer e sincronizza
 		os_timer_disarm(&sntp_timer);
-		updateNTP(current_stamp);
+		updateNTP(current_stamp); //chiamata alla routine di sincronizzazione
 	}
 }
 
+//routine di sincronizzazione
+//può essere chiamata da una qualunque sorgente di sincronizzazione
+//evita la chiamata al server NTP se arriva entro un intervallo prefissato
 unsigned long updateNTP(unsigned long ntpTime) {
     if(ntpTime != 0) {
-      DEBUG_PRINT(F("Time updated, clock skew: "));
-      DEBUG_PRINTLN(getUNIXTime() - ntpTime);
-      lastNTPTime = ntpTime;
-      //lastNTPMillis = millis();
+		ntpTime += (unsigned long) adjust / 1000 + dst;
+		DEBUG_PRINT(F("Time updated, clock skew: "));
+		if(getUNIXTime() > ntpTime){
+			DEBUG_PRINTLN(getUNIXTime() - ntpTime);
+		}else{
+			DEBUG_PRINTLN(ntpTime - getUNIXTime());
+		}
+		lastNTPTime = ntpTime;
+		lastNTPMillis = millis();
     }
-  }
+}
 
 /*
   time.c - low level time and date functions
@@ -173,7 +193,8 @@ unsigned long updateNTP(unsigned long ntpTime) {
   1.4  5  Sep 2014 - compatibility with Arduino 1.5.7
 */
 
-#define LEAP_YEAR(Y) ( ((1970+Y)>0) && !((1970+Y)%4) && ( ((1970+Y)%100) || !((1970+Y)%400) ) )
+//#define LEAP_YEAR(Y) ( ((1970+Y)>0) && !((1970+Y)%4) && ( ((1970+Y)%100) || !((1970+Y)%400) ) )
+#define LEAP_YEAR(Y) ( ((1970+(Y))>0) && !((1970+(Y))%4) && ( ((1970+(Y))%100) || !((1970+(Y))%400) ) )
 static const unsigned short monthDays[]={31,28,31,30,31,30,31,31,30,31,30,31}; // API starts months from 1, this array starts from 0
 
 inline void sampleCurrTime(unsigned long timeInput){
@@ -230,6 +251,9 @@ inline void sampleCurrTime(unsigned long timeInput){
   tm.Day = time + 1;     // day of month
 }
 
+//sincronizza l'orologio interno
+//se arriva un messaggio di sincronizzazione in tempo usa quello
+//altrimenti effetua una richiesta di timestamp ad un server NTP
 bool sampleCurrTime(void){
 	//update NTP time every prefixed time
 	updateNTP();
@@ -331,31 +355,65 @@ char *printUNIXTimeMin(char *buf){
   return buf;
 }
 	
-TimeElements fromStrToTimeEl(char *str){ 
+TimeElements fromStrToTimeEl(char *key){ 
 	//2019:07:30/03:57:30
 	//2019-10-08T09:28:40
+	//2019-10-08-*T09:28:40
+	//*-*-*-3T*-*-*
 	TimeElements ts;
-	const char s[5] = ":-/T";
-	char *token;
-    unsigned short dateTime[7] = {0,0,0,0,0,0,0};
+    unsigned short dateTime[7] = {255,255,255,255,255,255,255};
 	//2019:07:30/03:57:30
 	/* get the first token */
-	token = strtok(str, s);
-	dateTime[0] = (unsigned short) (*token == '*')?255:atoi(token);
-	/* walk through other tokens */
-	int i = 1;
-	while( token != NULL && i < 8 ) {
-	  token = strtok(NULL, s);
-	  dateTime[i] = atoi(token);
-	  ++i;
+	/* walk through other tokens */	
+	char* k;
+	int i, j;
+	char c;
+	//DEBUG1_PRINT("key: ");
+	//DEBUG1_PRINTLN(key);
+	for(k=key, i=0; i<7; i++){
+		for(j=0; k[j] != '-' && k[j] != ':' && k[j] != '/' && k[j] != 'T' && k[j] != '\0'; j++);	
+		if(k[j] != '\0'){
+			c = k[j];
+			k[j] = '\0';
+			(*k != '*') && (dateTime[i] = atoi(k));
+			//DEBUG1_PRINT("token: ");
+			//DEBUG1_PRINT(i);
+			//DEBUG1_PRINT(", ");
+			//DEBUG1_PRINTLN(atoi(k)); 
+			k = (k+j+1);
+			if((i < 3) && (c == 'T' || c == '/')){
+				i = 3;
+			}
+		}else{
+			(*k != '*') && (dateTime[i] = atoi(k));
+			//DEBUG1_PRINT("token: ");
+			//DEBUG1_PRINT(i);
+			//DEBUG1_PRINT(", ");
+			//DEBUG1_PRINTLN(atoi(k)); 
+		}
 	}
 	ts.Year = (dateTime[0] == 255)?year():dateTime[0];
+	ts.Year = CalendarYrToTm(ts.Year);
 	ts.Month = (dateTime[1] == 255)?month():dateTime[1];
 	ts.Day = (dateTime[2] == 255)?day():dateTime[2];
 	ts.Wday = (dateTime[3] == 255)?weekday():dateTime[3];
 	ts.Hour = (dateTime[4] == 255)?hour():dateTime[4];
 	ts.Minute = (dateTime[5] == 255)?minute():dateTime[5];
 	ts.Second = (dateTime[6] == 255)?second():dateTime[6];
+	DEBUG1_PRINT("Year: ");
+	DEBUG1_PRINT(ts.Year); 
+	DEBUG1_PRINT(", Month: ");
+	DEBUG1_PRINT(ts.Month); 
+	DEBUG1_PRINT(", Day: ");
+	DEBUG1_PRINT(ts.Day); 
+	DEBUG1_PRINT(", Wday: ");
+	DEBUG1_PRINT(ts.Wday); 
+	DEBUG1_PRINT(", Hour: ");
+	DEBUG1_PRINT(ts.Hour); 
+	DEBUG1_PRINT(", Minute: ");
+	DEBUG1_PRINT(ts.Minute); 
+	DEBUG1_PRINT(", Second: ");
+	DEBUG1_PRINTLN(ts.Second); 
 	return ts;
 }
 
@@ -401,7 +459,7 @@ unsigned long makeTime(const TimeElements &tm){
       seconds +=  SECS_PER_DAY;   // add extra days for leap years
     }
   }
-  /*
+  
   // add days for this year, months start from 1
   for (i = 1; i < tm.Month; i++) {
     if ( (i == 2) && LEAP_YEAR(tm.Year)) { 
@@ -410,16 +468,7 @@ unsigned long makeTime(const TimeElements &tm){
       seconds += SECS_PER_DAY * monthDays[i-1];  //monthDay array starts from 0
     }
   }
-  */
-  //from Simplified routines to get DST adjusted
-  // Replacement for broken mktime() 
-  for (i = 0; i < tm.Month; i++) {
-    if ( (i == 1) && LEAP_YEAR(tm.Year)) { 
-      seconds += SECS_PER_DAY * 29;
-    } else {
-      seconds += SECS_PER_DAY * monthDays[i];  //monthDay array starts from 0
-    }
-  }
+ 
   seconds+= (tm.Day-1) * SECS_PER_DAY;
   seconds+= tm.Hour * SECS_PER_HOUR;
   seconds+= tm.Minute * SECS_PER_MIN;

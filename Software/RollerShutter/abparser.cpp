@@ -26,9 +26,9 @@ char get()
 	return *expressionToParse++;
 }
 
-float expression();
+double expression();
 /*
-float isdigit(char c){
+double isdigit(char c){
 	return (c >= '0' && c <= '9');
 }
 */
@@ -40,7 +40,7 @@ void keyterm(){
 	key[1] = '\0';
 
 	//for(int i=1; i<10 && (c>= 'a' && c<= 'z' ||c >= '0' && c <= '9'); i++){	
-	for(int i=1; i<29 && (c>= 'a' && c<= 'z' ||c >= '.' && c <= ':'); i++){	//per includere indirizzi IP e date
+	for(int i=1; i<29 && (c>= 'a' && c<= 'z' || c>= 'A' && c<= 'Z' || c >= '*' && c <= ':'); i++){	//per includere indirizzi IP e date
 		key[i] = c;
 		key[i+1] = '\0';
 		get();
@@ -48,12 +48,12 @@ void keyterm(){
 	}
 }
 
-float number()
+double number()
 {
     bool decimal = false;
 	
-	float result = get() - '0';
-	float div =  1;
+	double result = get() - '0';
+	double div =  1;
     while (peek() >= '0' && peek() <= '9' || peek() == '.')
     {
 		if(peek() == '.' && decimal == false){
@@ -64,24 +64,24 @@ float number()
 			result = 10*result + get() - '0';
 		}else{
 			div /= 10.0;
-			result +=  (float) (get() - '0')*div;
+			result +=  (double) (get() - '0')*div;
 		}
     }
     return result;
 }
 
-float function()
+double function()
 {   
 	get();
 	return variables(key);
 }
 
-float action(float val)
+double action(double val)
 {
     return actions(key,val);
 }
 
-float factor()
+double factor()
 {
 	//elemento con elevata precedenza (numero, gruppo di lettere, espressione racchiusa tra parentesi)
 	if (peek() >= '0' && peek() <= '9'){
@@ -91,7 +91,7 @@ float factor()
         while(peek2()==' ')
 			get();
 		get(); // '('
-        float result = expression();
+        double result = expression();
 		while(peek2()==' ')
 			get();
         get(); // ')'
@@ -112,11 +112,11 @@ float factor()
     return 0; // error
 }
 
-float term()
+double term()
 {
     //gruppo di elementi con elevata precedenza (fattori) ovvero prodotto di fattori (cio termine = monomio)
 	//primo parametro
-	float result = factor();
+	double result = factor();
     while (peek() == '[' || peek() == '*' || peek() == '/' || peek() == '^'|| peek() == '&' || peek() == '>' || peek() == '<' || peek() == '=' || peek() == '!' || peek() == '?' || peek() == ' '){
         if (peek() == '*'){
 			get();
@@ -180,7 +180,7 @@ float term()
 		}else if (peek2() == ' '){
 			get();
         }else if (peek() == '['){
-			float a,b,c;
+			double a,b,c;
 			bool o;
 			unsigned short nc = 0;
 			//i#o1,a,b,c,d 
@@ -241,11 +241,11 @@ float term()
     return result;
 }
 
-float expression()
+double expression()
 {
 	//gruppo di elementi con bassa precedenza (termini) ovvero somma/differenza di termini (cio espressione = somma_monomi)
     //primo parametro
-	float result = term();
+	double result = term();
     while (peek() == '+' || peek() == '-' || peek() == '|' || peek() == '!'){
         if (peek() == '+'){
 			get();
@@ -264,7 +264,7 @@ float expression()
     return result;
 }
 
-float eval(const char *str){
+double eval(const char *str){
 	expressionToParse = (char *) str;
 	return expression();
 }

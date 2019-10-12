@@ -445,7 +445,7 @@ inline void initOfst(){
 	/*45*/pars[p(ONCOND3)] = new ParVarStr("-1", "oncond3","oncond3", 2, 'p','n', new ONCOND3_Evnt());
 	/*46*/pars[p(ONCOND4)] = new ParVarStr("-1", "oncond4","oncond4", 2, 'p','n', new ONCOND4_Evnt());
 	///*47*/pars[p(ONCOND5)] = new ParVarStr("(td1=4000)|(ma1=0)|(ma4=2)|(tsmpl4=4)|(oe1=1)", "oncond5","oncond5", 0, 'p','n', new ONCOND5_Evnt());
-	/*47*/pars[p(ONCOND5)] = new ParVarStr("temp", "oncond5","oncond5", 0, 'p','n', new ONCOND5_Evnt());
+	/*47*/pars[p(ONCOND5)] = new ParVarStr("-1", "oncond5","oncond5", 0, 'p','n', new ONCOND5_Evnt());
 	/*48*/pars[p(ACTIONEVAL)] = new ParVarStr("-1","onaction","onaction", 2, 'p','n', new ACTIONEVAL_Evnt());
 	///*5*/pars[p(WIFICHANGED)] = new ParUint8(0, "WIFICHANGED","", new WIFICHANGED_Evnt());
 	///*5*/pars[p(CONFLOADED)] = new ParUint8(0, "CONFLOADED","");
@@ -517,7 +517,7 @@ float getTemperature(){
 
 //parser actions callBack (assignements)
 //configurazioni provenienti da eventi locali
-float actions(char *key, float val)
+double actions(char *key, double val)
 {	
 	uint8_t n=-1;
 	if(key[0]=='t'){
@@ -714,8 +714,9 @@ float actions(char *key, float val)
 }
 
 //parser function calls
-float variables(char *key){
-	float result;
+double variables(char *key){
+	double result;
+	
 	if(key[0]=='t'){
 		if(strcmp(key,"tsec")==0){ //secondi 
 			result = second();
@@ -726,8 +727,13 @@ float variables(char *key){
 		}else if(key[1]=='e' && key[2]==':'){// 2019:07:30/03:57:30 o 2019-10-08T09:28:40
 			key += strlen("te:");
 			result = makeTime(fromStrToTimeEl(key));
+			DEBUG1_PRINT("te: ");
+			DEBUG1_PRINTLN(result);
 		}else if(strcmp(key,"telem")==0){
-			result = getUNIXTime();
+			result = (unsigned long) getUNIXTime();
+			DEBUG1_PRINT("telem: ");
+			DEBUG1_PRINTLN(result);
+			
 		}else if(strlen(strstr(key,"tdst:M")) == strlen(key)){
 			key += strlen("tdst:M");//M4.5.0/02:00:00
 			result = makeTime(DSTToTimeEl(key));
@@ -857,9 +863,9 @@ float variables(char *key){
 		}
 	}else if(strcmp(key,"wifi")==0){
 		result = wifiConn;
-	}else if(strcmp(key,"temp")==0){
+	}/*else if(strcmp(key,"temp")==0){
 		result = getTemperature();
-	}
+	}*/
 	
 	return result;
 }
@@ -2116,9 +2122,8 @@ inline void updateCounters(){
 inline void leggiTastiLocaliDaExp(){
 	int app;
 	//imposta le configurazioni dinamiche in base ad eventi locali valutati periodicamente
-	DEBUG2_PRINT(F("Periodic local cmds: "));	
-	DEBUG2_PRINTLN( eval( (static_cast<ParVarStr*>(pars[p(ONCOND5)])->getStrVal()).c_str() ) );
-	DEBUG2_PRINT(F("Bho: "));
+	DEBUG1_PRINT(F("Periodic local cmds: "));	
+	DEBUG1_PRINTLN( eval( (static_cast<ParVarStr*>(pars[p(ONCOND5)])->getStrVal()).c_str() ) );
 	
 	if(roll[0] == false){
 		bool pub = false;
