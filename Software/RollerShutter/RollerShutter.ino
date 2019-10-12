@@ -729,9 +729,9 @@ double variables(char *key){
 			result = makeTime(fromStrToTimeEl(key));
 			DEBUG1_PRINT("te: ");
 			DEBUG1_PRINTLN(result);
-		}else if(strcmp(key,"telem")==0){
+		}else if(strcmp(key,"tenow")==0){
 			result = (unsigned long) getUNIXTime();
-			DEBUG1_PRINT("telem: ");
+			DEBUG1_PRINT("tenow: ");
 			DEBUG1_PRINTLN(result);
 			
 		}else if(strlen(strstr(key,"tdst:M")) == strlen(key)){
