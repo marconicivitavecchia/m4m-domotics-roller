@@ -1074,7 +1074,7 @@ void mqttReconnect() {
 	DEBUG_PRINT(pars[p(MQTTID)]->getStrVal());
 	DEBUG_PRINTLN(F(" ..."));
 
-	delay(50);
+	delay(100);
 	if(mqttClient==NULL){
 		DEBUG1_PRINTLN(F("ERROR on mqttReconnect! MQTT client is not allocated."));
 	}
@@ -1085,8 +1085,10 @@ void mqttReconnect() {
 			DEBUG_PRINTLN(F("mqtt: onConnected([]() dice mi sono riconnesso."));
 			mqttcnt = 0;
 			//Altrimenti dice che è connesso ma non comunica
-			delay(50);
 			mqttClient->subscribe(static_cast<ParStr32*>(pars[p(MQTTINTOPIC)])->val); 
+			delay(50);
+			DEBUG1_PRINT(F("mqtt: Subsribed to: "));
+			DEBUG1_PRINTLN(static_cast<ParStr32*>(pars[p(MQTTINTOPIC)])->val);
 			mqttClient->publish((const char *)(static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)]))->val, (const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, 32);
 			pars[p(LOGSLCT)]->doaction(false);	
 			mqttConnected=true;//bho
@@ -1101,12 +1103,12 @@ void mqttReconnect() {
 			mqttConnected=false;
 		});
 		
-		DEBUG_PRINTLN(F("MQTT: Eseguo la prima connect."));
 		mqttClient->setUserPwd((const char*)static_cast<ParStr32*>(pars[p(MQTTUSR)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTPSW)])->val);
 		//////noInterrupts ();
 		if((wifiConn == true)&& WiFi.status()==WL_CONNECTED && WiFi.getMode()==WIFI_STA){
-			delay(50);
+			DEBUG1_PRINTLN(F("MQTT: Eseguo la prima connect."));
 			mqttClient->connect();
+			delay(50);
 		}
 		
 		//////interrupts ();
