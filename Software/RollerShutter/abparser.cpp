@@ -40,7 +40,7 @@ void keyterm(){
 	key[1] = '\0';
 
 	//for(int i=1; i<10 && (c>= 'a' && c<= 'z' ||c >= '0' && c <= '9'); i++){	
-	for(int i=1; i<29 && (c>= 'a' && c<= 'z' || c>= 'A' && c<= 'Z' || c >= '*' && c <= ':'); i++){	//per includere indirizzi IP e date
+	for(int i=1; i<29 && (c>= 'a' && c<= 'z' || c>= 'A' && c<= 'Z' || c >= '*' && c <= ':') && c!=','; i++){	//per includere indirizzi IP e date
 		key[i] = c;
 		key[i+1] = '\0';
 		get();
@@ -84,7 +84,7 @@ double action(double val)
 double factor()
 {
 	//elemento con elevata precedenza (numero, gruppo di lettere, espressione racchiusa tra parentesi)
-	if (peek() >= '0' && peek() <= '9'){
+	if (peek() >= '0' && peek() <= '9'){//le parole chiave non iniziano con numeri
         return number();
     }else if (peek() == '(')
     {
@@ -105,7 +105,7 @@ double factor()
     {
         get();
         return !factor();
-    }else if (peek() >= 'a' && peek() <= 'z'){
+    }else if (peek() >= 'a' && peek() <= 'z'){//inizio di una parola chiave
 		keyterm();
 		return function();
 	}
@@ -180,12 +180,12 @@ double term()
 		}else if (peek2() == ' '){
 			get();
         }else if (peek() == '['){
-			double a,b,c;
-			bool o;
+			double a,b,c,o;
+			//double o;
 			unsigned short nc = 0;
 			//i#o1,a,b,c,d 
 			get();	// '['
-			o = factor();
+			o = expression();
 			if (get() == ','){
 				nc = 1;
 				a = expression();
@@ -199,13 +199,12 @@ double term()
 				}
 			}
 			get(); // ']'
-
 			switch(nc){
 				case 0:
 					result = (result == o);
 				break;
 				case 1:
-					result = (result > o && result < a); //0<res<a
+					result = (result >= o && result <= a); //0<res<a
 				break;
 				case 2:
 					/*if(result < (a-b)){

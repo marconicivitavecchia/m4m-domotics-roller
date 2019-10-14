@@ -646,7 +646,7 @@ double actions(char *key, double val)
 			if(strcmp(key,"actlgcd3")==0){
 				pub = setDiffActionLogic(val,2);
 			}else if(strcmp(key,"actlgcd4")==0){
-				pub = setActionLogic(val,3);
+				pub = setDiffActionLogic(val,3);
 			}else if(strcmp(key,"actlgc3")==0){
 				pub = setActionLogic(val,2);
 			}else if(strcmp(key,"actlgc4")==0){
@@ -727,12 +727,12 @@ double variables(char *key){
 		}else if(key[1]=='e' && key[2]==':'){// 2019:07:30/03:57:30 o 2019-10-08T09:28:40
 			key += strlen("te:");
 			result = makeTime(fromStrToTimeEl(key));
-			DEBUG1_PRINT("te: ");
-			DEBUG1_PRINTLN(result);
+			//DEBUG1_PRINT("te: ");
+			//DEBUG1_PRINTLN(result);
 		}else if(strcmp(key,"tenow")==0){
 			result = (unsigned long) getUNIXTime();
-			DEBUG1_PRINT("tenow: ");
-			DEBUG1_PRINTLN(result);
+			//DEBUG1_PRINT("tenow: ");
+			//DEBUG1_PRINTLN(result);
 			
 		}else if(strlen(strstr(key,"tdst:M")) == strlen(key)){
 			key += strlen("tdst:M");//M4.5.0/02:00:00
@@ -1210,9 +1210,9 @@ void readStatesAndPub(bool all){
 	    s += comma;
 		s += pars[MQTTTEMP]->getStrJsonName()+twodot+String(asyncBuf[GTTEMP])+comma;
 #if (AUTOCAL_HLW8012)
-		str += pars[INSTPWR]->getStrJsonName()+twodot+asyncBuf[GTIPWR]+comma;
+		s += pars[INSTPWR]->getStrJsonName()+twodot+asyncBuf[GTIPWR]+comma;
 		//str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getExtimActivePower()+comma;
-		str += pars[INSTACV]->getStrJsonName()+twodot+asyncBuf[GTIVAC];
+		s += pars[INSTACV]->getStrJsonName()+twodot+asyncBuf[GTIVAC];
 #else
 		s += pars[MQTTMEANPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTMEANPWR1])+comma+String(asyncBuf[GTMEANPWR2])+closesqr2;
 		s += pars[MQTTPEAKPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTPEAKPWR1])+comma+String(asyncBuf[GTPEAKPWR2])+"\"]";
@@ -1296,6 +1296,22 @@ void readTempAndPub(){
   publishStr(s);
 }
 
+void readIpwrAndPub(){
+  //DEBUG2_PRINTLN(F("\nreadTempAndPub")); 
+  String s=openbrk;
+  //char sd[300];
+  s+=pars[INSTPWR]->getStrJsonName()+twodot+asyncBuf[GTIPWR]+end;
+  publishStr2(s);
+}
+
+void readVacAndPub(){
+  //DEBUG2_PRINTLN(F("\nreadTempAndPub")); 
+  String s=openbrk;
+  //char sd[300];
+  s+=pars[INSTACV]->getStrJsonName()+twodot+asyncBuf[GTIVAC]+end;
+  publishStr2(s);
+}
+		
 void readMacAndPub(){
   //String s=openbrk2;
   //publishStr(s);
@@ -1315,12 +1331,6 @@ void readTimeAndPub(){
 }
 
 void readMQTTIdAndPub(){
-  //String s=openbrk2;
-  //publishStr(s);
-  readTempAndPub();
-}
-
-void readIpwrAndPub(){
   //String s=openbrk2;
   //publishStr(s);
   readTempAndPub();
@@ -1615,16 +1625,27 @@ void setup(){
   zeroDetect();
 #endif
   cont=0;
-  
-  while (WiFi.status() != WL_CONNECTED && cont<30000/500) {
+  while (WiFi.status() != WL_CONNECTED && cont<3000/500) {
      delay(500);
 	 cont++;
      Serial.print(".");
   }
-
+  delay(3000);
+  if(WiFi.status() != WL_CONNECTED){
+	wifindx++;
+	setup_wifi(wifindx);
+	cont = 0;
+	while (WiFi.status() != WL_CONNECTED && cont<30000/500) {
+		delay(500);
+		cont++;
+		Serial.print(".");
+	}
+  }
+  
+  delay(1000);
   DEBUG1_PRINT(":");
   DEBUG1_PRINT(500*cont);
-  if(cont==30000/500){
+  if(cont==300000/500){
 	DEBUG1_PRINT("\nStation not connected!");  
   }else{
 	DEBUG1_PRINT("\nStation connected, IP: ");
@@ -2248,20 +2269,37 @@ inline void leggiTastiLocaliDaExp(){
 inline void sensorStatePoll(){
 	//sensor variation polling management
 	//on events basis push of reports
-	gatedfn(getTemperature(),GTTEMP, TEMPRND);
+	
 #if (AUTOCAL_HLW8012)
- 	if(mov){
-		gatedfn(overallSwPower2,GTIPWR, IPWRRND)){
-		//no voltage measurement to grant more precision on time calculation	
+ 	if(mov){//
+		gatedfn(overallSwPower,GTIPWR, IPWRRND);//only memorization!
+		//gatedfn(getTemperature(),GTTEMP, TEMPRND);
+		//no power feedback to grant more precision into time calculation
+		//no voltage measurement to grant more precision into time calculation	
 	}else{
-		gatedfn(hlw8012.getActivePower(),GTIPWR, IPWRRND)){
-		gatedfn(hlw8012.getVoltage(),GTIVAC, IVACRND)){
+		if(gatedfn(hlw8012.getActivePower(),GTIPWR, IPWRRND)){
+			readIpwrAndPub();
+		}
+		if(gatedfn(hlw8012.getVoltage(),GTIVAC, IVACRND)){
+			readAvgPowerAndPub();
+		}
+		if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
+			readTempAndPub();
+			DEBUG2_PRINT(F("\nTemperatura cambiata"));
+		}
 	}
-	if(changed[GTTEMP] || changed[GTIPWR] || changed[GTIVAC])
-		readIpAndPub();
 #else
-	if(changed[GTTEMP])
-		readIpAndPub();
+	if(mov){//
+		//gatedfn(overallSwPower2,GTIPWR, IPWRRND);//only memorization!
+		//gatedfn(getTemperature(),GTTEMP, TEMPRND);
+		//no power feedback to grant more precision into time calculation
+		//no voltage measurement to grant more precision into time calculation	
+	}else{
+		if(gatedfn(getTemperature(),GTTEMP, TEMPRND)){
+			readTempAndPub();
+			DEBUG2_PRINT(F("\nTemperatura cambiata"));
+		}
+	}
 #endif	
 }
 
@@ -2367,13 +2405,16 @@ inline void sampleOne(float pwr){
 	}
 }
 
-inline float getPower(){
+inline float getMotorPower(){
 #if (AUTOCAL_ACS712) 
+	//potenza netta motore
 	dd = maxx - minx - overallSwPower;
 	minx = 1024;
 	maxx = 0;
 #elif (AUTOCAL_HLW8012) 
+	//potenza lorda motore + luci
 	overallSwPower2 = hlw8012.getExtimActivePower();
+	//potenza netta motore
 	dd = overallSwPower2 - overallSwPower;
 #endif
 return dd;
@@ -2399,9 +2440,9 @@ inline void pwrSampler(){//only if !mov
 		doZeroSampl = NZEROSMPL;
 		overallSwPower = 0;
 	}
-	DEBUG2_PRINT(F("getPower: doPwrSampl: "));	
+	DEBUG2_PRINT(F("getMotorPower: doPwrSampl: "));	
 	DEBUG2_PRINT(doPwrSampl);
-	DEBUG2_PRINT(F(", getPower: doZeroSampl: "));	
+	DEBUG2_PRINT(F(", getMotorPower: doZeroSampl: "));	
 	DEBUG2_PRINT(doZeroSampl);
 	DEBUG2_PRINT(F(", dosmpl: "));	
 	DEBUG2_PRINT(dosmpl);
@@ -2451,7 +2492,7 @@ void onSWStateChange(uint8_t nn){
 
 inline void automaticStopManager(){
 	if(mov){ //sempre falso se si è in modalità switch!	
-			getPower();
+			getMotorPower();
 			DEBUG2_PRINT(F(" \nOverallSwPower: "));
 			DEBUG2_PRINT(overallSwPower);
 			//EMA calculation
@@ -3111,7 +3152,7 @@ void processCmdRemoteDebug() {
 	}else if(lastCmd == "getadczero"){
 		DEBUG1_PRINT(F("\nMean sensor: "));
 		DEBUG1_PRINTLN(m);
-	}else if(lastCmd == "getpower"){
+	}else if(lastCmd == "getMotorPower"){
 		DEBUG1_PRINT(F("\nAvg power: ["));
 		DEBUG1_PRINT(asyncBuf[GTMEANPWR1]);
 		DEBUG1_PRINT(F(","));
@@ -3135,7 +3176,7 @@ void processCmdRemoteDebug() {
 		testFlash();
 	}else{
 		DEBUG1_PRINT(F("\nComandi disponibili: "));
-		DEBUG1_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, getadczero, gettemp, getpower, getmac, gettime, getmqttid, testflash\n"));
+		DEBUG1_PRINT(F("\nshowconf, reboot, reset, calibrate1, calibrate2, apmodeon, scanwifi, getip, getmqttstat, getadczero, gettemp, getMotorPower, getmac, gettime, getmqttid, testflash\n"));
 	}
 	//telnet.flush();
 }
