@@ -215,7 +215,7 @@
 #define GATEND 		7	//OVERALL NUMBER OF GATES
 //Async R/W buffers
 #define ASYNCDIM	5	//OVERALL NUMBER OF R/W BUFFERS
-#define TEMPRND			0
+#define TEMPRND			0.5
 #define MEANPWR1RND		1
 #define MEANPWR2RND		1	
 #define PEAKPWR1RND		1
