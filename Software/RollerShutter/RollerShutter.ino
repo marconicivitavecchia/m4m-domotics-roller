@@ -458,7 +458,7 @@ inline void initOfst(){
 	/*5*/pars[p(SWACTION3)] = new ParUint8(0, "SWACTION3","");
 	/*5*/pars[p(SWACTION4)] = new ParUint8(0, "SWACTION4","");
 	/*5*/pars[p(UTCVAL)] = new ParLong(0, "UTCVAL","utcval");
-	/*5*/pars[p(LOGSLCT)] = new ParUint8(33, "logslct","logslct", LOGSLCTOFST, 'n', 'n', new LOGSLCT_Evnt());
+	/*5*/pars[p(LOGSLCT)] = new ParUint8(LOGSEL, "logslct","logslct", LOGSLCTOFST, 'n', 'n', new LOGSLCT_Evnt());
 	///*5*/pars[p(SWSPLDPWR1)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST1, 'n', 'n', new SWSPLDPWR1_Evnt());
 	///*5*/pars[p(SWSPLDPWR2)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST2, 'n', 'n', new SWSPLDPWR2_Evnt());
 	///*5*/pars[p(SWSPLDPWR3)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST3, 'n', 'n', new SWSPLDPWR3_Evnt());
@@ -3541,6 +3541,8 @@ void LOGSLCT_Evnt::doaction(bool save){
 	ser = (num >> 0) & 0x3;
 	tlnt = (num >> 2) & 0x3;
 	mqtt = (num >> 4) & 0x3;
+	//1, 0, 2 = 33 (100001)
+	//1, 0, 0 = 33 (000001)
 	
 	
 	DEBUG_PRINT("ser: ");

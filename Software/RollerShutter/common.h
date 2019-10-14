@@ -53,6 +53,7 @@
 #define ROLLMODE2 		0
 #define NTP1 			"ntp1.inrim.it"
 #define NTP2 			"0.it.pool.ntp.org"
+#define LOGSEL			1
 //END DEFAULTS
 //_DEBUG1 LEVELS---------------------
 #define _DEBUG   		1		//ACTIVATE LOCAL AND REMOTE _DEBUG1 MODE
