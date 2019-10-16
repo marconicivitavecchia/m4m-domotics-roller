@@ -526,217 +526,220 @@ extern char gbuf[DATEBUFLEN];
 class BaseEvnt{
 	public:
 		unsigned long pid;
+		bool acc = false;
+		bool active = false;
+		uint8_t count = 0;
 		BaseEvnt(){};
 		BaseEvnt(unsigned id){pid = id;};
-		virtual void doaction(bool) = 0;
+		virtual void doaction(uint8_t) = 0;
 };
 
 class MQTTBTN_Evnt: public BaseEvnt{
 	public:
 		MQTTBTN_Evnt(unsigned x = 0):BaseEvnt(x){};
-		void doaction(bool);
+		void doaction(uint8_t);
 		//void loadPid(uint8_t);
 };
 
 class MQTTMAC_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class MQTTIP_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class MQTTMQTTID_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class MQTTTIME_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class MQTTTEMP_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class MQTTMEANPWR_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class MQTTPEAKPWR_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 #if (AUTOCAL_HLW8012) 
 class DOPWRCAL_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class INSTPWR_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class INSTACV_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class CALPWR_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class PWRMULT_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class CURRMULT_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class VACMULT_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class ACVOLT_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 #endif
 //-----------------------------------------------------------------------
 class UTCVAL_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 
 class NTPADDR2_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class NTPADDR1_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class MQTTADDR_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class MQTTCONNCHANGED_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
-class MQTTTOPIC_Evnt: public BaseEvnt{
+class MQTTINTOPIC_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class WIFICHANGED_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class UTCSYNC_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class UTCADJ_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class UTCSDT_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class UTCZONE_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class ACTIONEVAL_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class ONCOND1_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class ONCOND2_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class ONCOND3_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class ONCOND4_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class ONCOND5_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class LOGSLCT_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class SLATSRATIO_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class BARRELRAD_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class THICKNESS_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class TLENGTH_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class THALTX_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class STDELX_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class VALWEIGHT_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class SWROLL1_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class SWROLL2_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 /*
 class SWSPLDPWR1_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class SWSPLDPWR2_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class SWSPLDPWR3_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class SWSPLDPWR4_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 */
 
 /*
 class WEBUSR_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 class WEBPSW_Evnt: public BaseEvnt{
 	public:
-		void doaction(bool);
+		void doaction(uint8_t);
 };
 */
 
@@ -748,15 +751,16 @@ class Par{
 		char formfield;
 		char partype;
 		BaseEvnt *e = NULL;
+		bool doalws;
 		uint8_t val = 0;  //Attention! shadowed property, is referred by early binding on base class! (you must use static cast for read access)
 		
-		Par(const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL);
+		Par(const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL, bool k = false);
 		
 		String getStrFormName();				//base class version
 		String getStrJsonName();				//base class version
 		char getFormField();
 		char getType();
-		void doaction(bool = false);			//base class version
+		void doaction(uint8_t = 0);			//base class version
 		virtual void writeParam(String) = 0;	//late binding abstract
 		virtual void loadFromStr(String) = 0;	//late binding abstract
 		virtual void saveOnEprom() = 0;			//late binding abstract
@@ -776,7 +780,7 @@ class ParUint8 : public Par{
 	 
 	public:
 		uint8_t val;
-		ParUint8(uint8_t v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
+		ParUint8(uint8_t v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL, bool k = false):Par(x,y,z,u,t,w,k){val = v;};
 		
 		String getStrVal();
 		void writeParam(String);
@@ -789,7 +793,7 @@ class ParUint8 : public Par{
 class ParInt : public Par{
 	public:
 		int val;
-		ParInt(int v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
+		ParInt(int v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL, bool k = false):Par(x,y,z,u,t,w,k){val = v;};
 		
 		String getStrVal();
 		void writeParam(String);
@@ -802,7 +806,7 @@ class ParInt : public Par{
 class ParLong : public Par{
 	public:
 		unsigned long val;
-		ParLong(unsigned long v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;};
+		ParLong(unsigned long v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL, bool k = false):Par(x,y,z,u,t,w,k){val = v;};
 		
 		String getStrVal();
 		void writeParam(String);
@@ -816,7 +820,7 @@ class ParLong : public Par{
 class ParFloat : public Par{
 	public:
 		float val;
-		ParFloat(float v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){val = v;}
+		ParFloat(float v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL, bool k = false):Par(x,y,z,u,t,w,k){val = v;}
 		
 		String getStrVal();
 		void writeParam(String);
@@ -830,7 +834,7 @@ class ParFloat : public Par{
 class ParStr32 : public Par{
 	public:
 		char val[32];
-		ParStr32(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){this->load((char*)v);};
+		ParStr32(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL, bool k = false):Par(x,y,z,u,t,w,k){this->load((char*)v);};
 		
 		String getStrVal();
 		void writeParam(String);
@@ -843,7 +847,7 @@ class ParStr32 : public Par{
 class ParStr64 : public Par{
 	public:
 		char val[64];
-		ParStr64(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){this->load((char*)v);};
+		ParStr64(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL, bool k = false):Par(x,y,z,u,t,w,k){this->load((char*)v);};
 		
 		String getStrVal();
 		void writeParam(String);
@@ -856,7 +860,7 @@ class ParStr64 : public Par{
 class ParVarStr : public Par{
 	public:
 		String val;
-		ParVarStr(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL):Par(x,y,z,u,t,w){this->load(v);};
+		ParVarStr(const char* v, const char* x = "empty", const char* y = "" , unsigned z = 2, char u = 'n', char t = 'n', BaseEvnt * w = NULL, bool k = false):Par(x,y,z,u,t,w,k){this->load(v);};
 		
 		//using Par::load;
 		String getStrVal();
@@ -1194,7 +1198,7 @@ void loadConf(unsigned);
 void saveSingleConf(unsigned);
 void saveSingleJson(unsigned);
 void printFixedParam(unsigned);
-void saveParamFromForm(unsigned);
+bool saveParamFromForm(unsigned);
 float writeFloatConf(unsigned, float);
 float saveFloatConf(unsigned);
 long saveLongConf(unsigned);

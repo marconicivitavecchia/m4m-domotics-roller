@@ -412,9 +412,9 @@ inline void initOfst(){
 	/*20*/pars[p(SLATSRATIO)] = new ParFloat(0.8, "slatsratio", "slatsratio", SLATSRATIOFST, 'p','i', new SLATSRATIO_Evnt());
 	/*21*/pars[p(UTCSYNC)] = new ParInt(50, "utcsync", "utcsync", NTPSYNCINTOFST, 'p','i', new UTCSYNC_Evnt());
 	/*22*/pars[p(MQTTID)] = new ParStr32(MQTTCLIENTID, "mqttid", "mqttid", MQTTIDOFST, 'p','i');
-	/*23*/pars[p(MQTTOUTTOPIC)] = new ParStr32(OUTTOPIC, "mqttouttopic", "mqttouttopic", OUTTOPICOFST, 'p','i', new MQTTTOPIC_Evnt());
+	/*23*/pars[p(MQTTOUTTOPIC)] = new ParStr32(OUTTOPIC, "mqttouttopic", "mqttouttopic", OUTTOPICOFST, 'p','i');
 	/*23*/pars[p(MQTTLOG)] = new ParStr32(LOGPATH, "mqttlog", "mqttlog", MQTTLOGOFST, 'p','i');
-	/*24*/pars[p(MQTTINTOPIC)] = new ParStr32(INTOPIC, "mqttintopic", "mqttintopic", INTOPICOFST, 'p','i', new MQTTTOPIC_Evnt());
+	/*24*/pars[p(MQTTINTOPIC)] = new ParStr32(INTOPIC, "mqttintopic", "mqttintopic", INTOPICOFST, 'p','i', new MQTTINTOPIC_Evnt());
 	/*25*/pars[p(CLNTSSID1)] = new ParStr32(SSID1, "clntssid1", "clntssid1", WIFICLIENTSSIDOFST1, 'p','i', new WIFICHANGED_Evnt());
 	/*26*/pars[p(CLNTPSW1)] = new ParStr32(PSW1, "clntpsw1", "clntpsw1", WIFICLIENTPSWOFST1, 'p','i', new WIFICHANGED_Evnt());
 	/*27*/pars[p(CLNTSSID2)] = new ParStr32(SSID2, "clntssid2", "clntpsw1", WIFICLIENTSSIDOFST2, 'p','i', new WIFICHANGED_Evnt());
@@ -423,10 +423,10 @@ inline void initOfst(){
 	/*30*/pars[p(APPPSW)] = new ParStr32(PSWAP, "apppsw", "apppsw", WIFIAPPPSWOFST, 'p','i');
 	/*31*/pars[p(WEBUSR)] = new ParStr32(WBUSR, "webusr", "webusr", WEBUSROFST, 'p','i');
 	/*32*/pars[p(WEBPSW)] = new ParStr32(WBPSW, "webpsw", "webpsw", WEBPSWOFST, 'p','i');
-	/*33*/pars[p(MQTTUSR)] = new ParStr32(MQUSR, "mqttusr", "mqttusr", MQTTUSROFST, 'p','i', new MQTTCONNCHANGED_Evnt());
+	/*33*/pars[p(MQTTUSR)] = new ParStr32(MQUSR, "mqttusr", "mqttusr", MQTTUSROFST, 'p','i');//uno dei due!
 	/*34*/pars[p(MQTTPSW)] = new ParStr32(MQPSW, "mqttpsw", "mqttpsw", MQTTPSWOFST, 'p','i', new MQTTCONNCHANGED_Evnt());
-	/*35*/pars[p(MQTTADDR)] = new ParStr64(MQTTSRV, "mqttaddr", "mqttaddr", MQTTADDROFST, 'p','i', new MQTTADDR_Evnt());
-	/*36*/pars[p(MQTTPORT)] = new ParLong(MQTTPRT, "mqttport", "mqttport", MQTTPORTOFST, 'p','i', new MQTTADDR_Evnt());
+	/*35*/pars[p(MQTTADDR)] = new ParStr64(MQTTSRV, "mqttaddr", "mqttaddr", MQTTADDROFST, 'p','i', new MQTTADDR_Evnt(),true);//va prima!
+	/*36*/pars[p(MQTTPORT)] = new ParLong(MQTTPRT, "mqttport", "mqttport", MQTTPORTOFST, 'p','i', pars[p(MQTTADDR)]->e,true);
 	/*37*/pars[p(WSPORT)] = new ParStr32(WSPRT, "wsport", "wsport", WSPORTOFST, 'p','i');
 	/*38*/pars[p(MQTTPROTO)] = new ParStr32(MQTTPT, "mqttproto", "mqttproto", MQTTPROTOFST, 'p','i');
 	/*39*/pars[p(NTPADDR1)] = new ParStr64(NTP1, "ntpaddr1", "ntpaddr1", NTP1ADDROFST, 'p','i', new NTPADDR1_Evnt());
@@ -1099,7 +1099,7 @@ void mqttReconnect() {
 		
 		mqttClient->onDisconnected([]() {
 			//DEBUG2_PRINTLN("MQTT disconnected.");
-		DEBUG_PRINTLN(F("MQTT: onDisconnected([]() dice mi sono disconnesso."));
+			DEBUG_PRINTLN(F("MQTT: onDisconnected([]() dice mi sono disconnesso."));
 			mqttConnected=false;
 		});
 		
@@ -1665,6 +1665,7 @@ void setup(){
 	  pars[p(LOCALIP)]->load(IP);
 	  DEBUG1_PRINTLN(F("AP client IP address = "));
 	  DEBUG1_PRINTLN(((ParStr32*)pars[p(LOCALIP)])->val);
+	  //MQTT INIT
 	  mqttReconnect();
 	  wifiConn = true;	
   }else{
@@ -3232,68 +3233,68 @@ void testFlash(){
 //--------------------------------------------------------------------------------------------------
 //configurazioni provenienti da remoto
 //---------------------------------------------------------------
-void MQTTMAC_Evnt::doaction(bool save){
+void MQTTMAC_Evnt::doaction(uint8_t save){
 	readMacAndPub();
 }
-void MQTTIP_Evnt::doaction(bool save){
+void MQTTIP_Evnt::doaction(uint8_t save){
 	readIpAndPub();
 }
-void MQTTMQTTID_Evnt::doaction(bool save){
+void MQTTMQTTID_Evnt::doaction(uint8_t save){
 	readMQTTIdAndPub();
 }
-void MQTTTIME_Evnt::doaction(bool save){
+void MQTTTIME_Evnt::doaction(uint8_t save){
 	readTimeAndPub();
 }
-void MQTTTEMP_Evnt::doaction(bool save){
+void MQTTTEMP_Evnt::doaction(uint8_t save){
 	readTempAndPub();
 }
-void MQTTMEANPWR_Evnt::doaction(bool save){
+void MQTTMEANPWR_Evnt::doaction(uint8_t save){
 	readAvgPowerAndPub();
 }
-void MQTTPEAKPWR_Evnt::doaction(bool save){
+void MQTTPEAKPWR_Evnt::doaction(uint8_t save){
 	readPeakPowerAndPub();
 }
 #if (AUTOCAL_HLW8012) 
-void DOPWRCAL_Evnt::doaction(bool save){
+void DOPWRCAL_Evnt::doaction(uint8_t save){
 	calibrate_pwr();
 	saveSingleConf(PWRMULT);
 	saveSingleConf(CURRMULT);
 	saveSingleConf(VACMULT);
 	readPwrCalAndPub();
 }
-void INSTPWR_Evnt::doaction(bool save){
+void INSTPWR_Evnt::doaction(uint8_t save){
 	void readIpwrAndPub();
 }
-void INSTACV_Evnt::doaction(bool save){
+void INSTACV_Evnt::doaction(uint8_t save){
 	void readIacvoltAndPub();
 }
-void CALPWR_Evnt::doaction(bool save){
-	if(save)   
+void CALPWR_Evnt::doaction(uint8_t save){
+	if(save==1)   
 		saveSingleConf(CALPWR);
 }
-void PWRMULT_Evnt::doaction(bool save){
-	if(save)   
+void PWRMULT_Evnt::doaction(uint8_t save){
+	if(save==1)   
 		saveSingleConf(PWRMULT);
 	hlw8012.setPowerMultiplier(static_cast<ParFloat*>(pars[p(PWRMULT)])->val);
 		// Show corrected factors
 	DEBUG1_PRINT(F("[HLW] New power multiplier   : ")); DEBUG1_PRINTLN(hlw8012.getPowerMultiplier());
 }
-void CURRMULT_Evnt::doaction(bool save){
-	if(save)   
+void CURRMULT_Evnt::doaction(uint8_t save){
+	if(save==1)   
 		saveSingleConf(CURRMULT);
 	hlw8012.setCurrentMultiplier(static_cast<ParFloat*>(pars[p(CURRMULT)])->val);
 		// Show corrected factors
 	DEBUG1_PRINT(F("[HLW] New current multiplier : ")); DEBUG1_PRINTLN(hlw8012.getCurrentMultiplier());
 }
-void VACMULT_Evnt::doaction(bool save){
-	if(save)   
+void VACMULT_Evnt::doaction(uint8_t save){
+	if(save==1)   
 		saveSingleConf(VACMULT);
 	hlw8012.setVoltageMultiplier(static_cast<ParFloat*>(pars[p(VACMULT)])->val);
 		// Show corrected factors
 	DEBUG1_PRINT(F("[HLW] New voltage multiplier : ")); DEBUG1_PRINTLN(hlw8012.getVoltageMultiplier());
 }
-void ACVOLT_Evnt::doaction(bool save){
-	if(save)   
+void ACVOLT_Evnt::doaction(uint8_t save){
+	if(save==1)   
 		saveSingleConf(ACVOLT);
 }
 #endif
@@ -3303,7 +3304,7 @@ void ACVOLT_Evnt::doaction(bool save){
 //void BaseEvnt::loadPid(uint8_t id){
 //	this->pid = id;
 //}
-void MQTTBTN_Evnt::doaction(bool save){
+void MQTTBTN_Evnt::doaction(uint8_t save){
 	unsigned i = this->pid;
 	uint8_t v = static_cast<ParUint8*>(pars[i])->val;
 	int n = i / TIMERDIM;
@@ -3332,7 +3333,7 @@ void MQTTBTN_Evnt::doaction(bool save){
 	printOutlogic();
 }
 
-void WIFICHANGED_Evnt::doaction(bool save){	
+void WIFICHANGED_Evnt::doaction(uint8_t save){	
 	wifindx=0;
 	Serial.println(F("Doing WiFi disconnection"));
 	WiFi.persistent(false);
@@ -3342,193 +3343,198 @@ void WIFICHANGED_Evnt::doaction(bool save){
 	wifindx = 0;
 }
 
-void MQTTADDR_Evnt::doaction(bool save){	
-	if(wifiConn == true){
-		DEBUG2_PRINTLN(F("confcmd[MQTTADDRMODFIED] eseguo la reconnect()"));
-		mqttReconnect();
+//cambio di indirizzo o porta
+void MQTTADDR_Evnt::doaction(uint8_t save){
+	DEBUG1_PRINT(F("save: "));
+	DEBUG1_PRINTLN(save);
+	if(save == 2){
+		acc = acc || active;
+		count++;
+		DEBUG1_PRINT(F("count: "));
+		DEBUG1_PRINTLN(count);
+		if(count >= 2 && acc){
+			count = 0;
+			if(wifiConn == true){
+				DEBUG2_PRINTLN(F("confcmd[MQTTADDRMODFIED] eseguo la reconnect()"));
+				mqttReconnect();
+			}
+		}
 	}
 }
 
-void MQTTCONNCHANGED_Evnt::doaction(bool save){
+//cambio di username o psw
+void MQTTCONNCHANGED_Evnt::doaction(uint8_t save){
 	if(wifiConn == true){
 		if(mqttClient==NULL){
 			DEBUG2_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
 			mqttReconnect();
+			delay(50);
 		}else{
-			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la setUserPwd() con usr "));
-			DEBUG2_PRINTLN(pars[p(MQTTUSR)]->getStrVal());
-			DEBUG2_PRINTLN(F(" e psw "));
-			DEBUG2_PRINTLN(pars[p(MQTTPSW)]->getStrVal());
-
-			mqttClient->setUserPwd((const char*) static_cast<ParStr32*>(pars[p(MQTTUSR)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTPSW)])->val);
-			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la connect() ..."));
-			mqttClient->connect();
-
-			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la subscribe() con "));
-			DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
-			DEBUG2_PRINTLN(F("..."));
-
-			mqttClient->subscribe(pars[p(MQTTINTOPIC)]->getStrVal());
-
-			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! publish(): "));
-			DEBUG2_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
-			DEBUG2_PRINTLN(F(" Intopic: "));
-			DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
-
-			mqttClient->publish((const char*) static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
+			if((wifiConn == true)&& WiFi.status()==WL_CONNECTED && WiFi.getMode()==WIFI_STA){
+				if(mqttConnected){
+					DEBUG1_PRINT(F("eseguo la MQTT disconnect()...Cnt: "));
+					//noInterrupts ();
+					mqttClient->disconnect();
+					delay(50);
+				}
+				DEBUG1_PRINTLN(F("MQTTCONNCHANGED! Eseguo la setUserPwd() con usr "));
+				DEBUG2_PRINTLN(pars[p(MQTTUSR)]->getStrVal());
+				DEBUG2_PRINTLN(F(" e psw "));
+				DEBUG2_PRINTLN(pars[p(MQTTPSW)]->getStrVal());
+				mqttClient->setUserPwd((const char*)static_cast<ParStr32*>(pars[p(MQTTUSR)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTPSW)])->val);
+				//////noInterrupts ();
+				delay(50);
+				DEBUG1_PRINTLN(F("MQTT: Eseguo la re-connect."));
+				mqttClient->connect();
+				delay(50);
+			}
 		}
 	}
 		
 }
 
-void MQTTTOPIC_Evnt::doaction(bool save){	
-	if(wifiConn == true){
+//cambio di intopic (subscribe)
+void MQTTINTOPIC_Evnt::doaction(uint8_t save){	
+	if(wifiConn == true && !save){
 		if(mqttClient==NULL){
-			DEBUG2_PRINTLN(F("ERROR confcmd[TOPICCHANGED]! MQTT client is not allocated."));
+			DEBUG2_PRINTLN(F("ERROR confcmd[INTOPICCHANGED]! MQTT client is not allocated."));
 			mqttReconnect();
+			delay(50);
 		}else{
-			
 			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! Eseguo la subscribe() con "));
 			DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
 			DEBUG2_PRINTLN(F("..."));
-
 			mqttClient->subscribe(pars[p(MQTTINTOPIC)]->getStrVal());
-
-			DEBUG2_PRINTLN(F("MQTTCONNCHANGED! publish(): "));
-			DEBUG2_PRINTLN(pars[p(MQTTOUTTOPIC)]->getStrVal());
-			DEBUG2_PRINTLN(F(" Intopic: "));
-			DEBUG2_PRINTLN(pars[p(MQTTINTOPIC)]->getStrVal());
-
-			mqttClient->publish((const char*) static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)])->val, (const char*) static_cast<ParStr32*>(pars[p(MQTTID)])->val, 32);
+			delay(50);
 		}
 	}
 }
 
-void VALWEIGHT_Evnt::doaction(bool){
+void VALWEIGHT_Evnt::doaction(uint8_t){
 	setValweight(static_cast<ParFloat*>(pars[p(VALWEIGHT)])->val);
 }
-void STDELX_Evnt::doaction(bool){
+void STDELX_Evnt::doaction(uint8_t){
 	setSTDelays(static_cast<ParLong*>(pars[p(STDEL1)])->val, static_cast<ParLong*>(pars[p(STDEL2)])->val);
 }
-void THALTX_Evnt::doaction(bool){
+void THALTX_Evnt::doaction(uint8_t){
 	setTHalts(static_cast<ParLong*>(pars[p(THALT1)])->val, static_cast<ParLong*>(pars[p(THALT2)])->val, static_cast<ParLong*>(pars[p(THALT3)])->val, static_cast<ParLong*>(pars[p(THALT4)])->val);
 }
-void THICKNESS_Evnt::doaction(bool){
+void THICKNESS_Evnt::doaction(uint8_t){
 	setThickness(static_cast<ParFloat*>(pars[p(THICKNESS)])->val);
 }
-void BARRELRAD_Evnt::doaction(bool){
+void BARRELRAD_Evnt::doaction(uint8_t){
 	setBarrRadius(static_cast<ParFloat*>(pars[p(BARRELRAD)])->val);
 }
-void SLATSRATIO_Evnt::doaction(bool){
+void SLATSRATIO_Evnt::doaction(uint8_t){
 	setSLRatio(static_cast<ParFloat*>(pars[p(SLATSRATIO)])->val);
 }
-void TLENGTH_Evnt::doaction(bool){
+void TLENGTH_Evnt::doaction(uint8_t){
 	setTapLen(static_cast<ParFloat*>(pars[p(TLENGTH)])->val);
 }
-void UTCVAL_Evnt::doaction(bool){
+void UTCVAL_Evnt::doaction(uint8_t){
 	updateNTP(static_cast<ParLong*>(pars[p(UTCVAL)])->val);
 }
-void NTPADDR1_Evnt::doaction(bool save){
-	if(save)   
+void NTPADDR1_Evnt::doaction(uint8_t save){
+	if(save==1)   
 		saveSingleConf(NTPADDR1);
 	setNtpServer(0,static_cast<ParStr64*>(pars[p(NTPADDR1)])->val);
 }
-void NTPADDR2_Evnt::doaction(bool save){
-	if(save)   
+void NTPADDR2_Evnt::doaction(uint8_t save){
+	if(save==1)   
 		saveSingleConf(NTPADDR2);
 	setNtpServer(1,static_cast<ParStr64*>(pars[p(NTPADDR2)])->val);
 }
-void UTCSYNC_Evnt::doaction(bool save){
-	if(save) 
+void UTCSYNC_Evnt::doaction(uint8_t save){
+	if(save==1) 
 		setSyncInterval(saveLongConf(UTCSYNC));
 	else
 		setSyncInterval(static_cast<ParLong*>(pars[p(UTCSYNC)])->val);
 }
-void UTCADJ_Evnt::doaction(bool save){
-	if(save) 
+void UTCADJ_Evnt::doaction(uint8_t save){
+	if(save==1) 
 		adjustTime(saveIntConf(UTCADJ));
 }
-void UTCSDT_Evnt::doaction(bool save){
-	if(save) 
+void UTCSDT_Evnt::doaction(uint8_t save){
+	if(save==1) 
 		setSDT(saveByteConf(UTCSDT));
 	else
 		setSDT(static_cast<ParUint8*>(pars[p(UTCSDT)])->val);
 }
-void UTCZONE_Evnt::doaction(bool save){
-	if(save) 
+void UTCZONE_Evnt::doaction(uint8_t save){
+	if(save==1) 
 		setTimeZone((int) saveIntConf(UTCZONE));
 	else
 		setTimeZone((int)static_cast<ParInt*>(pars[p(UTCZONE)])->val);
 }
-void SWROLL1_Evnt::doaction(bool save){
-	if(save) 
+void SWROLL1_Evnt::doaction(uint8_t save){
+	if(save==1) 
 		saveSingleConf(SWROLL1);	
 	setSWMode((uint8_t) static_cast<ParUint8*>(pars[p(SWROLL1)])->val,0); 
 }
-void SWROLL2_Evnt::doaction(bool save){
-	if(save) 
+void SWROLL2_Evnt::doaction(uint8_t save){
+	if(save==1) 
 		saveSingleConf(SWROLL2);	
 	setSWMode((uint8_t) static_cast<ParUint8*>(pars[p(SWROLL2)])->val,0); 
 }
-void ACTIONEVAL_Evnt::doaction(bool save){
+void ACTIONEVAL_Evnt::doaction(uint8_t save){
 	//save confs and actions on new action received event
-	if(save) 
+	if(save==1) 
 		writeOnOffConditions();
 	//run actions one time on new action received event
 	readActionConfAndSet();
 }
-void ONCOND1_Evnt::doaction(bool save){
+void ONCOND1_Evnt::doaction(uint8_t save){
 	//save confs and actions on new action received event
-	if(save) 
+	if(save==1) 
 		writeOnOffConditions();
 }
-void ONCOND2_Evnt:: doaction(bool save){
+void ONCOND2_Evnt:: doaction(uint8_t save){
 	//save confs and actions on new config received event
-	if(save) 
+	if(save==1) 
 		writeOnOffConditions();
 }
-void ONCOND3_Evnt::doaction(bool save){
+void ONCOND3_Evnt::doaction(uint8_t save){
 	//save confs and actions on new config received event
-	if(save) 
+	if(save==1) 
 		writeOnOffConditions();
 }
-void ONCOND4_Evnt::doaction(bool save){
+void ONCOND4_Evnt::doaction(uint8_t save){
 	//save confs and actions on new config received event
-	if(save) 
+	if(save==1) 
 		writeOnOffConditions();
 }
-void ONCOND5_Evnt::doaction(bool save){
+void ONCOND5_Evnt::doaction(uint8_t save){
 	//save confs and actions on new config received event
-	if(save) 
+	if(save==1) 
 		writeOnOffConditions();
 }
 /*
-void SWSPLDPWR1_Evnt::doaction(bool save){
+void SWSPLDPWR1_Evnt::doaction(uint8_t save){
 	//save confs and actions on new config received event
-	if(save) 
+	if(save==1) 
 		saveFloatConf(SWSPLDPWR1);
 	outPwr[0] = static_cast<ParFloat*>(pars[p(SWSPLDPWR1)])->val;
 }
-void SWSPLDPWR2_Evnt::doaction(bool save){
+void SWSPLDPWR2_Evnt::doaction(uint8_t save){
 	//save confs and actions on new config received event
-	if(save) 
+	if(save==1) 
 		saveFloatConf(SWSPLDPWR2);
 	outPwr[1] = static_cast<ParFloat*>(pars[p(SWSPLDPWR2)])->val;
 }
-void SWSPLDPWR3_Evnt::doaction(bool save){
+void SWSPLDPWR3_Evnt::doaction(uint8_t save){
 	//save confs and actions on new config received event
-	if(save) 
+	if(save==1) 
 		saveFloatConf(SWSPLDPWR3);
 	outPwr[2] = static_cast<ParFloat*>(pars[p(SWSPLDPWR3)])->val;
 }
-void SWSPLDPWR4_Evnt::doaction(bool save){
+void SWSPLDPWR4_Evnt::doaction(uint8_t save){
 	//save confs and actions on new config received event
-	if(save) 
+	if(save==1) 
 		saveFloatConf(SWSPLDPWR4);
 	outPwr[3] = static_cast<ParFloat*>(pars[p(SWSPLDPWR4)])->val;
 }
 */
-void LOGSLCT_Evnt::doaction(bool save){
+void LOGSLCT_Evnt::doaction(uint8_t save){
 	uint8_t ser, tlnt, mqtt, num;
 	
 	DEBUG_PRINT("LOGSLCT_Evnt ");
@@ -3536,7 +3542,7 @@ void LOGSLCT_Evnt::doaction(bool save){
 	num = static_cast<ParUint8*>(pars[p(LOGSLCT)])->val;
 	
 	DEBUG_PRINT("saveByteConf ");
-	if(save) saveByteConf(LOGSLCT);		////
+	if(save==1) saveByteConf(LOGSLCT);		////
 	
 	ser = (num >> 0) & 0x3;
 	tlnt = (num >> 2) & 0x3;
@@ -3754,11 +3760,11 @@ void serialMQTT2(uint8_t ser, uint8_t mqtt){
 	}
 }
 /*
-void WEBUSR_Evnt:: doaction(bool save){
+void WEBUSR_Evnt:: doaction(uint8_t save){
 	//save confs and actions on new config received event
 	saveSingleConf(WEBUSR);
 }
-void WEBPSW_Evnt:: doaction(bool save){
+void WEBPSW_Evnt:: doaction(uint8_t save){
 	//save confs and actions on new config received event
 	saveSingleConf(WEBPSW);
 }

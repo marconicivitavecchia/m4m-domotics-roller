@@ -1659,8 +1659,17 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 
 inline void savegroup(uint8_t fields[], uint8_t len){
 	for(int i=0; i<len; i++){
-		saveParamFromForm(fields[i]);		//save param on eeprom
-		parsp[fields[i]]->doaction(false);		//execute onreceive param event manager
+		bool save = saveParamFromForm(fields[i]);
+		if(parsp[fields[i]]->e != NULL){
+			parsp[fields[i]]->e->active = save;
+			DEBUG1_PRINT(F("savegroup: "));
+			DEBUG1_PRINTLN(save);
+		}
+		DEBUG1_PRINT(F("doalws: "));
+		DEBUG1_PRINTLN(parsp[fields[i]]->doalws);
+			 
+		if(save || (bool) parsp[fields[i]]->doalws)		//save param on eeprom
+			parsp[fields[i]]->doaction(2);				//execute onreceive param event manager	
 	}
 }
 
@@ -1681,7 +1690,7 @@ void handleModify(){
 	  savegroup(fields, 6);
   }else if(serverp.hasArg("svmqtt")){
 	  DEBUG2_PRINTLN(F("savegroup svmqtt"));
-	  uint8_t fields[10] ={p(MQTTADDR), p(MQTTID), p(MQTTOUTTOPIC), p(MQTTINTOPIC), p(MQTTUSR), p(MQTTPSW), p(MQTTPORT), p(WSPORT), p(MQTTPROTO), p(MQTTLOG)};
+	  uint8_t fields[10] ={p(WSPORT), p(MQTTPROTO), p(MQTTID), p(MQTTOUTTOPIC), p(MQTTINTOPIC), p(MQTTUSR), p(MQTTPSW), p(MQTTLOG), p(MQTTADDR), p(MQTTPORT)};
 	  savegroup(fields, 10);
   }else if(serverp.hasArg("svsystem")){
 	  DEBUG2_PRINTLN(F("savegroup svsystem"));
@@ -1755,7 +1764,7 @@ void handleModify(){
 		  DEBUG2_PRINTLN(String(num));
 		  static_cast<ParUint8*>(parsp[p(LOGSLCT)])->load(num);
 		  saveSingleConf(LOGSLCT);
-		  static_cast<ParUint8*>(parsp[p(LOGSLCT)])->doaction(false);
+		  static_cast<ParUint8*>(parsp[p(LOGSLCT)])->doaction(0);
 	  }
   }
   EEPROM.end();
@@ -1817,7 +1826,7 @@ void loadConfig() {
 		DEBUG1_PRINTLN(F("Reading all fixed params... "));
 		for(int i=VARCONFDIM + USRMODIFICABLEFLAGS ; i<PARAMSDIM; i++){
 			loadConf(i);
-			parsp[i]->doaction(false);	////Do only setting!!!
+			parsp[i]->doaction(0);	////Do only setting!!!
 		}
 		
 		DEBUG1_PRINT(F("Reading all variables params... "));
@@ -1883,7 +1892,7 @@ void saveOnEEPROM(int len){
 	EEPROM.begin(len);	
 	for(int i=VARCONFDIM + USRMODIFICABLEFLAGS; i<PARAMSDIM; i++){
 		saveConf(i);
-		parsp[i]->doaction(false);	////only setting!!!
+		parsp[i]->doaction(0);	////only setting!!!
 	}
 	EEPROM.end();
 	
@@ -2063,9 +2072,10 @@ void printFixedParam(unsigned paramofst){
 	}
 }
 
-void saveParamFromForm(unsigned paramofst){
+bool saveParamFromForm(unsigned paramofst){
 	char intype = parsp[paramofst]->getType();
 	char frmtype = parsp[paramofst]->getFormField();
+	bool save = false;
 	
 	DEBUG1_PRINT(F("paramofst: "));
 	DEBUG1_PRINTLN(paramofst);
@@ -2096,30 +2106,36 @@ void saveParamFromForm(unsigned paramofst){
 					DEBUG1_PRINT(param);
 					DEBUG1_PRINT(F(": "));
 					DEBUG1_PRINTLN(parsp[paramofst]->getStrVal());
+					save = true;
 				}
 			}else if(intype == 'j'){
 				if(serverp.hasArg(param) && (parsp[paramofst]->getStrVal() != serverp.arg(param)) ){
 					parsp[paramofst]->jsoname = (char *) (serverp.arg(param)).c_str();
 					DEBUG1_PRINT(F("Updated json name: "));
 					DEBUG1_PRINT(parsp[paramofst]->jsoname);
+					save = true;
 				}
 			}	
 		}
 	}
 	DEBUG1_PRINTLN(F("---------------------------------"));
+	return save;
 }
-
 //conservata in eeprom, acqu,isita in form, sia nome che valore campo MQTT
-Par::Par(const char* pname, const char* mjson, unsigned epromofst, char ptype, char ffield, BaseEvnt *evt){
+
+Par::Par(const char* pname, const char* mjson, unsigned epromofst, char ptype, char ffield, BaseEvnt *evt, bool doalways){
 	formname = (char *) pname;
 	eprom = epromofst;
 	formfield = ffield;
 	partype = ptype;
 	e = evt;
+	doalws = doalways;
+	DEBUG1_PRINT(F("doalways: "));
+	DEBUG1_PRINT(doalws);
 	jsoname = (char *) mjson;
 }
 
-void Par::doaction(bool save){
+void Par::doaction(uint8_t save){
 	if(e!=NULL)
 		e->doaction(save);
 }
