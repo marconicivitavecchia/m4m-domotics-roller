@@ -88,7 +88,8 @@ byte switchLogic(byte sw, byte n){
 					DEBUG2_PRINTLN(F("tapparellaLogic: stato 1: il motore va in attesa da stato 0 (fermo)"));
 					//stato 1: il motore va in attesa del moto a vuoto
 					startTimer(btndelay[n],TMRHALT+toffset);	
-					setGroupState(1,toffset);	
+					setGroupState(1,toffset);
+					resetCnt(toffset); //20/10/19
 					incCnt(toffset);
 					changed = 0;
 					DEBUG2_PRINT(F("incCnt0("));
@@ -704,6 +705,7 @@ byte toggleLogic(byte sw, byte nn){
 					lastCmd[n] = !outp[n];
 					startTimer(btndelay[n],n);		
 					setGroupState(1,n);	
+					resetCnt(n); //20/10/19
 					incCnt(n);
 					changed = 0;
 				}else if(s==1)

@@ -12,10 +12,12 @@ String opensqr = "\":[\"";
 String closesqr = "\"]}";
 String closesqr2 = "\"],\"";
 String closesqr3 = "\"],";
+String closesqr4 = "\"]";
 String closebrk = "\"}";
 String enda = "\",";
 String end = "\"";
 String endbrk = "}";
+
 
 char IP[] = "xxx.xxx.xxx.xxx";          // buffer
 //end global string
@@ -173,7 +175,7 @@ bool configLoaded=true;
 bool mqttConnected=false;
 bool mqttAddrChanged=true;
 bool dscnct=false;
-String pr[3] = {"{\"pr1\":\"", "{\"pr2\":\"", "\"}"};
+//String pr[3] = {"{\"pr1\":\"", "{\"pr2\":\"", "\"}"};
 
 void printIn(){
 	DEBUG1_PRINT(F("in array: "));
@@ -357,7 +359,7 @@ inline void initOfst(){
 	//p:parameter
 	//j:jsonname
 	//----------------------------------------------
-	//pars[PARAM_NAME] = new ParParam_type(initial_value_saved_on_eeprom_reset, "param_name", "web_form_name", EEPROM_PARAM_OFST, 'j!p!n (type_of_load_from_eeprom)','i|s|n (type_of_load_from_form) new PARAM_NAME_MANAGER_Evnt(PARAM_NAME));
+	//pars[PARAM_NAME] = new ParParam_type(initial_value_saved_on_eeprom_reset, "param_name", "web_form_name", EEPROM_PARAM_OFST, 'j!p!n (type_of_load_from_eeprom)','i|s|n (type_of_load_from_form), new PARAM_NAME_MANAGER_Evnt(PARAM_NAME));
 	for(int i=0; i<PARAMSDIM; i++){
 		pars[i] = NULL;
 	}
@@ -613,13 +615,13 @@ double actions(char *key, double val)
 				DEBUG2_PRINTLN(val);
 				if(key[2] == '1' && val > 0 && !isOnTarget(val, 0) && !isrun[0] && !isCalibr()){
 					static_cast<ParUint8*>(pars[MQTTUP1])->load((int)val);				
-					static_cast<ParUint8*>(pars[MQTTUP1])->doaction(false);
+					static_cast<ParUint8*>(pars[MQTTUP1])->doaction(0);
 				}
 			}
 			if(roll[1] == true){
 				if(key[2] == '2' && val > 0 && !isOnTarget(val, 1) && !isrun[1] && !isCalibr()){
 					static_cast<ParUint8*>(pars[MQTTUP2])->load((int)val);		
-					static_cast<ParUint8*>(pars[MQTTUP2])->doaction(false);
+					static_cast<ParUint8*>(pars[MQTTUP2])->doaction(0);
 				}
 			}
 		}
@@ -666,13 +668,13 @@ double actions(char *key, double val)
 					DEBUG2_PRINT("dw1: ");
 					DEBUG2_PRINTLN(val);
 					static_cast<ParUint8*>(pars[MQTTDOWN1])->load((int)val);			
-					static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction(false);
+					static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction(0);
 				}
 			}
 			if(roll[1] == true){
 				if(key[2] == '2' && val > 0 && !isOnTarget(val, 1) && !isrun[1] && !isCalibr()){
 					static_cast<ParUint8*>(pars[MQTTDOWN2])->load((int)val);		
-					static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction(false);
+					static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction(0);
 				}
 			}
 		}
@@ -1090,7 +1092,7 @@ void mqttReconnect() {
 			DEBUG1_PRINT(F("mqtt: Subsribed to: "));
 			DEBUG1_PRINTLN(static_cast<ParStr32*>(pars[p(MQTTINTOPIC)])->val);
 			mqttClient->publish((const char *)(static_cast<ParStr32*>(pars[p(MQTTOUTTOPIC)]))->val, (const char *)(static_cast<ParStr32*>(pars[p(MQTTID)]))->val, 32);
-			pars[p(LOGSLCT)]->doaction(false);	
+			pars[p(LOGSLCT)]->doaction(0);	
 			mqttConnected=true;//bho
 			readParamAndPub(MQTTDATE,printUNIXTimeMin(gbuf));
 			readStatesAndPub();
@@ -1184,10 +1186,10 @@ void readStatesAndPub(bool all){
 	  s += pars[MQTTUP1]->getStrJsonName()+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN1]->getStrJsonName()+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+comma;    //down1  DIRS=LOW
 	  if(blocked[0]>0){
-		  s+= (String) "blk1"+twodot+blocked[0]+comma;		//blk1
+		  s+= (String) pars[MQTTUP1]->getStrJsonName()+"blk1"+twodot+blocked[0]+comma;		//blk1
 	  }
-	  s+= (String) "pr1"+twodot+String(percfdbck(0))+comma;		//pr1
-	  s+= (String) "tr1"+twodot+String(getCronoCount(0))+comma;			//tr1
+	  s+= (String) pars[MQTTUP1]->getStrJsonName()+"pr1"+twodot+String(percfdbck(0))+comma;		//pr1
+	  s+= (String) pars[MQTTUP1]->getStrJsonName()+"tr1"+twodot+String(getCronoCount(0))+comma;			//tr1
   }else{
 	  s += pars[MQTTUP1]->getStrJsonName()+twodot+(out[0]==HIGH)+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN1]->getStrJsonName()+twodot+(out[1]==HIGH)+comma;    //down1  DIRS=LOW
@@ -1195,19 +1197,19 @@ void readStatesAndPub(bool all){
   if(roll[1] == true){
 	  s += pars[MQTTUP2]->getStrJsonName()+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN2]->getStrJsonName()+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+comma;    //down1  DIRS=LOW
-	  s+= (String) "pr2"+twodot+String(percfdbck(1))+comma;		//pr2
-	  s+= (String) "tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
+	  s+= (String) pars[MQTTUP2]->getStrJsonName()+"pr2"+twodot+String(percfdbck(1))+comma;		//pr2
+	  s+= (String) pars[MQTTUP2]->getStrJsonName()+"tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
 	  if(blocked[1]>0){
-		  s+= (String) "blk2"+twodot+blocked[1]+comma;		//blk2
+		  s+= (String) pars[MQTTUP2]->getStrJsonName()+"blk2"+twodot+blocked[1]+comma;		//blk2
 	  }
-	  s+= (String) "pr2"+twodot+String(percfdbck(1))+comma;		//pr2
-	  s+= (String) "tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
+	  s+= (String) pars[MQTTUP2]->getStrJsonName()+"pr2"+twodot+String(percfdbck(1))+comma;		//pr2
+	  s+= (String) pars[MQTTUP2]->getStrJsonName()+"tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
   }else{
 	  s += pars[MQTTUP2]->getStrJsonName()+twodot+(out[2]==HIGH)+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN2]->getStrJsonName()+twodot+(out[3]==HIGH)+comma;    //down1  DIRS=LOW
   }
-  s+= (String) "sp1"+twodot+String((long)getTapThalt(0))+comma;		//sp1
-  s+= (String) "sp2"+twodot+String((long)getTapThalt(1));		//sp2
+  s+= (String) pars[MQTTUP1]->getStrJsonName()+"sp1"+twodot+String((long)getTapThalt(0))+comma;		//sp1
+  s+= (String) pars[MQTTUP2]->getStrJsonName()+"sp2"+twodot+String((long)getTapThalt(1));		//sp2
   if(all){
 	    s += comma;
 		s += pars[MQTTTEMP]->getStrJsonName()+twodot+String(asyncBuf[GTTEMP])+comma;
@@ -1266,14 +1268,14 @@ void readPwrCalAndPub(){
 void readAvgPowerAndPub(){
   //DEBUG2_PRINTLN(F("\nreadPowerAndPub")); 
   String s=openbrk;
-  s+=pars[MQTTMEANPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTMEANPWR1])+comma+String(asyncBuf[GTMEANPWR2])+closesqr3;
+  s+=pars[MQTTMEANPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTMEANPWR1])+comma+String(asyncBuf[GTMEANPWR2])+closesqr4;
   publishStr(s);
 }
 
 void readPeakPowerAndPub(){
   //DEBUG2_PRINTLN(F("\nreadPowerAndPub")); 
   String s=openbrk;
-  s+=pars[MQTTPEAKPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTPEAKPWR1])+comma+String(asyncBuf[GTPEAKPWR2])+closesqr3;
+  s+=pars[MQTTPEAKPWR]->getStrJsonName()+opensqr+String(asyncBuf[GTPEAKPWR1])+comma+String(asyncBuf[GTPEAKPWR2])+closesqr4;
   publishStr(s);
 }
 
@@ -2198,14 +2200,14 @@ inline void leggiTastiLocaliDaExp(){
 		DEBUG2_PRINTLN(app);
 		if(app > 0 && !isOnTarget(app, 0) && !isrun[0] && !isCalibr()){
 			static_cast<ParUint8*>(pars[MQTTUP1])->load((uint8_t) 255);			
-			static_cast<ParUint8*>(pars[MQTTUP1])->doaction(false);
+			static_cast<ParUint8*>(pars[MQTTUP1])->doaction(0);
 		}
 		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND2)])->getStrVal()).c_str() );
 		DEBUG2_PRINT(F("MQDOWN1: "));	
 		DEBUG2_PRINTLN(app);
 		if(app > 0 && !isOnTarget(app, 0) && !isrun[0] && !isCalibr()){
 			static_cast<ParUint8*>(pars[MQTTDOWN1])->load((uint8_t) 255);			
-			static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction(false);
+			static_cast<ParUint8*>(pars[MQTTDOWN1])->doaction(0);
 		}
 	}
 	if(roll[1] == false){
@@ -2259,12 +2261,12 @@ inline void leggiTastiLocaliDaExp(){
 		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND3)])->getStrVal()).c_str() );
 		if(app > 0 && !isOnTarget(app, 1) && !isrun[1] && !isCalibr()){
 			static_cast<ParUint8*>(pars[MQTTUP2])->load((uint8_t) 255);			
-			static_cast<ParUint8*>(pars[MQTTUP2])->doaction(false);
+			static_cast<ParUint8*>(pars[MQTTUP2])->doaction(0);
 		}
 		app = eval( (static_cast<ParVarStr*>(pars[p(ONCOND4)])->getStrVal()).c_str() );
 		if(app > 0 && !isOnTarget(app, 1) && !isrun[1] && !isCalibr()){
 			static_cast<ParUint8*>(pars[MQTTDOWN2])->load((uint8_t) 255);			
-			static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction(false);
+			static_cast<ParUint8*>(pars[MQTTDOWN2])->doaction(0);
 		}
 	}
 }
@@ -2866,6 +2868,8 @@ void onElapse(uint8_t nn, unsigned long tm){
 				//pubblica lo stato finale su MQTT (non lo fa il loop stavolta!)
 				readStatesAndPub();
 			}
+			///////Reset count///////
+			resetCnt(nn); //20/10/19 Deve essere alla fine casomai qualcuno prima lo modficasse...
 		}else if(getCntValue(nn) > 1){ //in tutte le modalit�
 			if(n == 0){
 				DEBUG2_PRINTLN(F("onElapse:  timer 1 dei servizi a conteggio scaduto"));
@@ -3021,13 +3025,13 @@ void onCalibrEnd(unsigned long app, uint8_t n){
 	DEBUG2_PRINT(F("Modified current weight "));
 	DEBUG2_PRINTLN(static_cast<ParFloat*>(pars[p(VALWEIGHT)])->getStrVal());
 #if (AUTOCAL_HLW8012) 	
-	if(n == 0){
+	/*if(n == 0){
 		calibrate_pwr(getAVG(n));
 		saveSingleConf(PWRMULT);
 		saveSingleConf(CURRMULT);
 		saveSingleConf(VACMULT);
 		readPwrCalAndPub();
-	}
+	}*/
 #endif
 #endif
 	saveSingleConf(THALT1 + n);
@@ -3068,7 +3072,7 @@ void manualCalibration(uint8_t btn){
 	//set initial power balancement extimation
 	setValweight(0.5);
 	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->load((uint8_t) 101);			//codice comando attiva calibrazione
-	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->doaction(false);
+	static_cast<ParUint8*>(pars[BTN2IN + btn*BTNDIM])->doaction(0);
 }
 
 void rebootSystem(){

@@ -71,7 +71,7 @@ void parseJsonFieldArrayToStr(String srcJSONStr, Par*p[], int valueLen, int arrL
 			DEBUG2_PRINT(ends);
 			DEBUG2_PRINT(F(" - "));
 
-			p[i-first]->doaction(true);
+			p[i-first]->doaction(1);
 			
 		}else{
 			DEBUG2_PRINT(F("- campo: "));

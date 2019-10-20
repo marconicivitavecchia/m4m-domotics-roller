@@ -44,7 +44,9 @@
 #define MQPSW			""
 #define WBPSW			"admin"
 #define WBUSR			"admin"
-#define MQTTSRV			"broker.hivemq.com"
+//#define MQTTSRV			"broker.hivemq.com"
+//#define MQTTSRV			"192.168.43.137"
+#define MQTTSRV			"192.168.10.187"
 #define MQTTPRT			1883
 #define WSPRT			"8000"
 #define MQTTPT			"mqtt"

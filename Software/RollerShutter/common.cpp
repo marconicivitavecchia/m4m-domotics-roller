@@ -191,8 +191,8 @@ const char HTTP_FORM_HEAD[] PROGMEM =
 "</head>";
 
 const char HTTP_WEBSOCKET[] PROGMEM =
-		"var vls = ['{\"up1\":\"255\"}','{\"down1\":\"255\"}','{\"up2\":\"255\"}','{\"down2\":\"255\"}','{\"dopwrcal\":\"1\"}'];"
-		"var vlsp = ['{\"up1\":\"N\"}','{\"up2\":\"N\"}','{\"calpwr\":\"N\"}'];"
+		"var vls = ['{\"{J1}\":\"255\"}','{\"{J2}\":\"255\"}','{\"{J3}\":\"255\"}','{\"{J4}\":\"255\"}','{\"dopwrcal\":\"1\"}'];"
+		"var vlsp = ['{\"{J1}\":\"N\"}','{\"{J3}\":\"N\"}','{\"calpwr\":\"N\"}'];"
 		"var action = '{\"onaction\":\"D\"}';"
 		"var cond = ['{\"oncond1\":\"C\"}','{\"oncond2\":\"C\"}','{\"oncond3\":\"C\"}','{\"oncond4\":\"C\"}','{\"oncond5\":\"C\"}'];"
 		"var conn = new WebSocket('ws://{WS}:81', ['arduino']);"
@@ -231,6 +231,7 @@ const char HTTP_WEBSOCKET[] PROGMEM =
 			"condsend(i,cnfid);"
 		"};"
 		"function press(s){"
+			"console.log('press: '+s);"
 			"conn.send(s);"
 		"};";
 		
@@ -238,8 +239,8 @@ const char PAHO_SRC[] PROGMEM = "<script src='https://cdnjs.cloudflare.com/ajax/
 
 const char HTTP_MQTT[] PROGMEM =
 		// Create a client instance
-		"var vls = ['{\"up1\":\"255\"}','{\"down1\":\"255\"}','{\"up2\":\"255\"}','{\"down2\":\"255\"}','{\"dopwrcal\":\"1\"}'];"
-		"var vlsp = ['{\"up1\":\"N\"}','{\"up2\":\"N\"}','{\"calpwr\":\"N\"}'];"
+		"var vls = ['{\"{J1}\":\"255\"}','{\"{J2}\":\"255\"}','{\"{J3}\":\"255\"}','{\"{J4}\":\"255\"}','{\"dopwrcal\":\"1\"}'];"
+		"var vlsp = ['{\"{J1}\":\"N\"}','{\"{J3}\":\"N\"}','{\"calpwr\":\"N\"}'];"
 		"var action = '{\"onaction\":\"D\"}';"
 		"var cond = ['{\"oncond1\":\"C\"}','{\"oncond2\":\"C\"}','{\"oncond3\":\"C\"}','{\"oncond4\":\"C\"}','{\"oncond5\":\"C\"}'];"
 		// Generate a random client ID
@@ -516,7 +517,7 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 			"var vl=vlsp[2].replace('N', cp);"
 			"console.log(vl);"
 			"press(vl);"//il parser in uso non rispetta l'ordine dei campi nella stringa json!
-			"press(vls[4]);"//per farlo di devono inviare due json separati nell'ordine corretto
+			"press(vls[4]);"//per farlo si devono inviare due json separati nell'ordine corretto
 		"}, false);"
 
 		"function onRcv(d) {"
@@ -580,7 +581,7 @@ const char HTTP_FORM_MQTT[] PROGMEM =
 					 "<input type='text' name='btnup2' value='{J3}'>"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='btndown2'>MQTT message button 2 DOWN:</label>"
-					 "<input type='text' name='btndown2' value='{J4}'>"
+					 "<input type='text' name='btn5' value='{J4}'>"
 				"</div>"			
 				"<div class='col-2'></div>"
 				"<div class='col-2 col-s-12'>"
@@ -911,13 +912,13 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		"<div class='col-6 col-s-12'>"
 			"<div id='form'>"
 				"<form>"
-					"<input id='up1' type='button' value='Button 1 UP' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<input id='{J1}' type='button' value='Button 1 UP' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
 					"<br>"
-					"<input id='down1' type='button' value='Button 1 DOWN' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<input id='{J2}' type='button' value='Button 1 DOWN' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
 					"<br><br><br>"
-					"<input id='up2' type='button' value='Button 2 UP'  onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<input id='{J3}' type='button' value='Button 2 UP'  onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
 					"<br>"
-					"<input id='down2' type='button' value='Button 2 DOWN' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
+					"<input id='{J4}' type='button' value='Button 2 DOWN' onmousedown='this.style.opacity=\"1\"' onmouseup='this.style.opacity=\"0.6\"' ontouchstart='this.style.opacity=\"1\"' ontouchend='this.style.opacity=\"0.6\"'>"
 				"</form>"
 				//"<p id='p'></p>"
 			"</div>"
@@ -953,10 +954,12 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		"var dir=[0,0];"
 		"var ie=[0,0,0,0];"
 		"{SH}"
-		"var up1=document.getElementById('up1');"
-		"var dw1=document.getElementById('down1');"
-		"var up2=document.getElementById('up2');"
-		"var dw2=document.getElementById('down2');"
+		"var up1=document.getElementById('{J1}');"
+		"var dw1=document.getElementById('{J2}');"
+		"var up2=document.getElementById('{J3}');"
+		"var dw2=document.getElementById('{J4}');"
+		"var pr1=document.getElementById('pr1');"
+		"var pr2=document.getElementById('pr2');"
 		"up1.addEventListener('click', function(){press(vls[0]);});"
 		//"up1.attachEvent('onclick', function(){press(vls[0]);});"
 		"dw1.addEventListener('click', function(){press(vls[1]);});"
@@ -997,40 +1000,41 @@ const char HTTP_FORM_CMD[] PROGMEM =
 		"function onRcv(d) {"
 			//"document.getElementById('p').innerHTML = f.data;\n"
 			"var obj = JSON.parse(d);"
-			"console.log('Arrived data: '+obj);"
+			"console.log('Arrived data');"
 			"for(x in obj){"
 				"var el = document.getElementById(x);"
 				"if(el){"  //controlla se il campo esiste nel DOM della pagina
 					//"console.log(x);"
-					"if(x=='up1'){"
+					"if(x=='{J1}'){"
 						"if(obj[x] == \"1\"){"
 							"ie[0]=1;"
 						"}else{"
 							"ie[0]=0;"
 						"}"
 					"}"
-					"if(x=='down1'){"
+					"if(x=='{J2}'){"
 						"if(obj[x] == \"1\"){"
 							"ie[1]=1;"
 						"}else{"
 							"ie[1]=0;"
 						"}"
 					"}"
-					"if(x=='up2'){"
+					"if(x=='{J3}'){"
 						"if(obj[x] == \"1\"){"
 							"ie[2]=1;"
 						"}else{"
 							"ie[2]=0;"
 						"}"
 					"}"
-					"if(x=='down2'){"
+					"if(x=='{J4}'){"
 						"if(obj[x] == \"1\"){"
 							"ie[3]=1;"
 						"}else{"
 							"ie[3]=0;"
 						"}"
 					"}"
-					"if(x=='up1' || x=='down1' || x=='up2' || x=='down2'){"
+					"if(x=='{J1}' || x=='{J2}' || x=='{J3}' || x=='{J4}'){"
+						"console.log('stato:'+obj[x]);" 
 						"if(obj[x] == \"1\"){"
 							"el.style.backgroundColor = \"#b30000\";"
 						"}else{"
@@ -1041,12 +1045,12 @@ const char HTTP_FORM_CMD[] PROGMEM =
 					"dir[1]=ie[2]+ie[3]*-1;"
 					//"console.log('a[0]:'+a[0]);" 
 					//"console.log('x:'+x);" 
-					"if(x=='pr1' && a[0]==0){"
+					"if(x=='{J1}pr1' && a[0]==0){"
 						"a[0]=1;"
 						"pr1.value=obj[x];"
 						//"startPrgrBar(pr1,p[0],100,0);"
 					"}"
-					"if(x=='pr2' && a[1]==0){"
+					"if(x=='{J3}pr2' && a[1]==0){"
 						"a[1]=1;"
 						"pr2.value=obj[x];"
 						//"startPrgrBar(pr2,p[1],100,1);"
@@ -1600,6 +1604,10 @@ void handleCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{PD}"), String(round(getPosdelta())));
 	page.replace(F("{TP}"), parsp[MQTTTEMP]->getStrJsonName());
 	page.replace(F("{DT}"), parsp[MQTTDATE]->getStrJsonName());
+	page.replace(F("{J1}"), parsp[MQTTUP1]->getStrJsonName());
+	page.replace(F("{J2}"), parsp[MQTTDOWN1]->getStrJsonName());
+	page.replace(F("{J3}"), parsp[MQTTUP2]->getStrJsonName());
+	page.replace(F("{J4}"), parsp[MQTTDOWN2]->getStrJsonName());
 #if (AUTOCAL_HLW8012) 
 	page.replace(F("{PW}"), parsp[INSTPWR]->getStrJsonName());
 	page.replace(F("{AC}"), parsp[INSTACV]->getStrJsonName());
@@ -1618,8 +1626,8 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 
 	String page = FPSTR(HTTP_FORM_CMD);
 	//Head placeholders
-	page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
 	page.replace(F("{SH}"), FPSTR(HTTP_MQTT));
+	page.replace(F("{HD}"), FPSTR(HTTP_FORM_HEAD));
 	//page.replace(F("{TC}"), FPSTR(MQTT_CLIENT));PAHO_SRC
 	page.replace(F("{SP}"), FPSTR(PAHO_SRC));
 	
@@ -1641,6 +1649,10 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{PD}"), String(round(getPosdelta())));
 	page.replace(F("{TP}"), parsp[MQTTTEMP]->getStrJsonName());
 	page.replace(F("{DT}"), parsp[MQTTDATE]->getStrJsonName());
+	page.replace(F("{J1}"), parsp[MQTTUP1]->getStrJsonName());
+	page.replace(F("{J2}"), parsp[MQTTDOWN1]->getStrJsonName());
+	page.replace(F("{J3}"), parsp[MQTTUP2]->getStrJsonName());
+	page.replace(F("{J4}"), parsp[MQTTDOWN2]->getStrJsonName());
 #if (AUTOCAL_HLW8012) 
 	page.replace(F("{PW}"), parsp[INSTPWR]->getStrJsonName());
 	page.replace(F("{AC}"), parsp[INSTACV]->getStrJsonName());
@@ -1690,15 +1702,15 @@ void handleModify(){
 	  savegroup(fields, 6);
   }else if(serverp.hasArg("svmqtt")){
 	  DEBUG2_PRINTLN(F("savegroup svmqtt"));
-	  uint8_t fields[10] ={p(WSPORT), p(MQTTPROTO), p(MQTTID), p(MQTTOUTTOPIC), p(MQTTINTOPIC), p(MQTTUSR), p(MQTTPSW), p(MQTTLOG), p(MQTTADDR), p(MQTTPORT)};
-	  savegroup(fields, 10);
+	  uint8_t fields[14] ={p(WSPORT), p(MQTTPROTO), p(MQTTID), p(MQTTOUTTOPIC), p(MQTTINTOPIC), p(MQTTUSR), p(MQTTPSW), p(MQTTLOG), p(MQTTADDR), p(MQTTPORT), MQTTUP1, MQTTDOWN1, MQTTUP2, MQTTDOWN2};
+	  savegroup(fields, 14);
   }else if(serverp.hasArg("svsystem")){
 	  DEBUG2_PRINTLN(F("savegroup svsystem"));
 #if (AUTOCAL_HLW8012) 
-	  uint8_t fields[11] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE), p(ACVOLT), p(CALPWR)};
+	  uint8_t fields[9] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE), p(ACVOLT), p(CALPWR)};
 	  savegroup(fields, 9);
 #else
-	  uint8_t fields[8] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE)};
+	  uint8_t fields[7] ={p(WEBUSR), p(WEBPSW), p(NTPADDR1), p(NTPADDR2), p(UTCSYNC), p(UTCADJ), p(UTCZONE)};
 	  savegroup(fields, 7);
 #endif	  
 	  if( serverp.hasArg("rebootd") && String("y") == serverp.arg("rebootd") ){
@@ -2111,6 +2123,7 @@ bool saveParamFromForm(unsigned paramofst){
 			}else if(intype == 'j'){
 				if(serverp.hasArg(param) && (parsp[paramofst]->getStrVal() != serverp.arg(param)) ){
 					parsp[paramofst]->jsoname = (char *) (serverp.arg(param)).c_str();
+					parsp[paramofst]->saveOnEprom(); //giusto?
 					DEBUG1_PRINT(F("Updated json name: "));
 					DEBUG1_PRINT(parsp[paramofst]->jsoname);
 					save = true;
