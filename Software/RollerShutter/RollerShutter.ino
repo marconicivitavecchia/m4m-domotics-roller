@@ -7,7 +7,7 @@
 String twodot = "\":\"";
 String comma = "\",\"";
 String openbrk = "{\"";
-String openbrk2 = "{";
+//String openbrk2 = "{";
 String opensqr = "\":[\"";
 String closesqr = "\"]}";
 String closesqr2 = "\"],\"";
@@ -17,7 +17,6 @@ String closebrk = "\"}";
 String enda = "\",";
 String end = "\"";
 String endbrk = "}";
-
 
 char IP[] = "xxx.xxx.xxx.xxx";          // buffer
 //end global string
@@ -461,6 +460,7 @@ inline void initOfst(){
 	/*5*/pars[p(SWACTION4)] = new ParUint8(0, "SWACTION4","");
 	/*5*/pars[p(UTCVAL)] = new ParLong(0, "UTCVAL","utcval");
 	/*5*/pars[p(LOGSLCT)] = new ParUint8(LOGSEL, "logslct","logslct", LOGSLCTOFST, 'n', 'n', new LOGSLCT_Evnt());
+	/*5*/pars[p(DEVICEID)] = new ParStr32(DEVID, "devid","deviceid", DEVICEIDOFST, 'p', 'i', new DEVICEID_Evnt());
 	///*5*/pars[p(SWSPLDPWR1)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST1, 'n', 'n', new SWSPLDPWR1_Evnt());
 	///*5*/pars[p(SWSPLDPWR2)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST2, 'n', 'n', new SWSPLDPWR2_Evnt());
 	///*5*/pars[p(SWSPLDPWR3)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST3, 'n', 'n', new SWSPLDPWR3_Evnt());
@@ -1181,15 +1181,16 @@ void readStatesAndPub(bool all){
   //vals=digitalRead(OUTSLED); //legge lo stato del led di stato
   //crea una stringa JSON con i valori  dello stato corrente dei pulsanti
   String s=openbrk;	
-  
+  DEBUG1_PRINTLN(F("\openbrk")); 
+  DEBUG1_PRINTLN(openbrk); 
   if(roll[0] == true){
 	  s += pars[MQTTUP1]->getStrJsonName()+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==LOW))+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN1]->getStrJsonName()+twodot+(outLogic[ENABLES] && (outLogic[DIRS]==HIGH))+comma;    //down1  DIRS=LOW
 	  if(blocked[0]>0){
 		  s+= (String) pars[MQTTUP1]->getStrJsonName()+"blk1"+twodot+blocked[0]+comma;		//blk1
 	  }
-	  s+= (String) pars[MQTTUP1]->getStrJsonName()+"pr1"+twodot+String(percfdbck(0))+comma;		//pr1
-	  s+= (String) pars[MQTTUP1]->getStrJsonName()+"tr1"+twodot+String(getCronoCount(0))+comma;			//tr1
+	  s+= "pr1"+twodot+String(percfdbck(0))+comma;		//pr1
+	  s+= "tr1"+twodot+String(getCronoCount(0))+comma;			//tr1
   }else{
 	  s += pars[MQTTUP1]->getStrJsonName()+twodot+(out[0]==HIGH)+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN1]->getStrJsonName()+twodot+(out[1]==HIGH)+comma;    //down1  DIRS=LOW
@@ -1197,19 +1198,19 @@ void readStatesAndPub(bool all){
   if(roll[1] == true){
 	  s += pars[MQTTUP2]->getStrJsonName()+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==LOW))+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN2]->getStrJsonName()+twodot+(outLogic[ENABLES+STATUSDIM] && (outLogic[DIRS+STATUSDIM]==HIGH))+comma;    //down1  DIRS=LOW
-	  s+= (String) pars[MQTTUP2]->getStrJsonName()+"pr2"+twodot+String(percfdbck(1))+comma;		//pr2
-	  s+= (String) pars[MQTTUP2]->getStrJsonName()+"tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
+	  s+= "pr2"+twodot+String(percfdbck(1))+comma;		//pr2
+	  s+= "tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
 	  if(blocked[1]>0){
-		  s+= (String) pars[MQTTUP2]->getStrJsonName()+"blk2"+twodot+blocked[1]+comma;		//blk2
+		  s+= "blk2"+twodot+blocked[1]+comma;		//blk2
 	  }
-	  s+= (String) pars[MQTTUP2]->getStrJsonName()+"pr2"+twodot+String(percfdbck(1))+comma;		//pr2
-	  s+= (String) pars[MQTTUP2]->getStrJsonName()+"tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
+	  s+= "pr2"+twodot+String(percfdbck(1))+comma;		//pr2
+	  s+= "tr2"+twodot+String(getCronoCount(1))+comma;			//tr2
   }else{
 	  s += pars[MQTTUP2]->getStrJsonName()+twodot+(out[2]==HIGH)+comma; 	//up1 DIRS=HIGH
 	  s += pars[MQTTDOWN2]->getStrJsonName()+twodot+(out[3]==HIGH)+comma;    //down1  DIRS=LOW
   }
-  s+= (String) pars[MQTTUP1]->getStrJsonName()+"sp1"+twodot+String((long)getTapThalt(0))+comma;		//sp1
-  s+= (String) pars[MQTTUP2]->getStrJsonName()+"sp2"+twodot+String((long)getTapThalt(1));		//sp2
+  s+= "sp1"+twodot+String((long)getTapThalt(0))+comma;		//sp1
+  s+= "sp2"+twodot+String((long)getTapThalt(1));		//sp2
   if(all){
 	    s += comma;
 		s += pars[MQTTTEMP]->getStrJsonName()+twodot+String(asyncBuf[GTTEMP])+comma;
@@ -1603,25 +1604,27 @@ void setup(){
   //startCnt(0,60,TIMECNT);
   //read and set dynamic configurations
   readActionConfAndSet();  
-
+  //DEBUG1_PRINTLN(F("bho3."));
   //imposta la DIRSezione delle porte dei led, imposta inizialmente i led come spento  
   
   //------------------------------------------OTA SETUP---------------------------------------------------------------------------------------
   //------------------------------------------END OTA SETUP---------------------------------------------------------------------------------------
   delay(500);
+  //DEBUG1_PRINTLN(F("bho4."));
   for(int i=0;i<NBTN*STATUSDIM;i++)
 	  outLogic[i]=LOW;
   for(int i=0;i<MQTTDIM;i++)
 	  static_cast<ParUint8*>(pars[i])->load(LOW);
   for(int i=0;i<4;i++)
 	  acts[i]=LOW;
+  
   // Register event handlers.
   // Callback functions will be called as long as these handler objects exist.
   // Call "onStationConnected" each time a station connects
   stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
   // Call "onStationDisconnected" each time a station disconnects
   stationDisconnectedHandler = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
-
+  
 #if defined (_DEBUG) || defined (_DEBUGR)  
   testFlash();
 #endif
@@ -2092,7 +2095,7 @@ inline void loop2() {
 			readParamAndPub(MQTTDATE,printUNIXTimeMin(gbuf));
 			readStatesAndPub();
 		}
-		leggiTastiLocaliDaExp();
+		//leggiTastiLocaliDaExp();
 		sensorStatePoll();
 	}//END 1 sec scheduler-----------------------------------------------------
 	
@@ -3258,6 +3261,7 @@ void MQTTMEANPWR_Evnt::doaction(uint8_t save){
 void MQTTPEAKPWR_Evnt::doaction(uint8_t save){
 	readPeakPowerAndPub();
 }
+
 #if (AUTOCAL_HLW8012) 
 void DOPWRCAL_Evnt::doaction(uint8_t save){
 	calibrate_pwr();
@@ -3511,6 +3515,9 @@ void ONCOND5_Evnt::doaction(uint8_t save){
 	//save confs and actions on new config received event
 	if(save==1) 
 		writeOnOffConditions();
+}
+void DEVICEID_Evnt::doaction(uint8_t save){
+	openbrk = "{\""+pars[p(DEVICEID)]->getStrFormName()+twodot+pars[p(DEVICEID)]->getStrVal()+"\",\"";
 }
 /*
 void SWSPLDPWR1_Evnt::doaction(uint8_t save){

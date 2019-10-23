@@ -56,6 +56,8 @@
 #define NTP1 			"ntp1.inrim.it"
 #define NTP2 			"0.it.pool.ntp.org"
 #define LOGSEL			1
+#define DEVID			"01"
+#define BROADCASTID		"FF"
 //END DEFAULTS
 //_DEBUG1 LEVELS---------------------
 #define _DEBUG   		1		//ACTIVATE LOCAL AND REMOTE _DEBUG1 MODE
@@ -283,13 +285,13 @@
 #define	MQTTUSROFST				694
 #define	MQTTPSWOFST				726
 #define	MQTTLOGOFST				758
+#define DEVICEIDOFST			790
 //64 byte offsets (fixed long String)
-#define MQTTADDROFST			790
-#define NTP1ADDROFST			854
-#define NTP2ADDROFST			918
-#define NTP3ADDROFST			982
+#define MQTTADDROFST			822
+#define NTP1ADDROFST			896
+#define NTP2ADDROFST			960
 //end fixed lenght params
-#define FIXEDPARAMSLEN			1046
+#define FIXEDPARAMSLEN			1024
 //x byte offsets (variable String)
 //--------------------------Fine EEPROM offsets-------------------------------------------
 
@@ -317,10 +319,9 @@
 #define INSTACV				14
 #define DOPWRCAL			15
 //end user modificable flags
-
 #define MQTTDIM				16
 #define INRDIM				4
-#define USRMODIFICABLEFLAGS 16
+#define USRMODIFICABLEFLAGS 17
 //--------------------------Inizio MQTT config array indexes-----------------------------------------------------
 //Indici array confJson[CONFDIM] dei NOMI dei campi json dei valori di configurazione --> array confcmd[CONFDIM] 
 //dei VALORI stringa di configurazione corrispondenti a flags attivi
@@ -392,7 +393,8 @@
 #define SWACTION2			52
 #define SWACTION3			53
 #define SWACTION4			54
-#define CONFDIM				55
+#define DEVICEID			55
+#define CONFDIM				56
 #define VARCONFDIM			6
 #define EXTCONFDIM			14 + 16
 //#define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
@@ -715,6 +717,11 @@ class SWROLL2_Evnt: public BaseEvnt{
 	public:
 		void doaction(uint8_t);
 };
+class DEVICEID_Evnt: public BaseEvnt{
+	public:
+		void doaction(uint8_t);
+};
+
 /*
 class SWSPLDPWR1_Evnt: public BaseEvnt{
 	public:

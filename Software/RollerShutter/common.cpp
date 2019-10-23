@@ -191,10 +191,10 @@ const char HTTP_FORM_HEAD[] PROGMEM =
 "</head>";
 
 const char HTTP_WEBSOCKET[] PROGMEM =
-		"var vls = ['{\"{J1}\":\"255\"}','{\"{J2}\":\"255\"}','{\"{J3}\":\"255\"}','{\"{J4}\":\"255\"}','{\"dopwrcal\":\"1\"}'];"
-		"var vlsp = ['{\"{J1}\":\"N\"}','{\"{J3}\":\"N\"}','{\"calpwr\":\"N\"}'];"
-		"var action = '{\"onaction\":\"D\"}';"
-		"var cond = ['{\"oncond1\":\"C\"}','{\"oncond2\":\"C\"}','{\"oncond3\":\"C\"}','{\"oncond4\":\"C\"}','{\"oncond5\":\"C\"}'];"
+		"var vls = ['{\"devid\":\"{IV}\",\"{J1}\":\"255\"}','{\"devid\":\"{IV}\",\"{J2}\":\"255\"}','{\"devid\":\"{IV}\",\"{J3}\":\"255\"}','{\"devid\":\"{IV}\",\"{J4}\":\"255\"}','{\"devid\":\"{IV}\",\"dopwrcal\":\"1\"}'];"
+		"var vlsp = ['{\"devid\":\"{IV}\",\"{J1}\":\"N\"}','{\"devid\":\"{IV}\",\"{J3}\":\"N\"}','{\"devid\":\"{IV}\",\"calpwr\":\"N\"}'];"
+		"var action = '{\"devid\":\"{IV}\",\"onaction\":\"D\"}';"
+		"var cond = ['{\"devid\":\"{IV}\",\"oncond1\":\"C\"}','{\"devid\":\"{IV}\",\"oncond2\":\"C\"}','{\"devid\":\"{IV}\",\"oncond3\":\"C\"}','{\"devid\":\"{IV}\",\"oncond4\":\"C\"}','{\"devid\":\"{IV}\",\"oncond5\":\"C\"}'];"
 		"var conn = new WebSocket('ws://{WS}:81', ['arduino']);"
 		"conn.onopen = function () {"
 			//"conn.send('Connect ' + new Date());"
@@ -239,10 +239,10 @@ const char PAHO_SRC[] PROGMEM = "<script src='https://cdnjs.cloudflare.com/ajax/
 
 const char HTTP_MQTT[] PROGMEM =
 		// Create a client instance
-		"var vls = ['{\"{J1}\":\"255\"}','{\"{J2}\":\"255\"}','{\"{J3}\":\"255\"}','{\"{J4}\":\"255\"}','{\"dopwrcal\":\"1\"}'];"
-		"var vlsp = ['{\"{J1}\":\"N\"}','{\"{J3}\":\"N\"}','{\"calpwr\":\"N\"}'];"
-		"var action = '{\"onaction\":\"D\"}';"
-		"var cond = ['{\"oncond1\":\"C\"}','{\"oncond2\":\"C\"}','{\"oncond3\":\"C\"}','{\"oncond4\":\"C\"}','{\"oncond5\":\"C\"}'];"
+		"var vls = ['{\"devid\":\"{IV}\",\"{J1}\":\"255\"}','{\"devid\":\"{IV}\",\"{J2}\":\"255\"}','{\"devid\":\"{IV}\",\"{J3}\":\"255\"}','{\"devid\":\"{IV}\",\"{J4}\":\"255\"}','{\"devid\":\"{IV}\",\"dopwrcal\":\"1\"}'];"
+		"var vlsp = ['{\"devid\":\"{IV}\",\"{J1}\":\"N\"}','{\"devid\":\"{IV}\",\"{J3}\":\"N\"}','{\"devid\":\"{IV}\",\"calpwr\":\"N\"}'];"
+		"var action = '{\"devid\":\"{IV}\",\"onaction\":\"D\"}';"
+		"var cond = ['{\"devid\":\"{IV}\",\"oncond1\":\"C\"}','{\"devid\":\"{IV}\",\"oncond2\":\"C\"}','{\"devid\":\"{IV}\",\"oncond3\":\"C\"}','{\"devid\":\"{IV}\",\"oncond4\":\"C\"}','{\"devid\":\"{IV}\",\"oncond5\":\"C\"}'];"
 		// Generate a random client ID
 		"var clientID = '{MI}_' + parseInt(Math.random() * 100);"
 		"var conn = new Paho.MQTT.Client('{MA}', Number('{WT}'), '/{PP}', clientID);"
@@ -435,7 +435,10 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='utcadj'>NTP error adjust (msec):</label>"
 					 "<input type='text' name='utcadj' value='{N4}'>"
-				"</div>"	
+				"</div>"
+				"<div class='col-6 col-s-12'><label for='deviceid'>Device ID:</label>"
+					 "<input id='deviceid' name='deviceid' value='{IV}'><br>"
+				"</div>"
 				"<div class='col-6 col-s-12'><label for='utczoneslct'>NTP SDT time zones (hour):</label>"
 					 "<select id='utczoneslct' name='utczoneslct'  onchange='showSelected()'></select><br>"
 				"</div>"	
@@ -1326,6 +1329,7 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		page.replace(F("{N4}"), parsp[p(UTCADJ)]->getStrVal());
 		page.replace(F("{N5}"), parsp[p(UTCZONE)]->getStrVal());
 		page.replace(F("{N6}"), (parsp[p(UTCSDT)]->getStrVal() == "1")?"checked":"");
+		page.replace(F("{IV}"), parsp[DEVICEID]->getStrVal());
 #if (AUTOCAL_HLW8012) 
 		page.replace(F("{N7}"), parsp[p(ACVOLT)]->getStrVal());
 		page.replace(F("{N8}"), parsp[p(CALPWR)]->getStrVal());	
@@ -1545,7 +1549,8 @@ void handleEventConf() {  // If a POST request is made to URI /login
 		page.replace(F("{S2}"), String(getCntValue(SMPLCNT2)));
 		page.replace(F("{S3}"), String(getCntValue(SMPLCNT3)));
 		page.replace(F("{S4}"), String(getCntValue(SMPLCNT4)));
-		
+		page.replace(F("{IV}"), parsp[DEVICEID]->getStrVal());
+	
 		DEBUG1_PRINT(F("SWROLL1: "));
 		DEBUG1_PRINTLN(static_cast<ParUint8*>(parsp[p(SWROLL1]))->val);
 		DEBUG1_PRINT(F("SWROLL2: "));
@@ -1608,6 +1613,7 @@ void handleCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{J2}"), parsp[MQTTDOWN1]->getStrJsonName());
 	page.replace(F("{J3}"), parsp[MQTTUP2]->getStrJsonName());
 	page.replace(F("{J4}"), parsp[MQTTDOWN2]->getStrJsonName());
+	page.replace(F("{IV}"), parsp[DEVICEID]->getStrVal());
 #if (AUTOCAL_HLW8012) 
 	page.replace(F("{PW}"), parsp[INSTPWR]->getStrJsonName());
 	page.replace(F("{AC}"), parsp[INSTACV]->getStrJsonName());
@@ -1653,6 +1659,7 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{J2}"), parsp[MQTTDOWN1]->getStrJsonName());
 	page.replace(F("{J3}"), parsp[MQTTUP2]->getStrJsonName());
 	page.replace(F("{J4}"), parsp[MQTTDOWN2]->getStrJsonName());
+	page.replace(F("{IV}"), parsp[DEVICEID]->getStrVal());
 #if (AUTOCAL_HLW8012) 
 	page.replace(F("{PW}"), parsp[INSTPWR]->getStrJsonName());
 	page.replace(F("{AC}"), parsp[INSTACV]->getStrJsonName());

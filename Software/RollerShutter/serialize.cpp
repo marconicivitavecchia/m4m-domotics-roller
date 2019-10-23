@@ -18,7 +18,32 @@ void parseJsonFieldArrayToStr(String srcJSONStr, Par*p[], int valueLen, int arrL
 		if(srcJSONStr.charAt(ends) == ',') count++;
 	count++;
 	
-	for(int i=first; i<arrLen && count > 0; i++){
+	//check deviceid if exists
+	start = srcJSONStr.indexOf("\""+ p[0]->getStrJsonName() + "\":\"");
+	if(start > 0){
+		DEBUG2_PRINT(F("- campo: "));
+		DEBUG2_PRINT("\""+p[DEVICEID]->getStrJsonName() + "\":\"");
+		DEBUG2_PRINT(F("TROVATO"));
+				
+		start += (p[0]->getStrJsonName()).length() + 4;
+		for(ends=start+1; ends < start + valueLen && srcJSONStr.charAt(ends)!='"' && ends < srcJSONStr.length(); ends++);	
+		
+		String rcvdid = srcJSONStr.substring(start, ends); 
+		
+		//if received deviceid equals local deviceid		
+		if(strcmp(static_cast<ParStr32*>(p[0])->val, rcvdid.c_str())!=0 && strcmp(static_cast<ParStr32*>(p[0])->val, BROADCASTID)!=0){
+			count = -1;
+		}
+		
+	}else{
+		count--;
+		DEBUG2_PRINT(F("- campo: "));
+		DEBUG2_PRINT("\""+p[0]->getStrJsonName() + "\":\"");
+		DEBUG2_PRINTLN(F(" non trovato o non necessario"));
+	}
+	
+	//load all other fields
+	for(int i=first+1; i<arrLen && count > 0; i++){
 		///calcola l'inizio del valore
 		start = srcJSONStr.indexOf("\""+ p[i]->getStrJsonName() + "\":\"");
 		if(start > 0){
