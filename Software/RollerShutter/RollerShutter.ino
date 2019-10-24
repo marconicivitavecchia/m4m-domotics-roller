@@ -576,7 +576,7 @@ double getTemperature(){
 	DEBUG1_PRINT(", tmedia: ");
 	DEBUG1_PRINT(st);
 	DEBUG1_PRINT(", finestra: ");
-	DEBUG1_PRINTLN(TSIGMA*stv);
+	DEBUG1_PRINT(TSIGMA*stv);
 	DEBUG1_PRINT(", scarto: ");
 	if(st - TSIGMA*stv > 0)
 		DEBUG1_PRINTLN(st - TSIGMA*stv);
