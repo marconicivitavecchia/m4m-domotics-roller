@@ -547,6 +547,7 @@ double getTemperature(){
 	}else{
 		if((temp >= (double) st - TSIGMA*stv && temp <= (double) st + TSIGMA*stv) || tempCount == 0){
 			if(tempCount == 0){
+				DEBUG1_PRINT("Dentro veloce: ");
 				tempCount = TEMPCOUNT;
 				st = (double) st*(1-EMAA*TEMPCOUNT) + temp*EMAA*TEMPCOUNT;
 				if(temp >= st){
@@ -555,6 +556,7 @@ double getTemperature(){
 					stv = (double) stv*(1-EMAB*TEMPCOUNT) + (st - temp)*EMAB*TEMPCOUNT;
 				}
 			}else{
+				DEBUG1_PRINT("Dentro: ");
 				st = (double) st*(1-EMAA) + temp*EMAA;
 				if(temp >= st){
 					stv = (double) stv*(1-EMAB) + (temp - st)*EMAB;
@@ -563,12 +565,13 @@ double getTemperature(){
 				}
 			}
 		}else{
+			DEBUG1_PRINT("Fuori: ");
 			//after TEMPCOUNT times are to be considered valid values!
 			tempCount--;
 		}
 	}
 #endif
-	DEBUG1_PRINT("instTemp: ");
+	DEBUG1_PRINT(", instTemp: ");
 	DEBUG1_PRINT(temp);
 	DEBUG1_PRINT(", tmedia: ");
 	DEBUG1_PRINT(st);
