@@ -579,9 +579,9 @@ double getTemperature(){
 	DEBUG1_PRINT(TSIGMA*stv);
 	DEBUG1_PRINT(", scarto: ");
 	if(temp >= st - TSIGMA*stv)
-		DEBUG1_PRINTLN(temp - stv);
+		DEBUG1_PRINTLN(temp - st);
 	else
-		DEBUG1_PRINTLN(stv - temp);
+		DEBUG1_PRINTLN(st - temp);
 	
 	return st;
 }
