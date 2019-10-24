@@ -358,7 +358,7 @@ inline void initOfst(){
 	//p:parameter
 	//j:jsonname
 	//----------------------------------------------
-	//pars[PARAM_NAME] = new ParParam_type(initial_value_saved_on_eeprom_reset, "param_name", "web_form_name", EEPROM_PARAM_OFST, 'j!p!n (type_of_load_from_eeprom)','i|s|n (type_of_load_from_form), new PARAM_NAME_MANAGER_Evnt(PARAM_NAME));
+	//pars[PARAM_NAME] = new ParParam_type(initial_value_saved_on_eeprom_reset, "param_name", json_name", EEPROM_PARAM_OFST, 'j!p!n (type_of_load_from_eeprom)','i|s|n (type_of_load_from_form), new PARAM_NAME_MANAGER_Evnt(PARAM_NAME));
 	for(int i=0; i<PARAMSDIM; i++){
 		pars[i] = NULL;
 	}
@@ -369,7 +369,6 @@ inline void initOfst(){
 	/*4*/pars[MQTTALL] = new ParUint8(0, "all","all", 2,'n','n');
 	/*4*/pars[MQTTMAC] = new ParUint8(0, "mac", "mac", 2,'n','n', new MQTTMAC_Evnt());
 	/*4*/pars[MQTTIP] = new ParUint8(0, "ip", "ip", 2,'n','n', new MQTTIP_Evnt());
-	/*4*/pars[MQTTMQTTID] = new ParUint8(0, "mqttid", "mqttid", 2,'n','n', new MQTTMQTTID_Evnt());
 	/*4*/pars[MQTTTEMP] = new ParUint8(0, "temp", "temp", 2, 'n','n', new MQTTTEMP_Evnt());
 	/*4*/pars[MQTTMEANPWR] = new ParUint8(0, "avgpwr", "avgpwr", 2,'n','n', new MQTTMEANPWR_Evnt());
 	/*4*/pars[MQTTPEAKPWR] = new ParUint8(0, "peakpwr", "peakpwr", 2,'n','n', new MQTTPEAKPWR_Evnt());
@@ -412,7 +411,7 @@ inline void initOfst(){
 	/*19*/pars[p(UTCADJ)] = new ParInt(0, "utcadj", "utcadj", NTPADJUSTOFST, 'p','i', new UTCADJ_Evnt());
 	/*20*/pars[p(SLATSRATIO)] = new ParFloat(0.8, "slatsratio", "slatsratio", SLATSRATIOFST, 'p','i', new SLATSRATIO_Evnt());
 	/*21*/pars[p(UTCSYNC)] = new ParInt(50, "utcsync", "utcsync", NTPSYNCINTOFST, 'p','i', new UTCSYNC_Evnt());
-	/*22*/pars[p(MQTTID)] = new ParStr32(MQTTCLIENTID, "mqttid", "mqttid", MQTTIDOFST, 'p','i');
+	/*22*/pars[p(MQTTID)] = new ParStr32(String(WiFi.macAddress()).c_str(), "mqttid", "devid", MQTTIDOFST, 'p','i', new MQTTID_Evnt());
 	/*23*/pars[p(MQTTOUTTOPIC)] = new ParStr32(OUTTOPIC, "mqttouttopic", "mqttouttopic", OUTTOPICOFST, 'p','i');
 	/*23*/pars[p(MQTTLOG)] = new ParStr32(LOGPATH, "mqttlog", "mqttlog", MQTTLOGOFST, 'p','i');
 	/*24*/pars[p(MQTTINTOPIC)] = new ParStr32(INTOPIC, "mqttintopic", "mqttintopic", INTOPICOFST, 'p','i', new MQTTINTOPIC_Evnt());
@@ -460,7 +459,7 @@ inline void initOfst(){
 	/*5*/pars[p(SWACTION4)] = new ParUint8(0, "SWACTION4","");
 	/*5*/pars[p(UTCVAL)] = new ParLong(0, "UTCVAL","utcval");
 	/*5*/pars[p(LOGSLCT)] = new ParUint8(LOGSEL, "logslct","logslct", LOGSLCTOFST, 'n', 'n', new LOGSLCT_Evnt());
-	/*5*/pars[p(DEVICEID)] = new ParStr32(DEVID, "devid","deviceid", DEVICEIDOFST, 'p', 'i', new DEVICEID_Evnt());
+	///*5*/pars[p(DEVICEID)] = new ParStr32(DEVID, "devid","deviceid", DEVICEIDOFST, 'p', 'i', new DEVICEID_Evnt());
 	///*5*/pars[p(SWSPLDPWR1)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST1, 'n', 'n', new SWSPLDPWR1_Evnt());
 	///*5*/pars[p(SWSPLDPWR2)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST2, 'n', 'n', new SWSPLDPWR2_Evnt());
 	///*5*/pars[p(SWSPLDPWR3)] = new ParUint8(0, "SWSPLDPWR1","", SWSPLDPWR1OFST3, 'n', 'n', new SWSPLDPWR3_Evnt());
@@ -1358,9 +1357,9 @@ void publishStr(String &str){
   //informazioni mittente
   str += ",\"";
   str += pars[MQTTTIME]->getStrJsonName()+twodot+String(millis())+comma; 
-  str += pars[MQTTMAC]->getStrJsonName()+twodot+String(WiFi.macAddress())+comma;
+  //str += pars[MQTTMAC]->getStrJsonName()+twodot+String(WiFi.macAddress())+comma;
   str += pars[MQTTIP]->getStrJsonName()+twodot+pars[p(LOCALIP)]->getStrVal()+comma;
-  str += pars[MQTTMQTTID]->getStrJsonName()+twodot+pars[p(MQTTID)]->getStrVal()+comma;
+  //str += pars[MQTTMQTTID]->getStrJsonName()+twodot+pars[p(MQTTID)]->getStrVal()+comma;
  #if (AUTOCAL_HLW8012) 
   str += pars[INSTPWR]->getStrJsonName()+twodot+asyncBuf[GTIPWR]+comma;
   //str += pars[INSTPWR]->getStrJsonName()+twodot+hlw8012.getExtimActivePower()+comma;
@@ -3246,9 +3245,6 @@ void MQTTMAC_Evnt::doaction(uint8_t save){
 void MQTTIP_Evnt::doaction(uint8_t save){
 	readIpAndPub();
 }
-void MQTTMQTTID_Evnt::doaction(uint8_t save){
-	readMQTTIdAndPub();
-}
 void MQTTTIME_Evnt::doaction(uint8_t save){
 	readTimeAndPub();
 }
@@ -3516,9 +3512,12 @@ void ONCOND5_Evnt::doaction(uint8_t save){
 	if(save==1) 
 		writeOnOffConditions();
 }
-void DEVICEID_Evnt::doaction(uint8_t save){
-	openbrk = "{\""+pars[p(DEVICEID)]->getStrFormName()+twodot+pars[p(DEVICEID)]->getStrVal()+"\",\"";
+void MQTTID_Evnt::doaction(uint8_t save){
+	openbrk = "{\""+pars[p(MQTTID)]->getStrJsonName()+twodot+pars[p(MQTTID)]->getStrVal()+"\",\"";
 }
+/*void DEVICEID_Evnt::doaction(uint8_t save){
+	openbrk = "{\""+pars[p(DEVICEID)]->getStrFormName()+twodot+pars[p(DEVICEID)]->getStrVal()+"\",\"";
+}*/
 /*
 void SWSPLDPWR1_Evnt::doaction(uint8_t save){
 	//save confs and actions on new config received event

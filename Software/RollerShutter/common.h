@@ -50,7 +50,6 @@
 #define MQTTPRT			1883
 #define WSPRT			"8000"
 #define MQTTPT			"mqtt"
-#define MQTTCLIENTID 	"mytapparella"
 #define ROLLMODE1 		1
 #define ROLLMODE2 		0
 #define NTP1 			"ntp1.inrim.it"
@@ -285,7 +284,7 @@
 #define	MQTTUSROFST				694
 #define	MQTTPSWOFST				726
 #define	MQTTLOGOFST				758
-#define DEVICEIDOFST			790
+#define RESERVED32OFST			790
 //64 byte offsets (fixed long String)
 #define MQTTADDROFST			822
 #define NTP1ADDROFST			896
@@ -301,6 +300,7 @@
 //valori di risposta in OUTPUT: feedbacks broadcast di arrivo di un nuovo comando, parametro o richiesta, valori di risposta all'esecuzione di un comando, 
 //valori di risposta alla richiesta di lettura di un parametro (si noti che tutti questi, non dovendo essere processati dal parser MQTT, 
 //potrebbero alternativamente essere hardcoded, è opportuno che stiano quì se il loro nome COINCIDE con quello di un corrispondente flag di richiesta).
+//----------------------------
 #define MQTTUP1				0
 #define MQTTDOWN1			1
 #define MQTTUP2				2
@@ -308,20 +308,19 @@
 //richiesta parametri
 #define MQTTMAC				4
 #define MQTTIP				5
-#define MQTTMQTTID			6
-#define MQTTTIME			7
-#define MQTTTEMP			8
-#define MQTTMEANPWR			9
-#define MQTTPEAKPWR			10
-#define MQTTALL				11
-#define MQTTDATE			12
-#define INSTPWR				13
-#define INSTACV				14
-#define DOPWRCAL			15
+#define MQTTTIME			6
+#define MQTTTEMP			7
+#define MQTTMEANPWR			8
+#define MQTTPEAKPWR			9
+#define MQTTALL				10
+#define MQTTDATE			11
+#define INSTPWR				12
+#define INSTACV				13
+#define DOPWRCAL			14
 //end user modificable flags
-#define MQTTDIM				16
+#define MQTTDIM				15
 #define INRDIM				4
-#define USRMODIFICABLEFLAGS 17
+#define USRMODIFICABLEFLAGS 15
 //--------------------------Inizio MQTT config array indexes-----------------------------------------------------
 //Indici array confJson[CONFDIM] dei NOMI dei campi json dei valori di configurazione --> array confcmd[CONFDIM] 
 //dei VALORI stringa di configurazione corrispondenti a flags attivi
@@ -336,6 +335,8 @@
 #define ONCOND4				3
 #define ONCOND5				4
 #define ACTIONEVAL			5
+//end variable length params--
+#define VARCONFDIM			6
 //parametri di lunghezza fissa (vanno subito dopo sempre)
 #define UTCVAL				6
 #define UTCSYNC				7
@@ -345,6 +346,8 @@
 #define WEBUSR				11
 #define WEBPSW				12
 #define CALPWR				13
+//end extern params ----------
+#define EXTPARAM			14
 //-------------------------------------------------------------------------------------------------------
 //Parametri di stato da non eporre (non hanno corrispettivo in array dei flag, vanno subito dopo sempre)
 //Non sono aggiornati via MQTT (solo attraverso eeprom e attraverso form)
@@ -359,46 +362,43 @@
 #define MQTTPORT			21
 #define WSPORT				22
 #define MQTTPROTO			23
-#define MQTTID				24
-#define MQTTOUTTOPIC		25
-#define MQTTINTOPIC			26
-#define MQTTUSR				27
-#define MQTTPSW				28
-#define THALT1				29
-#define THALT2				30
-#define THALT3				31
-#define THALT4				32
-#define STDEL1				33
-#define STDEL2				34
-#define VALWEIGHT			35
-#define	TLENGTH				36
-#define	BARRELRAD			37
-#define	THICKNESS			38
-#define	SLATSRATIO			39
-#define SWROLL1				40
-#define SWROLL2				41
-#define LOCALIP				42
-#define NTPADDR1			43
-#define NTPADDR2			44
-#define LOGSLCT				45  
-#define	MQTTLOG				46
-#define	ACVOLT				47
-#define VACMULT				48
-#define PWRMULT				49
-#define CURRMULT			50
-//#define SWSPLDPWR3			51
-//#define SWSPLDPWR4			52
+#define MQTTOUTTOPIC		24
+#define MQTTINTOPIC			25
+#define MQTTUSR				26
+#define MQTTPSW				27
+#define THALT1				28
+#define THALT2				29
+#define THALT3				30
+#define THALT4				31
+#define STDEL1				32
+#define STDEL2				33
+#define VALWEIGHT			34
+#define	TLENGTH				35
+#define	BARRELRAD			36
+#define	THICKNESS			37
+#define	SLATSRATIO			38
+#define SWROLL1				39
+#define SWROLL2				40
+#define LOCALIP				41
+#define NTPADDR1			42
+#define NTPADDR2			43
+#define LOGSLCT				44  
+#define	MQTTLOG				45
+#define	ACVOLT				46
+#define VACMULT				47
+#define PWRMULT				48
+#define CURRMULT			49
+//end intern params ----------
+#define MQTTID				50
 //parametri di stato (da non esporre)
 #define SWACTION1			51
 #define SWACTION2			52
 #define SWACTION3			53
 #define SWACTION4			54
-#define DEVICEID			55
-#define CONFDIM				56
-#define VARCONFDIM			6
-#define EXTCONFDIM			14 + 16
-//#define PARAMSDIM 			TOSAVEPARAMS + USRMODIFICABLEFLAGS
-#define PARAMSDIM 			CONFDIM + USRMODIFICABLEFLAGS
+//end parametri di stato -----
+#define CONFDIM				55
+#define EXTCONFDIM			USRMODIFICABLEFLAGS + EXTPARAM
+#define PARAMSDIM 			USRMODIFICABLEFLAGS + CONFDIM
 //--------------------------Fine array indexes-----------------------------------
 #if (AUTOCAL_HLW8012 || AUTOCAL_ACS712) 
 #define	AUTOCAL			1
@@ -717,7 +717,7 @@ class SWROLL2_Evnt: public BaseEvnt{
 	public:
 		void doaction(uint8_t);
 };
-class DEVICEID_Evnt: public BaseEvnt{
+class MQTTID_Evnt: public BaseEvnt{
 	public:
 		void doaction(uint8_t);
 };

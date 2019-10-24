@@ -207,8 +207,11 @@ const char HTTP_WEBSOCKET[] PROGMEM =
 			//"conn = new WebSocket('ws://{WS}:81', ['arduino']);"
 		"};"
 		"conn.onmessage = function (e) {"
-			"console.log('Received: ', e.data);"
-			"onRcv(e.data);"
+			"var obj = JSON.parse(e.data);"
+			"if(obj.devid=='{IV}'){"
+				"console.log('Received: '+e.data);"
+				"onRcv(e.data);"
+			"}"
 		"};"
 		"conn.onclose = function () {"
 			"console.log('WebSocket connection closed');"
@@ -271,8 +274,11 @@ const char HTTP_MQTT[] PROGMEM =
 			"}"
 		"};"
 		"conn.onMessageArrived = function (e) {"
-			"console.log('onMessageArrived:'+e.payloadString);"
-			"onRcv(e.payloadString);"
+			"var obj = JSON.parse(e.payloadString);"
+			"if(obj.devid=='{IV}'){"
+				"console.log('Received: '+e.payloadString;"
+				"onRcv(e.payloadString);"
+			"}"
 		"};"
 		"conn.onConnectionLost  = function (resObj) {"			
 			"console.log('Lost connection to ' + resObj.uri + ' Error code: ' + resObj.errorCode + ' Error text: ' + resObj.errorMessage);"
@@ -435,9 +441,6 @@ const char HTTP_FORM_SYSTEM[] PROGMEM =
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='utcadj'>NTP error adjust (msec):</label>"
 					 "<input type='text' name='utcadj' value='{N4}'>"
-				"</div>"
-				"<div class='col-6 col-s-12'><label for='deviceid'>Device ID:</label>"
-					 "<input id='deviceid' name='deviceid' value='{IV}'><br>"
 				"</div>"
 				"<div class='col-6 col-s-12'><label for='utczoneslct'>NTP SDT time zones (hour):</label>"
 					 "<select id='utczoneslct' name='utczoneslct'  onchange='showSelected()'></select><br>"
@@ -1329,7 +1332,7 @@ void handleSystemConf() {  // If a POST request is made to URI /login
 		page.replace(F("{N4}"), parsp[p(UTCADJ)]->getStrVal());
 		page.replace(F("{N5}"), parsp[p(UTCZONE)]->getStrVal());
 		page.replace(F("{N6}"), (parsp[p(UTCSDT)]->getStrVal() == "1")?"checked":"");
-		page.replace(F("{IV}"), parsp[DEVICEID]->getStrVal());
+		page.replace(F("{IV}"), parsp[p(MQTTID)]->getStrVal());
 #if (AUTOCAL_HLW8012) 
 		page.replace(F("{N7}"), parsp[p(ACVOLT)]->getStrVal());
 		page.replace(F("{N8}"), parsp[p(CALPWR)]->getStrVal());	
@@ -1549,7 +1552,7 @@ void handleEventConf() {  // If a POST request is made to URI /login
 		page.replace(F("{S2}"), String(getCntValue(SMPLCNT2)));
 		page.replace(F("{S3}"), String(getCntValue(SMPLCNT3)));
 		page.replace(F("{S4}"), String(getCntValue(SMPLCNT4)));
-		page.replace(F("{IV}"), parsp[DEVICEID]->getStrVal());
+		page.replace(F("{IV}"), parsp[p(MQTTID)]->getStrVal());
 	
 		DEBUG1_PRINT(F("SWROLL1: "));
 		DEBUG1_PRINTLN(static_cast<ParUint8*>(parsp[p(SWROLL1]))->val);
@@ -1613,7 +1616,7 @@ void handleCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{J2}"), parsp[MQTTDOWN1]->getStrJsonName());
 	page.replace(F("{J3}"), parsp[MQTTUP2]->getStrJsonName());
 	page.replace(F("{J4}"), parsp[MQTTDOWN2]->getStrJsonName());
-	page.replace(F("{IV}"), parsp[DEVICEID]->getStrVal());
+	page.replace(F("{IV}"), parsp[p(MQTTID)]->getStrVal());
 #if (AUTOCAL_HLW8012) 
 	page.replace(F("{PW}"), parsp[INSTPWR]->getStrJsonName());
 	page.replace(F("{AC}"), parsp[INSTACV]->getStrJsonName());
@@ -1659,7 +1662,7 @@ void handleMqttCmd() {  // If a POST request is made to URI /login
 	page.replace(F("{J2}"), parsp[MQTTDOWN1]->getStrJsonName());
 	page.replace(F("{J3}"), parsp[MQTTUP2]->getStrJsonName());
 	page.replace(F("{J4}"), parsp[MQTTDOWN2]->getStrJsonName());
-	page.replace(F("{IV}"), parsp[DEVICEID]->getStrVal());
+	page.replace(F("{IV}"), parsp[p(MQTTID)]->getStrVal());
 #if (AUTOCAL_HLW8012) 
 	page.replace(F("{PW}"), parsp[INSTPWR]->getStrJsonName());
 	page.replace(F("{AC}"), parsp[INSTACV]->getStrJsonName());
