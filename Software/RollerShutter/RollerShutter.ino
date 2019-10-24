@@ -578,10 +578,10 @@ double getTemperature(){
 	DEBUG1_PRINT(", finestra: ");
 	DEBUG1_PRINT(TSIGMA*stv);
 	DEBUG1_PRINT(", scarto: ");
-	if(st - TSIGMA*stv > 0)
-		DEBUG1_PRINTLN(st - TSIGMA*stv);
+	if(temp >= st - TSIGMA*stv)
+		DEBUG1_PRINTLN(temp - stv);
 	else
-		DEBUG1_PRINTLN(TSIGMA*stv-st);
+		DEBUG1_PRINTLN(stv - temp);
 	
 	return st;
 }
