@@ -404,6 +404,11 @@
 #define	AUTOCAL			1
 #endif
 
+#define EMAA  			0.125
+#define EMAB  			0.25
+#define TSIGMA			20
+#define TEMPCOUNT		3
+#define NOMEDIATEMP		10
 #if (AUTOCAL_HLW8012) 
 #define RUNDELAY  		3
 #define NSIGMA 			1.001
@@ -1188,7 +1193,7 @@ void readPwrCalAndPub();
 void publishStr(String &);
 void publishStr2(String &);
 float getAmpRMS(float);
-float getTemperature();
+double getTemperature();
 //void leggiTasti();
 void scriviOutDaStato(byte);
 void saveOnEEPROM(int);

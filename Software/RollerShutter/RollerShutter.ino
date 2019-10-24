@@ -18,6 +18,7 @@ String enda = "\",";
 String end = "\"";
 String endbrk = "}";
 
+byte firstTemp = NOMEDIATEMP;
 char IP[] = "xxx.xxx.xxx.xxx";          // buffer
 //end global string
 //stats variables
@@ -61,6 +62,9 @@ volatile int minx = 1024;
 volatile int maxx = 0;
 volatile int x;
 float dd = 0;
+byte tempCount = TEMPCOUNT;
+volatile double st = 0;
+volatile double stv = 85;
 volatile float m, m2;
 double ex[2] = {0,0};
 double calAvg[2] = {0,0};
@@ -187,6 +191,33 @@ void printIn(){
 	DEBUG1_PRINTLN(in[3]);
 }
 
+inline float sampletemp(byte c, byte t = 0){
+	double temp = -127;
+#if(LARGEFW)
+	DS18B20.requestTemperatures(); 
+	unsigned short cnt = 0;
+	do{
+		temp = DS18B20.getTempCByIndex(0);
+		//DEBUG2_PRINT("Temperature: ");
+		//DEBUG2_PRINTLN(temp);
+		cnt++;	
+		delay(t);
+	}while((temp == 85.0 || temp == (-127.0)) && cnt < c);
+#endif
+return temp;
+}
+
+/*inline void initTemp(){
+	st = sampletemp(4,30);
+	stv = 85;
+	DEBUG1_PRINT(F("firstTemp: "));
+	DEBUG1_PRINTLN(st);
+  /*for(int i=0;i<3;i++){
+	  DEBUG1_PRINT(F("Temp: "));
+	  DEBUG1_PRINTLN(getTemperature());
+	  delay(1000);
+  }
+}*/
 
 //-----------------------------------------Begin of prototypes---------------------------------------------------------
 #if (AUTOCAL_HLW8012 && LARGEFW) 
@@ -501,19 +532,50 @@ uint8_t inline getSWMode(uint8_t n){
 	return roll[n];
 }
 
-float getTemperature(){
-	float temp = -127;
+double getTemperature(){
+	double temp = -127;
+	
 #if(LARGEFW)
-	DS18B20.requestTemperatures(); 
-	unsigned short cnt = 0;
-	do{
-		temp = DS18B20.getTempCByIndex(0);
-		//DEBUG2_PRINT("Temperature: ");
-		//DEBUG2_PRINTLN(temp);
-		cnt++;		
-	}while((temp == 85.0 || temp == (-127.0)) && cnt < 3);
+	temp = sampletemp(3);
+
+	if(firstTemp > 0){
+		firstTemp--;
+		st = temp;
+		stv = 85.0;
+		DEBUG1_PRINT("firstTemp: ");
+		DEBUG1_PRINTLN(st);
+	}else{
+		if((temp >= (double) st - TSIGMA*stv && temp <= (double) st + TSIGMA*stv) || tempCount == 0){
+			if(tempCount == 0){
+				tempCount = TEMPCOUNT;
+				st = (double) st*(1-EMAA*TEMPCOUNT) + temp*EMAA*TEMPCOUNT;
+				if(temp >= st){
+					stv = (double) stv*(1-EMAB*TEMPCOUNT) + (temp - st)*EMAB*TEMPCOUNT;
+				}else{
+					stv = (double) stv*(1-EMAB*TEMPCOUNT) + (st - temp)*EMAB*TEMPCOUNT;
+				}
+			}else{
+				st = (double) st*(1-EMAA) + temp*EMAA;
+				if(temp >= st){
+					stv = (double) stv*(1-EMAB) + (temp - st)*EMAB;
+				}else{
+					stv = (double) stv*(1-EMAB) + (st - temp)*EMAB;
+				}
+			}
+		}else{
+			//after TEMPCOUNT times are to be considered valid values!
+			tempCount--;
+		}
+	}
 #endif
-	return temp;
+	DEBUG1_PRINT("instTemp: ");
+	DEBUG1_PRINT(temp);
+	DEBUG1_PRINT(", tmedia: ");
+	DEBUG1_PRINT(st);
+	DEBUG1_PRINT(", finestra: ");
+	DEBUG1_PRINTLN(TSIGMA*stv);
+	
+	return st;
 }
 
 //parser actions callBack (assignements)
@@ -1623,7 +1685,7 @@ void setup(){
   stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
   // Call "onStationDisconnected" each time a station disconnects
   stationDisconnectedHandler = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
-  
+  	
 #if defined (_DEBUG) || defined (_DEBUGR)  
   testFlash();
 #endif
@@ -1843,6 +1905,7 @@ void setup(){
   });
   //Turn off WiFi
   //WiFi.mode(WIFI_OFF);    //This also w
+  //initTemp();
 }
 
 void httpSetup(){
