@@ -1,1 +1,1 @@
-../html-c-converter.js
+../html2c.js
