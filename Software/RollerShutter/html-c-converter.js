@@ -26,12 +26,33 @@ function writeFile(filename, content) {
 }
 
 function processFile() {
-    console.log(content);
-    // Add logic here
-    writeFile(`${filename}.gen.c`,content);
+    //console.log(content);
+    const regex1 = /<!-- (const char .*) -->/gm;
+    const regex2 = /<!-- .* -->/gm;
+    const regex = /(.*)/gm;
+
+    //str.replace(/(blue)/g, "$1-red");
+
+    let m;
+
+    while ((m = regex1.exec(content)) !== null) {
+        // This is necessary to avoid infinite loops with zero-width matches
+        if (m.index === regex1.lastIndex) {
+            regex1.lastIndex++;
+        }
+
+        // The result can be accessed through the `m`-variable.
+        m.forEach((match, groupIndex) => {
+            console.log(`Found match, group ${groupIndex}: ${match}`);
+        });
+    }
+
+
+
+    writeFile(`${filename}.gen.c`, content);
 }
 
 
 // First I want to read the file
-fs.readFile(`./${filename}.c.html`,'utf8', readFile);
+fs.readFile(`./${filename}.c.html`, 'utf8', readFile);
 
