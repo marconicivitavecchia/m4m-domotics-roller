@@ -19,7 +19,7 @@ function readFile(err, data) {
 }
 
 function writeFile(filename, content) {
-    fs.writeFile(`${filename}.gen.c`, content, 'utf8', function (err) {
+    fs.writeFile(filename, content, 'utf8', function (err) {
         if (err) throw err;
         console.log(`Saved ${filename}!`);
     });
@@ -27,7 +27,8 @@ function writeFile(filename, content) {
 
 function processFile() {
     console.log(content);
-    writeFile(content);
+    // Add logic here
+    writeFile(`${filename}.gen.c`,content);
 }
 
 
